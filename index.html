@@ -573,9 +573,9 @@
     </div>
   </div>
 
-  <!-- COMPLETE RUNNABLE JAVASCRIPT BLOCK WITH PROPER DECLARATION ORDER -->
+  <!-- COMPLETE RUNNABLE JAVASCRIPT BLOCK -->
   <script>
-    // 1. Digimon & Digi-Egg definitions (Defined first to prevent TDZ errors)
+    // 1. Digimon & Digi-Egg definitions
     const DIGI_EGGS = [
       { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "A pure white egg shining with limitless potential", img: "./images/digitama1.png", nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage", prevForm: null },
       { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "A blazing egg radiating flames of courage", img: "./images/digitama2.png", nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage", prevForm: null },
@@ -662,7 +662,7 @@
       measurementId: "G-RJMS4K7YVG"
     };
 
-    // 3. Initial Mock / Seed Data
+    // 3. Initial Mock Data
     const INITIAL_DATA = {
       superAdmins: {
         "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master (Super Admin)" },
@@ -685,7 +685,7 @@
       }
     };
 
-    // Global States
+    // Global States with Guaranteed Non-Null Fallbacks
     let appData = JSON.parse(JSON.stringify(INITIAL_DATA));
     let currentUser = null;
     let selectedTeacherClass = "ALL";
@@ -707,13 +707,11 @@
     }
 
     function fallbackLocalStorage() {
-      const local = localStorage.getItem('digimon_app_data_v23');
+      const local = localStorage.getItem('digimon_app_data_v26');
       if (local) {
         try {
           appData = JSON.parse(local);
-          if (!appData.students || !appData.teachers || !appData.superAdmins) {
-            appData = JSON.parse(JSON.stringify(INITIAL_DATA));
-          }
+          ensureDataStructures();
         } catch (e) {
           appData = JSON.parse(JSON.stringify(INITIAL_DATA));
         }
@@ -723,9 +721,18 @@
       }
     }
 
+    function ensureDataStructures() {
+      if (!appData.superAdmins || Object.keys(appData.superAdmins).length === 0) {
+        appData.superAdmins = JSON.parse(JSON.stringify(INITIAL_DATA.superAdmins));
+      }
+      if (!appData.teachers) appData.teachers = {};
+      if (!appData.classes) appData.classes = {};
+      if (!appData.students) appData.students = {};
+    }
+
     function saveSystemData() {
       try {
-        localStorage.setItem('digimon_app_data_v23', JSON.stringify(appData));
+        localStorage.setItem('digimon_app_data_v26', JSON.stringify(appData));
         if (firebaseDb) {
           firebaseDb.ref('/').set(appData);
         }
@@ -745,12 +752,14 @@
           const val = snapshot.val();
           if (val && typeof val === 'object') {
             appData = {
-              superAdmins: { ...(INITIAL_DATA.superAdmins || {}), ...(val.superAdmins || {}) },
-              teachers: { ...(INITIAL_DATA.teachers || {}), ...(val.teachers || {}) },
-              classes: { ...(INITIAL_DATA.classes || {}), ...(val.classes || {}) },
-              students: { ...(INITIAL_DATA.students || {}), ...(val.students || {}) }
+              superAdmins: val.superAdmins || JSON.parse(JSON.stringify(INITIAL_DATA.superAdmins)),
+              teachers: val.teachers || {},
+              classes: val.classes || {},
+              students: val.students || {}
             };
+            ensureDataStructures();
           } else {
+            // Seed initial data only if database is completely blank
             appData = JSON.parse(JSON.stringify(INITIAL_DATA));
             firebaseDb.ref('/').set(appData);
           }
@@ -790,58 +799,49 @@
       const pEl = document.getElementById('loginPassword');
       if (!uEl || !pEl) return;
 
-      const u = uEl.value.trim().toLowerCase();
-      const p = pEl.value.trim();
+      const u = String(uEl.value || '').trim().toLowerCase();
+      const p = String(pEl.value || '').trim();
 
       if (!u || !p) {
         alert("Please enter both username and password.");
         return;
       }
 
+      ensureDataStructures();
+
       try {
         if (activeLoginTab === 'teacher') {
-          // Check Super Admin Accounts
-          const allSuperAdmins = { ...(INITIAL_DATA.superAdmins || {}), ...(appData.superAdmins || {}) };
-          const superAdmin = Object.values(allSuperAdmins).find(s => 
+          // 1. Check Super Admin Accounts
+          const superAdminObj = Object.values(appData.superAdmins || {}).find(s => 
             String(s.username || '').toLowerCase() === u && String(s.password || '') === p
           );
-          if (superAdmin) {
-            currentUser = { role: 'superadmin', data: superAdmin };
-            if (!appData.superAdmins) {
-              appData.superAdmins = INITIAL_DATA.superAdmins;
-              saveSystemData();
-            }
-            sessionStorage.setItem('digimon_session_v5', JSON.stringify(currentUser));
+          if (superAdminObj) {
+            currentUser = { role: 'superadmin', data: superAdminObj };
+            sessionStorage.setItem('digimon_session_final', JSON.stringify(currentUser));
             enterApp();
             return;
           }
 
-          // Check Teacher Accounts
-          const allTeachers = { ...(INITIAL_DATA.teachers || {}), ...(appData.teachers || {}) };
-          const teacher = Object.values(allTeachers).find(t => 
+          // 2. Check Teacher Accounts
+          const teacherObj = Object.values(appData.teachers || {}).find(t => 
             (String(t.username || '').toLowerCase() === u || String(t.id || '').toLowerCase() === u) && String(t.password || '') === p
           );
-          if (teacher) {
-            currentUser = { role: 'teacher', data: teacher };
-            if (!appData.teachers) {
-              appData.teachers = INITIAL_DATA.teachers;
-              saveSystemData();
-            }
-            sessionStorage.setItem('digimon_session_v5', JSON.stringify(currentUser));
+          if (teacherObj) {
+            currentUser = { role: 'teacher', data: teacherObj };
+            sessionStorage.setItem('digimon_session_final', JSON.stringify(currentUser));
             enterApp();
             return;
           }
 
-          alert("Invalid credentials for Teacher or Super Admin!\n• Super Admin: superadmin / superpassword (or admin / admin123)\n• Teacher: teacher1 / 123");
+          alert("Invalid credentials for Teacher or Super Admin!\n• Super Admin: superadmin / superpassword\n• Teacher: teacher1 / 123");
         } else {
-          // Student Login
-          const allStudents = { ...(INITIAL_DATA.students || {}), ...(appData.students || {}) };
-          const student = Object.values(allStudents).find(s => 
+          // 3. Student Login
+          const studentObj = Object.values(appData.students || {}).find(s => 
             (String(s.username || '').toLowerCase() === u || String(s.id || '').toLowerCase() === u) && String(s.password || '') === p
           );
-          if (student) {
-            currentUser = { role: 'student', data: student };
-            sessionStorage.setItem('digimon_session_v5', JSON.stringify(currentUser));
+          if (studentObj) {
+            currentUser = { role: 'student', data: studentObj };
+            sessionStorage.setItem('digimon_session_final', JSON.stringify(currentUser));
             enterApp();
           } else {
             alert("Invalid student credentials!\n• Default Students: s01 to s04 / 123");
@@ -854,7 +854,7 @@
     }
 
     function checkAutoLogin() {
-      const sess = sessionStorage.getItem('digimon_session_v5');
+      const sess = sessionStorage.getItem('digimon_session_final');
       if (sess) {
         try {
           currentUser = JSON.parse(sess);
@@ -862,7 +862,7 @@
             enterApp();
           }
         } catch (e) {
-          sessionStorage.removeItem('digimon_session_v5');
+          sessionStorage.removeItem('digimon_session_final');
         }
       }
     }
@@ -904,7 +904,7 @@
 
     function logout() {
       currentUser = null;
-      sessionStorage.removeItem('digimon_session_v5');
+      sessionStorage.removeItem('digimon_session_final');
       document.getElementById('mainHeader').classList.add('hidden');
       document.getElementById('viewStudent').classList.add('hidden');
       document.getElementById('viewTeacher').classList.add('hidden');
