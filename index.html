@@ -78,7 +78,7 @@
     <div class="flex items-center space-x-2">
       <span id="syncIndicator" class="text-xs text-slate-400 flex items-center gap-1.5 mr-2">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        Online
+        Firebase Live
       </span>
       <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900">
         <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
@@ -117,9 +117,9 @@
       </div>
 
       <!-- Login Form -->
-      <form onsubmit="handleLogin(event)" class="space-y-4 text-xs">
+      <form id="loginFormElement" onsubmit="handleLogin(event)" class="space-y-4 text-xs">
         <div>
-          <label class="block text-slate-400 mb-1 font-bold" id="lblUsername">Username / Student ID</label>
+          <label class="block text-slate-400 mb-1 font-bold" id="lblUsername">Student Username / ID</label>
           <input id="loginUsername" type="text" required placeholder="e.g. s01" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:border-cyan-400 outline-none">
         </div>
         <div>
@@ -127,7 +127,7 @@
           <input id="loginPassword" type="password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:border-cyan-400 outline-none">
         </div>
 
-        <button type="submit" id="btnLoginSubmit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/20 transition">
+        <button type="submit" id="btnLoginSubmit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/20 transition cursor-pointer">
           <i class="fa-solid fa-door-open mr-1"></i> Enter Digital World
         </button>
       </form>
@@ -143,8 +143,8 @@
     <!-- 1. Student / Tamer View -->
     <!-- ========================================== -->
     <div id="viewStudent" class="space-y-6 hidden">
-      <!-- Digivice Hub -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Digivice Hub -->
         <div class="md:col-span-2 digi-card rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[420px]">
           <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
           
@@ -172,7 +172,7 @@
             <button id="btnEvolve" onclick="triggerEvolution()" class="hidden px-6 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce">
               <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
             </button>
-            <button id="btnCastSkill" onclick="promptStudentCastSkill()" class="px-5 py-2.5 rounded-full font-bold text-xs bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/30 transition flex items-center gap-1.5">
+            <button id="btnCastSkill" onclick="promptStudentCastSkill()" class="px-5 py-2.5 rounded-full font-bold text-xs bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer">
               <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="stSkillBtnLabel">Special Move</span>
             </button>
             <span id="stAttackQuotaBadge" class="text-xs text-amber-300 font-bold bg-amber-950/80 px-3 py-1.5 rounded-full border border-amber-600/50">
@@ -302,7 +302,9 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
     <!-- 2. Teacher Master View -->
+    <!-- ========================================== -->
     <div id="viewTeacher" class="space-y-6 hidden">
       <div id="teacherBossCard" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -366,7 +368,9 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
     <!-- 3. Super Admin View -->
+    <!-- ========================================== -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
       <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-5">
         <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
@@ -569,7 +573,9 @@
     </div>
   </div>
 
+  <!-- COMPLETE RUNNABLE JAVASCRIPT BLOCK WITH PROPER DECLARATION ORDER -->
   <script>
+    // 1. Digimon & Digi-Egg definitions (Defined first to prevent TDZ errors)
     const DIGI_EGGS = [
       { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "A pure white egg shining with limitless potential", img: "./images/digitama1.png", nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage", prevForm: null },
       { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "A blazing egg radiating flames of courage", img: "./images/digitama2.png", nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage", prevForm: null },
@@ -644,9 +650,19 @@
       "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", name: "MetalGarurumon", title: "Cyborg Beast Type - Absolute Zero Cocytus Breath", img: "./images/metalgarurumon.png", nextExp: 9999, maxHp: 1000, skillName: "Cocytus Breath", skillPower: 200, skillType: "damage", prevForm: "ult_weregarurumon" }
     };
 
-    /**
-     * Account Roster & Workspace Data
-     */
+    // 2. Pre-configured Firebase Connection Credentials
+    const FIREBASE_AUTO_CONFIG = {
+      apiKey: "AIzaSyBkP5_NpSfWZubW1z4hdXXWRBuTBijAM9M",
+      authDomain: "digimonclass-e493c.firebaseapp.com",
+      databaseURL: "https://digimonclass-e493c-default-rtdb.firebaseio.com",
+      projectId: "digimonclass-e493c",
+      storageBucket: "digimonclass-e493c.firebasestorage.app",
+      messagingSenderId: "181462417144",
+      appId: "1:181462417144:web:5bf58d73857616346b450d",
+      measurementId: "G-RJMS4K7YVG"
+    };
+
+    // 3. Initial Mock / Seed Data
     const INITIAL_DATA = {
       superAdmins: {
         "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master (Super Admin)" },
@@ -669,13 +685,14 @@
       }
     };
 
-    // System States
+    // Global States
     let appData = JSON.parse(JSON.stringify(INITIAL_DATA));
     let currentUser = null;
     let selectedTeacherClass = "ALL";
     let activeLoginTab = 'student';
     let firebaseDb = null;
 
+    // Initialization lifecycle
     window.addEventListener('DOMContentLoaded', () => {
       try {
         loadSystemData();
@@ -686,25 +703,15 @@
     });
 
     function loadSystemData() {
-      const savedConfig = localStorage.getItem('digimon_fb_config');
-      if (savedConfig) {
-        try {
-          const cfg = JSON.parse(savedConfig);
-          initFirebase(cfg);
-          return;
-        } catch (e) {
-          fallbackLocalStorage();
-        }
-      }
-      fallbackLocalStorage();
+      initFirebase(FIREBASE_AUTO_CONFIG);
     }
 
     function fallbackLocalStorage() {
-      const local = localStorage.getItem('digimon_app_data_v20');
+      const local = localStorage.getItem('digimon_app_data_v23');
       if (local) {
         try {
           appData = JSON.parse(local);
-          if (!appData.students || !appData.teachers) {
+          if (!appData.students || !appData.teachers || !appData.superAdmins) {
             appData = JSON.parse(JSON.stringify(INITIAL_DATA));
           }
         } catch (e) {
@@ -718,7 +725,7 @@
 
     function saveSystemData() {
       try {
-        localStorage.setItem('digimon_app_data_v20', JSON.stringify(appData));
+        localStorage.setItem('digimon_app_data_v23', JSON.stringify(appData));
         if (firebaseDb) {
           firebaseDb.ref('/').set(appData);
         }
@@ -736,19 +743,26 @@
         
         firebaseDb.ref('/').on('value', (snapshot) => {
           const val = snapshot.val();
-          if (val && val.students && val.teachers) {
-            appData = val;
+          if (val && typeof val === 'object') {
+            appData = {
+              superAdmins: { ...(INITIAL_DATA.superAdmins || {}), ...(val.superAdmins || {}) },
+              teachers: { ...(INITIAL_DATA.teachers || {}), ...(val.teachers || {}) },
+              classes: { ...(INITIAL_DATA.classes || {}), ...(val.classes || {}) },
+              students: { ...(INITIAL_DATA.students || {}), ...(val.students || {}) }
+            };
           } else {
+            appData = JSON.parse(JSON.stringify(INITIAL_DATA));
             firebaseDb.ref('/').set(appData);
           }
           refreshActiveView();
         });
       } catch (err) {
-        console.warn("Firebase Connection Error:", err);
+        console.warn("Firebase Init Error:", err);
         fallbackLocalStorage();
       }
     }
 
+    // Authentication Handlers
     function switchLoginTab(type) {
       activeLoginTab = type;
       const tSt = document.getElementById('tabStudent');
@@ -765,7 +779,7 @@
         tTc.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition bg-amber-600 text-white";
         tSt.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white";
         lblUser.textContent = "Teacher or Super Admin Username";
-        inputUser.placeholder = "e.g. teacher1 / admin";
+        inputUser.placeholder = "e.g. superadmin / teacher1 / admin";
       }
     }
 
@@ -786,43 +800,51 @@
 
       try {
         if (activeLoginTab === 'teacher') {
-          // Check Super Admin
-          const superAdmins = appData.superAdmins || {};
-          const superAdmin = Object.values(superAdmins).find(s => 
+          // Check Super Admin Accounts
+          const allSuperAdmins = { ...(INITIAL_DATA.superAdmins || {}), ...(appData.superAdmins || {}) };
+          const superAdmin = Object.values(allSuperAdmins).find(s => 
             String(s.username || '').toLowerCase() === u && String(s.password || '') === p
           );
           if (superAdmin) {
             currentUser = { role: 'superadmin', data: superAdmin };
-            sessionStorage.setItem('digimon_session_v2', JSON.stringify(currentUser));
+            if (!appData.superAdmins) {
+              appData.superAdmins = INITIAL_DATA.superAdmins;
+              saveSystemData();
+            }
+            sessionStorage.setItem('digimon_session_v5', JSON.stringify(currentUser));
             enterApp();
             return;
           }
 
-          // Check Teachers
-          const teachers = appData.teachers || {};
-          const teacher = Object.values(teachers).find(t => 
+          // Check Teacher Accounts
+          const allTeachers = { ...(INITIAL_DATA.teachers || {}), ...(appData.teachers || {}) };
+          const teacher = Object.values(allTeachers).find(t => 
             (String(t.username || '').toLowerCase() === u || String(t.id || '').toLowerCase() === u) && String(t.password || '') === p
           );
           if (teacher) {
             currentUser = { role: 'teacher', data: teacher };
-            sessionStorage.setItem('digimon_session_v2', JSON.stringify(currentUser));
+            if (!appData.teachers) {
+              appData.teachers = INITIAL_DATA.teachers;
+              saveSystemData();
+            }
+            sessionStorage.setItem('digimon_session_v5', JSON.stringify(currentUser));
             enterApp();
             return;
           }
 
-          alert("Invalid Teacher or Super Admin credentials!");
+          alert("Invalid credentials for Teacher or Super Admin!\n• Super Admin: superadmin / superpassword (or admin / admin123)\n• Teacher: teacher1 / 123");
         } else {
           // Student Login
-          const students = appData.students || {};
-          const student = Object.values(students).find(s => 
+          const allStudents = { ...(INITIAL_DATA.students || {}), ...(appData.students || {}) };
+          const student = Object.values(allStudents).find(s => 
             (String(s.username || '').toLowerCase() === u || String(s.id || '').toLowerCase() === u) && String(s.password || '') === p
           );
           if (student) {
             currentUser = { role: 'student', data: student };
-            sessionStorage.setItem('digimon_session_v2', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_v5', JSON.stringify(currentUser));
             enterApp();
           } else {
-            alert("Invalid student credentials!");
+            alert("Invalid student credentials!\n• Default Students: s01 to s04 / 123");
           }
         }
       } catch (err) {
@@ -832,7 +854,7 @@
     }
 
     function checkAutoLogin() {
-      const sess = sessionStorage.getItem('digimon_session_v2');
+      const sess = sessionStorage.getItem('digimon_session_v5');
       if (sess) {
         try {
           currentUser = JSON.parse(sess);
@@ -840,7 +862,7 @@
             enterApp();
           }
         } catch (e) {
-          sessionStorage.removeItem('digimon_session_v2');
+          sessionStorage.removeItem('digimon_session_v5');
         }
       }
     }
@@ -882,7 +904,7 @@
 
     function logout() {
       currentUser = null;
-      sessionStorage.removeItem('digimon_session_v2');
+      sessionStorage.removeItem('digimon_session_v5');
       document.getElementById('mainHeader').classList.add('hidden');
       document.getElementById('viewStudent').classList.add('hidden');
       document.getElementById('viewTeacher').classList.add('hidden');
@@ -912,394 +934,7 @@
       }
     }
 
-    function updateTeacherBossHeader() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      const t = (appData.teachers && appData.teachers[currentUser.data.id]) || currentUser.data;
-      const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
-      const maxHp = t.maxHp || digi.maxHp || 1000;
-      if (t.hp === undefined) t.hp = maxHp;
-
-      const nameEl = document.getElementById('tcBossName');
-      const stageEl = document.getElementById('tcBossStage');
-      const imgEl = document.getElementById('tcBossImg');
-      const hpEl = document.getElementById('tcBossHp');
-
-      if (nameEl) nameEl.textContent = `${digi.name} (Partner)`;
-      if (stageEl) stageEl.textContent = digi.stageName;
-      if (imgEl) imgEl.src = digi.img;
-      if (hpEl) hpEl.textContent = `HP: ${t.hp} / ${maxHp} | Power: ${t.skillPower || digi.skillPower || 100}`;
-    }
-
-    function renderSuperAdminDashboard() {
-      renderSuperAdminTeachers();
-      renderSuperAdminStudents();
-    }
-
-    function renderSuperAdminTeachers() {
-      const container = document.getElementById('superAdminTeacherGrid');
-      if (!container) return;
-      container.innerHTML = '';
-
-      const teachers = Object.values(appData.teachers || {});
-      if (teachers.length === 0) {
-        container.innerHTML = `<p class="col-span-full text-slate-500 text-xs">No teacher accounts found.</p>`;
-        return;
-      }
-
-      teachers.forEach(t => {
-        const classCount = Object.values(appData.classes || {}).filter(c => c.teacherId === t.id).length;
-        const studentCount = Object.values(appData.students || {}).filter(s => s.teacherId === t.id).length;
-        const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
-
-        const card = document.createElement('div');
-        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex justify-between items-center";
-        card.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-slate-900 rounded p-1 border border-amber-600/40 flex items-center justify-center">
-              <img src="${digi.img}" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
-            </div>
-            <div>
-              <div class="font-bold text-amber-300 text-xs">${t.name}</div>
-              <div class="text-[11px] text-slate-400 font-mono">Partner: <span class="text-cyan-300">${digi.name}</span></div>
-              <div class="text-[10px] text-emerald-400 font-mono">Max HP: ${t.maxHp || digi.maxHp} | Power: ${t.skillPower || digi.skillPower}</div>
-              <div class="text-[10px] text-slate-500 mt-0.5">Classes: ${classCount} | Tamers: ${studentCount}</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1">
-            <button onclick="editTeacherAccount('${t.id}')" title="Edit Partner & Stats" class="text-slate-400 hover:text-amber-300 text-xs p-1">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button onclick="deleteTeacherAccount('${t.id}')" title="Delete Teacher" class="text-slate-500 hover:text-rose-400 text-xs p-1">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function renderSuperAdminStudents() {
-      const container = document.getElementById('superAdminStudentGrid');
-      if (!container) return;
-      container.innerHTML = '';
-
-      const students = Object.values(appData.students || {});
-      if (students.length === 0) {
-        container.innerHTML = `<p class="col-span-full text-slate-500 text-xs">No students registered.</p>`;
-        return;
-      }
-
-      students.forEach(s => {
-        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-        const teacherObj = appData.teachers && appData.teachers[s.teacherId] ? appData.teachers[s.teacherId].name : 'Unassigned';
-
-        const card = document.createElement('div');
-        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between";
-        card.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-slate-900 rounded p-1 border border-slate-800 flex items-center justify-center">
-              <img src="${digi.img}" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
-            </div>
-            <div class="text-xs">
-              <div class="font-bold text-slate-200">${s.name} (${s.username})</div>
-              <div class="text-[10px] text-slate-400">Class: <span class="text-cyan-300">${s.classId || 'None'}</span> | Teacher: <span class="text-amber-300">${teacherObj}</span></div>
-              <div class="text-[10px] text-slate-500 font-mono">HP: ${s.hp} | Quota: ${s.attackQuota || 0} | Form: ${digi.name}</div>
-            </div>
-          </div>
-          <button onclick="deleteStudentAccount('${s.id}')" title="Delete Student" class="text-slate-500 hover:text-rose-400 text-xs p-1">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function openCreateTeacherModal() {
-      document.getElementById('modalTcUser').value = '';
-      document.getElementById('modalTcUser').disabled = false;
-      document.getElementById('modalTcPass').value = '123';
-      document.getElementById('modalTcName').value = 'Master Tamer';
-      document.getElementById('modalTcHp').value = '1000';
-      document.getElementById('modalTcPower').value = '150';
-
-      const sel = document.getElementById('modalTcDigiSelect');
-      sel.innerHTML = '';
-      Object.values(DIGIMON_DB).forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.id;
-        opt.textContent = `[${d.stageName}] ${d.name} (${d.skillName})`;
-        sel.appendChild(opt);
-      });
-      sel.value = "mega_wargreymon";
-
-      document.getElementById('modalTeacherEdit').classList.remove('hidden');
-    }
-
-    function editTeacherAccount(teacherId) {
-      const t = appData.teachers[teacherId];
-      if (!t) return;
-
-      document.getElementById('modalTcUser').value = t.username;
-      document.getElementById('modalTcUser').disabled = true;
-      document.getElementById('modalTcPass').value = t.password;
-      document.getElementById('modalTcName').value = t.name;
-      document.getElementById('modalTcHp').value = t.maxHp || 1000;
-      document.getElementById('modalTcPower').value = t.skillPower || 150;
-
-      const sel = document.getElementById('modalTcDigiSelect');
-      sel.innerHTML = '';
-      Object.values(DIGIMON_DB).forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.id;
-        opt.textContent = `[${d.stageName}] ${d.name} (${d.skillName})`;
-        sel.appendChild(opt);
-      });
-      sel.value = t.partnerDigiId || "mega_wargreymon";
-
-      document.getElementById('modalTeacherEdit').classList.remove('hidden');
-    }
-
-    function closeTeacherEditModal() {
-      document.getElementById('modalTeacherEdit').classList.add('hidden');
-    }
-
-    function saveTeacherFromModal() {
-      const username = document.getElementById('modalTcUser').value.trim().toLowerCase();
-      const password = document.getElementById('modalTcPass').value.trim();
-      const name = document.getElementById('modalTcName').value.trim();
-      const partnerDigiId = document.getElementById('modalTcDigiSelect').value;
-      const maxHp = parseInt(document.getElementById('modalTcHp').value) || 1000;
-      const skillPower = parseInt(document.getElementById('modalTcPower').value) || 150;
-
-      if (!username || !password || !name) {
-        alert("Please fill in username, password, and name.");
-        return;
-      }
-
-      if (!appData.teachers) appData.teachers = {};
-      const existing = appData.teachers[username];
-
-      appData.teachers[username] = {
-        id: username,
-        username: username,
-        password: password,
-        name: name,
-        partnerDigiId: partnerDigiId,
-        maxHp: maxHp,
-        hp: existing ? (existing.hp > maxHp ? maxHp : existing.hp) : maxHp,
-        skillPower: skillPower
-      };
-
-      saveSystemData();
-      closeTeacherEditModal();
-      renderSuperAdminDashboard();
-      alert(`Teacher account [${name}] saved successfully!`);
-    }
-
-    function deleteTeacherAccount(teacherId) {
-      const t = appData.teachers[teacherId];
-      if (!t) return;
-
-      if (!confirm(`⚠️ PERMANENT DELETE:\nAre you sure you want to delete teacher ${t.name}? All classes and students belonging to this teacher will also be removed!`)) {
-        return;
-      }
-
-      Object.keys(appData.classes || {}).forEach(cId => {
-        if (appData.classes[cId].teacherId === teacherId) delete appData.classes[cId];
-      });
-      Object.keys(appData.students || {}).forEach(sId => {
-        if (appData.students[sId].teacherId === teacherId) delete appData.students[sId];
-      });
-      delete appData.teachers[teacherId];
-
-      saveSystemData();
-      renderSuperAdminDashboard();
-      alert(`🗑️ Teacher ${t.name} and associated data have been deleted.`);
-    }
-
-    function handleExcelImport(event) {
-      const file = event.target.files[0];
-      if (!file || !currentUser || currentUser.role !== 'teacher') return;
-
-      const teacherId = currentUser.data.id;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-          let importedCount = 0;
-          for (let i = 1; i < jsonRows.length; i++) {
-            const row = jsonRows[i];
-            if (!row || row.length === 0) continue;
-            const username = String(row[0] || '').trim();
-            const password = String(row[1] || '123').trim();
-            const name = String(row[2] || username).trim();
-            const classId = String(row[3] || 'Class-1A').trim();
-
-            if (username) {
-              const studentKey = username.toLowerCase();
-              if (!appData.classes[classId]) {
-                appData.classes[classId] = { id: classId, name: classId, teacherId: teacherId };
-              } else if (appData.classes[classId].teacherId !== teacherId) {
-                appData.classes[classId].teacherId = teacherId;
-              }
-
-              appData.students[studentKey] = {
-                id: studentKey,
-                username: username,
-                password: password,
-                name: name,
-                classId: classId,
-                teacherId: teacherId,
-                exp: 0,
-                statPool: 0,
-                hp: 100,
-                attackQuota: 0,
-                currentDigiId: getRandomEggId(),
-                courage: 0,
-                wisdom: 0,
-                love: 0,
-                discipline: 0
-              };
-              importedCount++;
-            }
-          }
-
-          saveSystemData();
-          populateClassDropdown();
-          renderTeacherGrid();
-          alert(`✅ Successfully imported ${importedCount} students with random Digi-Eggs!`);
-        } catch (err) {
-          alert("Failed to parse Excel file: " + err.message);
-        }
-        event.target.value = '';
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function getTeacherClasses() {
-      if (!currentUser || currentUser.role !== 'teacher') return [];
-      const teacherId = currentUser.data.id;
-      return Object.values(appData.classes || {}).filter(c => c.teacherId === teacherId);
-    }
-
-    function populateClassDropdown() {
-      const sel = document.getElementById('teacherClassFilter');
-      if (!sel) return;
-
-      const myClasses = getTeacherClasses();
-      const prevVal = sel.value || selectedTeacherClass;
-      sel.innerHTML = '<option value="ALL">All My Classes (View All)</option>';
-
-      myClasses.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = `${c.name} (${c.id})`;
-        if (c.id === prevVal) opt.selected = true;
-        sel.appendChild(opt);
-      });
-
-      const btnDel = document.getElementById('btnDeleteClass');
-      if (btnDel) {
-        btnDel.style.display = (sel.value === "ALL" || myClasses.length === 0) ? "none" : "inline-block";
-      }
-    }
-
-    function onClassFilterChange(val) {
-      selectedTeacherClass = val;
-      const btnDel = document.getElementById('btnDeleteClass');
-      if (btnDel) {
-        btnDel.style.display = (val === "ALL") ? "none" : "inline-block";
-      }
-      renderTeacherGrid();
-    }
-
-    function promptCreateClass() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      const teacherId = currentUser.data.id;
-
-      const id = prompt("Enter new Class Code (e.g., Class-3A):");
-      if (!id || !id.trim()) return;
-      const cleanId = id.trim();
-
-      if (appData.classes && appData.classes[cleanId]) {
-        alert("This class code already exists!");
-        return;
-      }
-
-      const name = prompt("Enter Class Name Description (e.g., Grade 3 Dragon Class):") || cleanId;
-      if (!appData.classes) appData.classes = {};
-      appData.classes[cleanId] = { id: cleanId, name: name.trim(), teacherId: teacherId };
-      
-      saveSystemData();
-      selectedTeacherClass = cleanId;
-      populateClassDropdown();
-      renderTeacherGrid();
-      alert(`Class [${cleanId}] successfully created in your workspace!`);
-    }
-
-    function promptDeleteCurrentClass() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      const teacherId = currentUser.data.id;
-
-      if (selectedTeacherClass === "ALL" || !selectedTeacherClass) {
-        alert("Please select a specific class to delete.");
-        return;
-      }
-
-      const targetClass = appData.classes[selectedTeacherClass];
-      if (!targetClass || targetClass.teacherId !== teacherId) {
-        alert("Permission denied or class not found.");
-        return;
-      }
-
-      const affectedStudents = Object.values(appData.students || {}).filter(s => s.classId === selectedTeacherClass);
-
-      if (!confirm(`⚠️ CASCADE DELETE WARNING:\nAre you sure you want to delete class [${targetClass.name}]?\nALL ${affectedStudents.length} student account(s) inside this class will be PERMANENTLY DELETED.`)) {
-        return;
-      }
-
-      affectedStudents.forEach(s => {
-        delete appData.students[s.id];
-      });
-      delete appData.classes[selectedTeacherClass];
-
-      saveSystemData();
-      selectedTeacherClass = "ALL";
-      populateClassDropdown();
-      renderTeacherGrid();
-      alert(`🗑️ Class and all associated student accounts have been deleted.`);
-    }
-
-    function assignStudentClass(studentId, newClassId) {
-      if (!appData.students[studentId]) return;
-      appData.students[studentId].classId = newClassId;
-      saveSystemData();
-      renderTeacherGrid();
-    }
-
-    function deleteStudentAccount(studentId) {
-      const student = appData.students[studentId];
-      if (!student) return;
-
-      if (!confirm(`⚠️ PERMANENT DELETE:\nAre you sure you want to delete student ${student.name} (${student.username})?`)) {
-        return;
-      }
-
-      delete appData.students[studentId];
-      saveSystemData();
-      if (currentUser && currentUser.role === 'superadmin') {
-        renderSuperAdminDashboard();
-      } else {
-        renderTeacherGrid();
-      }
-      alert(`🗑️ Student account ${student.name} has been deleted.`);
-    }
-
+    // Helper functions
     function getStudentLiveObj(id) {
       if (!appData.students) appData.students = {};
       const cleanId = String(id || '').toLowerCase();
@@ -1336,6 +971,330 @@
       return student;
     }
 
+    function updateTeacherBossHeader() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const t = (appData.teachers && appData.teachers[currentUser.data.id]) || currentUser.data;
+      const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
+      const maxHp = t.maxHp || digi.maxHp || 1000;
+      if (t.hp === undefined) t.hp = maxHp;
+
+      const nameEl = document.getElementById('tcBossName');
+      const stageEl = document.getElementById('tcBossStage');
+      const imgEl = document.getElementById('tcBossImg');
+      const hpEl = document.getElementById('tcBossHp');
+
+      if (nameEl) nameEl.textContent = `${digi.name} (Partner)`;
+      if (stageEl) stageEl.textContent = digi.stageName;
+      if (imgEl) imgEl.src = digi.img;
+      if (hpEl) hpEl.textContent = `HP: ${t.hp} / ${maxHp} | Power: ${t.skillPower || digi.skillPower || 100}`;
+    }
+
+    // Student UI logic
+    function updateStudentUI() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const student = getStudentLiveObj(currentUser.data.id || currentUser.data.username);
+      if (!student) return;
+
+      const digiId = student.currentDigiId || 'digitama1';
+      const digi = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
+      const maxHp = digi.maxHp || 100;
+
+      if (student.hp === undefined) student.hp = maxHp;
+      if (student.statPool === undefined) student.statPool = 0;
+      if (student.exp === undefined) student.exp = 0;
+      if (student.attackQuota === undefined) student.attackQuota = 0;
+      if (student.courage === undefined) student.courage = 0;
+      if (student.love === undefined) student.love = 0;
+      if (student.discipline === undefined) student.discipline = 0;
+      if (student.wisdom === undefined) student.wisdom = 0;
+
+      const ownerEl = document.getElementById('stOwnerName');
+      const stageEl = document.getElementById('stStageBadge');
+      const nameEl = document.getElementById('stDigiName');
+      const titleEl = document.getElementById('stDigiTitle');
+      const imgEl = document.getElementById('stDigiImage');
+
+      if (ownerEl) ownerEl.textContent = `Student: ${student.name}`;
+      if (stageEl) stageEl.textContent = `STAGE: ${digi.stageName.toUpperCase()}`;
+      if (nameEl) nameEl.textContent = digi.name;
+      if (titleEl) titleEl.textContent = digi.title;
+
+      if (imgEl) {
+        imgEl.src = digi.img;
+        imgEl.onerror = function() {
+          this.src = './images/digitama1.png';
+        };
+      }
+
+      const skillBtnLabel = document.getElementById('stSkillBtnLabel');
+      if (skillBtnLabel) {
+        skillBtnLabel.textContent = `${digi.skillName} (${digi.skillType === 'heal' ? 'Heal' : 'DMG'}: ${digi.skillPower})`;
+      }
+
+      const quotaBadge = document.getElementById('stAttackQuotaBadge');
+      if (quotaBadge) {
+        quotaBadge.innerHTML = `<i class="fa-solid fa-crosshairs mr-1"></i> Attacks Left: ${student.attackQuota}`;
+      }
+
+      const attrs = [
+        { name: "Courage Focused", val: student.courage },
+        { name: "Friendship Focused", val: student.love },
+        { name: "Discipline Focused", val: student.discipline },
+        { name: "Wisdom Focused", val: student.wisdom }
+      ];
+      attrs.sort((a, b) => b.val - a.val);
+      const topAttr = (attrs[0].val > 0 && attrs[0].val > attrs[1].val) ? attrs[0].name : "Balanced / Equal Traits";
+      
+      const attrEl = document.getElementById('stDominantAttr');
+      if (attrEl) attrEl.textContent = `Trait: ${topAttr}`;
+
+      const hpPct = Math.max(0, Math.min(100, Math.round((student.hp / maxHp) * 100)));
+      const hpText = document.getElementById('stHpText');
+      const hpBar = document.getElementById('stHpBar');
+      if (hpText) hpText.textContent = `${student.hp} / ${maxHp} HP`;
+      if (hpBar) {
+        hpBar.style.width = `${hpPct}%`;
+        if (hpPct <= 25) {
+          hpBar.className = "bg-gradient-to-r from-rose-600 to-red-500 h-full rounded-full transition-all duration-500";
+        } else if (hpPct <= 50) {
+          hpBar.className = "bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-500";
+        } else {
+          hpBar.className = "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500";
+        }
+      }
+
+      const maxExp = digi.nextExp || 5000;
+      const expPct = Math.max(0, Math.min(100, Math.round((student.exp / maxExp) * 100)));
+      const expText = document.getElementById('stExpText');
+      const expBar = document.getElementById('stExpBar');
+      const availBadge = document.getElementById('stAvailableTraitBadge');
+
+      if (expText) expText.textContent = `${student.exp} / ${maxExp} EXP`;
+      if (expBar) expBar.style.width = `${expPct}%`;
+      if (availBadge) availBadge.textContent = `Unallocated: ${student.statPool} pts`;
+
+      const diff = maxExp - student.exp;
+      const totalAllocatedTraits = student.courage + student.wisdom + student.love + student.discipline;
+      const canStillEvolve = (digi.stage !== "MEGA" && (digi.stage !== "ULTIMATE" || digi.nextForm));
+      const noticeEl = document.getElementById('stNextEvolveNotice');
+
+      if (noticeEl) {
+        if (!canStillEvolve) {
+          noticeEl.textContent = `✨ Max Level Reached!`;
+        } else if (diff > 0) {
+          noticeEl.textContent = `${diff} EXP needed for next evolution`;
+        } else if (totalAllocatedTraits < maxExp) {
+          const neededTraits = maxExp - totalAllocatedTraits;
+          noticeEl.textContent = `⚠️ Allocate ${neededTraits} more trait points to unlock evolution!`;
+        } else {
+          noticeEl.textContent = `✨ Evolution Ready!`;
+        }
+      }
+
+      const maxAttr = Math.max(10, student.courage, student.wisdom, student.love, student.discipline);
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      const setBar = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = `${(val / maxAttr) * 100}%`; };
+
+      setVal('stValCourage', student.courage); setBar('stBarCourage', student.courage);
+      setVal('stValLove', student.love); setBar('stBarLove', student.love);
+      setVal('stValDiscipline', student.discipline); setBar('stBarDiscipline', student.discipline);
+      setVal('stValWisdom', student.wisdom); setBar('stBarWisdom', student.wisdom);
+
+      const pool = student.statPool || 0;
+      const traitKeys = ['Courage', 'Love', 'Disc', 'Wis'];
+      [1, 5, 10, 20, 50].forEach(amt => {
+        const canAfford = pool >= amt;
+        traitKeys.forEach(t => {
+          const btn = document.getElementById(`btnAlloc${t}${amt}`);
+          if (btn) btn.disabled = !canAfford;
+        });
+      });
+
+      const btnEvolve = document.getElementById('btnEvolve');
+      if (btnEvolve) {
+        if (student.exp >= maxExp && totalAllocatedTraits >= maxExp && canStillEvolve) {
+          btnEvolve.classList.remove('hidden');
+        } else {
+          btnEvolve.classList.add('hidden');
+        }
+      }
+    }
+
+    function allocateTrait(traitKey, amount) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const student = getStudentLiveObj(currentUser.data.id || currentUser.data.username);
+      if (!student) return;
+
+      if (student.statPool === undefined) student.statPool = 0;
+      const cost = amount || 1;
+
+      if (student.statPool < cost) {
+        alert(`Not enough stat points! You have ${student.statPool} point(s) available.`);
+        return;
+      }
+
+      if (student[traitKey] !== undefined) {
+        student.statPool -= cost;
+        student[traitKey] += cost;
+        saveSystemData();
+        updateStudentUI();
+      }
+    }
+
+    function computeNextEvolution(student) {
+      const cur = DIGIMON_DB[student.currentDigiId];
+      if (!cur) return null;
+
+      const { courage: c, wisdom: w, love: l, discipline: d } = student;
+
+      if (cur.stage === "DIGI-EGG") {
+        if (c === l && l === d) return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
+        if (c > l && c >= d) return "baby_koromon";
+        if (l > c && l >= d) return "baby_tsunomon";
+        if (d > c && d > l) return "baby_tokomon";
+        return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
+      }
+
+      if (cur.stage === "IN-TRAINING") {
+        if (cur.id === "baby_koromon") {
+          if (c === w) return pickRandom(["rookie_agumon", "rookie_biyomon"]);
+          return c > w ? "rookie_agumon" : "rookie_biyomon";
+        }
+        if (cur.id === "baby_tsunomon") {
+          if (l === c) return pickRandom(["rookie_gabumon", "rookie_palmon"]);
+          return l > c ? "rookie_gabumon" : "rookie_palmon";
+        }
+        if (cur.id === "baby_tokomon") {
+          if (d === w) return pickRandom(["rookie_patamon", "rookie_biyomon"]);
+          return d > w ? "rookie_patamon" : "rookie_biyomon";
+        }
+      }
+
+      if (cur.stage === "ROOKIE") {
+        if (cur.id === "rookie_agumon") {
+          if (c === w && w === l) return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
+          if (c > w && c >= l) return "champ_greymon";
+          if (w > c && w >= l) return "champ_seadramon";
+          if (l > c && l > w) return "champ_tyrannomon";
+          return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
+        }
+        if (cur.id === "rookie_gabumon") {
+          if (l === c && c === d) return pickRandom(["champ_garurumon", "champ_unimon", "champ_gargomon"]);
+          if (l > c && l >= d) return "champ_garurumon";
+          if (c > l && c >= d) return "champ_unimon";
+          if (d > l && d > c) return "champ_gargomon";
+          return pickRandom(["champ_garurumon", "champ_unimon", "champ_gargomon"]);
+        }
+        if (cur.id === "rookie_patamon") {
+          if (d === c && c === w) return pickRandom(["champ_angemon", "champ_airdramon", "champ_wizardmon"]);
+          if (d > c && d >= w) return "champ_angemon";
+          if (c > d && c >= w) return "champ_airdramon";
+          if (w > d && w > c) return "champ_wizardmon";
+          return pickRandom(["champ_angemon", "champ_airdramon", "champ_wizardmon"]);
+        }
+        if (cur.id === "rookie_biyomon") {
+          if (c === w && w === l) return pickRandom(["champ_birdramon", "champ_kabuterimon", "champ_gatomon"]);
+          if (c > w && c >= l) return "champ_birdramon";
+          if (w > c && w >= l) return "champ_kabuterimon";
+          if (l > c && l > w) return "champ_gatomon";
+          return pickRandom(["champ_birdramon", "champ_kabuterimon", "champ_gatomon"]);
+        }
+        if (cur.id === "rookie_palmon") {
+          if (l === w && w === d) return pickRandom(["champ_togemon", "champ_sunflowmon", "champ_kyubimon"]);
+          if (l > w && l >= d) return "champ_togemon";
+          if (w > l && w >= d) return "champ_sunflowmon";
+          if (d > l && d > w) return "champ_kyubimon";
+          return pickRandom(["champ_togemon", "champ_sunflowmon", "champ_kyubimon"]);
+        }
+      }
+
+      if (cur.stage === "CHAMPION") {
+        return cur.nextForm || null;
+      }
+
+      if (cur.stage === "ULTIMATE") {
+        if (cur.id === "ult_metalgreymon") return "mega_wargreymon";
+        if (cur.id === "ult_weregarurumon") return "mega_metalgarurumon";
+      }
+
+      return null;
+    }
+
+    function triggerEvolution() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const student = getStudentLiveObj(currentUser.data.id || currentUser.data.username);
+      const nextId = computeNextEvolution(student);
+
+      if (!nextId || !DIGIMON_DB[nextId]) {
+        alert("Maximum evolution stage reached!");
+        return;
+      }
+
+      const imgEl = document.getElementById('stDigiImage');
+      if (imgEl) imgEl.classList.add('animate-evolve');
+
+      setTimeout(() => {
+        student.currentDigiId = nextId;
+        const nextDigi = DIGIMON_DB[nextId];
+        student.hp = nextDigi ? nextDigi.maxHp : 200;
+        saveSystemData();
+        if (imgEl) imgEl.classList.remove('animate-evolve');
+        updateStudentUI();
+        alert(`🎉 Congratulations! Your Digimon evolved into [${DIGIMON_DB[nextId].name}]!`);
+      }, 1000);
+    }
+
+    function triggerDeEvolution(student, reason) {
+      const cur = DIGIMON_DB[student.currentDigiId];
+      if (!cur) return;
+
+      if (cur.stage === "DIGI-EGG") {
+        student.currentDigiId = getRandomEggId();
+        student.hp = 100;
+        student.exp = 0;
+        student.statPool = 0;
+        alert(`⚠️ ${student.name}'s Digi-Egg absorbed the shock! Transformed into a new random Digi-Egg.`);
+        return;
+      }
+
+      let prevId = cur.prevForm;
+      if (prevId === "egg_RANDOM" || !prevId) {
+        prevId = getRandomEggId();
+      }
+
+      const prevDigi = DIGIMON_DB[prevId];
+      student.currentDigiId = prevId;
+      student.hp = prevDigi ? prevDigi.maxHp : 100;
+      student.exp = 0;
+      student.statPool = 0;
+
+      alert(`⚠️ ${student.name}'s Digimon sustained heavy damage (${reason}) and devolved back to [${prevDigi ? prevDigi.name : 'Digi-Egg'}]!`);
+    }
+
+    function rebirthStudent(studentId) {
+      const student = appData.students[studentId];
+      if (!student) return;
+
+      if (!confirm(`Are you sure you want to rebirth ${student.name}'s Digimon back to a Digi-Egg? All stats will reset.`)) {
+        return;
+      }
+
+      student.currentDigiId = getRandomEggId();
+      student.exp = 0;
+      student.statPool = 0;
+      student.hp = 100;
+      student.attackQuota = 0;
+      student.courage = 0;
+      student.wisdom = 0;
+      student.love = 0;
+      student.discipline = 0;
+
+      saveSystemData();
+      renderTeacherGrid();
+      alert(`✨ ${student.name}'s account has been successfully reborn into ${DIGIMON_DB[student.currentDigiId].name}!`);
+    }
+
+    // Battle and skills
     function promptStudentCastSkill() {
       if (!currentUser || currentUser.role !== 'student') return;
       const student = getStudentLiveObj(currentUser.data.id || currentUser.data.username);
@@ -1481,310 +1440,7 @@
       alert(`⚔️ Granted ${amount} attack quota(s) to ${student.name}! Total attacks left: ${student.attackQuota}`);
     }
 
-    function computeNextEvolution(student) {
-      const cur = DIGIMON_DB[student.currentDigiId];
-      if (!cur) return null;
-
-      const { courage: c, wisdom: w, love: l, discipline: d } = student;
-
-      if (cur.stage === "DIGI-EGG") {
-        if (c === l && l === d) return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
-        if (c > l && c >= d) return "baby_koromon";
-        if (l > c && l >= d) return "baby_tsunomon";
-        if (d > c && d > l) return "baby_tokomon";
-        return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
-      }
-
-      if (cur.stage === "IN-TRAINING") {
-        if (cur.id === "baby_koromon") {
-          if (c === w) return pickRandom(["rookie_agumon", "rookie_biyomon"]);
-          return c > w ? "rookie_agumon" : "rookie_biyomon";
-        }
-        if (cur.id === "baby_tsunomon") {
-          if (l === c) return pickRandom(["rookie_gabumon", "rookie_palmon"]);
-          return l > c ? "rookie_gabumon" : "rookie_palmon";
-        }
-        if (cur.id === "baby_tokomon") {
-          if (d === w) return pickRandom(["rookie_patamon", "rookie_biyomon"]);
-          return d > w ? "rookie_patamon" : "rookie_biyomon";
-        }
-      }
-
-      if (cur.stage === "ROOKIE") {
-        if (cur.id === "rookie_agumon") {
-          if (c === w && w === l) return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
-          if (c > w && c >= l) return "champ_greymon";
-          if (w > c && w >= l) return "champ_seadramon";
-          if (l > c && l > w) return "champ_tyrannomon";
-          return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
-        }
-        if (cur.id === "rookie_gabumon") {
-          if (l === c && c === d) return pickRandom(["champ_garurumon", "champ_unimon", "champ_gargomon"]);
-          if (l > c && l >= d) return "champ_garurumon";
-          if (c > l && c >= d) return "champ_unimon";
-          if (d > l && d > c) return "champ_gargomon";
-          return pickRandom(["champ_garurumon", "champ_unimon", "champ_gargomon"]);
-        }
-        if (cur.id === "rookie_patamon") {
-          if (d === c && c === w) return pickRandom(["champ_angemon", "champ_airdramon", "champ_wizardmon"]);
-          if (d > c && d >= w) return "champ_angemon";
-          if (c > d && c >= w) return "champ_airdramon";
-          if (w > d && w > c) return "champ_wizardmon";
-          return pickRandom(["champ_angemon", "champ_airdramon", "champ_wizardmon"]);
-        }
-        if (cur.id === "rookie_biyomon") {
-          if (c === w && w === l) return pickRandom(["champ_birdramon", "champ_kabuterimon", "champ_gatomon"]);
-          if (c > w && c >= l) return "champ_birdramon";
-          if (w > c && w >= l) return "champ_kabuterimon";
-          if (l > c && l > w) return "champ_gatomon";
-          return pickRandom(["champ_birdramon", "champ_kabuterimon", "champ_gatomon"]);
-        }
-        if (cur.id === "rookie_palmon") {
-          if (l === w && w === d) return pickRandom(["champ_togemon", "champ_sunflowmon", "champ_kyubimon"]);
-          if (l > w && l >= d) return "champ_togemon";
-          if (w > l && w >= d) return "champ_sunflowmon";
-          if (d > l && d > w) return "champ_kyubimon";
-          return pickRandom(["champ_togemon", "champ_sunflowmon", "champ_kyubimon"]);
-        }
-      }
-
-      if (cur.stage === "CHAMPION") {
-        return cur.nextForm || null;
-      }
-
-      if (cur.stage === "ULTIMATE") {
-        if (cur.id === "ult_metalgreymon") return "mega_wargreymon";
-        if (cur.id === "ult_weregarurumon") return "mega_metalgarurumon";
-      }
-
-      return null;
-    }
-
-    function allocateTrait(traitKey, amount) {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const student = getStudentLiveObj(currentUser.data.id || currentUser.data.username);
-      if (!student) return;
-
-      if (student.statPool === undefined) student.statPool = 0;
-      const cost = amount || 1;
-
-      if (student.statPool < cost) {
-        alert(`Not enough stat points! You have ${student.statPool} point(s) available.`);
-        return;
-      }
-
-      if (student[traitKey] !== undefined) {
-        student.statPool -= cost;
-        student[traitKey] += cost;
-        saveSystemData();
-        updateStudentUI();
-      }
-    }
-
-    function triggerEvolution() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const student = getStudentLiveObj(currentUser.data.id || currentUser.data.username);
-      const nextId = computeNextEvolution(student);
-
-      if (!nextId || !DIGIMON_DB[nextId]) {
-        alert("Maximum evolution stage reached!");
-        return;
-      }
-
-      const imgEl = document.getElementById('stDigiImage');
-      if (imgEl) imgEl.classList.add('animate-evolve');
-
-      setTimeout(() => {
-        student.currentDigiId = nextId;
-        const nextDigi = DIGIMON_DB[nextId];
-        student.hp = nextDigi ? nextDigi.maxHp : 200;
-        saveSystemData();
-        if (imgEl) imgEl.classList.remove('animate-evolve');
-        updateStudentUI();
-        alert(`🎉 Congratulations! Your Digimon evolved into [${DIGIMON_DB[nextId].name}]!`);
-      }, 1000);
-    }
-
-    function triggerDeEvolution(student, reason) {
-      const cur = DIGIMON_DB[student.currentDigiId];
-      if (!cur) return;
-
-      if (cur.stage === "DIGI-EGG") {
-        student.currentDigiId = getRandomEggId();
-        student.hp = 100;
-        student.exp = 0;
-        student.statPool = 0;
-        alert(`⚠️ ${student.name}'s Digi-Egg absorbed the shock! Transformed into a new random Digi-Egg.`);
-        return;
-      }
-
-      let prevId = cur.prevForm;
-      if (prevId === "egg_RANDOM" || !prevId) {
-        prevId = getRandomEggId();
-      }
-
-      const prevDigi = DIGIMON_DB[prevId];
-      student.currentDigiId = prevId;
-      student.hp = prevDigi ? prevDigi.maxHp : 100;
-      student.exp = 0;
-      student.statPool = 0;
-
-      alert(`⚠️ ${student.name}'s Digimon sustained heavy damage (${reason}) and devolved back to [${prevDigi ? prevDigi.name : 'Digi-Egg'}]!`);
-    }
-
-    function rebirthStudent(studentId) {
-      const student = appData.students[studentId];
-      if (!student) return;
-
-      if (!confirm(`Are you sure you want to rebirth ${student.name}'s Digimon back to a Digi-Egg? All stats will reset.`)) {
-        return;
-      }
-
-      student.currentDigiId = getRandomEggId();
-      student.exp = 0;
-      student.statPool = 0;
-      student.hp = 100;
-      student.attackQuota = 0;
-      student.courage = 0;
-      student.wisdom = 0;
-      student.love = 0;
-      student.discipline = 0;
-
-      saveSystemData();
-      renderTeacherGrid();
-      alert(`✨ ${student.name}'s account has been successfully reborn into ${DIGIMON_DB[student.currentDigiId].name}!`);
-    }
-
-    function updateStudentUI() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const student = getStudentLiveObj(currentUser.data.id || currentUser.data.username);
-      if (!student) return;
-
-      const digiId = student.currentDigiId || 'digitama1';
-      const digi = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
-      const maxHp = digi.maxHp || 100;
-
-      if (student.hp === undefined) student.hp = maxHp;
-      if (student.statPool === undefined) student.statPool = 0;
-      if (student.exp === undefined) student.exp = 0;
-      if (student.attackQuota === undefined) student.attackQuota = 0;
-      if (student.courage === undefined) student.courage = 0;
-      if (student.love === undefined) student.love = 0;
-      if (student.discipline === undefined) student.discipline = 0;
-      if (student.wisdom === undefined) student.wisdom = 0;
-
-      const ownerEl = document.getElementById('stOwnerName');
-      const stageEl = document.getElementById('stStageBadge');
-      const nameEl = document.getElementById('stDigiName');
-      const titleEl = document.getElementById('stDigiTitle');
-      const imgEl = document.getElementById('stDigiImage');
-
-      if (ownerEl) ownerEl.textContent = `Student: ${student.name}`;
-      if (stageEl) stageEl.textContent = `STAGE: ${digi.stageName.toUpperCase()}`;
-      if (nameEl) nameEl.textContent = digi.name;
-      if (titleEl) titleEl.textContent = digi.title;
-
-      if (imgEl) {
-        imgEl.src = digi.img;
-        imgEl.onerror = function() {
-          this.src = './images/digitama1.png';
-        };
-      }
-
-      const skillBtnLabel = document.getElementById('stSkillBtnLabel');
-      if (skillBtnLabel) {
-        skillBtnLabel.textContent = `${digi.skillName} (${digi.skillType === 'heal' ? 'Heal' : 'DMG'}: ${digi.skillPower})`;
-      }
-
-      const quotaBadge = document.getElementById('stAttackQuotaBadge');
-      if (quotaBadge) {
-        quotaBadge.innerHTML = `<i class="fa-solid fa-crosshairs mr-1"></i> Attacks Left: ${student.attackQuota}`;
-      }
-
-      const attrs = [
-        { name: "Courage Focused", val: student.courage },
-        { name: "Friendship Focused", val: student.love },
-        { name: "Discipline Focused", val: student.discipline },
-        { name: "Wisdom Focused", val: student.wisdom }
-      ];
-      attrs.sort((a, b) => b.val - a.val);
-      const topAttr = (attrs[0].val > 0 && attrs[0].val > attrs[1].val) ? attrs[0].name : "Balanced / Equal Traits";
-      
-      const attrEl = document.getElementById('stDominantAttr');
-      if (attrEl) attrEl.textContent = `Trait: ${topAttr}`;
-
-      const hpPct = Math.max(0, Math.min(100, Math.round((student.hp / maxHp) * 100)));
-      const hpText = document.getElementById('stHpText');
-      const hpBar = document.getElementById('stHpBar');
-      if (hpText) hpText.textContent = `${student.hp} / ${maxHp} HP`;
-      if (hpBar) {
-        hpBar.style.width = `${hpPct}%`;
-        if (hpPct <= 25) {
-          hpBar.className = "bg-gradient-to-r from-rose-600 to-red-500 h-full rounded-full transition-all duration-500";
-        } else if (hpPct <= 50) {
-          hpBar.className = "bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-500";
-        } else {
-          hpBar.className = "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500";
-        }
-      }
-
-      const maxExp = digi.nextExp || 5000;
-      const expPct = Math.max(0, Math.min(100, Math.round((student.exp / maxExp) * 100)));
-      const expText = document.getElementById('stExpText');
-      const expBar = document.getElementById('stExpBar');
-      const availBadge = document.getElementById('stAvailableTraitBadge');
-
-      if (expText) expText.textContent = `${student.exp} / ${maxExp} EXP`;
-      if (expBar) expBar.style.width = `${expPct}%`;
-      if (availBadge) availBadge.textContent = `Unallocated: ${student.statPool} pts`;
-
-      const diff = maxExp - student.exp;
-      const totalAllocatedTraits = student.courage + student.wisdom + student.love + student.discipline;
-      const canStillEvolve = (digi.stage !== "MEGA" && (digi.stage !== "ULTIMATE" || digi.nextForm));
-      const noticeEl = document.getElementById('stNextEvolveNotice');
-
-      if (noticeEl) {
-        if (!canStillEvolve) {
-          noticeEl.textContent = `✨ Max Level Reached!`;
-        } else if (diff > 0) {
-          noticeEl.textContent = `${diff} EXP needed for next evolution`;
-        } else if (totalAllocatedTraits < maxExp) {
-          const neededTraits = maxExp - totalAllocatedTraits;
-          noticeEl.textContent = `⚠️ Allocate ${neededTraits} more trait points to unlock evolution!`;
-        } else {
-          noticeEl.textContent = `✨ Evolution Ready!`;
-        }
-      }
-
-      const maxAttr = Math.max(10, student.courage, student.wisdom, student.love, student.discipline);
-      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-      const setBar = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = `${(val / maxAttr) * 100}%`; };
-
-      setVal('stValCourage', student.courage); setBar('stBarCourage', student.courage);
-      setVal('stValLove', student.love); setBar('stBarLove', student.love);
-      setVal('stValDiscipline', student.discipline); setBar('stBarDiscipline', student.discipline);
-      setVal('stValWisdom', student.wisdom); setBar('stBarWisdom', student.wisdom);
-
-      const pool = student.statPool || 0;
-      const traitKeys = ['Courage', 'Love', 'Disc', 'Wis'];
-      [1, 5, 10, 20, 50].forEach(amt => {
-        const canAfford = pool >= amt;
-        traitKeys.forEach(t => {
-          const btn = document.getElementById(`btnAlloc${t}${amt}`);
-          if (btn) btn.disabled = !canAfford;
-        });
-      });
-
-      const btnEvolve = document.getElementById('btnEvolve');
-      if (btnEvolve) {
-        if (student.exp >= maxExp && totalAllocatedTraits >= maxExp && canStillEvolve) {
-          btnEvolve.classList.remove('hidden');
-        } else {
-          btnEvolve.classList.add('hidden');
-        }
-      }
-    }
-
+    // Teacher & Admin Management
     function rewardStudent(studentId, expAmount) {
       const student = appData.students[studentId];
       if (!student) return;
@@ -1838,7 +1494,7 @@
       });
 
       studentsList.forEach(s => {
-        s.exp = (s.exp || 0) + expAmount;
+        s.exp += expAmount;
         if (s.statPool === undefined) s.statPool = 0;
         s.statPool += expAmount;
 
@@ -1850,6 +1506,125 @@
 
       saveSystemData();
       renderTeacherGrid();
+    }
+
+    function getTeacherClasses() {
+      if (!currentUser || currentUser.role !== 'teacher') return [];
+      const teacherId = currentUser.data.id;
+      return Object.values(appData.classes || {}).filter(c => c.teacherId === teacherId);
+    }
+
+    function populateClassDropdown() {
+      const sel = document.getElementById('teacherClassFilter');
+      if (!sel) return;
+
+      const myClasses = getTeacherClasses();
+      const prevVal = sel.value || selectedTeacherClass;
+      sel.innerHTML = '<option value="ALL">All My Classes (View All)</option>';
+
+      myClasses.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `${c.name} (${c.id})`;
+        if (c.id === prevVal) opt.selected = true;
+        sel.appendChild(opt);
+      });
+
+      const btnDel = document.getElementById('btnDeleteClass');
+      if (btnDel) {
+        btnDel.style.display = (sel.value === "ALL" || myClasses.length === 0) ? "none" : "inline-block";
+      }
+    }
+
+    function onClassFilterChange(val) {
+      selectedTeacherClass = val;
+      const btnDel = document.getElementById('btnDeleteClass');
+      if (btnDel) {
+        btnDel.style.display = (val === "ALL") ? "none" : "inline-block";
+      }
+      renderTeacherGrid();
+    }
+
+    function promptCreateClass() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const teacherId = currentUser.data.id;
+
+      const id = prompt("Enter new Class Code (e.g., Class-3A):");
+      if (!id || !id.trim()) return;
+      const cleanId = id.trim();
+
+      if (appData.classes && appData.classes[cleanId]) {
+        alert("This class code already exists!");
+        return;
+      }
+
+      const name = prompt("Enter Class Name Description (e.g., Grade 3 Dragon Class):") || cleanId;
+      if (!appData.classes) appData.classes = {};
+      appData.classes[cleanId] = { id: cleanId, name: name.trim(), teacherId: teacherId };
+      
+      saveSystemData();
+      selectedTeacherClass = cleanId;
+      populateClassDropdown();
+      renderTeacherGrid();
+      alert(`Class [${cleanId}] successfully created in your workspace!`);
+    }
+
+    function promptDeleteCurrentClass() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const teacherId = currentUser.data.id;
+
+      if (selectedTeacherClass === "ALL" || !selectedTeacherClass) {
+        alert("Please select a specific class to delete.");
+        return;
+      }
+
+      const targetClass = appData.classes[selectedTeacherClass];
+      if (!targetClass || targetClass.teacherId !== teacherId) {
+        alert("Permission denied or class not found.");
+        return;
+      }
+
+      const affectedStudents = Object.values(appData.students || {}).filter(s => s.classId === selectedTeacherClass);
+
+      if (!confirm(`⚠️ CASCADE DELETE WARNING:\nAre you sure you want to delete class [${targetClass.name}]?\nALL ${affectedStudents.length} student account(s) inside this class will be PERMANENTLY DELETED.`)) {
+        return;
+      }
+
+      affectedStudents.forEach(s => {
+        delete appData.students[s.id];
+      });
+      delete appData.classes[selectedTeacherClass];
+
+      saveSystemData();
+      selectedTeacherClass = "ALL";
+      populateClassDropdown();
+      renderTeacherGrid();
+      alert(`🗑️ Class and all associated student accounts have been deleted.`);
+    }
+
+    function assignStudentClass(studentId, newClassId) {
+      if (!appData.students[studentId]) return;
+      appData.students[studentId].classId = newClassId;
+      saveSystemData();
+      renderTeacherGrid();
+    }
+
+    function deleteStudentAccount(studentId) {
+      const student = appData.students[studentId];
+      if (!student) return;
+
+      if (!confirm(`⚠️ PERMANENT DELETE:\nAre you sure you want to delete student ${student.name} (${student.username})?`)) {
+        return;
+      }
+
+      delete appData.students[studentId];
+      saveSystemData();
+      if (currentUser && currentUser.role === 'superadmin') {
+        renderSuperAdminDashboard();
+      } else {
+        renderTeacherGrid();
+      }
+      alert(`🗑️ Student account ${student.name} has been deleted.`);
     }
 
     function renderTeacherGrid() {
@@ -1964,12 +1739,81 @@
       });
     }
 
+    function handleExcelImport(event) {
+      const file = event.target.files[0];
+      if (!file || !currentUser || currentUser.role !== 'teacher') return;
+
+      const teacherId = currentUser.data.id;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          let importedCount = 0;
+          for (let i = 1; i < jsonRows.length; i++) {
+            const row = jsonRows[i];
+            if (!row || row.length === 0) continue;
+            const username = String(row[0] || '').trim();
+            const password = String(row[1] || '123').trim();
+            const name = String(row[2] || username).trim();
+            const classId = String(row[3] || 'Class-1A').trim();
+
+            if (username) {
+              const studentKey = username.toLowerCase();
+              if (!appData.classes[classId]) {
+                appData.classes[classId] = { id: classId, name: classId, teacherId: teacherId };
+              } else if (appData.classes[classId].teacherId !== teacherId) {
+                appData.classes[classId].teacherId = teacherId;
+              }
+
+              appData.students[studentKey] = {
+                id: studentKey,
+                username: username,
+                password: password,
+                name: name,
+                classId: classId,
+                teacherId: teacherId,
+                exp: 0,
+                statPool: 0,
+                hp: 100,
+                attackQuota: 0,
+                currentDigiId: getRandomEggId(),
+                courage: 0,
+                wisdom: 0,
+                love: 0,
+                discipline: 0
+              };
+              importedCount++;
+            }
+          }
+
+          saveSystemData();
+          populateClassDropdown();
+          renderTeacherGrid();
+          alert(`✅ Successfully imported ${importedCount} students with random Digi-Eggs!`);
+        } catch (err) {
+          alert("Failed to parse Excel file: " + err.message);
+        }
+        event.target.value = '';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Modal Control Handlers
     function toggleEvolutionTreeModal() {
       document.getElementById('modalEvoTree').classList.toggle('hidden');
     }
 
     function toggleConfigModal() {
       document.getElementById('modalConfig').classList.toggle('hidden');
+    }
+
+    function closeTeacherEditModal() {
+      document.getElementById('modalTeacherEdit').classList.add('hidden');
     }
 
     function saveFirebaseConfig() {
@@ -1983,10 +1827,192 @@
       }
 
       const cfg = { apiKey, databaseURL, projectId };
-      localStorage.setItem('digimon_fb_config', JSON.stringify(cfg));
       initFirebase(cfg);
       alert("✅ Configuration saved! Connecting to Firebase Realtime Database...");
       toggleConfigModal();
+    }
+
+    function openCreateTeacherModal() {
+      document.getElementById('modalTcUser').value = '';
+      document.getElementById('modalTcUser').disabled = false;
+      document.getElementById('modalTcPass').value = '123';
+      document.getElementById('modalTcName').value = 'Master Tamer';
+      document.getElementById('modalTcHp').value = '1000';
+      document.getElementById('modalTcPower').value = '150';
+
+      const sel = document.getElementById('modalTcDigiSelect');
+      sel.innerHTML = '';
+      Object.values(DIGIMON_DB).forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = `[${d.stageName}] ${d.name} (${d.skillName})`;
+        sel.appendChild(opt);
+      });
+      sel.value = "mega_wargreymon";
+
+      document.getElementById('modalTeacherEdit').classList.remove('hidden');
+    }
+
+    function editTeacherAccount(teacherId) {
+      const t = appData.teachers[teacherId];
+      if (!t) return;
+
+      document.getElementById('modalTcUser').value = t.username;
+      document.getElementById('modalTcUser').disabled = true;
+      document.getElementById('modalTcPass').value = t.password;
+      document.getElementById('modalTcName').value = t.name;
+      document.getElementById('modalTcHp').value = t.maxHp || 1000;
+      document.getElementById('modalTcPower').value = t.skillPower || 150;
+
+      const sel = document.getElementById('modalTcDigiSelect');
+      sel.innerHTML = '';
+      Object.values(DIGIMON_DB).forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = `[${d.stageName}] ${d.name} (${d.skillName})`;
+        sel.appendChild(opt);
+      });
+      sel.value = t.partnerDigiId || "mega_wargreymon";
+
+      document.getElementById('modalTeacherEdit').classList.remove('hidden');
+    }
+
+    function saveTeacherFromModal() {
+      const username = document.getElementById('modalTcUser').value.trim().toLowerCase();
+      const password = document.getElementById('modalTcPass').value.trim();
+      const name = document.getElementById('modalTcName').value.trim();
+      const partnerDigiId = document.getElementById('modalTcDigiSelect').value;
+      const maxHp = parseInt(document.getElementById('modalTcHp').value) || 1000;
+      const skillPower = parseInt(document.getElementById('modalTcPower').value) || 150;
+
+      if (!username || !password || !name) {
+        alert("Please fill in username, password, and name.");
+        return;
+      }
+
+      if (!appData.teachers) appData.teachers = {};
+      const existing = appData.teachers[username];
+
+      appData.teachers[username] = {
+        id: username,
+        username: username,
+        password: password,
+        name: name,
+        partnerDigiId: partnerDigiId,
+        maxHp: maxHp,
+        hp: existing ? (existing.hp > maxHp ? maxHp : existing.hp) : maxHp,
+        skillPower: skillPower
+      };
+
+      saveSystemData();
+      closeTeacherEditModal();
+      renderSuperAdminDashboard();
+      alert(`Teacher account [${name}] saved successfully!`);
+    }
+
+    function deleteTeacherAccount(teacherId) {
+      const t = appData.teachers[teacherId];
+      if (!t) return;
+
+      if (!confirm(`⚠️ PERMANENT DELETE:\nAre you sure you want to delete teacher ${t.name}? All classes and students belonging to this teacher will also be removed!`)) {
+        return;
+      }
+
+      Object.keys(appData.classes || {}).forEach(cId => {
+        if (appData.classes[cId].teacherId === teacherId) delete appData.classes[cId];
+      });
+      Object.keys(appData.students || {}).forEach(sId => {
+        if (appData.students[sId].teacherId === teacherId) delete appData.students[sId];
+      });
+      delete appData.teachers[teacherId];
+
+      saveSystemData();
+      renderSuperAdminDashboard();
+      alert(`🗑️ Teacher ${t.name} and associated data have been deleted.`);
+    }
+
+    function renderSuperAdminDashboard() {
+      renderSuperAdminTeachers();
+      renderSuperAdminStudents();
+    }
+
+    function renderSuperAdminTeachers() {
+      const container = document.getElementById('superAdminTeacherGrid');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const teachers = Object.values(appData.teachers || {});
+      if (teachers.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-slate-500 text-xs">No teacher accounts found.</p>`;
+        return;
+      }
+
+      teachers.forEach(t => {
+        const classCount = Object.values(appData.classes || {}).filter(c => c.teacherId === t.id).length;
+        const studentCount = Object.values(appData.students || {}).filter(s => s.teacherId === t.id).length;
+        const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex justify-between items-center";
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded p-1 border border-amber-600/40 flex items-center justify-center">
+              <img src="${digi.img}" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
+            </div>
+            <div>
+              <div class="font-bold text-amber-300 text-xs">${t.name}</div>
+              <div class="text-[11px] text-slate-400 font-mono">Partner: <span class="text-cyan-300">${digi.name}</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono">Max HP: ${t.maxHp || digi.maxHp} | Power: ${t.skillPower || digi.skillPower}</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">Classes: ${classCount} | Tamers: ${studentCount}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="editTeacherAccount('${t.id}')" title="Edit Partner & Stats" class="text-slate-400 hover:text-amber-300 text-xs p-1">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button onclick="deleteTeacherAccount('${t.id}')" title="Delete Teacher" class="text-slate-500 hover:text-rose-400 text-xs p-1">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderSuperAdminStudents() {
+      const container = document.getElementById('superAdminStudentGrid');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const students = Object.values(appData.students || {});
+      if (students.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-slate-500 text-xs">No students registered.</p>`;
+        return;
+      }
+
+      students.forEach(s => {
+        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+        const teacherObj = appData.teachers && appData.teachers[s.teacherId] ? appData.teachers[s.teacherId].name : 'Unassigned';
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between";
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded p-1 border border-slate-800 flex items-center justify-center">
+              <img src="${digi.img}" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="text-xs">
+              <div class="font-bold text-slate-200">${s.name} (${s.username})</div>
+              <div class="text-[10px] text-slate-400">Class: <span class="text-cyan-300">${s.classId || 'None'}</span> | Teacher: <span class="text-amber-300">${teacherObj}</span></div>
+              <div class="text-[10px] text-slate-500 font-mono">HP: ${s.hp} | Quota: ${s.attackQuota || 0} | Form: ${digi.name}</div>
+            </div>
+          </div>
+          <button onclick="deleteStudentAccount('${s.id}')" title="Delete Student" class="text-slate-500 hover:text-rose-400 text-xs p-1">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        `;
+        container.appendChild(card);
+      });
     }
   </script>
 </body>
