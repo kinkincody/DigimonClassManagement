@@ -92,7 +92,9 @@
   <!-- Main Container -->
   <main class="max-w-6xl mx-auto p-4 md:p-6">
 
+    <!-- ========================================== -->
     <!-- 0. LOGIN VIEW -->
+    <!-- ========================================== -->
     <div id="viewLogin" class="max-w-md mx-auto my-12 bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
       <div class="text-center mb-6">
         <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 font-pixel text-lg mb-3 animate-pulse">
@@ -137,9 +139,12 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
     <!-- 1. Student / Tamer View -->
+    <!-- ========================================== -->
     <div id="viewStudent" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Digivice Hub -->
         <div class="md:col-span-2 digi-card rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[420px]">
           <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
           
@@ -162,6 +167,7 @@
             <p id="stDigiTitle" class="text-xs text-slate-400 mt-1">A mysterious egg full of potential</p>
           </div>
 
+          <!-- Battle / Skill Controls -->
           <div class="z-10 mt-2 flex flex-wrap gap-2 justify-center items-center">
             <button id="btnEvolve" onclick="triggerEvolution()" class="hidden px-6 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer">
               <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
@@ -175,6 +181,7 @@
           </div>
         </div>
 
+        <!-- Right Stats Panel -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
           <div>
             <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center justify-between">
@@ -182,6 +189,7 @@
               <span id="stOwnerName" class="text-xs font-normal text-slate-400">Student: --</span>
             </h3>
 
+            <!-- HP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
                 <span class="text-emerald-400"><i class="fa-solid fa-heart mr-1"></i>Health Points (HP)</span>
@@ -192,6 +200,7 @@
               </div>
             </div>
 
+            <!-- EXP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
                 <span class="text-cyan-400"><i class="fa-solid fa-bolt mr-1"></i>Evolution Progress (EXP)</span>
@@ -203,12 +212,14 @@
               <p id="stNextEvolveNotice" class="text-[11px] text-slate-500 text-right">-- EXP needed for next evolution</p>
             </div>
 
+            <!-- 4 Traits Allocation by Student -->
             <div class="mt-5 space-y-2.5">
               <div class="flex justify-between items-center">
                 <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Growth (Allocate Points)</p>
                 <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Unallocated: 0 pts</span>
               </div>
               
+              <!-- Courage -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
@@ -226,6 +237,7 @@
                 </div>
               </div>
 
+              <!-- Friendship -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
@@ -243,6 +255,7 @@
                 </div>
               </div>
 
+              <!-- Discipline -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
@@ -260,6 +273,7 @@
                 </div>
               </div>
 
+              <!-- Wisdom -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
@@ -288,7 +302,9 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
     <!-- 2. Teacher Master View -->
+    <!-- ========================================== -->
     <div id="viewTeacher" class="space-y-6 hidden">
       <div id="teacherBossCard" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -352,7 +368,9 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
     <!-- 3. Super Admin View -->
+    <!-- ========================================== -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
       <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-5">
         <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
@@ -394,7 +412,7 @@
 
       <div class="mt-4 space-y-6 text-sm">
         <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-          <h4 class="font-bold text-amber-400 text-xs uppercase tracking-wider">[Phase 1: In-Training (3) ➔ Rookie (5)]</h4>
+          <h4 class="font-bold text-amber-400 text-xs uppercase tracking-wider">[Phase 1: In-Training (6) ➔ Rookie (8)]</h4>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
               <span class="font-bold text-rose-400">Koromon (Courage)</span>
@@ -408,6 +426,18 @@
               <span class="font-bold text-amber-400">Tokomon (Discipline)</span>
               <p class="text-slate-400 text-[11px] mt-1">➔ <b>Patamon</b> (High Discipline)<br>➔ <b>Biyomon</b> (Discipline + Logic)</p>
             </div>
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+              <span class="font-bold text-blue-400">Motimon (Wisdom)</span>
+              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Tentomon</b> (High Wisdom)<br>➔ <b>Agumon</b> (Courage Branch)</p>
+            </div>
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+              <span class="font-bold text-teal-400">Tanemon (Friendship)</span>
+              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Gomamon</b> (High Friendship)<br>➔ <b>Palmon</b> (Nature Branch)</p>
+            </div>
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+              <span class="font-bold text-rose-300">DemiVeemon (Courage)</span>
+              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Veemon</b> (High Courage)<br>➔ <b>Patamon</b> (Discipline Branch)</p>
+            </div>
           </div>
         </div>
 
@@ -417,10 +447,10 @@
             <table class="w-full text-xs text-left text-slate-300 border-collapse">
               <thead>
                 <tr class="border-b border-slate-800 text-slate-400">
-                  <th class="py-2">Rookie (5)</th>
+                  <th class="py-2">Rookie (8)</th>
                   <th class="py-2">Condition</th>
-                  <th class="py-2 text-cyan-400">Champion (15)</th>
-                  <th class="py-2 text-amber-400">Ultimate (15)</th>
+                  <th class="py-2 text-cyan-400">Champion (18)</th>
+                  <th class="py-2 text-amber-400">Ultimate (18)</th>
                   <th class="py-2 text-rose-400">Mega (15 Exclusives)</th>
                 </tr>
               </thead>
@@ -529,6 +559,33 @@
                   <td>15. Taomon</td>
                   <td class="font-bold text-yellow-200">★ Sakuyamon<br><span class="text-[10px] text-slate-400 font-sans">Vajra Mandala (190 DMG)</span></td>
                 </tr>
+
+                <!-- Tentomon Branch -->
+                <tr class="bg-yellow-950/20">
+                  <td class="py-2 font-bold text-yellow-500">Tentomon</td>
+                  <td class="text-rose-400">Courage / Strength</td>
+                  <td>16. Kuwagamon<br><span class="text-[10px] text-slate-500">Scissor Arms (50 DMG)</span></td>
+                  <td>16. Okuwamon<br><span class="text-[10px] text-slate-500">Scissor Claw (100 DMG)</span></td>
+                  <td class="font-bold text-yellow-300">★ HerculesKabuterimon<br><span class="text-[10px] text-slate-400 font-sans">Giga Blaster (200 DMG)</span></td>
+                </tr>
+
+                <!-- Gomamon Branch -->
+                <tr class="bg-teal-950/20">
+                  <td class="py-2 font-bold text-teal-400">Gomamon</td>
+                  <td class="text-emerald-400">Friendship / Sea</td>
+                  <td>17. Ikkakumon<br><span class="text-[10px] text-slate-500">Harpoon Torpedo (50 DMG)</span></td>
+                  <td>17. Zudomon (Alt Path)<br><span class="text-[10px] text-slate-500">Thor Hammer (95 DMG)</span></td>
+                  <td class="font-bold text-blue-300">★ Vikemon<br><span class="text-[10px] text-slate-400 font-sans">Arctic Blizzard (190 DMG)</span></td>
+                </tr>
+
+                <!-- Veemon Branch -->
+                <tr class="bg-blue-950/20">
+                  <td class="py-2 font-bold text-blue-400">Veemon</td>
+                  <td class="text-rose-400">High Courage</td>
+                  <td>18. ExVeemon<br><span class="text-[10px] text-slate-500">X-Laser (50 DMG)</span></td>
+                  <td>18. Paildramon<br><span class="text-[10px] text-slate-500">Desperado Blaster (105 DMG)</span></td>
+                  <td class="font-bold text-amber-300">★ WarGreymon (Dragon Unity)</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -610,7 +667,7 @@
 
   <!-- COMPLETE RUNNABLE JAVASCRIPT BLOCK -->
   <script>
-    // 1. Digimon & Digi-Egg definitions with 15 Full Mega Evolution Paths
+    // 1. Digimon & Digi-Egg definitions
     const DIGI_EGGS = [
       { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "A pure white egg shining with limitless potential", img: "./images/digitama1.png", fallbackImg: "https://wikimon.net/images/f/fd/Digitama_white.png", nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage", prevForm: null },
       { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "A blazing egg radiating flames of courage", img: "./images/digitama2.png", fallbackImg: "https://wikimon.net/images/9/90/Digitama_red.png", nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage", prevForm: null },
@@ -627,6 +684,7 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
+    // Consolidated Complete Digimon Database
     const DIGIMON_DB = {
       "digitama1": DIGI_EGGS[0],
       "digitama2": DIGI_EGGS[1],
@@ -634,19 +692,25 @@
       "digitama4": DIGI_EGGS[3],
       "digitama5": DIGI_EGGS[4],
 
-      // In-Training
+      // In-Training (6)
       "baby_koromon": { id: "baby_koromon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Koromon", title: "Energetic baby Digimon filled with courage", img: "./images/koromon.png", fallbackImg: "https://wikimon.net/images/5/52/Koromon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Bubble Blow", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
       "baby_tsunomon": { id: "baby_tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tsunomon", title: "Playful horned baby Digimon driven by friendship", img: "./images/tsunomon.png", fallbackImg: "https://wikimon.net/images/d/d4/Tsunomon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Horn Strike", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
       "baby_tokomon": { id: "baby_tokomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tokomon", title: "Gentle baby Digimon with sacred order and discipline", img: "./images/tokomon.png", fallbackImg: "https://wikimon.net/images/3/30/Tokomon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Bite Attack", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
+      "baby_motimon": { id: "baby_motimon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Motimon", title: "Soft baby Digimon filled with wisdom", img: "./images/motimon.png", fallbackImg: "https://wikimon.net/images/b/be/Mochimon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Elastic Bubble", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
+      "baby_tanemon": { id: "baby_tanemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tanemon", title: "Sprouting plant baby connected to nature and friendship", img: "./images/tanemon.png", fallbackImg: "https://wikimon.net/images/4/44/Tanemon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Bubble Sprout", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
+      "baby_demiveemon": { id: "baby_demiveemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "DemiVeemon", title: "High-energy dragon baby driven by courage", img: "./images/demiveemon.png", fallbackImg: "https://wikimon.net/images/a/a2/Chibimon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Hop Attack", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
 
-      // Rookie
+      // Rookie (8)
       "rookie_agumon": { id: "rookie_agumon", stage: "ROOKIE", stageName: "Rookie", name: "Agumon", title: "Reptile Type - Symbol of Courage and Fire", img: "./images/agumon.png", fallbackImg: "https://wikimon.net/images/6/68/Agumon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Baby Flame", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
       "rookie_gabumon": { id: "rookie_gabumon", stage: "ROOKIE", stageName: "Rookie", name: "Gabumon", title: "Reptile Type - Shy guardian of Friendship wearing fur", img: "./images/gabumon.png", fallbackImg: "https://wikimon.net/images/5/5b/Gabumon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Petit Fire", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
       "rookie_patamon": { id: "rookie_patamon", stage: "ROOKIE", stageName: "Rookie", name: "Patamon", title: "Mammal Type - Gliding bearer of Sacred Discipline and Hope", img: "./images/patamon.png", fallbackImg: "https://wikimon.net/images/7/70/Patamon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Boom Bubble", skillPower: 20, skillType: "damage", prevForm: "baby_tokomon" },
       "rookie_biyomon": { id: "rookie_biyomon", stage: "ROOKIE", stageName: "Rookie", name: "Biyomon", title: "Bird Type - Curious explorer flying with passion", img: "./images/biyomon.png", fallbackImg: "https://wikimon.net/images/b/b3/Piyomon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Spiral Twister", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
       "rookie_palmon": { id: "rookie_palmon", stage: "ROOKIE", stageName: "Rookie", name: "Palmon", title: "Plant Type - Purehearted lover of nature and friends", img: "./images/palmon.png", fallbackImg: "https://wikimon.net/images/a/a2/Palmon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Poison Ivy", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
+      "rookie_tentomon": { id: "rookie_tentomon", stage: "ROOKIE", stageName: "Rookie", name: "Tentomon", title: "Insect Type - Symbol of Wisdom and Knowledge", img: "./images/tentomon.png", fallbackImg: "https://wikimon.net/images/8/87/Tentomon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Super Shocker", skillPower: 25, skillType: "damage", prevForm: "baby_motimon" },
+      "rookie_gomamon": { id: "rookie_gomamon", stage: "ROOKIE", stageName: "Rookie", name: "Gomamon", title: "Sea Animal - Friendly commander of Marching Fishes", img: "./images/gomamon.png", fallbackImg: "https://wikimon.net/images/0/07/Gomamon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Marching Fishes", skillPower: 25, skillType: "damage", prevForm: "baby_tanemon" },
+      "rookie_veemon": { id: "rookie_veemon", stage: "ROOKIE", stageName: "Rookie", name: "Veemon", title: "Dragon Type - Direct descendant of ancient species", img: "./images/veemon.png", fallbackImg: "https://wikimon.net/images/1/15/V-mon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Vee Headbutt", skillPower: 30, skillType: "damage", prevForm: "baby_demiveemon" },
 
-      // Champion
+      // Champion (18)
       "champ_greymon": { id: "champ_greymon", stage: "CHAMPION", stageName: "Champion", name: "Greymon", title: "Dinosaur Type - Mega Flame blaster", img: "./images/greymon.png", fallbackImg: "https://wikimon.net/images/0/07/Greymon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Mega Flame", skillPower: 50, skillType: "damage", nextForm: "ult_metalgreymon", prevForm: "rookie_agumon" },
       "champ_seadramon": { id: "champ_seadramon", stage: "CHAMPION", stageName: "Champion", name: "Seadramon", title: "Sea Animal Type - Ruler of Arctic Ice Arrow", img: "./images/seadramon.png", fallbackImg: "https://wikimon.net/images/e/e0/Seadramon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Ice Arrow", skillPower: 45, skillType: "damage", nextForm: "ult_megaseadramon", prevForm: "rookie_agumon" },
       "champ_tyrannomon": { id: "champ_tyrannomon", stage: "CHAMPION", stageName: "Champion", name: "Tyrannomon", title: "Dinosaur Type - Loyal heavyweight brawler", img: "./images/tyrannomon.png", fallbackImg: "https://wikimon.net/images/7/7b/Tyranomon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Fire Breath", skillPower: 45, skillType: "damage", nextForm: "ult_metaltyrannomon", prevForm: "rookie_agumon" },
@@ -662,8 +726,11 @@
       "champ_togemon": { id: "champ_togemon", stage: "CHAMPION", stageName: "Champion", name: "Togemon", title: "Plant Type - Needle Spray & Megaton Boxing", img: "./images/togemon.png", fallbackImg: "https://wikimon.net/images/3/36/Togemon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Needle Spray", skillPower: 45, skillType: "damage", nextForm: "ult_lillymon", prevForm: "rookie_palmon" },
       "champ_sunflowmon": { id: "champ_sunflowmon", stage: "CHAMPION", stageName: "Champion", name: "Sunflowmon", title: "Plant Type - Radiant sunshine beam shooter", img: "./images/sunflowmon.png", fallbackImg: "https://wikimon.net/images/4/4e/Sunflowmon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Sunshine Beam", skillPower: 45, skillType: "damage", nextForm: "ult_lilamon", prevForm: "rookie_palmon" },
       "champ_kyubimon": { id: "champ_kyubimon", stage: "CHAMPION", stageName: "Champion", name: "Kyubimon", title: "Bewitching Beast - Nine-tail Fox Willow Flame", img: "./images/kyubimon.png", fallbackImg: "https://wikimon.net/images/0/05/Kyubimon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Fox Tail Inferno", skillPower: 50, skillType: "damage", nextForm: "ult_taomon", prevForm: "rookie_palmon" },
+      "champ_kuwagamon": { id: "champ_kuwagamon", stage: "CHAMPION", stageName: "Champion", name: "Kuwagamon", title: "Insect Type - Fierce pincers with Scissor Arms", img: "./images/kuwagamon.png", fallbackImg: "https://wikimon.net/images/5/5f/Kuwagamon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Scissor Arms", skillPower: 50, skillType: "damage", nextForm: "ult_okuwamon", prevForm: "rookie_tentomon" },
+      "champ_ikkakumon": { id: "champ_ikkakumon", stage: "CHAMPION", stageName: "Champion", name: "Ikkakumon", title: "Sea Animal - Arctic explorer with Harpoon Torpedo", img: "./images/ikkakumon.png", fallbackImg: "https://wikimon.net/images/b/b3/Ikkakumon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Harpoon Torpedo", skillPower: 50, skillType: "damage", nextForm: "ult_zudomon", prevForm: "rookie_gomamon" },
+      "champ_exveemon": { id: "champ_exveemon", stage: "CHAMPION", stageName: "Champion", name: "ExVeemon", title: "Mythical Dragon - Pure dragon warrior firing X-Laser", img: "./images/exveemon.png", fallbackImg: "https://wikimon.net/images/9/91/XV-mon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "X-Laser", skillPower: 50, skillType: "damage", nextForm: "ult_paildramon", prevForm: "rookie_veemon" },
 
-      // Ultimate (All 15 link to Megas)
+      // Ultimate (18)
       "ult_metalgreymon": { id: "ult_metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalGreymon", title: "Cyborg Type - Trident Arm & Giga Destroyer", img: "./images/metalgreymon.png", fallbackImg: "https://wikimon.net/images/5/53/Metalgreymon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Giga Destroyer", skillPower: 100, skillType: "damage", nextForm: "mega_wargreymon", prevForm: "champ_greymon" },
       "ult_megaseadramon": { id: "ult_megaseadramon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaSeadramon", title: "Aquatic Type - Lightning Javelin torrent", img: "./images/megaseadramon.png", fallbackImg: "https://wikimon.net/images/7/7b/Megaseadramon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Lightning Javelin", skillPower: 90, skillType: "damage", nextForm: "mega_plesiomon", prevForm: "champ_seadramon" },
       "ult_metaltyrannomon": { id: "ult_metaltyrannomon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalTyrannomon", title: "Cyborg Type - Nuclear Giga Muzzle destruction", img: "./images/metaltyrannomon.png", fallbackImg: "https://wikimon.net/images/8/87/Metaltyranomon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Giga Muzzle", skillPower: 95, skillType: "damage", nextForm: "mega_rusttyranomon", prevForm: "champ_tyrannomon" },
@@ -679,8 +746,10 @@
       "ult_lillymon": { id: "ult_lillymon", stage: "ULTIMATE", stageName: "Ultimate", name: "Lillymon", title: "Fairy Type - Flower Cannon petal burst", img: "./images/lillymon.png", fallbackImg: "https://wikimon.net/images/8/86/Lilimon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Flower Cannon", skillPower: 90, skillType: "damage", nextForm: "mega_rosemon", prevForm: "champ_togemon" },
       "ult_lilamon": { id: "ult_lilamon", stage: "ULTIMATE", stageName: "Ultimate", name: "Lilamon", title: "Plant Type - Lila Shower mesmerizing fragrance", img: "./images/lilamon.png", fallbackImg: "https://wikimon.net/images/f/f6/Lilamon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Lila Shower", skillPower: 90, skillType: "damage", nextForm: "mega_lotusmon", prevForm: "champ_sunflowmon" },
       "ult_taomon": { id: "ult_taomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Taomon", title: "Wizard Type - Talisman of Light talisman summon", img: "./images/taomon.png", fallbackImg: "https://wikimon.net/images/9/90/Taomon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Talisman Spell", skillPower: 95, skillType: "damage", nextForm: "mega_sakuyamon", prevForm: "champ_kyubimon" },
+      "ult_okuwamon": { id: "ult_okuwamon", stage: "ULTIMATE", stageName: "Ultimate", name: "Okuwamon", title: "Insect Type - Giant scissor beetle with Scissor Claw", img: "./images/okuwamon.png", fallbackImg: "https://wikimon.net/images/8/87/Okuwamon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Scissor Claw", skillPower: 100, skillType: "damage", nextForm: "mega_herculeskabuterimon", prevForm: "champ_kuwagamon" },
+      "ult_paildramon": { id: "ult_paildramon", stage: "ULTIMATE", stageName: "Ultimate", name: "Paildramon", title: "Dragon Man Type - Dual-wielding blaster dragon", img: "./images/paildramon.png", fallbackImg: "https://wikimon.net/images/a/a2/Paildramon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Desperado Blaster", skillPower: 105, skillType: "damage", nextForm: "mega_wargreymon", prevForm: "champ_exveemon" },
 
-      // Mega Forms (15 Complete Mega Evolutions)
+      // Mega (15)
       "mega_wargreymon": { id: "mega_wargreymon", stage: "MEGA", stageName: "Mega", name: "WarGreymon", title: "Dragon Warrior Type - Dramon Killer & Gaia Force", img: "./images/wargreymon.png", fallbackImg: "https://wikimon.net/images/4/42/Wargreymon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Gaia Force", skillPower: 200, skillType: "damage", prevForm: "ult_metalgreymon" },
       "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", name: "MetalGarurumon", title: "Cyborg Beast Type - Absolute Zero Cocytus Breath", img: "./images/metalgarurumon.png", fallbackImg: "https://wikimon.net/images/4/4b/Metalgarurumon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Cocytus Breath", skillPower: 200, skillType: "damage", prevForm: "ult_weregarurumon" },
       "mega_seraphimon": { id: "mega_seraphimon", stage: "MEGA", stageName: "Mega", name: "Seraphimon", title: "Seraph Type - Supreme ruler of angels firing Seven Heavens", img: "./images/seraphimon.png", fallbackImg: "https://wikimon.net/images/5/57/Seraphimon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Seven Heavens", skillPower: 200, skillType: "damage", prevForm: "ult_magnaangemon" },
@@ -697,15 +766,6 @@
       "mega_piedmon": { id: "mega_piedmon", stage: "MEGA", stageName: "Mega", name: "Piedmon", title: "Wizard Type - Clowned master of Four Swords of Fate", img: "./images/piedmon.png", fallbackImg: "https://wikimon.net/images/3/30/Piemon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Trump Sword", skillPower: 200, skillType: "damage", prevForm: "ult_phantomon" },
       "mega_lotusmon": { id: "mega_lotusmon", stage: "MEGA", stageName: "Mega", name: "Lotusmon", title: "Fairy Type - Pure lotus fairy soothing allies with Seven's Fantasia", img: "./images/lotusmon.png", fallbackImg: "https://wikimon.net/images/1/1a/Lotusmon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Seven's Fantasia", skillPower: 180, skillType: "heal", prevForm: "ult_lilamon" }
     };
-
-    // Safe Dynamic Image Fallback Handler (Never falls back to Digi-Egg on evolved forms)
-    function handleDigiImgError(imgElement, digiId) {
-      if (!imgElement) return;
-      const targetDigi = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
-      if (targetDigi.fallbackImg && imgElement.src !== targetDigi.fallbackImg) {
-        imgElement.src = targetDigi.fallbackImg;
-      }
-    }
 
     // 2. Pre-configured Firebase Connection Credentials
     const FIREBASE_AUTO_CONFIG = {
@@ -764,7 +824,7 @@
     }
 
     function fallbackLocalStorage() {
-      const local = localStorage.getItem('digimon_app_data_v28');
+      const local = localStorage.getItem('digimon_app_data_v31');
       if (local) {
         try {
           appData = JSON.parse(local);
@@ -789,7 +849,7 @@
 
     function saveSystemData() {
       try {
-        localStorage.setItem('digimon_app_data_v28', JSON.stringify(appData));
+        localStorage.setItem('digimon_app_data_v31', JSON.stringify(appData));
         if (firebaseDb) {
           firebaseDb.ref('/').set(appData);
         }
@@ -874,7 +934,7 @@
           );
           if (superAdminObj) {
             currentUser = { role: 'superadmin', data: superAdminObj };
-            sessionStorage.setItem('digimon_session_final_v3', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v6', JSON.stringify(currentUser));
             enterApp();
             return;
           }
@@ -886,7 +946,7 @@
           );
           if (teacherObj) {
             currentUser = { role: 'teacher', data: teacherObj };
-            sessionStorage.setItem('digimon_session_final_v3', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v6', JSON.stringify(currentUser));
             enterApp();
             return;
           }
@@ -900,7 +960,7 @@
           );
           if (studentObj) {
             currentUser = { role: 'student', data: studentObj };
-            sessionStorage.setItem('digimon_session_final_v3', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v6', JSON.stringify(currentUser));
             enterApp();
           } else {
             alert("Invalid student credentials!\n• Default Students: s01 to s04 / 123");
@@ -913,7 +973,7 @@
     }
 
     function checkAutoLogin() {
-      const sess = sessionStorage.getItem('digimon_session_final_v3');
+      const sess = sessionStorage.getItem('digimon_session_final_v6');
       if (sess) {
         try {
           currentUser = JSON.parse(sess);
@@ -921,7 +981,7 @@
             enterApp();
           }
         } catch (e) {
-          sessionStorage.removeItem('digimon_session_final_v3');
+          sessionStorage.removeItem('digimon_session_final_v6');
         }
       }
     }
@@ -963,7 +1023,7 @@
 
     function logout() {
       currentUser = null;
-      sessionStorage.removeItem('digimon_session_final_v3');
+      sessionStorage.removeItem('digimon_session_final_v6');
       document.getElementById('mainHeader').classList.add('hidden');
       document.getElementById('viewStudent').classList.add('hidden');
       document.getElementById('viewTeacher').classList.add('hidden');
@@ -1205,74 +1265,75 @@
       }
     }
 
-    // Complete Multi-Branch Evolution System
+    // Comprehensive Multi-Branch Evolution System
     function computeNextEvolution(student) {
       const cur = DIGIMON_DB[student.currentDigiId];
       if (!cur) return null;
 
       const { courage: c, wisdom: w, love: l, discipline: d } = student;
 
-      // 1. In-Training Stage
+      // 1. In-Training Stage (6 Branches)
       if (cur.stage === "DIGI-EGG") {
-        if (c === l && l === d) return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
-        if (c > l && c >= d) return "baby_koromon";
-        if (l > c && l >= d) return "baby_tsunomon";
-        if (d > c && d > l) return "baby_tokomon";
+        if (c === l && l === d && d === w) {
+          return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon", "baby_motimon", "baby_tanemon", "baby_demiveemon"]);
+        }
+        if (c >= l && c >= d && c >= w) return pickRandom(["baby_koromon", "baby_demiveemon"]);
+        if (l >= c && l >= d && l >= w) return pickRandom(["baby_tsunomon", "baby_tanemon"]);
+        if (w >= c && w >= l && w >= d) return "baby_motimon";
+        if (d >= c && d >= l && d >= w) return "baby_tokomon";
         return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
       }
 
-      // 2. Rookie Stage
+      // 2. Rookie Stage (8 Branches)
       if (cur.stage === "IN-TRAINING") {
-        if (cur.id === "baby_koromon") {
-          if (c === w) return pickRandom(["rookie_agumon", "rookie_biyomon"]);
-          return c > w ? "rookie_agumon" : "rookie_biyomon";
-        }
-        if (cur.id === "baby_tsunomon") {
-          if (l === c) return pickRandom(["rookie_gabumon", "rookie_palmon"]);
-          return l > c ? "rookie_gabumon" : "rookie_palmon";
-        }
-        if (cur.id === "baby_tokomon") {
-          if (d === w) return pickRandom(["rookie_patamon", "rookie_biyomon"]);
-          return d > w ? "rookie_patamon" : "rookie_biyomon";
-        }
+        if (cur.id === "baby_koromon") return c >= w ? "rookie_agumon" : "rookie_biyomon";
+        if (cur.id === "baby_tsunomon") return l >= c ? "rookie_gabumon" : "rookie_palmon";
+        if (cur.id === "baby_tokomon") return d >= w ? "rookie_patamon" : "rookie_biyomon";
+        if (cur.id === "baby_motimon") return w >= c ? "rookie_tentomon" : "rookie_agumon";
+        if (cur.id === "baby_tanemon") return l >= w ? "rookie_gomamon" : "rookie_palmon";
+        if (cur.id === "baby_demiveemon") return c >= d ? "rookie_veemon" : "rookie_patamon";
       }
 
-      // 3. Champion Stage
+      // 3. Champion Stage (18 Branches)
       if (cur.stage === "ROOKIE") {
         if (cur.id === "rookie_agumon") {
-          if (c === w && w === l) return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
           if (c > w && c >= l) return "champ_greymon";
           if (w > c && w >= l) return "champ_seadramon";
           if (l > c && l > w) return "champ_tyrannomon";
           return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
         }
         if (cur.id === "rookie_gabumon") {
-          if (l === c && c === d) return pickRandom(["champ_garurumon", "champ_unimon", "champ_gargomon"]);
           if (l > c && l >= d) return "champ_garurumon";
           if (c > l && c >= d) return "champ_unimon";
           if (d > l && d > c) return "champ_gargomon";
           return pickRandom(["champ_garurumon", "champ_unimon", "champ_gargomon"]);
         }
         if (cur.id === "rookie_patamon") {
-          if (d === c && c === w) return pickRandom(["champ_angemon", "champ_airdramon", "champ_wizardmon"]);
           if (d > c && d >= w) return "champ_angemon";
           if (c > d && c >= w) return "champ_airdramon";
           if (w > d && w > c) return "champ_wizardmon";
           return pickRandom(["champ_angemon", "champ_airdramon", "champ_wizardmon"]);
         }
         if (cur.id === "rookie_biyomon") {
-          if (c === w && w === l) return pickRandom(["champ_birdramon", "champ_kabuterimon", "champ_gatomon"]);
           if (c > w && c >= l) return "champ_birdramon";
           if (w > c && w >= l) return "champ_kabuterimon";
           if (l > c && l > w) return "champ_gatomon";
           return pickRandom(["champ_birdramon", "champ_kabuterimon", "champ_gatomon"]);
         }
         if (cur.id === "rookie_palmon") {
-          if (l === w && w === d) return pickRandom(["champ_togemon", "champ_sunflowmon", "champ_kyubimon"]);
           if (l > w && l >= d) return "champ_togemon";
           if (w > l && w >= d) return "champ_sunflowmon";
           if (d > l && d > w) return "champ_kyubimon";
           return pickRandom(["champ_togemon", "champ_sunflowmon", "champ_kyubimon"]);
+        }
+        if (cur.id === "rookie_tentomon") {
+          return c > w ? "champ_kuwagamon" : "champ_kabuterimon";
+        }
+        if (cur.id === "rookie_gomamon") {
+          return c > l ? "champ_ikkakumon" : "champ_seadramon";
+        }
+        if (cur.id === "rookie_veemon") {
+          return c >= d ? "champ_exveemon" : "champ_tyrannomon";
         }
       }
 
@@ -1281,7 +1342,7 @@
         return cur.nextForm || null;
       }
 
-      // 5. Mega Stage (Full 15 Ultimate to Mega Evolution Routing)
+      // 5. Mega Stage
       if (cur.stage === "ULTIMATE") {
         return cur.nextForm || null;
       }
