@@ -92,9 +92,7 @@
   <!-- Main Container -->
   <main class="max-w-6xl mx-auto p-4 md:p-6">
 
-    <!-- ========================================== -->
     <!-- 0. LOGIN VIEW -->
-    <!-- ========================================== -->
     <div id="viewLogin" class="max-w-md mx-auto my-12 bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
       <div class="text-center mb-6">
         <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 font-pixel text-lg mb-3 animate-pulse">
@@ -139,12 +137,9 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- 1. Student / Tamer View -->
-    <!-- ========================================== -->
     <div id="viewStudent" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Digivice Hub -->
         <div class="md:col-span-2 digi-card rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[420px]">
           <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
           
@@ -167,9 +162,8 @@
             <p id="stDigiTitle" class="text-xs text-slate-400 mt-1">A mysterious egg full of potential</p>
           </div>
 
-          <!-- Battle / Skill Controls -->
           <div class="z-10 mt-2 flex flex-wrap gap-2 justify-center items-center">
-            <button id="btnEvolve" onclick="triggerEvolution()" class="hidden px-6 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce">
+            <button id="btnEvolve" onclick="triggerEvolution()" class="hidden px-6 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer">
               <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
             </button>
             <button id="btnCastSkill" onclick="promptStudentCastSkill()" class="px-5 py-2.5 rounded-full font-bold text-xs bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer">
@@ -181,7 +175,6 @@
           </div>
         </div>
 
-        <!-- Right Stats Panel -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
           <div>
             <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center justify-between">
@@ -189,7 +182,6 @@
               <span id="stOwnerName" class="text-xs font-normal text-slate-400">Student: --</span>
             </h3>
 
-            <!-- HP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
                 <span class="text-emerald-400"><i class="fa-solid fa-heart mr-1"></i>Health Points (HP)</span>
@@ -200,7 +192,6 @@
               </div>
             </div>
 
-            <!-- EXP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
                 <span class="text-cyan-400"><i class="fa-solid fa-bolt mr-1"></i>Evolution Progress (EXP)</span>
@@ -212,14 +203,12 @@
               <p id="stNextEvolveNotice" class="text-[11px] text-slate-500 text-right">-- EXP needed for next evolution</p>
             </div>
 
-            <!-- 4 Traits Allocation by Student -->
             <div class="mt-5 space-y-2.5">
               <div class="flex justify-between items-center">
                 <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Growth (Allocate Points)</p>
                 <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Unallocated: 0 pts</span>
               </div>
               
-              <!-- Courage -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
@@ -237,7 +226,6 @@
                 </div>
               </div>
 
-              <!-- Friendship -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
@@ -255,7 +243,6 @@
                 </div>
               </div>
 
-              <!-- Discipline -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
@@ -273,7 +260,6 @@
                 </div>
               </div>
 
-              <!-- Wisdom -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-1">
                   <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
@@ -302,14 +288,12 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- 2. Teacher Master View -->
-    <!-- ========================================== -->
     <div id="viewTeacher" class="space-y-6 hidden">
       <div id="teacherBossCard" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
-            <img id="tcBossImg" src="./images/wargreymon.png" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
+            <img id="tcBossImg" src="./images/wargreymon.png" onerror="handleDigiImgError(this, 'mega_wargreymon')" class="max-w-full max-h-full object-contain">
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -368,9 +352,7 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- 3. Super Admin View -->
-    <!-- ========================================== -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
       <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-5">
         <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
@@ -439,61 +421,114 @@
                   <th class="py-2">Condition</th>
                   <th class="py-2 text-cyan-400">Champion (15)</th>
                   <th class="py-2 text-amber-400">Ultimate (15)</th>
-                  <th class="py-2 text-rose-400">Mega (2 Exclusives)</th>
+                  <th class="py-2 text-rose-400">Mega (15 Exclusives)</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800/60 font-mono">
+              <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                <!-- Agumon Branch -->
                 <tr class="bg-rose-950/20">
                   <td rowspan="3" class="py-2 font-bold text-orange-400 align-top">Agumon<br><span class="text-[10px] text-slate-500 font-sans">Baby Flame (25 DMG)</span></td>
                   <td class="text-rose-400">High Courage</td>
                   <td>1. Greymon<br><span class="text-[10px] text-slate-500">Mega Flame (50 DMG)</span></td>
                   <td>1. MetalGreymon<br><span class="text-[10px] text-slate-500">Giga Destroyer (100 DMG)</span></td>
-                  <td class="font-bold text-amber-300">★ WarGreymon<br><span class="text-[10px] text-slate-500 font-sans">Gaia Force (200 DMG)</span></td>
+                  <td class="font-bold text-amber-300">★ WarGreymon<br><span class="text-[10px] text-slate-400 font-sans">Gaia Force (200 DMG)</span></td>
                 </tr>
-                <tr><td class="text-blue-400">Wisdom</td><td>2. Seadramon</td><td>2. MegaSeadramon</td><td>--</td></tr>
-                <tr><td class="text-emerald-400">Friendship</td><td>3. Tyrannomon</td><td>3. MetalTyrannomon</td><td>--</td></tr>
+                <tr>
+                  <td class="text-blue-400">Wisdom</td>
+                  <td>2. Seadramon</td>
+                  <td>2. MegaSeadramon</td>
+                  <td class="font-bold text-cyan-300">★ Plesiomon<br><span class="text-[10px] text-slate-400 font-sans">Sorrow Blue (190 DMG)</span></td>
+                </tr>
+                <tr>
+                  <td class="text-emerald-400">Friendship</td>
+                  <td>3. Tyrannomon</td>
+                  <td>3. MetalTyrannomon</td>
+                  <td class="font-bold text-rose-300">★ RustTyrannomon<br><span class="text-[10px] text-slate-400 font-sans">Terror's Cluster (190 DMG)</span></td>
+                </tr>
 
+                <!-- Gabumon Branch -->
                 <tr class="bg-blue-950/20">
                   <td rowspan="3" class="py-2 font-bold text-blue-400 align-top">Gabumon<br><span class="text-[10px] text-slate-500 font-sans">Petit Fire (25 DMG)</span></td>
                   <td class="text-emerald-400">High Friendship</td>
                   <td>4. Garurumon<br><span class="text-[10px] text-slate-500">Fox Fire (50 DMG)</span></td>
                   <td>4. WereGarurumon<br><span class="text-[10px] text-slate-500">Kaiser Nail (100 DMG)</span></td>
-                  <td class="font-bold text-cyan-300">★ MetalGarurumon<br><span class="text-[10px] text-slate-500 font-sans">Cocytus Breath (200 DMG)</span></td>
+                  <td class="font-bold text-cyan-300">★ MetalGarurumon<br><span class="text-[10px] text-slate-400 font-sans">Cocytus Breath (200 DMG)</span></td>
                 </tr>
-                <tr><td class="text-rose-400">Courage</td><td>5. Unimon</td><td>5. Zudomon</td><td>--</td></tr>
-                <tr><td class="text-amber-400">Discipline</td><td>6. Gargomon</td><td>6. Rapidmon</td><td>--</td></tr>
+                <tr>
+                  <td class="text-rose-400">Courage</td>
+                  <td>5. Unimon</td>
+                  <td>5. Zudomon</td>
+                  <td class="font-bold text-blue-300">★ Vikemon<br><span class="text-[10px] text-slate-400 font-sans">Arctic Blizzard (190 DMG)</span></td>
+                </tr>
+                <tr>
+                  <td class="text-amber-400">Discipline</td>
+                  <td>6. Gargomon</td>
+                  <td>6. Rapidmon</td>
+                  <td class="font-bold text-emerald-300">★ SaintGargomon<br><span class="text-[10px] text-slate-400 font-sans">Giant Missile (190 DMG)</span></td>
+                </tr>
 
+                <!-- Patamon Branch -->
                 <tr>
                   <td rowspan="3" class="py-2 font-bold text-amber-300 align-top">Patamon<br><span class="text-[10px] text-slate-500 font-sans">Boom Bubble (20 DMG)</span></td>
                   <td class="text-amber-400">High Discipline</td>
                   <td>7. Angemon<br><span class="text-[10px] text-slate-500">Fist of Fate (55 DMG)</span></td>
                   <td>7. MagnaAngemon<br><span class="text-[10px] text-slate-500">Gate of Destiny (Heal 120 HP)</span></td>
-                  <td>--</td>
+                  <td class="font-bold text-amber-200">★ Seraphimon<br><span class="text-[10px] text-slate-400 font-sans">Seven Heavens (200 DMG)</span></td>
                 </tr>
-                <tr><td class="text-rose-400">Courage</td><td>8. Airdramon</td><td>8. Megadramon</td><td>--</td></tr>
-                <tr><td class="text-blue-400">Wisdom</td><td>9. Wizardmon</td><td>9. Phantomon</td><td>--</td></tr>
+                <tr>
+                  <td class="text-rose-400">Courage</td>
+                  <td>8. Airdramon</td>
+                  <td>8. Megadramon</td>
+                  <td class="font-bold text-red-400">★ Megidramon<br><span class="text-[10px] text-slate-400 font-sans">Megiddo Flame (200 DMG)</span></td>
+                </tr>
+                <tr>
+                  <td class="text-blue-400">Wisdom</td>
+                  <td>9. Wizardmon</td>
+                  <td>9. Phantomon</td>
+                  <td class="font-bold text-purple-300">★ Piedmon<br><span class="text-[10px] text-slate-400 font-sans">Trump Sword (200 DMG)</span></td>
+                </tr>
 
+                <!-- Biyomon Branch -->
                 <tr>
                   <td rowspan="3" class="py-2 font-bold text-pink-400 align-top">Biyomon<br><span class="text-[10px] text-slate-500 font-sans">Spiral Twister (25 DMG)</span></td>
                   <td class="text-rose-400">Courage</td>
                   <td>10. Birdramon</td>
                   <td>10. Garudamon</td>
-                  <td>--</td>
+                  <td class="font-bold text-orange-300">★ Hououmon<br><span class="text-[10px] text-slate-400 font-sans">Starlight Explosion (190 DMG)</span></td>
                 </tr>
-                <tr><td class="text-blue-400">Wisdom</td><td>11. Kabuterimon</td><td>11. MegaKabuterimon</td><td>--</td></tr>
-                <tr><td class="text-emerald-400">Friendship</td><td>12. Gatomon<br><span class="text-[10px] text-slate-500">Cat Punch (45 DMG)</span></td>
-                  <td>12. Angewomon<br><span class="text-[10px] text-slate-500">Holy Air (Heal 120 HP)</span></td><td>--</td>
+                <tr>
+                  <td class="text-blue-400">Wisdom</td>
+                  <td>11. Kabuterimon</td>
+                  <td>11. MegaKabuterimon</td>
+                  <td class="font-bold text-yellow-300">★ HerculesKabuterimon<br><span class="text-[10px] text-slate-400 font-sans">Giga Blaster (200 DMG)</span></td>
+                </tr>
+                <tr>
+                  <td class="text-emerald-400">Friendship</td>
+                  <td>12. Gatomon<br><span class="text-[10px] text-slate-500">Cat Punch (45 DMG)</span></td>
+                  <td>12. Angewomon<br><span class="text-[10px] text-slate-500">Holy Air (Heal 120 HP)</span></td>
+                  <td class="font-bold text-pink-300">★ Ophanimon<br><span class="text-[10px] text-slate-400 font-sans">Eden's Javelin (Heal 180 HP)</span></td>
                 </tr>
 
+                <!-- Palmon Branch -->
                 <tr>
                   <td rowspan="3" class="py-2 font-bold text-emerald-400 align-top">Palmon<br><span class="text-[10px] text-slate-500 font-sans">Poison Ivy (25 DMG)</span></td>
                   <td class="text-emerald-400">Friendship</td>
                   <td>13. Togemon</td>
                   <td>13. Lillymon<br><span class="text-[10px] text-slate-500">Flower Cannon (90 DMG)</span></td>
-                  <td>--</td>
+                  <td class="font-bold text-emerald-300">★ Rosemon<br><span class="text-[10px] text-slate-400 font-sans">Forbidden Temptation (190 DMG)</span></td>
                 </tr>
-                <tr><td class="text-blue-400">Wisdom</td><td>14. Sunflowmon</td><td>14. Lilamon</td><td>--</td></tr>
-                <tr><td class="text-amber-400">Discipline</td><td>15. Kyubimon</td><td>15. Taomon</td><td>--</td></tr>
+                <tr>
+                  <td class="text-blue-400">Wisdom</td>
+                  <td>14. Sunflowmon</td>
+                  <td>14. Lilamon</td>
+                  <td class="font-bold text-purple-300">★ Lotusmon<br><span class="text-[10px] text-slate-400 font-sans">Seven's Fantasia (Heal 180 HP)</span></td>
+                </tr>
+                <tr>
+                  <td class="text-amber-400">Discipline</td>
+                  <td>15. Kyubimon</td>
+                  <td>15. Taomon</td>
+                  <td class="font-bold text-yellow-200">★ Sakuyamon<br><span class="text-[10px] text-slate-400 font-sans">Vajra Mandala (190 DMG)</span></td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -575,13 +610,13 @@
 
   <!-- COMPLETE RUNNABLE JAVASCRIPT BLOCK -->
   <script>
-    // 1. Digimon & Digi-Egg definitions
+    // 1. Digimon & Digi-Egg definitions with 15 Full Mega Evolution Paths
     const DIGI_EGGS = [
-      { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "A pure white egg shining with limitless potential", img: "./images/digitama1.png", nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage", prevForm: null },
-      { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "A blazing egg radiating flames of courage", img: "./images/digitama2.png", nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage", prevForm: null },
-      { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama III", title: "A serene blue egg harboring depths of friendship", img: "./images/digitama3.png", nextExp: 100, maxHp: 100, skillName: "Bubble Shell", skillPower: 10, skillType: "damage", prevForm: null },
-      { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama IV", title: "A verdant egg vibrating with primordial vitality", img: "./images/digitama4.png", nextExp: 100, maxHp: 100, skillName: "Sprout Blessing", skillPower: 15, skillType: "heal", prevForm: null },
-      { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama V", title: "A sacred golden egg blessed with divine discipline", img: "./images/digitama5.png", nextExp: 100, maxHp: 100, skillName: "Holy Glow", skillPower: 15, skillType: "heal", prevForm: null }
+      { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "A pure white egg shining with limitless potential", img: "./images/digitama1.png", fallbackImg: "https://wikimon.net/images/f/fd/Digitama_white.png", nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage", prevForm: null },
+      { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "A blazing egg radiating flames of courage", img: "./images/digitama2.png", fallbackImg: "https://wikimon.net/images/9/90/Digitama_red.png", nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage", prevForm: null },
+      { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama III", title: "A serene blue egg harboring depths of friendship", img: "./images/digitama3.png", fallbackImg: "https://wikimon.net/images/c/c2/Digitama_blue.png", nextExp: 100, maxHp: 100, skillName: "Bubble Shell", skillPower: 10, skillType: "damage", prevForm: null },
+      { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama IV", title: "A verdant egg vibrating with primordial vitality", img: "./images/digitama4.png", fallbackImg: "https://wikimon.net/images/d/df/Digitama_green.png", nextExp: 100, maxHp: 100, skillName: "Sprout Blessing", skillPower: 15, skillType: "heal", prevForm: null },
+      { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama V", title: "A sacred golden egg blessed with divine discipline", img: "./images/digitama5.png", fallbackImg: "https://wikimon.net/images/7/77/Digitama_yellow.png", nextExp: 100, maxHp: 100, skillName: "Holy Glow", skillPower: 15, skillType: "heal", prevForm: null }
     ];
 
     function getRandomEggId() {
@@ -600,55 +635,77 @@
       "digitama5": DIGI_EGGS[4],
 
       // In-Training
-      "baby_koromon": { id: "baby_koromon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Koromon", title: "Energetic baby Digimon filled with courage", img: "./images/koromon.png", nextExp: 300, maxHp: 120, skillName: "Bubble Blow", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
-      "baby_tsunomon": { id: "baby_tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tsunomon", title: "Playful horned baby Digimon driven by friendship", img: "./images/tsunomon.png", nextExp: 300, maxHp: 120, skillName: "Horn Strike", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
-      "baby_tokomon": { id: "baby_tokomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tokomon", title: "Gentle baby Digimon with sacred order and discipline", img: "./images/tokomon.png", nextExp: 300, maxHp: 120, skillName: "Bite Attack", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
+      "baby_koromon": { id: "baby_koromon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Koromon", title: "Energetic baby Digimon filled with courage", img: "./images/koromon.png", fallbackImg: "https://wikimon.net/images/5/52/Koromon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Bubble Blow", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
+      "baby_tsunomon": { id: "baby_tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tsunomon", title: "Playful horned baby Digimon driven by friendship", img: "./images/tsunomon.png", fallbackImg: "https://wikimon.net/images/d/d4/Tsunomon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Horn Strike", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
+      "baby_tokomon": { id: "baby_tokomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tokomon", title: "Gentle baby Digimon with sacred order and discipline", img: "./images/tokomon.png", fallbackImg: "https://wikimon.net/images/3/30/Tokomon_b.jpg", nextExp: 300, maxHp: 120, skillName: "Bite Attack", skillPower: 15, skillType: "damage", prevForm: "egg_RANDOM" },
 
       // Rookie
-      "rookie_agumon": { id: "rookie_agumon", stage: "ROOKIE", stageName: "Rookie", name: "Agumon", title: "Reptile Type - Symbol of Courage and Fire", img: "./images/agumon.png", nextExp: 900, maxHp: 200, skillName: "Baby Flame", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
-      "rookie_gabumon": { id: "rookie_gabumon", stage: "ROOKIE", stageName: "Rookie", name: "Gabumon", title: "Reptile Type - Shy guardian of Friendship wearing fur", img: "./images/gabumon.png", nextExp: 900, maxHp: 200, skillName: "Petit Fire", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
-      "rookie_patamon": { id: "rookie_patamon", stage: "ROOKIE", stageName: "Rookie", name: "Patamon", title: "Mammal Type - Gliding bearer of Sacred Discipline and Hope", img: "./images/patamon.png", nextExp: 900, maxHp: 200, skillName: "Boom Bubble", skillPower: 20, skillType: "damage", prevForm: "baby_tokomon" },
-      "rookie_biyomon": { id: "rookie_biyomon", stage: "ROOKIE", stageName: "Rookie", name: "Biyomon", title: "Bird Type - Curious explorer flying with passion", img: "./images/biyomon.png", nextExp: 900, maxHp: 200, skillName: "Spiral Twister", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
-      "rookie_palmon": { id: "rookie_palmon", stage: "ROOKIE", stageName: "Rookie", name: "Palmon", title: "Plant Type - Purehearted lover of nature and friends", img: "./images/palmon.png", nextExp: 900, maxHp: 200, skillName: "Poison Ivy", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
+      "rookie_agumon": { id: "rookie_agumon", stage: "ROOKIE", stageName: "Rookie", name: "Agumon", title: "Reptile Type - Symbol of Courage and Fire", img: "./images/agumon.png", fallbackImg: "https://wikimon.net/images/6/68/Agumon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Baby Flame", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
+      "rookie_gabumon": { id: "rookie_gabumon", stage: "ROOKIE", stageName: "Rookie", name: "Gabumon", title: "Reptile Type - Shy guardian of Friendship wearing fur", img: "./images/gabumon.png", fallbackImg: "https://wikimon.net/images/5/5b/Gabumon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Petit Fire", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
+      "rookie_patamon": { id: "rookie_patamon", stage: "ROOKIE", stageName: "Rookie", name: "Patamon", title: "Mammal Type - Gliding bearer of Sacred Discipline and Hope", img: "./images/patamon.png", fallbackImg: "https://wikimon.net/images/7/70/Patamon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Boom Bubble", skillPower: 20, skillType: "damage", prevForm: "baby_tokomon" },
+      "rookie_biyomon": { id: "rookie_biyomon", stage: "ROOKIE", stageName: "Rookie", name: "Biyomon", title: "Bird Type - Curious explorer flying with passion", img: "./images/biyomon.png", fallbackImg: "https://wikimon.net/images/b/b3/Piyomon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Spiral Twister", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
+      "rookie_palmon": { id: "rookie_palmon", stage: "ROOKIE", stageName: "Rookie", name: "Palmon", title: "Plant Type - Purehearted lover of nature and friends", img: "./images/palmon.png", fallbackImg: "https://wikimon.net/images/a/a2/Palmon_b.jpg", nextExp: 900, maxHp: 200, skillName: "Poison Ivy", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
 
       // Champion
-      "champ_greymon": { id: "champ_greymon", stage: "CHAMPION", stageName: "Champion", name: "Greymon", title: "Dinosaur Type - Mega Flame blaster", img: "./images/greymon.png", nextExp: 2200, maxHp: 350, skillName: "Mega Flame", skillPower: 50, skillType: "damage", nextForm: "ult_metalgreymon", prevForm: "rookie_agumon" },
-      "champ_seadramon": { id: "champ_seadramon", stage: "CHAMPION", stageName: "Champion", name: "Seadramon", title: "Sea Animal Type - Ruler of Arctic Ice Arrow", img: "./images/seadramon.png", nextExp: 2200, maxHp: 350, skillName: "Ice Arrow", skillPower: 45, skillType: "damage", nextForm: "ult_megaseadramon", prevForm: "rookie_agumon" },
-      "champ_tyrannomon": { id: "champ_tyrannomon", stage: "CHAMPION", stageName: "Champion", name: "Tyrannomon", title: "Dinosaur Type - Loyal heavyweight brawler", img: "./images/tyrannomon.png", nextExp: 2200, maxHp: 350, skillName: "Fire Breath", skillPower: 45, skillType: "damage", nextForm: "ult_metaltyrannomon", prevForm: "rookie_agumon" },
-      "champ_garurumon": { id: "champ_garurumon", stage: "CHAMPION", stageName: "Champion", name: "Garurumon", title: "Beast Type - Howling blue Fox Fire", img: "./images/garurumon.png", nextExp: 2200, maxHp: 350, skillName: "Fox Fire", skillPower: 50, skillType: "damage", nextForm: "ult_weregarurumon", prevForm: "rookie_gabumon" },
-      "champ_unimon": { id: "champ_unimon", stage: "CHAMPION", stageName: "Champion", name: "Unimon", title: "Mythical Beast - Supersonic aerial charger", img: "./images/unimon.png", nextExp: 2200, maxHp: 350, skillName: "Holy Shot", skillPower: 45, skillType: "damage", nextForm: "ult_zudomon", prevForm: "rookie_gabumon" },
-      "champ_gargomon": { id: "champ_gargomon", stage: "CHAMPION", stageName: "Champion", name: "Gargomon", title: "Beast Man Type - Rapid Gatling Arm barrage", img: "./images/gargomon.png", nextExp: 2200, maxHp: 350, skillName: "Gatling Arm", skillPower: 50, skillType: "damage", nextForm: "ult_rapidmon", prevForm: "rookie_gabumon" },
-      "champ_angemon": { id: "champ_angemon", stage: "CHAMPION", stageName: "Champion", name: "Angemon", title: "Angel Type - Fist of Fate purifying darkness", img: "./images/angemon.png", nextExp: 2200, maxHp: 350, skillName: "Fist of Fate", skillPower: 55, skillType: "damage", nextForm: "ult_magnaangemon", prevForm: "rookie_patamon" },
-      "champ_airdramon": { id: "champ_airdramon", stage: "CHAMPION", stageName: "Champion", name: "Airdramon", title: "Mythical Beast - Roaring tornado dragon", img: "./images/airdramon.png", nextExp: 2200, maxHp: 350, skillName: "Spinning Needle", skillPower: 45, skillType: "damage", nextForm: "ult_megadramon", prevForm: "rookie_patamon" },
-      "champ_wizardmon": { id: "champ_wizardmon", stage: "CHAMPION", stageName: "Champion", name: "Wizardmon", title: "Wizard Type - Master of thunder and arcane arts", img: "./images/wizardmon.png", nextExp: 2200, maxHp: 350, skillName: "Thunder Ball", skillPower: 50, skillType: "damage", nextForm: "ult_phantomon", prevForm: "rookie_patamon" },
-      "champ_birdramon": { id: "champ_birdramon", stage: "CHAMPION", stageName: "Champion", name: "Birdramon", title: "Giant Bird Type - Blazing Meteor Wing", img: "./images/birdramon.png", nextExp: 2200, maxHp: 350, skillName: "Meteor Wing", skillPower: 50, skillType: "damage", nextForm: "ult_garudamon", prevForm: "rookie_biyomon" },
-      "champ_kabuterimon": { id: "champ_kabuterimon", stage: "CHAMPION", stageName: "Champion", name: "Kabuterimon", title: "Insect Type - High-voltage Electro Shocker", img: "./images/kabuterimon.png", nextExp: 2200, maxHp: 350, skillName: "Electro Shocker", skillPower: 50, skillType: "damage", nextForm: "ult_megakabuterimon", prevForm: "rookie_biyomon" },
-      "champ_gatomon": { id: "champ_gatomon", stage: "CHAMPION", stageName: "Champion", name: "Gatomon", title: "Holy Beast Type - Cat claw empowered by Holy Ring", img: "./images/gatomon.png", nextExp: 2200, maxHp: 350, skillName: "Cat Punch", skillPower: 45, skillType: "damage", nextForm: "ult_angewomon", prevForm: "rookie_biyomon" },
-      "champ_togemon": { id: "champ_togemon", stage: "CHAMPION", stageName: "Champion", name: "Togemon", title: "Plant Type - Needle Spray & Megaton Boxing", img: "./images/togemon.png", nextExp: 2200, maxHp: 350, skillName: "Needle Spray", skillPower: 45, skillType: "damage", nextForm: "ult_lillymon", prevForm: "rookie_palmon" },
-      "champ_sunflowmon": { id: "champ_sunflowmon", stage: "CHAMPION", stageName: "Champion", name: "Sunflowmon", title: "Plant Type - Radiant sunshine beam shooter", img: "./images/sunflowmon.png", nextExp: 2200, maxHp: 350, skillName: "Sunshine Beam", skillPower: 45, skillType: "damage", nextForm: "ult_lilamon", prevForm: "rookie_palmon" },
-      "champ_kyubimon": { id: "champ_kyubimon", stage: "CHAMPION", stageName: "Champion", name: "Kyubimon", title: "Bewitching Beast - Nine-tail Fox Willow Flame", img: "./images/kyubimon.png", nextExp: 2200, maxHp: 350, skillName: "Fox Tail Inferno", skillPower: 50, skillType: "damage", nextForm: "ult_taomon", prevForm: "rookie_palmon" },
+      "champ_greymon": { id: "champ_greymon", stage: "CHAMPION", stageName: "Champion", name: "Greymon", title: "Dinosaur Type - Mega Flame blaster", img: "./images/greymon.png", fallbackImg: "https://wikimon.net/images/0/07/Greymon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Mega Flame", skillPower: 50, skillType: "damage", nextForm: "ult_metalgreymon", prevForm: "rookie_agumon" },
+      "champ_seadramon": { id: "champ_seadramon", stage: "CHAMPION", stageName: "Champion", name: "Seadramon", title: "Sea Animal Type - Ruler of Arctic Ice Arrow", img: "./images/seadramon.png", fallbackImg: "https://wikimon.net/images/e/e0/Seadramon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Ice Arrow", skillPower: 45, skillType: "damage", nextForm: "ult_megaseadramon", prevForm: "rookie_agumon" },
+      "champ_tyrannomon": { id: "champ_tyrannomon", stage: "CHAMPION", stageName: "Champion", name: "Tyrannomon", title: "Dinosaur Type - Loyal heavyweight brawler", img: "./images/tyrannomon.png", fallbackImg: "https://wikimon.net/images/7/7b/Tyranomon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Fire Breath", skillPower: 45, skillType: "damage", nextForm: "ult_metaltyrannomon", prevForm: "rookie_agumon" },
+      "champ_garurumon": { id: "champ_garurumon", stage: "CHAMPION", stageName: "Champion", name: "Garurumon", title: "Beast Type - Howling blue Fox Fire", img: "./images/garurumon.png", fallbackImg: "https://wikimon.net/images/2/29/Garurumon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Fox Fire", skillPower: 50, skillType: "damage", nextForm: "ult_weregarurumon", prevForm: "rookie_gabumon" },
+      "champ_unimon": { id: "champ_unimon", stage: "CHAMPION", stageName: "Champion", name: "Unimon", title: "Mythical Beast - Supersonic aerial charger", img: "./images/unimon.png", fallbackImg: "https://wikimon.net/images/2/2c/Unimon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Holy Shot", skillPower: 45, skillType: "damage", nextForm: "ult_zudomon", prevForm: "rookie_gabumon" },
+      "champ_gargomon": { id: "champ_gargomon", stage: "CHAMPION", stageName: "Champion", name: "Gargomon", title: "Beast Man Type - Rapid Gatling Arm barrage", img: "./images/gargomon.png", fallbackImg: "https://wikimon.net/images/1/1b/Galgomon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Gatling Arm", skillPower: 50, skillType: "damage", nextForm: "ult_rapidmon", prevForm: "rookie_gabumon" },
+      "champ_angemon": { id: "champ_angemon", stage: "CHAMPION", stageName: "Champion", name: "Angemon", title: "Angel Type - Fist of Fate purifying darkness", img: "./images/angemon.png", fallbackImg: "https://wikimon.net/images/f/f8/Angemon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Fist of Fate", skillPower: 55, skillType: "damage", nextForm: "ult_magnaangemon", prevForm: "rookie_patamon" },
+      "champ_airdramon": { id: "champ_airdramon", stage: "CHAMPION", stageName: "Champion", name: "Airdramon", title: "Mythical Beast - Roaring tornado dragon", img: "./images/airdramon.png", fallbackImg: "https://wikimon.net/images/f/fa/Airdramon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Spinning Needle", skillPower: 45, skillType: "damage", nextForm: "ult_megadramon", prevForm: "rookie_patamon" },
+      "champ_wizardmon": { id: "champ_wizardmon", stage: "CHAMPION", stageName: "Champion", name: "Wizardmon", title: "Wizard Type - Master of thunder and arcane arts", img: "./images/wizardmon.png", fallbackImg: "https://wikimon.net/images/9/91/Wizarmon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Thunder Ball", skillPower: 50, skillType: "damage", nextForm: "ult_phantomon", prevForm: "rookie_patamon" },
+      "champ_birdramon": { id: "champ_birdramon", stage: "CHAMPION", stageName: "Champion", name: "Birdramon", title: "Giant Bird Type - Blazing Meteor Wing", img: "./images/birdramon.png", fallbackImg: "https://wikimon.net/images/c/c5/Birdramon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Meteor Wing", skillPower: 50, skillType: "damage", nextForm: "ult_garudamon", prevForm: "rookie_biyomon" },
+      "champ_kabuterimon": { id: "champ_kabuterimon", stage: "CHAMPION", stageName: "Champion", name: "Kabuterimon", title: "Insect Type - High-voltage Electro Shocker", img: "./images/kabuterimon.png", fallbackImg: "https://wikimon.net/images/9/9f/Kabuterimon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Electro Shocker", skillPower: 50, skillType: "damage", nextForm: "ult_megakabuterimon", prevForm: "rookie_biyomon" },
+      "champ_gatomon": { id: "champ_gatomon", stage: "CHAMPION", stageName: "Champion", name: "Gatomon", title: "Holy Beast Type - Cat claw empowered by Holy Ring", img: "./images/gatomon.png", fallbackImg: "https://wikimon.net/images/1/1d/Tailmon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Cat Punch", skillPower: 45, skillType: "damage", nextForm: "ult_angewomon", prevForm: "rookie_biyomon" },
+      "champ_togemon": { id: "champ_togemon", stage: "CHAMPION", stageName: "Champion", name: "Togemon", title: "Plant Type - Needle Spray & Megaton Boxing", img: "./images/togemon.png", fallbackImg: "https://wikimon.net/images/3/36/Togemon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Needle Spray", skillPower: 45, skillType: "damage", nextForm: "ult_lillymon", prevForm: "rookie_palmon" },
+      "champ_sunflowmon": { id: "champ_sunflowmon", stage: "CHAMPION", stageName: "Champion", name: "Sunflowmon", title: "Plant Type - Radiant sunshine beam shooter", img: "./images/sunflowmon.png", fallbackImg: "https://wikimon.net/images/4/4e/Sunflowmon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Sunshine Beam", skillPower: 45, skillType: "damage", nextForm: "ult_lilamon", prevForm: "rookie_palmon" },
+      "champ_kyubimon": { id: "champ_kyubimon", stage: "CHAMPION", stageName: "Champion", name: "Kyubimon", title: "Bewitching Beast - Nine-tail Fox Willow Flame", img: "./images/kyubimon.png", fallbackImg: "https://wikimon.net/images/0/05/Kyubimon_b.jpg", nextExp: 2200, maxHp: 350, skillName: "Fox Tail Inferno", skillPower: 50, skillType: "damage", nextForm: "ult_taomon", prevForm: "rookie_palmon" },
 
-      // Ultimate
-      "ult_metalgreymon": { id: "ult_metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalGreymon", title: "Cyborg Type - Trident Arm & Giga Destroyer", img: "./images/metalgreymon.png", nextExp: 5000, maxHp: 600, skillName: "Giga Destroyer", skillPower: 100, skillType: "damage", nextForm: "mega_wargreymon", prevForm: "champ_greymon" },
-      "ult_megaseadramon": { id: "ult_megaseadramon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaSeadramon", title: "Aquatic Type - Lightning Javelin torrent", img: "./images/megaseadramon.png", nextExp: 5000, maxHp: 600, skillName: "Lightning Javelin", skillPower: 90, skillType: "damage", prevForm: "champ_seadramon" },
-      "ult_metaltyrannomon": { id: "ult_metaltyrannomon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalTyrannomon", title: "Cyborg Type - Nuclear Giga Muzzle destruction", img: "./images/metaltyrannomon.png", nextExp: 5000, maxHp: 600, skillName: "Giga Muzzle", skillPower: 95, skillType: "damage", prevForm: "champ_tyrannomon" },
-      "ult_weregarurumon": { id: "ult_weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", name: "WereGarurumon", title: "Beast Man Type - Shadow Wing crescent kick", img: "./images/weregarurumon.png", nextExp: 5000, maxHp: 600, skillName: "Kaiser Nail", skillPower: 100, skillType: "damage", nextForm: "mega_metalgarurumon", prevForm: "champ_garurumon" },
-      "ult_zudomon": { id: "ult_zudomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Zudomon", title: "Sea Animal - Thor Hammer glaciersmasher", img: "./images/zudomon.png", nextExp: 5000, maxHp: 600, skillName: "Thor Hammer", skillPower: 95, skillType: "damage", prevForm: "champ_unimon" },
-      "ult_rapidmon": { id: "ult_rapidmon", stage: "ULTIMATE", stageName: "Ultimate", name: "Rapidmon", title: "Cyborg Type - Golden supersonic missile launcher", img: "./images/rapidmon.png", nextExp: 5000, maxHp: 600, skillName: "Golden Triangle", skillPower: 95, skillType: "damage", prevForm: "champ_gargomon" },
-      "ult_magnaangemon": { id: "ult_magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", name: "MagnaAngemon", title: "Archangel Type - Gate of Destiny portal exile", img: "./images/magnaangemon.png", nextExp: 5000, maxHp: 600, skillName: "Gate of Destiny", skillPower: 120, skillType: "heal", prevForm: "champ_angemon" },
-      "ult_megadramon": { id: "ult_megadramon", stage: "ULTIMATE", stageName: "Ultimate", name: "Megadramon", title: "Cyborg Type - Genocide Attack ultimate missiles", img: "./images/megadramon.png", nextExp: 5000, maxHp: 600, skillName: "Genocide Attack", skillPower: 100, skillType: "damage", prevForm: "champ_airdramon" },
-      "ult_phantomon": { id: "ult_phantomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Phantomon", title: "Ghost Type - Soul-reaping Death Scythe", img: "./images/phantomon.png", nextExp: 5000, maxHp: 600, skillName: "Shadow Scythe", skillPower: 90, skillType: "damage", prevForm: "champ_wizardmon" },
-      "ult_garudamon": { id: "ult_garudamon", stage: "ULTIMATE", stageName: "Ultimate", name: "Garudamon", title: "Bird Man Type - Shadow Wing celestial inferno", img: "./images/garudamon.png", nextExp: 5000, maxHp: 600, skillName: "Shadow Wing", skillPower: 95, skillType: "damage", prevForm: "champ_birdramon" },
-      "ult_megakabuterimon": { id: "ult_megakabuterimon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaKabuterimon", title: "Insect Type - Horn Buster electromagnetic shock", img: "./images/megakabuterimon.png", nextExp: 5000, maxHp: 600, skillName: "Horn Buster", skillPower: 95, skillType: "damage", prevForm: "champ_kabuterimon" },
-      "ult_angewomon": { id: "ult_angewomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Angewomon", title: "Archangel Type - Holy Arrow purifying ray", img: "./images/angewomon.png", nextExp: 5000, maxHp: 600, skillName: "Holy Air", skillPower: 120, skillType: "heal", prevForm: "champ_gatomon" },
-      "ult_lillymon": { id: "ult_lillymon", stage: "ULTIMATE", stageName: "Ultimate", name: "Lillymon", title: "Fairy Type - Flower Cannon petal burst", img: "./images/lillymon.png", nextExp: 5000, maxHp: 600, skillName: "Flower Cannon", skillPower: 90, skillType: "damage", prevForm: "champ_togemon" },
-      "ult_lilamon": { id: "ult_lilamon", stage: "ULTIMATE", stageName: "Ultimate", name: "Lilamon", title: "Plant Type - Lila Shower mesmerizing fragrance", img: "./images/lilamon.png", nextExp: 5000, maxHp: 600, skillName: "Lila Shower", skillPower: 90, skillType: "damage", prevForm: "champ_sunflowmon" },
-      "ult_taomon": { id: "ult_taomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Taomon", title: "Wizard Type - Talisman of Light talisman summon", img: "./images/taomon.png", nextExp: 5000, maxHp: 600, skillName: "Talisman Spell", skillPower: 95, skillType: "damage", prevForm: "champ_kyubimon" },
+      // Ultimate (All 15 link to Megas)
+      "ult_metalgreymon": { id: "ult_metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalGreymon", title: "Cyborg Type - Trident Arm & Giga Destroyer", img: "./images/metalgreymon.png", fallbackImg: "https://wikimon.net/images/5/53/Metalgreymon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Giga Destroyer", skillPower: 100, skillType: "damage", nextForm: "mega_wargreymon", prevForm: "champ_greymon" },
+      "ult_megaseadramon": { id: "ult_megaseadramon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaSeadramon", title: "Aquatic Type - Lightning Javelin torrent", img: "./images/megaseadramon.png", fallbackImg: "https://wikimon.net/images/7/7b/Megaseadramon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Lightning Javelin", skillPower: 90, skillType: "damage", nextForm: "mega_plesiomon", prevForm: "champ_seadramon" },
+      "ult_metaltyrannomon": { id: "ult_metaltyrannomon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalTyrannomon", title: "Cyborg Type - Nuclear Giga Muzzle destruction", img: "./images/metaltyrannomon.png", fallbackImg: "https://wikimon.net/images/8/87/Metaltyranomon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Giga Muzzle", skillPower: 95, skillType: "damage", nextForm: "mega_rusttyranomon", prevForm: "champ_tyrannomon" },
+      "ult_weregarurumon": { id: "ult_weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", name: "WereGarurumon", title: "Beast Man Type - Shadow Wing crescent kick", img: "./images/weregarurumon.png", fallbackImg: "https://wikimon.net/images/9/9b/Weregarurumon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Kaiser Nail", skillPower: 100, skillType: "damage", nextForm: "mega_metalgarurumon", prevForm: "champ_garurumon" },
+      "ult_zudomon": { id: "ult_zudomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Zudomon", title: "Sea Animal - Thor Hammer glaciersmasher", img: "./images/zudomon.png", fallbackImg: "https://wikimon.net/images/d/df/Zudomon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Thor Hammer", skillPower: 95, skillType: "damage", nextForm: "mega_vikemon", prevForm: "champ_unimon" },
+      "ult_rapidmon": { id: "ult_rapidmon", stage: "ULTIMATE", stageName: "Ultimate", name: "Rapidmon", title: "Cyborg Type - Golden supersonic missile launcher", img: "./images/rapidmon.png", fallbackImg: "https://wikimon.net/images/1/1a/Rapidmon_perfect_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Golden Triangle", skillPower: 95, skillType: "damage", nextForm: "mega_saintgargomon", prevForm: "champ_gargomon" },
+      "ult_magnaangemon": { id: "ult_magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", name: "MagnaAngemon", title: "Archangel Type - Gate of Destiny portal exile", img: "./images/magnaangemon.png", fallbackImg: "https://wikimon.net/images/1/13/Holyangemon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Gate of Destiny", skillPower: 120, skillType: "heal", nextForm: "mega_seraphimon", prevForm: "champ_angemon" },
+      "ult_megadramon": { id: "ult_megadramon", stage: "ULTIMATE", stageName: "Ultimate", name: "Megadramon", title: "Cyborg Type - Genocide Attack ultimate missiles", img: "./images/megadramon.png", fallbackImg: "https://wikimon.net/images/9/91/Megadramon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Genocide Attack", skillPower: 100, skillType: "damage", nextForm: "mega_megidramon", prevForm: "champ_airdramon" },
+      "ult_phantomon": { id: "ult_phantomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Phantomon", title: "Ghost Type - Soul-reaping Death Scythe", img: "./images/phantomon.png", fallbackImg: "https://wikimon.net/images/2/29/Fantomon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Shadow Scythe", skillPower: 90, skillType: "damage", nextForm: "mega_piedmon", prevForm: "champ_wizardmon" },
+      "ult_garudamon": { id: "ult_garudamon", stage: "ULTIMATE", stageName: "Ultimate", name: "Garudamon", title: "Bird Man Type - Shadow Wing celestial inferno", img: "./images/garudamon.png", fallbackImg: "https://wikimon.net/images/a/a2/Garudamon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Shadow Wing", skillPower: 95, skillType: "damage", nextForm: "mega_hououmon", prevForm: "champ_birdramon" },
+      "ult_megakabuterimon": { id: "ult_megakabuterimon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaKabuterimon", title: "Insect Type - Horn Buster electromagnetic shock", img: "./images/megakabuterimon.png", fallbackImg: "https://wikimon.net/images/3/3a/Megakabuterimon_red_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Horn Buster", skillPower: 95, skillType: "damage", nextForm: "mega_herculeskabuterimon", prevForm: "champ_kabuterimon" },
+      "ult_angewomon": { id: "ult_angewomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Angewomon", title: "Archangel Type - Holy Arrow purifying ray", img: "./images/angewomon.png", fallbackImg: "https://wikimon.net/images/3/31/Angewomon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Holy Air", skillPower: 120, skillType: "heal", nextForm: "mega_ophanimon", prevForm: "champ_gatomon" },
+      "ult_lillymon": { id: "ult_lillymon", stage: "ULTIMATE", stageName: "Ultimate", name: "Lillymon", title: "Fairy Type - Flower Cannon petal burst", img: "./images/lillymon.png", fallbackImg: "https://wikimon.net/images/8/86/Lilimon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Flower Cannon", skillPower: 90, skillType: "damage", nextForm: "mega_rosemon", prevForm: "champ_togemon" },
+      "ult_lilamon": { id: "ult_lilamon", stage: "ULTIMATE", stageName: "Ultimate", name: "Lilamon", title: "Plant Type - Lila Shower mesmerizing fragrance", img: "./images/lilamon.png", fallbackImg: "https://wikimon.net/images/f/f6/Lilamon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Lila Shower", skillPower: 90, skillType: "damage", nextForm: "mega_lotusmon", prevForm: "champ_sunflowmon" },
+      "ult_taomon": { id: "ult_taomon", stage: "ULTIMATE", stageName: "Ultimate", name: "Taomon", title: "Wizard Type - Talisman of Light talisman summon", img: "./images/taomon.png", fallbackImg: "https://wikimon.net/images/9/90/Taomon_b.jpg", nextExp: 5000, maxHp: 600, skillName: "Talisman Spell", skillPower: 95, skillType: "damage", nextForm: "mega_sakuyamon", prevForm: "champ_kyubimon" },
 
-      // Mega
-      "mega_wargreymon": { id: "mega_wargreymon", stage: "MEGA", stageName: "Mega", name: "WarGreymon", title: "Dragon Warrior Type - Dramon Killer & Gaia Force", img: "./images/wargreymon.png", nextExp: 9999, maxHp: 1000, skillName: "Gaia Force", skillPower: 200, skillType: "damage", prevForm: "ult_metalgreymon" },
-      "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", name: "MetalGarurumon", title: "Cyborg Beast Type - Absolute Zero Cocytus Breath", img: "./images/metalgarurumon.png", nextExp: 9999, maxHp: 1000, skillName: "Cocytus Breath", skillPower: 200, skillType: "damage", prevForm: "ult_weregarurumon" }
+      // Mega Forms (15 Complete Mega Evolutions)
+      "mega_wargreymon": { id: "mega_wargreymon", stage: "MEGA", stageName: "Mega", name: "WarGreymon", title: "Dragon Warrior Type - Dramon Killer & Gaia Force", img: "./images/wargreymon.png", fallbackImg: "https://wikimon.net/images/4/42/Wargreymon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Gaia Force", skillPower: 200, skillType: "damage", prevForm: "ult_metalgreymon" },
+      "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", name: "MetalGarurumon", title: "Cyborg Beast Type - Absolute Zero Cocytus Breath", img: "./images/metalgarurumon.png", fallbackImg: "https://wikimon.net/images/4/4b/Metalgarurumon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Cocytus Breath", skillPower: 200, skillType: "damage", prevForm: "ult_weregarurumon" },
+      "mega_seraphimon": { id: "mega_seraphimon", stage: "MEGA", stageName: "Mega", name: "Seraphimon", title: "Seraph Type - Supreme ruler of angels firing Seven Heavens", img: "./images/seraphimon.png", fallbackImg: "https://wikimon.net/images/5/57/Seraphimon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Seven Heavens", skillPower: 200, skillType: "damage", prevForm: "ult_magnaangemon" },
+      "mega_ophanimon": { id: "mega_ophanimon", stage: "MEGA", stageName: "Mega", name: "Ophanimon", title: "Ophan Type - Holy Mother purifying the digital world", img: "./images/ophanimon.png", fallbackImg: "https://wikimon.net/images/d/df/Ofanimon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Eden's Javelin", skillPower: 180, skillType: "heal", prevForm: "ult_angewomon" },
+      "mega_rosemon": { id: "mega_rosemon", stage: "MEGA", stageName: "Mega", name: "Rosemon", title: "Fairy Type - Queen of Flowers wielding thorny whips", img: "./images/rosemon.png", fallbackImg: "https://wikimon.net/images/a/ac/Rosemon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Forbidden Temptation", skillPower: 190, skillType: "damage", prevForm: "ult_lillymon" },
+      "mega_hououmon": { id: "mega_hououmon", stage: "MEGA", stageName: "Mega", name: "Hououmon", title: "Holy Bird Type - Sacred phoenix purifying darkness with holy rings", img: "./images/hououmon.png", fallbackImg: "https://wikimon.net/images/4/44/Hououmon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Starlight Explosion", skillPower: 190, skillType: "damage", prevForm: "ult_garudamon" },
+      "mega_herculeskabuterimon": { id: "mega_herculeskabuterimon", stage: "MEGA", stageName: "Mega", name: "HerculesKabuterimon", title: "Insect Type - Ultimate golden beetle unleashing Giga Blaster", img: "./images/herculeskabuterimon.png", fallbackImg: "https://wikimon.net/images/1/1d/Heraklekabuterimon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Giga Blaster", skillPower: 200, skillType: "damage", prevForm: "ult_megakabuterimon" },
+      "mega_vikemon": { id: "mega_vikemon", stage: "MEGA", stageName: "Mega", name: "Vikemon", title: "Beast Man Type - Arctic warlord wielding Morning Star of Ice", img: "./images/vikemon.png", fallbackImg: "https://wikimon.net/images/8/87/Vikemon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Arctic Blizzard", skillPower: 190, skillType: "damage", prevForm: "ult_zudomon" },
+      "mega_saintgargomon": { id: "mega_saintgargomon", stage: "MEGA", stageName: "Mega", name: "SaintGargomon", title: "Machine Type - Heavy artillery giant with Giant Missile", img: "./images/saintgargomon.png", fallbackImg: "https://wikimon.net/images/3/36/Saintgargomon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Giant Missile", skillPower: 190, skillType: "damage", prevForm: "ult_rapidmon" },
+      "mega_sakuyamon": { id: "mega_sakuyamon", stage: "MEGA", stageName: "Mega", name: "Sakuyamon", title: "God Man Type - Shinto maiden wielding Vajra Mandala", img: "./images/sakuyamon.png", fallbackImg: "https://wikimon.net/images/d/d4/Sakuyamon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Vajra Mandala", skillPower: 190, skillType: "damage", prevForm: "ult_taomon" },
+      "mega_plesiomon": { id: "mega_plesiomon", stage: "MEGA", stageName: "Mega", name: "Plesiomon", title: "Plesiosaur Type - Gentle deep sea singer with Sorrow Blue", img: "./images/plesiomon.png", fallbackImg: "https://wikimon.net/images/a/ab/Plesiomon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Sorrow Blue", skillPower: 190, skillType: "damage", prevForm: "ult_megaseadramon" },
+      "mega_rusttyranomon": { id: "mega_rusttyranomon", stage: "MEGA", stageName: "Mega", name: "RustTyrannomon", title: "Cyborg Type - Ferocious crimson rust dragon with Terror's Cluster", img: "./images/rusttyranomon.png", fallbackImg: "https://wikimon.net/images/c/c5/Rusttyranomon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Terror's Cluster", skillPower: 190, skillType: "damage", prevForm: "ult_metaltyrannomon" },
+      "mega_megidramon": { id: "mega_megidramon", stage: "MEGA", stageName: "Mega", name: "Megidramon", title: "Evil Dragon Type - Four Great Dragons harbinger of catastrophe", img: "./images/megidramon.png", fallbackImg: "https://wikimon.net/images/8/87/Megidramon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Megiddo Flame", skillPower: 200, skillType: "damage", prevForm: "ult_megadramon" },
+      "mega_piedmon": { id: "mega_piedmon", stage: "MEGA", stageName: "Mega", name: "Piedmon", title: "Wizard Type - Clowned master of Four Swords of Fate", img: "./images/piedmon.png", fallbackImg: "https://wikimon.net/images/3/30/Piemon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Trump Sword", skillPower: 200, skillType: "damage", prevForm: "ult_phantomon" },
+      "mega_lotusmon": { id: "mega_lotusmon", stage: "MEGA", stageName: "Mega", name: "Lotusmon", title: "Fairy Type - Pure lotus fairy soothing allies with Seven's Fantasia", img: "./images/lotusmon.png", fallbackImg: "https://wikimon.net/images/1/1a/Lotusmon_b.jpg", nextExp: 9999, maxHp: 1000, skillName: "Seven's Fantasia", skillPower: 180, skillType: "heal", prevForm: "ult_lilamon" }
     };
+
+    // Safe Dynamic Image Fallback Handler (Never falls back to Digi-Egg on evolved forms)
+    function handleDigiImgError(imgElement, digiId) {
+      if (!imgElement) return;
+      const targetDigi = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
+      if (targetDigi.fallbackImg && imgElement.src !== targetDigi.fallbackImg) {
+        imgElement.src = targetDigi.fallbackImg;
+      }
+    }
 
     // 2. Pre-configured Firebase Connection Credentials
     const FIREBASE_AUTO_CONFIG = {
@@ -707,7 +764,7 @@
     }
 
     function fallbackLocalStorage() {
-      const local = localStorage.getItem('digimon_app_data_v26');
+      const local = localStorage.getItem('digimon_app_data_v28');
       if (local) {
         try {
           appData = JSON.parse(local);
@@ -732,7 +789,7 @@
 
     function saveSystemData() {
       try {
-        localStorage.setItem('digimon_app_data_v26', JSON.stringify(appData));
+        localStorage.setItem('digimon_app_data_v28', JSON.stringify(appData));
         if (firebaseDb) {
           firebaseDb.ref('/').set(appData);
         }
@@ -759,7 +816,6 @@
             };
             ensureDataStructures();
           } else {
-            // Seed initial data only if database is completely blank
             appData = JSON.parse(JSON.stringify(INITIAL_DATA));
             firebaseDb.ref('/').set(appData);
           }
@@ -811,37 +867,40 @@
 
       try {
         if (activeLoginTab === 'teacher') {
-          // 1. Check Super Admin Accounts
-          const superAdminObj = Object.values(appData.superAdmins || {}).find(s => 
+          // Check Super Admin Accounts
+          const allSuperAdmins = appData.superAdmins || INITIAL_DATA.superAdmins;
+          const superAdminObj = Object.values(allSuperAdmins).find(s => 
             String(s.username || '').toLowerCase() === u && String(s.password || '') === p
           );
           if (superAdminObj) {
             currentUser = { role: 'superadmin', data: superAdminObj };
-            sessionStorage.setItem('digimon_session_final', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v3', JSON.stringify(currentUser));
             enterApp();
             return;
           }
 
-          // 2. Check Teacher Accounts
-          const teacherObj = Object.values(appData.teachers || {}).find(t => 
+          // Check Teacher Accounts
+          const allTeachers = appData.teachers || {};
+          const teacherObj = Object.values(allTeachers).find(t => 
             (String(t.username || '').toLowerCase() === u || String(t.id || '').toLowerCase() === u) && String(t.password || '') === p
           );
           if (teacherObj) {
             currentUser = { role: 'teacher', data: teacherObj };
-            sessionStorage.setItem('digimon_session_final', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v3', JSON.stringify(currentUser));
             enterApp();
             return;
           }
 
           alert("Invalid credentials for Teacher or Super Admin!\n• Super Admin: superadmin / superpassword\n• Teacher: teacher1 / 123");
         } else {
-          // 3. Student Login
-          const studentObj = Object.values(appData.students || {}).find(s => 
+          // Student Login
+          const allStudents = appData.students || {};
+          const studentObj = Object.values(allStudents).find(s => 
             (String(s.username || '').toLowerCase() === u || String(s.id || '').toLowerCase() === u) && String(s.password || '') === p
           );
           if (studentObj) {
             currentUser = { role: 'student', data: studentObj };
-            sessionStorage.setItem('digimon_session_final', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v3', JSON.stringify(currentUser));
             enterApp();
           } else {
             alert("Invalid student credentials!\n• Default Students: s01 to s04 / 123");
@@ -854,7 +913,7 @@
     }
 
     function checkAutoLogin() {
-      const sess = sessionStorage.getItem('digimon_session_final');
+      const sess = sessionStorage.getItem('digimon_session_final_v3');
       if (sess) {
         try {
           currentUser = JSON.parse(sess);
@@ -862,7 +921,7 @@
             enterApp();
           }
         } catch (e) {
-          sessionStorage.removeItem('digimon_session_final');
+          sessionStorage.removeItem('digimon_session_final_v3');
         }
       }
     }
@@ -904,7 +963,7 @@
 
     function logout() {
       currentUser = null;
-      sessionStorage.removeItem('digimon_session_final');
+      sessionStorage.removeItem('digimon_session_final_v3');
       document.getElementById('mainHeader').classList.add('hidden');
       document.getElementById('viewStudent').classList.add('hidden');
       document.getElementById('viewTeacher').classList.add('hidden');
@@ -985,7 +1044,12 @@
 
       if (nameEl) nameEl.textContent = `${digi.name} (Partner)`;
       if (stageEl) stageEl.textContent = digi.stageName;
-      if (imgEl) imgEl.src = digi.img;
+      if (imgEl) {
+        imgEl.src = digi.img;
+        imgEl.onerror = function() {
+          handleDigiImgError(this, digi.id);
+        };
+      }
       if (hpEl) hpEl.textContent = `HP: ${t.hp} / ${maxHp} | Power: ${t.skillPower || digi.skillPower || 100}`;
     }
 
@@ -1022,7 +1086,7 @@
       if (imgEl) {
         imgEl.src = digi.img;
         imgEl.onerror = function() {
-          this.src = './images/digitama1.png';
+          handleDigiImgError(this, digi.id);
         };
       }
 
@@ -1141,12 +1205,14 @@
       }
     }
 
+    // Complete Multi-Branch Evolution System
     function computeNextEvolution(student) {
       const cur = DIGIMON_DB[student.currentDigiId];
       if (!cur) return null;
 
       const { courage: c, wisdom: w, love: l, discipline: d } = student;
 
+      // 1. In-Training Stage
       if (cur.stage === "DIGI-EGG") {
         if (c === l && l === d) return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
         if (c > l && c >= d) return "baby_koromon";
@@ -1155,6 +1221,7 @@
         return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
       }
 
+      // 2. Rookie Stage
       if (cur.stage === "IN-TRAINING") {
         if (cur.id === "baby_koromon") {
           if (c === w) return pickRandom(["rookie_agumon", "rookie_biyomon"]);
@@ -1170,6 +1237,7 @@
         }
       }
 
+      // 3. Champion Stage
       if (cur.stage === "ROOKIE") {
         if (cur.id === "rookie_agumon") {
           if (c === w && w === l) return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
@@ -1208,13 +1276,14 @@
         }
       }
 
+      // 4. Ultimate Stage
       if (cur.stage === "CHAMPION") {
         return cur.nextForm || null;
       }
 
+      // 5. Mega Stage (Full 15 Ultimate to Mega Evolution Routing)
       if (cur.stage === "ULTIMATE") {
-        if (cur.id === "ult_metalgreymon") return "mega_wargreymon";
-        if (cur.id === "ult_weregarurumon") return "mega_metalgarurumon";
+        return cur.nextForm || null;
       }
 
       return null;
@@ -1682,7 +1751,7 @@
             
             <div class="flex items-center gap-3 my-2">
               <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center">
-                <img src="${digi.img}" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
+                <img src="${digi.img}" onerror="handleDigiImgError(this, '${digi.id}')" class="max-w-full max-h-full object-contain">
               </div>
               <div class="text-xs space-y-0.5">
                 <div class="font-bold text-slate-200">${digi.name}</div>
@@ -1957,7 +2026,7 @@
         card.innerHTML = `
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-slate-900 rounded p-1 border border-amber-600/40 flex items-center justify-center">
-              <img src="${digi.img}" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
+              <img src="${digi.img}" onerror="handleDigiImgError(this, '${digi.id}')" class="max-w-full max-h-full object-contain">
             </div>
             <div>
               <div class="font-bold text-amber-300 text-xs">${t.name}</div>
@@ -1999,7 +2068,7 @@
         card.innerHTML = `
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-slate-900 rounded p-1 border border-slate-800 flex items-center justify-center">
-              <img src="${digi.img}" onerror="this.src='./images/digitama1.png'" class="max-w-full max-h-full object-contain">
+              <img src="${digi.img}" onerror="handleDigiImgError(this, '${digi.id}')" class="max-w-full max-h-full object-contain">
             </div>
             <div class="text-xs">
               <div class="font-bold text-slate-200">${s.name} (${s.username})</div>
