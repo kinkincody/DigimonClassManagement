@@ -80,10 +80,10 @@
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         Firebase Live
       </span>
-      <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900">
+      <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900 cursor-pointer">
         <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
       </button>
-      <button onclick="toggleConfigModal()" class="px-2.5 py-1.5 rounded text-xs bg-slate-800 text-slate-400 hover:text-cyan-300">
+      <button onclick="toggleConfigModal()" class="px-2.5 py-1.5 rounded text-xs bg-slate-800 text-slate-400 hover:text-cyan-300 cursor-pointer">
         <i class="fa-solid fa-gear"></i>
       </button>
     </div>
@@ -108,10 +108,10 @@
 
       <!-- Login Tab Selector -->
       <div class="flex rounded-lg bg-slate-950 p-1 mb-5 border border-slate-800">
-        <button id="tabStudent" type="button" onclick="switchLoginTab('student')" class="flex-1 py-1.5 rounded-md text-xs font-bold transition bg-cyan-600 text-white">
+        <button id="tabStudent" type="button" onclick="switchLoginTab('student')" class="flex-1 py-1.5 rounded-md text-xs font-bold transition bg-cyan-600 text-white cursor-pointer">
           <i class="fa-solid fa-gamepad mr-1"></i> Student Login
         </button>
-        <button id="tabTeacher" type="button" onclick="switchLoginTab('teacher')" class="flex-1 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white">
+        <button id="tabTeacher" type="button" onclick="switchLoginTab('teacher')" class="flex-1 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer">
           <i class="fa-solid fa-user-shield mr-1"></i> Teacher / Super Admin
         </button>
       </div>
@@ -133,7 +133,7 @@
       </form>
 
       <div class="mt-4 text-center">
-        <button type="button" onclick="toggleConfigModal()" class="text-xs text-slate-500 hover:text-cyan-400">
+        <button type="button" onclick="toggleConfigModal()" class="text-xs text-slate-500 hover:text-cyan-400 cursor-pointer">
           <i class="fa-solid fa-gear mr-1"></i> Configure Firebase Connection
         </button>
       </div>
@@ -225,11 +225,11 @@
                   <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
                   <div class="flex items-center gap-1">
                     <span id="stValCourage" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('courage', 1)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30" id="btnAllocCourage1">+1</button>
-                    <button onclick="allocateTrait('courage', 5)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30" id="btnAllocCourage5">+5</button>
-                    <button onclick="allocateTrait('courage', 10)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30" id="btnAllocCourage10">+10</button>
-                    <button onclick="allocateTrait('courage', 20)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30" id="btnAllocCourage20">+20</button>
-                    <button onclick="allocateTrait('courage', 50)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30" id="btnAllocCourage50">+50</button>
+                    <button onclick="allocateTrait('courage', 1)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocCourage1">+1</button>
+                    <button onclick="allocateTrait('courage', 5)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocCourage5">+5</button>
+                    <button onclick="allocateTrait('courage', 10)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocCourage10">+10</button>
+                    <button onclick="allocateTrait('courage', 20)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocCourage20">+20</button>
+                    <button onclick="allocateTrait('courage', 50)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocCourage50">+50</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-2">
@@ -243,11 +243,11 @@
                   <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
                   <div class="flex items-center gap-1">
                     <span id="stValLove" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('love', 1)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30" id="btnAllocLove1">+1</button>
-                    <button onclick="allocateTrait('love', 5)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30" id="btnAllocLove5">+5</button>
-                    <button onclick="allocateTrait('love', 10)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30" id="btnAllocLove10">+10</button>
-                    <button onclick="allocateTrait('love', 20)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30" id="btnAllocLove20">+20</button>
-                    <button onclick="allocateTrait('love', 50)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30" id="btnAllocLove50">+50</button>
+                    <button onclick="allocateTrait('love', 1)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocLove1">+1</button>
+                    <button onclick="allocateTrait('love', 5)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocLove5">+5</button>
+                    <button onclick="allocateTrait('love', 10)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocLove10">+10</button>
+                    <button onclick="allocateTrait('love', 20)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocLove20">+20</button>
+                    <button onclick="allocateTrait('love', 50)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocLove50">+50</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-2">
@@ -261,11 +261,11 @@
                   <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('discipline', 1)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30" id="btnAllocDisc1">+1</button>
-                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30" id="btnAllocDisc5">+5</button>
-                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30" id="btnAllocDisc10">+10</button>
-                    <button onclick="allocateTrait('discipline', 20)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30" id="btnAllocDisc20">+20</button>
-                    <button onclick="allocateTrait('discipline', 50)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30" id="btnAllocDisc50">+50</button>
+                    <button onclick="allocateTrait('discipline', 1)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocDisc1">+1</button>
+                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocDisc5">+5</button>
+                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocDisc10">+10</button>
+                    <button onclick="allocateTrait('discipline', 20)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocDisc20">+20</button>
+                    <button onclick="allocateTrait('discipline', 50)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocDisc50">+50</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-2">
@@ -279,11 +279,11 @@
                   <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('wisdom', 1)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30" id="btnAllocWis1">+1</button>
-                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30" id="btnAllocWis5">+5</button>
-                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30" id="btnAllocWis10">+10</button>
-                    <button onclick="allocateTrait('wisdom', 20)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30" id="btnAllocWis20">+20</button>
-                    <button onclick="allocateTrait('wisdom', 50)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30" id="btnAllocWis50">+50</button>
+                    <button onclick="allocateTrait('wisdom', 1)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocWis1">+1</button>
+                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocWis5">+5</button>
+                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocWis10">+10</button>
+                    <button onclick="allocateTrait('wisdom', 20)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocWis20">+20</button>
+                    <button onclick="allocateTrait('wisdom', 50)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold disabled:opacity-30 cursor-pointer" id="btnAllocWis50">+50</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-2">
@@ -294,7 +294,7 @@
           </div>
 
           <div class="mt-5 pt-3 border-t border-slate-800">
-            <button onclick="toggleEvolutionTreeModal()" class="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20">
+            <button onclick="toggleEvolutionTreeModal()" class="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer">
               <i class="fa-solid fa-sitemap mr-1"></i> View Evolution Tree
             </button>
           </div>
@@ -317,18 +317,28 @@
               <span id="tcBossStage" class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold">MEGA</span>
             </div>
             <h3 id="tcBossName" class="text-lg font-black text-white mt-0.5">WarGreymon (Partner)</h3>
-            <div class="text-xs text-emerald-400 font-mono font-bold mt-0.5" id="tcBossHp">HP: 1200 / 1200 | Power: 180</div>
+            <div class="text-xs text-emerald-400 font-mono font-bold mt-0.5" id="tcBossHp">HP: 1200 / 1200 | Special Move: 180 DMG | Signature Move: 90 DMG</div>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="teacherCastSkill('single')" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1">
-            <i class="fa-solid fa-crosshairs"></i> Target 1 Student
+          <!-- Special Move (Target 1 & AOE) -->
+          <button onclick="teacherCastSkill('single_ult')" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-crosshairs"></i> Target 1 (Special Move)
           </button>
-          <button onclick="teacherCastSkill('aoe')" class="px-3 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1">
-            <i class="fa-solid fa-burst"></i> Full Class Strike (AOE)
+          <button onclick="teacherCastSkill('aoe_ult')" class="px-3 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-burst"></i> Full Class (Special Move)
           </button>
-          <button onclick="teacherHealAll()" class="px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1">
+
+          <!-- Signature Move (Target 1 & AOE) -->
+          <button onclick="teacherCastSkill('single_tech')" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-hand-fist"></i> Target 1 (Signature Move)
+          </button>
+          <button onclick="teacherCastSkill('aoe_tech')" class="px-3 py-1.5 rounded bg-indigo-950 border border-indigo-600 text-indigo-300 text-xs font-bold hover:bg-indigo-900 transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Full Class (Signature Move)
+          </button>
+
+          <button onclick="teacherHealAll()" class="px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP
           </button>
         </div>
@@ -340,10 +350,10 @@
             <label class="text-xs font-bold text-cyan-400"><i class="fa-solid fa-school mr-1"></i> Current Class:</label>
             <select id="teacherClassFilter" onchange="onClassFilterChange(this.value)" class="bg-slate-950 border border-cyan-500/50 text-xs font-bold rounded-lg px-3 py-1.5 text-cyan-200 outline-none">
             </select>
-            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 font-bold">
+            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 font-bold cursor-pointer">
               <i class="fa-solid fa-plus mr-1"></i> Add Class
             </button>
-            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-xs text-rose-300 font-bold">
+            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-xs text-rose-300 font-bold cursor-pointer">
               <i class="fa-solid fa-trash mr-1"></i> Delete Class
             </button>
           </div>
@@ -354,10 +364,10 @@
             </label>
             <input id="excelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(event)" class="hidden">
             
-            <button onclick="rewardAllStudents(20)" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900">
+            <button onclick="rewardAllStudents(20)" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 cursor-pointer">
               Class +20 EXP
             </button>
-            <button onclick="rewardAllStudents(50)" class="px-3 py-1.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-xs font-bold hover:bg-blue-900">
+            <button onclick="rewardAllStudents(50)" class="px-3 py-1.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-xs font-bold hover:bg-blue-900 cursor-pointer">
               Class +50 EXP
             </button>
           </div>
@@ -372,13 +382,27 @@
     <!-- 3. Super Admin View -->
     <!-- ========================================== -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
+      <!-- Account Manager Hub -->
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-key mr-2"></i>Global Account Credentials Manager</h2>
+            <p class="text-xs text-slate-400">Directly modify Username (ID) and Password for any Teacher, Student, or Super Admin account.</p>
+          </div>
+          <button onclick="openCredentialsModal()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md shadow-cyan-500/20 cursor-pointer">
+            <i class="fa-solid fa-user-pen mr-1.5"></i> Manage All Accounts (ID / PWD)
+          </button>
+        </div>
+      </div>
+
+      <!-- Teachers List -->
       <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-5">
         <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
           <div>
-            <h2 class="text-base font-bold text-amber-300"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher Accounts & Partner Customization</h2>
-            <p class="text-xs text-slate-400">Add teachers with assigned partner Digimon. Directly modify custom stats & skills.</p>
+            <h2 class="text-base font-bold text-amber-300"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher Accounts & Battle Parameters</h2>
+            <p class="text-xs text-slate-400">Configure Partner Digimon, Max HP, Special Move Power, and Signature Move Power.</p>
           </div>
-          <button onclick="openCreateTeacherModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs">
+          <button onclick="openCreateTeacherModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs cursor-pointer">
             <i class="fa-solid fa-user-plus mr-1"></i> Add Teacher Account
           </button>
         </div>
@@ -387,6 +411,7 @@
         </div>
       </div>
 
+      <!-- Students List -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
           <div>
@@ -406,199 +431,29 @@
   <div id="modalEvoTree" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 text-slate-200">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <h3 class="font-bold text-lg text-cyan-300"><i class="fa-solid fa-sitemap mr-2"></i>Official Digimon Evolution Tree & Moves</h3>
-        <button onclick="toggleEvolutionTreeModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+        <h3 class="font-bold text-lg text-cyan-300"><i class="fa-solid fa-sitemap mr-2"></i>Multi-Branch Evolution Tree & Moves</h3>
+        <button onclick="toggleEvolutionTreeModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="mt-4 space-y-6 text-sm">
+      <div class="mt-4 space-y-4 text-xs">
+        <p class="text-slate-400">★ Every Digimon features at least <b>4 evolutionary branches</b> based on dominant trait allocation (Courage, Friendship, Discipline, Wisdom), and up to <b>6 possible branches</b> when allocating 3 or more traits.</p>
         <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-          <h4 class="font-bold text-amber-400 text-xs uppercase tracking-wider">[Phase 1: In-Training (6) ➔ Rookie (8)]</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-              <span class="font-bold text-rose-400">Koromon (Courage)</span>
-              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Agumon</b> (High Courage)<br>➔ <b>Biyomon</b> (Courage + Wisdom)</p>
-            </div>
-            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-              <span class="font-bold text-emerald-400">Tsunomon (Friendship)</span>
-              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Gabumon</b> (High Friendship)<br>➔ <b>Palmon</b> (Friendship + Nature)</p>
-            </div>
-            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-              <span class="font-bold text-amber-400">Tokomon (Discipline)</span>
-              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Patamon</b> (High Discipline)<br>➔ <b>Biyomon</b> (Discipline + Logic)</p>
-            </div>
-            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-              <span class="font-bold text-blue-400">Motimon (Wisdom)</span>
-              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Tentomon</b> (High Wisdom)<br>➔ <b>Agumon</b> (Courage Branch)</p>
-            </div>
-            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-              <span class="font-bold text-teal-400">Tanemon (Friendship)</span>
-              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Gomamon</b> (High Friendship)<br>➔ <b>Palmon</b> (Nature Branch)</p>
-            </div>
-            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-              <span class="font-bold text-rose-300">DemiVeemon (Courage)</span>
-              <p class="text-slate-400 text-[11px] mt-1">➔ <b>Veemon</b> (High Courage)<br>➔ <b>Patamon</b> (Discipline Branch)</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
-          <h4 class="font-bold text-amber-400 text-xs uppercase tracking-wider mb-3">[Champion ➔ Ultimate ➔ Mega Evolution Paths & Signature Skills]</h4>
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left text-slate-300 border-collapse">
-              <thead>
-                <tr class="border-b border-slate-800 text-slate-400">
-                  <th class="py-2">Rookie (8)</th>
-                  <th class="py-2">Condition</th>
-                  <th class="py-2 text-cyan-400">Champion (18)</th>
-                  <th class="py-2 text-amber-400">Ultimate (18)</th>
-                  <th class="py-2 text-rose-400">Mega (15 Exclusives)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
-                <!-- Agumon Branch -->
-                <tr class="bg-rose-950/20">
-                  <td rowspan="3" class="py-2 font-bold text-orange-400 align-top">Agumon<br><span class="text-[10px] text-slate-500 font-sans">Baby Flame (25 DMG)</span></td>
-                  <td class="text-rose-400">High Courage</td>
-                  <td>1. Greymon<br><span class="text-[10px] text-slate-500">Mega Flame (50 DMG)</span></td>
-                  <td>1. MetalGreymon<br><span class="text-[10px] text-slate-500">Giga Destroyer (100 DMG)</span></td>
-                  <td class="font-bold text-amber-300">★ WarGreymon<br><span class="text-[10px] text-slate-400 font-sans">Gaia Force (200 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-blue-400">Wisdom</td>
-                  <td>2. Seadramon</td>
-                  <td>2. MegaSeadramon</td>
-                  <td class="font-bold text-cyan-300">★ Plesiomon<br><span class="text-[10px] text-slate-400 font-sans">Sorrow Blue (190 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-emerald-400">Friendship</td>
-                  <td>3. Tyrannomon</td>
-                  <td>3. MetalTyrannomon</td>
-                  <td class="font-bold text-rose-300">★ RustTyrannomon<br><span class="text-[10px] text-slate-400 font-sans">Terror's Cluster (190 DMG)</span></td>
-                </tr>
-
-                <!-- Gabumon Branch -->
-                <tr class="bg-blue-950/20">
-                  <td rowspan="3" class="py-2 font-bold text-blue-400 align-top">Gabumon<br><span class="text-[10px] text-slate-500 font-sans">Petit Fire (25 DMG)</span></td>
-                  <td class="text-emerald-400">High Friendship</td>
-                  <td>4. Garurumon<br><span class="text-[10px] text-slate-500">Fox Fire (50 DMG)</span></td>
-                  <td>4. WereGarurumon<br><span class="text-[10px] text-slate-500">Kaiser Nail (100 DMG)</span></td>
-                  <td class="font-bold text-cyan-300">★ MetalGarurumon<br><span class="text-[10px] text-slate-400 font-sans">Cocytus Breath (200 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-rose-400">Courage</td>
-                  <td>5. Unimon</td>
-                  <td>5. Zudomon</td>
-                  <td class="font-bold text-blue-300">★ Vikemon<br><span class="text-[10px] text-slate-400 font-sans">Arctic Blizzard (190 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-amber-400">Discipline</td>
-                  <td>6. Gargomon</td>
-                  <td>6. Rapidmon</td>
-                  <td class="font-bold text-emerald-300">★ SaintGargomon<br><span class="text-[10px] text-slate-400 font-sans">Giant Missile (190 DMG)</span></td>
-                </tr>
-
-                <!-- Patamon Branch -->
-                <tr>
-                  <td rowspan="3" class="py-2 font-bold text-amber-300 align-top">Patamon<br><span class="text-[10px] text-slate-500 font-sans">Boom Bubble (20 DMG)</span></td>
-                  <td class="text-amber-400">High Discipline</td>
-                  <td>7. Angemon<br><span class="text-[10px] text-slate-500">Fist of Fate (55 DMG)</span></td>
-                  <td>7. MagnaAngemon<br><span class="text-[10px] text-slate-500">Gate of Destiny (Heal 120 HP)</span></td>
-                  <td class="font-bold text-amber-200">★ Seraphimon<br><span class="text-[10px] text-slate-400 font-sans">Seven Heavens (200 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-rose-400">Courage</td>
-                  <td>8. Airdramon</td>
-                  <td>8. Megadramon</td>
-                  <td class="font-bold text-red-400">★ Megidramon<br><span class="text-[10px] text-slate-400 font-sans">Megiddo Flame (200 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-blue-400">Wisdom</td>
-                  <td>9. Wizardmon</td>
-                  <td>9. Phantomon</td>
-                  <td class="font-bold text-purple-300">★ Piedmon<br><span class="text-[10px] text-slate-400 font-sans">Trump Sword (200 DMG)</span></td>
-                </tr>
-
-                <!-- Biyomon Branch -->
-                <tr>
-                  <td rowspan="3" class="py-2 font-bold text-pink-400 align-top">Biyomon<br><span class="text-[10px] text-slate-500 font-sans">Spiral Twister (25 DMG)</span></td>
-                  <td class="text-rose-400">Courage</td>
-                  <td>10. Birdramon</td>
-                  <td>10. Garudamon</td>
-                  <td class="font-bold text-orange-300">★ Hououmon<br><span class="text-[10px] text-slate-400 font-sans">Starlight Explosion (190 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-blue-400">Wisdom</td>
-                  <td>11. Kabuterimon</td>
-                  <td>11. MegaKabuterimon</td>
-                  <td class="font-bold text-yellow-300">★ HerculesKabuterimon<br><span class="text-[10px] text-slate-400 font-sans">Giga Blaster (200 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-emerald-400">Friendship</td>
-                  <td>12. Gatomon<br><span class="text-[10px] text-slate-500">Cat Punch (45 DMG)</span></td>
-                  <td>12. Angewomon<br><span class="text-[10px] text-slate-500">Holy Air (Heal 120 HP)</span></td>
-                  <td class="font-bold text-pink-300">★ Ophanimon<br><span class="text-[10px] text-slate-400 font-sans">Eden's Javelin (Heal 180 HP)</span></td>
-                </tr>
-
-                <!-- Palmon Branch -->
-                <tr>
-                  <td rowspan="3" class="py-2 font-bold text-emerald-400 align-top">Palmon<br><span class="text-[10px] text-slate-500 font-sans">Poison Ivy (25 DMG)</span></td>
-                  <td class="text-emerald-400">Friendship</td>
-                  <td>13. Togemon</td>
-                  <td>13. Lillymon<br><span class="text-[10px] text-slate-500">Flower Cannon (90 DMG)</span></td>
-                  <td class="font-bold text-emerald-300">★ Rosemon<br><span class="text-[10px] text-slate-400 font-sans">Forbidden Temptation (190 DMG)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-blue-400">Wisdom</td>
-                  <td>14. Sunflowmon</td>
-                  <td>14. Lilamon</td>
-                  <td class="font-bold text-purple-300">★ Lotusmon<br><span class="text-[10px] text-slate-400 font-sans">Seven's Fantasia (Heal 180 HP)</span></td>
-                </tr>
-                <tr>
-                  <td class="text-amber-400">Discipline</td>
-                  <td>15. Kyubimon</td>
-                  <td>15. Taomon</td>
-                  <td class="font-bold text-yellow-200">★ Sakuyamon<br><span class="text-[10px] text-slate-400 font-sans">Vajra Mandala (190 DMG)</span></td>
-                </tr>
-
-                <!-- Tentomon Branch -->
-                <tr class="bg-yellow-950/20">
-                  <td class="py-2 font-bold text-yellow-500">Tentomon</td>
-                  <td class="text-rose-400">Courage / Strength</td>
-                  <td>16. Kuwagamon<br><span class="text-[10px] text-slate-500">Scissor Arms (50 DMG)</span></td>
-                  <td>16. Okuwamon<br><span class="text-[10px] text-slate-500">Scissor Claw (100 DMG)</span></td>
-                  <td class="font-bold text-yellow-300">★ HerculesKabuterimon<br><span class="text-[10px] text-slate-400 font-sans">Giga Blaster (200 DMG)</span></td>
-                </tr>
-
-                <!-- Gomamon Branch -->
-                <tr class="bg-teal-950/20">
-                  <td class="py-2 font-bold text-teal-400">Gomamon</td>
-                  <td class="text-emerald-400">Friendship / Sea</td>
-                  <td>17. Ikkakumon<br><span class="text-[10px] text-slate-500">Harpoon Torpedo (50 DMG)</span></td>
-                  <td>17. Zudomon (Alt Path)<br><span class="text-[10px] text-slate-500">Thor Hammer (95 DMG)</span></td>
-                  <td class="font-bold text-blue-300">★ Vikemon<br><span class="text-[10px] text-slate-400 font-sans">Arctic Blizzard (190 DMG)</span></td>
-                </tr>
-
-                <!-- Veemon Branch -->
-                <tr class="bg-blue-950/20">
-                  <td class="py-2 font-bold text-blue-400">Veemon</td>
-                  <td class="text-rose-400">High Courage</td>
-                  <td>18. ExVeemon<br><span class="text-[10px] text-slate-500">X-Laser (50 DMG)</span></td>
-                  <td>18. Paildramon<br><span class="text-[10px] text-slate-500">Desperado Blaster (105 DMG)</span></td>
-                  <td class="font-bold text-amber-300">★ WarGreymon (Dragon Unity)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <h4 class="font-bold text-amber-400 uppercase tracking-wider">[Core Evolutionary Formula]</h4>
+          <ul class="list-disc list-inside space-y-1 text-slate-300">
+            <li><b>1 dominant trait:</b> Direct alignment to primary species type.</li>
+            <li><b>2 balanced traits:</b> Hybrid cross-branch evolution.</li>
+            <li><b>3+ balanced traits:</b> Unlocks up to 6 distinct evolutionary branches from the species gene pool.</li>
+          </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Create / Edit Teacher Modal -->
+  <!-- Create / Edit Teacher Modal (Super Admin) -->
   <div id="modalTeacherEdit" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 text-slate-200">
       <h3 class="font-bold text-base text-amber-300 mb-2"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher & Partner Setup</h3>
-      <p class="text-xs text-slate-400 mb-4">Configure teacher login, partner Digimon, and custom battle stats.</p>
+      <p class="text-xs text-slate-400 mb-4">Configure teacher partner Digimon, Max HP, Special Move, and Signature Move DMG.</p>
       
       <div class="space-y-3 text-xs">
         <div>
@@ -618,21 +473,60 @@
           <select id="modalTcDigiSelect" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200">
           </select>
         </div>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-3 gap-2">
           <div>
-            <label class="block text-slate-400 mb-1">Custom Max HP</label>
-            <input id="modalTcHp" type="number" value="1000" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none">
+            <label class="block text-slate-400 mb-1">Max HP</label>
+            <input id="modalTcHp" type="number" value="1200" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none">
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">Custom Skill Power</label>
-            <input id="modalTcPower" type="number" value="150" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none">
+            <label class="block text-slate-400 mb-1">Special Move DMG</label>
+            <input id="modalTcPower" type="number" value="180" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Signature Move DMG</label>
+            <input id="modalTcTechPower" type="number" value="90" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none">
           </div>
         </div>
       </div>
 
       <div class="mt-6 flex justify-end gap-2">
-        <button onclick="closeTeacherEditModal()" class="px-3 py-1.5 rounded bg-slate-800 text-xs">Cancel</button>
-        <button onclick="saveTeacherFromModal()" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs">Save Teacher Account</button>
+        <button onclick="closeTeacherEditModal()" class="px-3 py-1.5 rounded bg-slate-800 text-xs cursor-pointer">Cancel</button>
+        <button onclick="saveTeacherFromModal()" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer">Save Teacher Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Account Credentials Manager Modal (Super Admin) -->
+  <div id="modalAccountCredentials" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-base text-cyan-300"><i class="fa-solid fa-key mr-2"></i>Account Management (ID & Password Modifier)</h3>
+        <button onclick="closeCredentialsModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-400 my-2">Modify the login Username (ID) or Password for any account directly.</p>
+
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 my-2">
+        <!-- Super Admins Section -->
+        <div>
+          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Super Admin Accounts</h4>
+          <div id="credListSuperAdmins" class="space-y-2"></div>
+        </div>
+
+        <!-- Teachers Section -->
+        <div>
+          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Teacher Accounts</h4>
+          <div id="credListTeachers" class="space-y-2"></div>
+        </div>
+
+        <!-- Students Section -->
+        <div>
+          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Student Accounts</h4>
+          <div id="credListStudents" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeCredentialsModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer">Close</button>
       </div>
     </div>
   </div>
@@ -659,8 +553,8 @@
       </div>
 
       <div class="mt-6 flex justify-end gap-2">
-        <button onclick="toggleConfigModal()" class="px-3 py-1.5 rounded bg-slate-800 text-xs">Cancel</button>
-        <button onclick="saveFirebaseConfig()" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white">Save & Connect</button>
+        <button onclick="toggleConfigModal()" class="px-3 py-1.5 rounded bg-slate-800 text-xs cursor-pointer">Cancel</button>
+        <button onclick="saveFirebaseConfig()" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white cursor-pointer">Save & Connect</button>
       </div>
     </div>
   </div>
@@ -779,15 +673,15 @@
       measurementId: "G-RJMS4K7YVG"
     };
 
-    // 3. Initial Mock Data
+    // 3. Initial Mock Data with Special Move (skillPower) and Signature Move (techPower)
     const INITIAL_DATA = {
       superAdmins: {
         "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master (Super Admin)" },
         "admin": { username: "admin", password: "admin123", name: "Master Admin" }
       },
       teachers: {
-        "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "mega_wargreymon", maxHp: 1200, hp: 1200, skillPower: 180 },
-        "teacher2": { id: "teacher2", username: "teacher2", password: "123", name: "Master Tamer B", partnerDigiId: "mega_metalgarurumon", maxHp: 1200, hp: 1200, skillPower: 180 }
+        "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "mega_wargreymon", maxHp: 1200, hp: 1200, skillPower: 180, techPower: 90 },
+        "teacher2": { id: "teacher2", username: "teacher2", password: "123", name: "Master Tamer B", partnerDigiId: "mega_metalgarurumon", maxHp: 1200, hp: 1200, skillPower: 180, techPower: 90 }
       },
       classes: {
         "Class-1A": { id: "Class-1A", name: "Class 1A (Dragon)", teacherId: "teacher1" },
@@ -824,7 +718,7 @@
     }
 
     function fallbackLocalStorage() {
-      const local = localStorage.getItem('digimon_app_data_v31');
+      const local = localStorage.getItem('digimon_app_data_v33');
       if (local) {
         try {
           appData = JSON.parse(local);
@@ -849,7 +743,7 @@
 
     function saveSystemData() {
       try {
-        localStorage.setItem('digimon_app_data_v31', JSON.stringify(appData));
+        localStorage.setItem('digimon_app_data_v33', JSON.stringify(appData));
         if (firebaseDb) {
           firebaseDb.ref('/').set(appData);
         }
@@ -896,13 +790,13 @@
       const inputUser = document.getElementById('loginUsername');
 
       if (type === 'student') {
-        tSt.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition bg-cyan-600 text-white";
-        tTc.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white";
+        tSt.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition bg-cyan-600 text-white cursor-pointer";
+        tTc.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer";
         lblUser.textContent = "Student Username / ID";
         inputUser.placeholder = "e.g. s01";
       } else {
-        tTc.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition bg-amber-600 text-white";
-        tSt.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white";
+        tTc.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition bg-amber-600 text-white cursor-pointer";
+        tSt.className = "flex-1 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer";
         lblUser.textContent = "Teacher or Super Admin Username";
         inputUser.placeholder = "e.g. superadmin / teacher1 / admin";
       }
@@ -934,7 +828,7 @@
           );
           if (superAdminObj) {
             currentUser = { role: 'superadmin', data: superAdminObj };
-            sessionStorage.setItem('digimon_session_final_v6', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v8', JSON.stringify(currentUser));
             enterApp();
             return;
           }
@@ -946,7 +840,7 @@
           );
           if (teacherObj) {
             currentUser = { role: 'teacher', data: teacherObj };
-            sessionStorage.setItem('digimon_session_final_v6', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v8', JSON.stringify(currentUser));
             enterApp();
             return;
           }
@@ -960,7 +854,7 @@
           );
           if (studentObj) {
             currentUser = { role: 'student', data: studentObj };
-            sessionStorage.setItem('digimon_session_final_v6', JSON.stringify(currentUser));
+            sessionStorage.setItem('digimon_session_final_v8', JSON.stringify(currentUser));
             enterApp();
           } else {
             alert("Invalid student credentials!\n• Default Students: s01 to s04 / 123");
@@ -973,7 +867,7 @@
     }
 
     function checkAutoLogin() {
-      const sess = sessionStorage.getItem('digimon_session_final_v6');
+      const sess = sessionStorage.getItem('digimon_session_final_v8');
       if (sess) {
         try {
           currentUser = JSON.parse(sess);
@@ -981,7 +875,7 @@
             enterApp();
           }
         } catch (e) {
-          sessionStorage.removeItem('digimon_session_final_v6');
+          sessionStorage.removeItem('digimon_session_final_v8');
         }
       }
     }
@@ -1023,7 +917,7 @@
 
     function logout() {
       currentUser = null;
-      sessionStorage.removeItem('digimon_session_final_v6');
+      sessionStorage.removeItem('digimon_session_final_v8');
       document.getElementById('mainHeader').classList.add('hidden');
       document.getElementById('viewStudent').classList.add('hidden');
       document.getElementById('viewTeacher').classList.add('hidden');
@@ -1097,6 +991,9 @@
       const maxHp = t.maxHp || digi.maxHp || 1000;
       if (t.hp === undefined) t.hp = maxHp;
 
+      const ultPwr = t.skillPower || 180;
+      const techPwr = t.techPower || Math.round(ultPwr * 0.5);
+
       const nameEl = document.getElementById('tcBossName');
       const stageEl = document.getElementById('tcBossStage');
       const imgEl = document.getElementById('tcBossImg');
@@ -1110,7 +1007,7 @@
           handleDigiImgError(this, digi.id);
         };
       }
-      if (hpEl) hpEl.textContent = `HP: ${t.hp} / ${maxHp} | Power: ${t.skillPower || digi.skillPower || 100}`;
+      if (hpEl) hpEl.textContent = `HP: ${t.hp} / ${maxHp} | Special Move: ${ultPwr} DMG | Signature Move: ${techPwr} DMG`;
     }
 
     // Student UI logic
@@ -1199,7 +1096,7 @@
 
       const diff = maxExp - student.exp;
       const totalAllocatedTraits = student.courage + student.wisdom + student.love + student.discipline;
-      const canStillEvolve = (digi.stage !== "MEGA" && (digi.stage !== "ULTIMATE" || digi.nextForm));
+      const canStillEvolve = (digi.stage !== "MEGA");
       const noticeEl = document.getElementById('stNextEvolveNotice');
 
       if (noticeEl) {
@@ -1265,89 +1162,104 @@
       }
     }
 
-    // Comprehensive Multi-Branch Evolution System
+    // Dynamic Evolution: Minimum 4 paths per Digimon, up to 6 paths when allocating 3+ traits
     function computeNextEvolution(student) {
       const cur = DIGIMON_DB[student.currentDigiId];
-      if (!cur) return null;
+      if (!cur || cur.stage === "MEGA") return null;
 
       const { courage: c, wisdom: w, love: l, discipline: d } = student;
+      const traitValues = [c, w, l, d];
+      const activeTraitsCount = traitValues.filter(val => val > 0).length;
 
-      // 1. In-Training Stage (6 Branches)
-      if (cur.stage === "DIGI-EGG") {
-        if (c === l && l === d && d === w) {
-          return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon", "baby_motimon", "baby_tanemon", "baby_demiveemon"]);
-        }
-        if (c >= l && c >= d && c >= w) return pickRandom(["baby_koromon", "baby_demiveemon"]);
-        if (l >= c && l >= d && l >= w) return pickRandom(["baby_tsunomon", "baby_tanemon"]);
-        if (w >= c && w >= l && w >= d) return "baby_motimon";
-        if (d >= c && d >= l && d >= w) return "baby_tokomon";
-        return pickRandom(["baby_koromon", "baby_tsunomon", "baby_tokomon"]);
+      // Define multi-branch evolutionary matrix
+      const EVOLUTION_MATRIX = {
+        // --- Eggs -> In-Training (6 Available) ---
+        "DIGI-EGG": {
+          courage: "baby_demiveemon",
+          friendship: "baby_tanemon",
+          discipline: "baby_tokomon",
+          wisdom: "baby_motimon",
+          alt1: "baby_koromon",
+          alt2: "baby_tsunomon"
+        },
+        // --- In-Training -> Rookie ---
+        "baby_koromon": { courage: "rookie_agumon", friendship: "rookie_palmon", discipline: "rookie_patamon", wisdom: "rookie_biyomon", alt1: "rookie_veemon", alt2: "rookie_tentomon" },
+        "baby_tsunomon": { courage: "rookie_agumon", friendship: "rookie_gabumon", discipline: "rookie_patamon", wisdom: "rookie_tentomon", alt1: "rookie_gomamon", alt2: "rookie_palmon" },
+        "baby_tokomon": { courage: "rookie_veemon", friendship: "rookie_gabumon", discipline: "rookie_patamon", wisdom: "rookie_biyomon", alt1: "rookie_agumon", alt2: "rookie_tentomon" },
+        "baby_motimon": { courage: "rookie_agumon", friendship: "rookie_gomamon", discipline: "rookie_patamon", wisdom: "rookie_tentomon", alt1: "rookie_biyomon", alt2: "rookie_gabumon" },
+        "baby_tanemon": { courage: "rookie_veemon", friendship: "rookie_palmon", discipline: "rookie_patamon", wisdom: "rookie_tentomon", alt1: "rookie_gomamon", alt2: "rookie_biyomon" },
+        "baby_demiveemon": { courage: "rookie_veemon", friendship: "rookie_gabumon", discipline: "rookie_patamon", wisdom: "rookie_agumon", alt1: "rookie_tentomon", alt2: "rookie_gomamon" },
+
+        // --- Rookie -> Champion ---
+        "rookie_agumon": { courage: "champ_greymon", friendship: "champ_tyrannomon", discipline: "champ_airdramon", wisdom: "champ_seadramon", alt1: "champ_exveemon", alt2: "champ_kuwagamon" },
+        "rookie_gabumon": { courage: "champ_unimon", friendship: "champ_garurumon", discipline: "champ_gargomon", wisdom: "champ_wizardmon", alt1: "champ_ikkakumon", alt2: "champ_seadramon" },
+        "rookie_patamon": { courage: "champ_airdramon", friendship: "champ_gatomon", discipline: "champ_angemon", wisdom: "champ_wizardmon", alt1: "champ_unimon", alt2: "champ_birdramon" },
+        "rookie_biyomon": { courage: "champ_birdramon", friendship: "champ_gatomon", discipline: "champ_angemon", wisdom: "champ_kabuterimon", alt1: "champ_sunflowmon", alt2: "champ_unimon" },
+        "rookie_palmon": { courage: "champ_tyrannomon", friendship: "champ_togemon", discipline: "champ_kyubimon", wisdom: "champ_sunflowmon", alt1: "champ_gatomon", alt2: "champ_seadramon" },
+        "rookie_tentomon": { courage: "champ_kuwagamon", friendship: "champ_garurumon", discipline: "champ_gargomon", wisdom: "champ_kabuterimon", alt1: "champ_wizardmon", alt2: "champ_greymon" },
+        "rookie_gomamon": { courage: "champ_ikkakumon", friendship: "champ_togemon", discipline: "champ_angemon", wisdom: "champ_seadramon", alt1: "champ_unimon", alt2: "champ_garurumon" },
+        "rookie_veemon": { courage: "champ_exveemon", friendship: "champ_garurumon", discipline: "champ_gargomon", wisdom: "champ_greymon", alt1: "champ_tyrannomon", alt2: "champ_airdramon" },
+
+        // --- Champion -> Ultimate ---
+        "champ_greymon": { courage: "ult_metalgreymon", friendship: "ult_metaltyrannomon", discipline: "ult_megadramon", wisdom: "ult_megaseadramon", alt1: "ult_paildramon", alt2: "ult_okuwamon" },
+        "champ_seadramon": { courage: "ult_megadramon", friendship: "ult_zudomon", discipline: "ult_rapidmon", wisdom: "ult_megaseadramon", alt1: "ult_metalgreymon", alt2: "ult_phantomon" },
+        "champ_tyrannomon": { courage: "ult_metalgreymon", friendship: "ult_metaltyrannomon", discipline: "ult_megadramon", wisdom: "ult_megakabuterimon", alt1: "ult_weregarurumon", alt2: "ult_okuwamon" },
+        "champ_garurumon": { courage: "ult_weregarurumon", friendship: "ult_zudomon", discipline: "ult_rapidmon", wisdom: "ult_phantomon", alt1: "ult_metalgreymon", alt2: "ult_paildramon" },
+        "champ_unimon": { courage: "ult_garudamon", friendship: "ult_zudomon", discipline: "ult_magnaangemon", wisdom: "ult_phantomon", alt1: "ult_angewomon", alt2: "ult_rapidmon" },
+        "champ_gargomon": { courage: "ult_metaltyrannomon", friendship: "ult_weregarurumon", discipline: "ult_rapidmon", wisdom: "ult_megakabuterimon", alt1: "ult_zudomon", alt2: "ult_magnaangemon" },
+        "champ_angemon": { courage: "ult_garudamon", friendship: "ult_angewomon", discipline: "ult_magnaangemon", wisdom: "ult_phantomon", alt1: "ult_taomon", alt2: "ult_megadramon" },
+        "champ_airdramon": { courage: "ult_megadramon", friendship: "ult_weregarurumon", discipline: "ult_magnaangemon", wisdom: "ult_megaseadramon", alt1: "ult_metalgreymon", alt2: "ult_garudamon" },
+        "champ_wizardmon": { courage: "ult_megadramon", friendship: "ult_taomon", discipline: "ult_magnaangemon", wisdom: "ult_phantomon", alt1: "ult_angewomon", alt2: "ult_megakabuterimon" },
+        "champ_birdramon": { courage: "ult_garudamon", friendship: "ult_angewomon", discipline: "ult_magnaangemon", wisdom: "ult_megakabuterimon", alt1: "ult_lillymon", alt2: "ult_megadramon" },
+        "champ_kabuterimon": { courage: "ult_okuwamon", friendship: "ult_zudomon", discipline: "ult_rapidmon", wisdom: "ult_megakabuterimon", alt1: "ult_metalgreymon", alt2: "ult_taomon" },
+        "champ_gatomon": { courage: "ult_garudamon", friendship: "ult_angewomon", discipline: "ult_magnaangemon", wisdom: "ult_lilamon", alt1: "ult_taomon", alt2: "ult_lillymon" },
+        "champ_togemon": { courage: "ult_metaltyrannomon", friendship: "ult_lillymon", discipline: "ult_taomon", wisdom: "ult_lilamon", alt1: "ult_zudomon", alt2: "ult_angewomon" },
+        "champ_sunflowmon": { courage: "ult_garudamon", friendship: "ult_lillymon", discipline: "ult_taomon", wisdom: "ult_lilamon", alt1: "ult_angewomon", alt2: "ult_megakabuterimon" },
+        "champ_kyubimon": { courage: "ult_weregarurumon", friendship: "ult_lilamon", discipline: "ult_taomon", wisdom: "ult_phantomon", alt1: "ult_magnaangemon", alt2: "ult_angewomon" },
+        "champ_kuwagamon": { courage: "ult_okuwamon", friendship: "ult_metaltyrannomon", discipline: "ult_rapidmon", wisdom: "ult_megakabuterimon", alt1: "ult_metalgreymon", alt2: "ult_megadramon" },
+        "champ_ikkakumon": { courage: "ult_zudomon", friendship: "ult_weregarurumon", discipline: "ult_rapidmon", wisdom: "ult_megaseadramon", alt1: "ult_paildramon", alt2: "ult_magnaangemon" },
+        "champ_exveemon": { courage: "ult_paildramon", friendship: "ult_weregarurumon", discipline: "ult_magnaangemon", wisdom: "ult_metalgreymon", alt1: "ult_megadramon", alt2: "ult_zudomon" },
+
+        // --- Ultimate -> Mega ---
+        "ult_metalgreymon": { courage: "mega_wargreymon", friendship: "mega_metalgarurumon", discipline: "mega_rusttyranomon", wisdom: "mega_megidramon", alt1: "mega_seraphimon", alt2: "mega_piedmon" },
+        "ult_megaseadramon": { courage: "mega_megidramon", friendship: "mega_vikemon", discipline: "mega_plesiomon", wisdom: "mega_plesiomon", alt1: "mega_wargreymon", alt2: "mega_lotusmon" },
+        "ult_metaltyrannomon": { courage: "mega_rusttyranomon", friendship: "mega_vikemon", discipline: "mega_saintgargomon", wisdom: "mega_herculeskabuterimon", alt1: "mega_wargreymon", alt2: "mega_megidramon" },
+        "ult_weregarurumon": { courage: "mega_wargreymon", friendship: "mega_metalgarurumon", discipline: "mega_saintgargomon", wisdom: "mega_piedmon", alt1: "mega_vikemon", alt2: "mega_seraphimon" },
+        "ult_zudomon": { courage: "mega_wargreymon", friendship: "mega_vikemon", discipline: "mega_saintgargomon", wisdom: "mega_plesiomon", alt1: "mega_metalgarurumon", alt2: "mega_herculeskabuterimon" },
+        "ult_rapidmon": { courage: "mega_rusttyranomon", friendship: "mega_metalgarurumon", discipline: "mega_saintgargomon", wisdom: "mega_herculeskabuterimon", alt1: "mega_seraphimon", alt2: "mega_sakuyamon" },
+        "ult_magnaangemon": { courage: "mega_hououmon", friendship: "mega_ophanimon", discipline: "mega_seraphimon", wisdom: "mega_piedmon", alt1: "mega_wargreymon", alt2: "mega_sakuyamon" },
+        "ult_megadramon": { courage: "mega_megidramon", friendship: "mega_metalgarurumon", discipline: "mega_rusttyranomon", wisdom: "mega_piedmon", alt1: "mega_wargreymon", alt2: "mega_herculeskabuterimon" },
+        "ult_phantomon": { courage: "mega_megidramon", friendship: "mega_piedmon", discipline: "mega_sakuyamon", wisdom: "mega_piedmon", alt1: "mega_seraphimon", alt2: "mega_lotusmon" },
+        "ult_garudamon": { courage: "mega_hououmon", friendship: "mega_ophanimon", discipline: "mega_seraphimon", wisdom: "mega_herculeskabuterimon", alt1: "mega_rosemon", alt2: "mega_wargreymon" },
+        "ult_megakabuterimon": { courage: "mega_wargreymon", friendship: "mega_vikemon", discipline: "mega_saintgargomon", wisdom: "mega_herculeskabuterimon", alt1: "mega_rusttyranomon", alt2: "mega_lotusmon" },
+        "ult_angewomon": { courage: "mega_hououmon", friendship: "mega_ophanimon", discipline: "mega_seraphimon", wisdom: "mega_lotusmon", alt1: "mega_rosemon", alt2: "mega_sakuyamon" },
+        "ult_lillymon": { courage: "mega_hououmon", friendship: "mega_rosemon", discipline: "mega_sakuyamon", wisdom: "mega_lotusmon", alt1: "mega_ophanimon", alt2: "mega_vikemon" },
+        "ult_lilamon": { courage: "mega_hououmon", friendship: "mega_rosemon", discipline: "mega_sakuyamon", wisdom: "mega_lotusmon", alt1: "mega_ophanimon", alt2: "mega_plesiomon" },
+        "ult_taomon": { courage: "mega_megidramon", friendship: "mega_sakuyamon", discipline: "mega_seraphimon", wisdom: "mega_piedmon", alt1: "mega_lotusmon", alt2: "mega_ophanimon" },
+        "ult_okuwamon": { courage: "mega_megidramon", friendship: "mega_vikemon", discipline: "mega_saintgargomon", wisdom: "mega_herculeskabuterimon", alt1: "mega_rusttyranomon", alt2: "mega_wargreymon" },
+        "ult_paildramon": { courage: "mega_wargreymon", friendship: "mega_metalgarurumon", discipline: "mega_seraphimon", wisdom: "mega_megidramon", alt1: "mega_rusttyranomon", alt2: "mega_saintgargomon" }
+      };
+
+      const branch = cur.stage === "DIGI-EGG" ? EVOLUTION_MATRIX["DIGI-EGG"] : EVOLUTION_MATRIX[cur.id];
+      if (!branch) return cur.nextForm || null;
+
+      // 6-branch pool unlock condition: Allocating 3 or more traits
+      if (activeTraitsCount >= 3) {
+        const pool = [branch.courage, branch.friendship, branch.discipline, branch.wisdom, branch.alt1, branch.alt2].filter(Boolean);
+        return pickRandom(pool);
       }
 
-      // 2. Rookie Stage (8 Branches)
-      if (cur.stage === "IN-TRAINING") {
-        if (cur.id === "baby_koromon") return c >= w ? "rookie_agumon" : "rookie_biyomon";
-        if (cur.id === "baby_tsunomon") return l >= c ? "rookie_gabumon" : "rookie_palmon";
-        if (cur.id === "baby_tokomon") return d >= w ? "rookie_patamon" : "rookie_biyomon";
-        if (cur.id === "baby_motimon") return w >= c ? "rookie_tentomon" : "rookie_agumon";
-        if (cur.id === "baby_tanemon") return l >= w ? "rookie_gomamon" : "rookie_palmon";
-        if (cur.id === "baby_demiveemon") return c >= d ? "rookie_veemon" : "rookie_patamon";
+      // 4-branch standard condition based on dominant attribute
+      const highest = Math.max(c, w, l, d);
+      if (highest === 0) {
+        return pickRandom([branch.courage, branch.friendship, branch.discipline, branch.wisdom]);
       }
+      if (c === highest) return branch.courage;
+      if (l === highest) return branch.friendship;
+      if (d === highest) return branch.discipline;
+      if (w === highest) return branch.wisdom;
 
-      // 3. Champion Stage (18 Branches)
-      if (cur.stage === "ROOKIE") {
-        if (cur.id === "rookie_agumon") {
-          if (c > w && c >= l) return "champ_greymon";
-          if (w > c && w >= l) return "champ_seadramon";
-          if (l > c && l > w) return "champ_tyrannomon";
-          return pickRandom(["champ_greymon", "champ_seadramon", "champ_tyrannomon"]);
-        }
-        if (cur.id === "rookie_gabumon") {
-          if (l > c && l >= d) return "champ_garurumon";
-          if (c > l && c >= d) return "champ_unimon";
-          if (d > l && d > c) return "champ_gargomon";
-          return pickRandom(["champ_garurumon", "champ_unimon", "champ_gargomon"]);
-        }
-        if (cur.id === "rookie_patamon") {
-          if (d > c && d >= w) return "champ_angemon";
-          if (c > d && c >= w) return "champ_airdramon";
-          if (w > d && w > c) return "champ_wizardmon";
-          return pickRandom(["champ_angemon", "champ_airdramon", "champ_wizardmon"]);
-        }
-        if (cur.id === "rookie_biyomon") {
-          if (c > w && c >= l) return "champ_birdramon";
-          if (w > c && w >= l) return "champ_kabuterimon";
-          if (l > c && l > w) return "champ_gatomon";
-          return pickRandom(["champ_birdramon", "champ_kabuterimon", "champ_gatomon"]);
-        }
-        if (cur.id === "rookie_palmon") {
-          if (l > w && l >= d) return "champ_togemon";
-          if (w > l && w >= d) return "champ_sunflowmon";
-          if (d > l && d > w) return "champ_kyubimon";
-          return pickRandom(["champ_togemon", "champ_sunflowmon", "champ_kyubimon"]);
-        }
-        if (cur.id === "rookie_tentomon") {
-          return c > w ? "champ_kuwagamon" : "champ_kabuterimon";
-        }
-        if (cur.id === "rookie_gomamon") {
-          return c > l ? "champ_ikkakumon" : "champ_seadramon";
-        }
-        if (cur.id === "rookie_veemon") {
-          return c >= d ? "champ_exveemon" : "champ_tyrannomon";
-        }
-      }
-
-      // 4. Ultimate Stage
-      if (cur.stage === "CHAMPION") {
-        return cur.nextForm || null;
-      }
-
-      // 5. Mega Stage
-      if (cur.stage === "ULTIMATE") {
-        return cur.nextForm || null;
-      }
-
-      return null;
+      return pickRandom([branch.courage, branch.friendship, branch.discipline, branch.wisdom]);
     }
 
     function triggerEvolution() {
@@ -1485,12 +1397,15 @@
       }
     }
 
+    // Teacher Attacks: Special Move & Signature Move (Single & Full Class AOE)
     function teacherCastSkill(mode) {
       if (!currentUser || currentUser.role !== 'teacher') return;
       const teacher = appData.teachers[currentUser.data.id] || currentUser.data;
       const teacherId = currentUser.data.id;
       const digi = DIGIMON_DB[teacher.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
-      const pwr = teacher.skillPower || digi.skillPower || 150;
+      
+      const ultPwr = teacher.skillPower || 180;
+      const techPwr = teacher.techPower || Math.round(ultPwr * 0.5);
 
       const myStudents = Object.values(appData.students || {}).filter(s => {
         const belongs = s.teacherId === teacherId;
@@ -1503,8 +1418,13 @@
         return;
       }
 
-      if (mode === 'single') {
-        let menu = `Choose a student to target with [${digi.skillName}] (${pwr} DMG):\n`;
+      // Single Target Special Move / Signature Move
+      if (mode === 'single_ult' || mode === 'single_tech') {
+        const isUlt = mode === 'single_ult';
+        const pwr = isUlt ? ultPwr : techPwr;
+        const moveName = isUlt ? "Special Move" : "Signature Move";
+
+        let menu = `Choose a student to target with ${digi.name}'s [${moveName}] (${pwr} DMG):\n`;
         myStudents.forEach((s, idx) => {
           menu += `${idx + 1}. ${s.name} (${s.classId}) - HP: ${s.hp}\n`;
         });
@@ -1516,26 +1436,50 @@
           const target = myStudents[selIdx];
           target.hp = (target.hp || 100) - pwr;
           if (target.hp <= 0) {
-            triggerDeEvolution(target, `Defeated by Teacher's ${digi.name}`);
+            triggerDeEvolution(target, `Defeated by Teacher's ${moveName}`);
           }
           saveSystemData();
           renderTeacherGrid();
-          alert(`⚡ Boss Strike! ${digi.name} unleashed [${digi.skillName}] on [${target.name}] for ${pwr} DMG!`);
+          alert(`⚡ Boss Strike! ${digi.name} unleashed [${moveName}] on [${target.name}] for ${pwr} DMG!`);
         }
-      } else if (mode === 'aoe') {
-        if (!confirm(`💥 Unleash AOE attack [${digi.skillName}] (${pwr} DMG) on ALL ${myStudents.length} students in this view?`)) {
+      } 
+      // Full Class AOE Special Move / Signature Move
+      else if (mode === 'aoe_ult' || mode === 'aoe_tech') {
+        const isUlt = mode === 'aoe_ult';
+        const pwr = isUlt ? ultPwr : techPwr;
+        const moveName = isUlt ? "Special Move" : "Signature Move";
+
+        if (!confirm(`💥 Unleash Full Class AOE [${moveName}] (${pwr} DMG) on ALL ${myStudents.length} students in this view?`)) {
           return;
         }
         myStudents.forEach(s => {
           s.hp = (s.hp || 100) - pwr;
           if (s.hp <= 0) {
-            triggerDeEvolution(s, `Defeated by Teacher's AOE ${digi.name}`);
+            triggerDeEvolution(s, `Defeated by Teacher's AOE ${moveName}`);
           }
         });
         saveSystemData();
         renderTeacherGrid();
-        alert(`🔥 FULL CLASS STRIKE! ${digi.name} hit all ${myStudents.length} students for ${pwr} DMG!`);
+        alert(`🔥 FULL CLASS STRIKE! ${digi.name} hit all ${myStudents.length} students with [${moveName}] for ${pwr} DMG!`);
       }
+    }
+
+    // Teacher Single Student HP Heal
+    function teacherHealSingleStudent(studentId) {
+      const student = appData.students[studentId];
+      if (!student) return;
+
+      const digi = DIGIMON_DB[student.currentDigiId] || DIGIMON_DB['digitama1'];
+      const maxHp = digi.maxHp || 100;
+
+      const input = prompt(`Enter HP amount to heal ${student.name} (Max HP: ${maxHp}, Current HP: ${student.hp}):`, "50");
+      if (input === null) return;
+      const healAmt = parseInt(input) || 0;
+
+      student.hp = Math.min(maxHp, (student.hp || 0) + healAmt);
+      saveSystemData();
+      renderTeacherGrid();
+      alert(`💚 Restored ${healAmt} HP to ${student.name}! (Current HP: ${student.hp} / ${maxHp})`);
     }
 
     function teacherHealAll() {
@@ -1797,7 +1741,7 @@
               <span class="font-bold text-sm text-cyan-300">${s.name}</span>
               <div class="flex items-center gap-1.5">
                 <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">${digi.stageName}</span>
-                <button onclick="deleteStudentAccount('${s.id}')" title="Delete Student" class="text-slate-500 hover:text-rose-400 text-xs px-1 py-0.5 transition">
+                <button onclick="deleteStudentAccount('${s.id}')" title="Delete Student" class="text-slate-500 hover:text-rose-400 text-xs px-1 py-0.5 transition cursor-pointer">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
@@ -1831,36 +1775,40 @@
 
           <div class="space-y-2 mt-2">
             <div class="grid grid-cols-3 gap-1">
-              <button onclick="rewardStudent('${s.id}', 10)" class="px-1.5 py-1 bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800/40 rounded text-[10px] text-cyan-300 font-bold">
+              <button onclick="rewardStudent('${s.id}', 10)" class="px-1.5 py-1 bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800/40 rounded text-[10px] text-cyan-300 font-bold cursor-pointer">
                 +10 EXP
               </button>
-              <button onclick="rewardStudent('${s.id}', 25)" class="px-1.5 py-1 bg-blue-950/60 hover:bg-blue-900 border border-blue-800/40 rounded text-[10px] text-blue-300 font-bold">
+              <button onclick="rewardStudent('${s.id}', 25)" class="px-1.5 py-1 bg-blue-950/60 hover:bg-blue-900 border border-blue-800/40 rounded text-[10px] text-blue-300 font-bold cursor-pointer">
                 +25 EXP
               </button>
-              <button onclick="rewardStudent('${s.id}', 50)" class="px-1.5 py-1 bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-800/40 rounded text-[10px] text-indigo-300 font-bold">
+              <button onclick="rewardStudent('${s.id}', 50)" class="px-1.5 py-1 bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-800/40 rounded text-[10px] text-indigo-300 font-bold cursor-pointer">
                 +50 EXP
               </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-1 bg-amber-950/30 p-1 rounded border border-amber-600/30">
-              <button onclick="grantAttackQuota('${s.id}', 1)" class="px-1 py-1 bg-amber-900/50 hover:bg-amber-800 rounded text-[10px] text-amber-300 font-bold">
+            <!-- Single Student Restore & Quotas -->
+            <div class="grid grid-cols-3 gap-1 bg-amber-950/30 p-1 rounded border border-amber-600/30">
+              <button onclick="teacherHealSingleStudent('${s.id}')" class="px-1 py-1 bg-emerald-950/80 hover:bg-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer">
+                <i class="fa-solid fa-heart-pulse"></i> Heal HP
+              </button>
+              <button onclick="grantAttackQuota('${s.id}', 1)" class="px-1 py-1 bg-amber-900/50 hover:bg-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">
                 <i class="fa-solid fa-plus"></i> 1 Quota
               </button>
-              <button onclick="grantAttackQuota('${s.id}', 3)" class="px-1 py-1 bg-amber-900/50 hover:bg-amber-800 rounded text-[10px] text-amber-300 font-bold">
+              <button onclick="grantAttackQuota('${s.id}', 3)" class="px-1 py-1 bg-amber-900/50 hover:bg-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">
                 <i class="fa-solid fa-plus"></i> 3 Quotas
               </button>
             </div>
 
             <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-800/80">
-              <button onclick="penalizeStudent('${s.id}', 'hp', 30)" class="px-1.5 py-1 bg-red-950/80 hover:bg-red-900 border border-red-700/50 rounded text-[10px] text-red-300 font-bold">
+              <button onclick="penalizeStudent('${s.id}', 'hp', 30)" class="px-1.5 py-1 bg-red-950/80 hover:bg-red-900 border border-red-700/50 rounded text-[10px] text-red-300 font-bold cursor-pointer">
                 <i class="fa-solid fa-burst mr-1"></i> -30 HP
               </button>
-              <button onclick="penalizeStudent('${s.id}', 'exp', 50)" class="px-1.5 py-1 bg-purple-950/80 hover:bg-purple-900 border border-purple-700/50 rounded text-[10px] text-purple-300 font-bold">
+              <button onclick="penalizeStudent('${s.id}', 'exp', 50)" class="px-1.5 py-1 bg-purple-950/80 hover:bg-purple-900 border border-purple-700/50 rounded text-[10px] text-purple-300 font-bold cursor-pointer">
                 <i class="fa-solid fa-angles-down mr-1"></i> -50 EXP
               </button>
             </div>
 
-            <button onclick="rebirthStudent('${s.id}')" class="w-full py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded text-[10px] text-slate-400 hover:text-amber-300 transition flex items-center justify-center gap-1 font-bold">
+            <button onclick="rebirthStudent('${s.id}')" class="w-full py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded text-[10px] text-slate-400 hover:text-amber-300 transition flex items-center justify-center gap-1 font-bold cursor-pointer">
               <i class="fa-solid fa-rotate-left text-amber-400"></i> Rebirth to Digi-Egg
             </button>
           </div>
@@ -1967,8 +1915,9 @@
       document.getElementById('modalTcUser').disabled = false;
       document.getElementById('modalTcPass').value = '123';
       document.getElementById('modalTcName').value = 'Master Tamer';
-      document.getElementById('modalTcHp').value = '1000';
-      document.getElementById('modalTcPower').value = '150';
+      document.getElementById('modalTcHp').value = '1200';
+      document.getElementById('modalTcPower').value = '180';
+      document.getElementById('modalTcTechPower').value = '90';
 
       const sel = document.getElementById('modalTcDigiSelect');
       sel.innerHTML = '';
@@ -1991,8 +1940,9 @@
       document.getElementById('modalTcUser').disabled = true;
       document.getElementById('modalTcPass').value = t.password;
       document.getElementById('modalTcName').value = t.name;
-      document.getElementById('modalTcHp').value = t.maxHp || 1000;
-      document.getElementById('modalTcPower').value = t.skillPower || 150;
+      document.getElementById('modalTcHp').value = t.maxHp || 1200;
+      document.getElementById('modalTcPower').value = t.skillPower || 180;
+      document.getElementById('modalTcTechPower').value = t.techPower || Math.round((t.skillPower || 180) * 0.5);
 
       const sel = document.getElementById('modalTcDigiSelect');
       sel.innerHTML = '';
@@ -2012,8 +1962,9 @@
       const password = document.getElementById('modalTcPass').value.trim();
       const name = document.getElementById('modalTcName').value.trim();
       const partnerDigiId = document.getElementById('modalTcDigiSelect').value;
-      const maxHp = parseInt(document.getElementById('modalTcHp').value) || 1000;
-      const skillPower = parseInt(document.getElementById('modalTcPower').value) || 150;
+      const maxHp = parseInt(document.getElementById('modalTcHp').value) || 1200;
+      const skillPower = parseInt(document.getElementById('modalTcPower').value) || 180;
+      const techPower = parseInt(document.getElementById('modalTcTechPower').value) || 90;
 
       if (!username || !password || !name) {
         alert("Please fill in username, password, and name.");
@@ -2031,7 +1982,8 @@
         partnerDigiId: partnerDigiId,
         maxHp: maxHp,
         hp: existing ? (existing.hp > maxHp ? maxHp : existing.hp) : maxHp,
-        skillPower: skillPower
+        skillPower: skillPower,
+        techPower: techPower
       };
 
       saveSystemData();
@@ -2061,6 +2013,93 @@
       alert(`🗑️ Teacher ${t.name} and associated data have been deleted.`);
     }
 
+    // Super Admin Credentials Manager
+    function openCredentialsModal() {
+      renderCredentialsList();
+      document.getElementById('modalAccountCredentials').classList.remove('hidden');
+    }
+
+    function closeCredentialsModal() {
+      document.getElementById('modalAccountCredentials').classList.add('hidden');
+    }
+
+    function renderCredentialsList() {
+      const saContainer = document.getElementById('credListSuperAdmins');
+      const tcContainer = document.getElementById('credListTeachers');
+      const stContainer = document.getElementById('credListStudents');
+
+      saContainer.innerHTML = '';
+      tcContainer.innerHTML = '';
+      stContainer.innerHTML = '';
+
+      // Super Admins
+      Object.values(appData.superAdmins || {}).forEach(sa => {
+        saContainer.appendChild(createCredRow('superAdmins', sa.username, sa.username, sa.password, sa.name));
+      });
+
+      // Teachers
+      Object.values(appData.teachers || {}).forEach(tc => {
+        tcContainer.appendChild(createCredRow('teachers', tc.id, tc.username, tc.password, tc.name));
+      });
+
+      // Students
+      Object.values(appData.students || {}).forEach(st => {
+        stContainer.appendChild(createCredRow('students', st.id, st.username, st.password, `${st.name} (${st.classId || 'No Class'})`));
+      });
+    }
+
+    function createCredRow(type, key, username, password, displayName) {
+      const row = document.createElement('div');
+      row.className = "bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs";
+      row.innerHTML = `
+        <div class="flex-1 min-w-[140px]">
+          <span class="font-bold text-slate-200">${displayName}</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1">
+            <span class="text-slate-400 text-[10px]">ID:</span>
+            <input type="text" id="cred_u_${type}_${key}" value="${username}" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-cyan-300 w-28 text-xs outline-none">
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="text-slate-400 text-[10px]">PWD:</span>
+            <input type="text" id="cred_p_${type}_${key}" value="${password}" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-amber-300 w-28 text-xs outline-none">
+          </div>
+          <button onclick="saveAccountCredentials('${type}', '${key}')" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-slate-950 font-bold text-[11px] cursor-pointer">
+            Save
+          </button>
+        </div>
+      `;
+      return row;
+    }
+
+    function saveAccountCredentials(type, oldKey) {
+      const newUsername = document.getElementById(`cred_u_${type}_${oldKey}`).value.trim();
+      const newPassword = document.getElementById(`cred_p_${type}_${oldKey}`).value.trim();
+
+      if (!newUsername || !newPassword) {
+        alert("Username and Password cannot be empty!");
+        return;
+      }
+
+      const targetObj = appData[type][oldKey];
+      if (!targetObj) return;
+
+      targetObj.username = newUsername;
+      targetObj.password = newPassword;
+
+      const newKey = newUsername.toLowerCase();
+      if (newKey !== oldKey.toLowerCase()) {
+        targetObj.id = newKey;
+        appData[type][newKey] = targetObj;
+        delete appData[type][oldKey];
+      }
+
+      saveSystemData();
+      renderSuperAdminDashboard();
+      renderCredentialsList();
+      alert(`✅ Updated credentials for [${targetObj.name || newUsername}] successfully!`);
+    }
+
     function renderSuperAdminDashboard() {
       renderSuperAdminTeachers();
       renderSuperAdminStudents();
@@ -2081,6 +2120,8 @@
         const classCount = Object.values(appData.classes || {}).filter(c => c.teacherId === t.id).length;
         const studentCount = Object.values(appData.students || {}).filter(s => s.teacherId === t.id).length;
         const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
+        const ultPwr = t.skillPower || 180;
+        const techPwr = t.techPower || Math.round(ultPwr * 0.5);
 
         const card = document.createElement('div');
         card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex justify-between items-center";
@@ -2090,17 +2131,17 @@
               <img src="${digi.img}" onerror="handleDigiImgError(this, '${digi.id}')" class="max-w-full max-h-full object-contain">
             </div>
             <div>
-              <div class="font-bold text-amber-300 text-xs">${t.name}</div>
+              <div class="font-bold text-amber-300 text-xs">${t.name} (${t.username})</div>
               <div class="text-[11px] text-slate-400 font-mono">Partner: <span class="text-cyan-300">${digi.name}</span></div>
-              <div class="text-[10px] text-emerald-400 font-mono">Max HP: ${t.maxHp || digi.maxHp} | Power: ${t.skillPower || digi.skillPower}</div>
+              <div class="text-[10px] text-emerald-400 font-mono">HP: ${t.maxHp || 1200} | Special: ${ultPwr} | Signature: ${techPwr}</div>
               <div class="text-[10px] text-slate-500 mt-0.5">Classes: ${classCount} | Tamers: ${studentCount}</div>
             </div>
           </div>
           <div class="flex items-center gap-1">
-            <button onclick="editTeacherAccount('${t.id}')" title="Edit Partner & Stats" class="text-slate-400 hover:text-amber-300 text-xs p-1">
+            <button onclick="editTeacherAccount('${t.id}')" title="Edit Partner & Stats" class="text-slate-400 hover:text-amber-300 text-xs p-1 cursor-pointer">
               <i class="fa-solid fa-pen-to-square"></i>
             </button>
-            <button onclick="deleteTeacherAccount('${t.id}')" title="Delete Teacher" class="text-slate-500 hover:text-rose-400 text-xs p-1">
+            <button onclick="deleteTeacherAccount('${t.id}')" title="Delete Teacher" class="text-slate-500 hover:text-rose-400 text-xs p-1 cursor-pointer">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </div>
@@ -2137,7 +2178,7 @@
               <div class="text-[10px] text-slate-500 font-mono">HP: ${s.hp} | Quota: ${s.attackQuota || 0} | Form: ${digi.name}</div>
             </div>
           </div>
-          <button onclick="deleteStudentAccount('${s.id}')" title="Delete Student" class="text-slate-500 hover:text-rose-400 text-xs p-1">
+          <button onclick="deleteStudentAccount('${s.id}')" title="Delete Student" class="text-slate-500 hover:text-rose-400 text-xs p-1 cursor-pointer">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         `;
