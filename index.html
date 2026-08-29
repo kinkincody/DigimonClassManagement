@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digimon Classroom System</title>
+  <title>Digimon Classroom Management System</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome -->
@@ -13,6 +13,8 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <!-- SheetJS (xlsx) for Excel Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800;900&display=swap');
@@ -47,7 +49,22 @@
     .animate-evolve {
       animation: digi-evolve-flash 1.2s ease-in-out;
     }
-    /* Toast Animation */
+    @keyframes gacha-spin {
+      0% { transform: rotate(0deg) scale(0.8); opacity: 0.3; }
+      50% { transform: rotate(180deg) scale(1.2); opacity: 1; filter: drop-shadow(0 0 25px #f59e0b); }
+      100% { transform: rotate(360deg) scale(1); opacity: 1; }
+    }
+    .animate-gacha-spin {
+      animation: gacha-spin 1s ease-out;
+    }
+    @keyframes winner-zoom {
+      0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+      60% { transform: scale(1.1) rotate(3deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .animate-winner-zoom {
+      animation: winner-zoom 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
     @keyframes slideDownToast {
       0% { transform: translateY(-100%); opacity: 0; }
       15% { transform: translateY(0); opacity: 1; }
@@ -87,7 +104,7 @@
         <h1 class="font-bold text-lg text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-amber-300">
           DIGIMON TAMER SYSTEM
         </h1>
-        <p class="text-xs text-slate-400" id="headerUserInfo">Classroom Evolution & Battle Portal</p>
+        <p class="text-xs text-slate-400" id="headerUserInfo">Classroom Evolution, Lucky Draw & Battle Portal</p>
       </div>
     </div>
     
@@ -96,11 +113,11 @@
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         Firebase Live
       </span>
-      <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900 cursor-pointer">
-        <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
-      </button>
       <button onclick="toggleLeaderboardModal()" class="px-3 py-1.5 rounded text-xs font-bold bg-amber-950 border border-amber-600 text-amber-300 hover:bg-amber-900 cursor-pointer">
         <i class="fa-solid fa-trophy mr-1"></i> Leaderboard
+      </button>
+      <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900 cursor-pointer">
+        <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
       </button>
     </div>
   </header>
@@ -162,14 +179,19 @@
     <div id="viewStudent" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Digivice Hub -->
-        <div class="md:col-span-2 digi-card rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[420px]">
+        <div class="md:col-span-2 digi-card rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[440px]">
           <div class="w-full flex justify-between items-center z-10 mb-4">
             <span id="stStageBadge" class="font-pixel text-[10px] px-2.5 py-1 rounded bg-cyan-950 border border-cyan-500/50 text-cyan-300">
               STAGE: DIGI-EGG
             </span>
-            <span id="stDominantAttr" class="text-xs font-bold px-2.5 py-1 rounded bg-slate-800 text-amber-300 border border-amber-500/30">
-              Trait: Neutral
-            </span>
+            <div class="flex items-center gap-2">
+              <span id="stGachaTicketsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center gap-1">
+                <i class="fa-solid fa-ticket"></i> Draw Tickets: 0
+              </span>
+              <button onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-gift"></i> Item Gacha
+              </button>
+            </div>
           </div>
 
           <div class="relative my-4 z-10 flex flex-col items-center">
@@ -183,21 +205,36 @@
           </div>
 
           <!-- Battle / Skill Controls -->
-          <div class="z-10 mt-2 flex flex-wrap gap-2 justify-center items-center">
-            <button id="btnEvolve" onclick="triggerEvolution()" class="hidden px-6 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer">
+          <div class="z-10 mt-2 flex flex-col items-center gap-2.5 w-full max-w-md">
+            <button id="btnEvolve" onclick="triggerEvolution()" class="hidden w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer">
               <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
             </button>
-            <button id="btnCastSkill" onclick="promptStudentCastSkill()" class="px-5 py-2.5 rounded-full font-bold text-xs bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="stSkillBtnLabel">Special Move</span>
-            </button>
-            <span id="stAttackQuotaBadge" class="text-xs text-amber-300 font-bold bg-amber-950/80 px-3 py-1.5 rounded-full border border-amber-600/50">
-              <i class="fa-solid fa-crosshairs mr-1"></i> Attacks Left: 0
-            </span>
+            
+            <div class="flex flex-wrap gap-2 justify-center w-full">
+              <!-- Attack Teacher Button -->
+              <button onclick="studentAttackBoss()" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-skull"></i> <span>Attack Teacher Boss</span>
+              </button>
+              
+              <!-- Attack Classmate Button -->
+              <button onclick="studentAttackClassmate()" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-crosshairs"></i> <span>Attack Classmate</span>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between w-full px-2 text-xs">
+              <span id="stMoveInfoBadge" class="text-cyan-300 font-mono text-[11px] bg-slate-900/90 px-2.5 py-1 rounded border border-cyan-800/50">
+                Move: --
+              </span>
+              <span id="stAttackQuotaBadge" class="text-amber-300 font-bold bg-amber-950/90 px-3 py-1 rounded border border-amber-600/50">
+                <i class="fa-solid fa-bolt mr-1"></i> Attacks Left: 0
+              </span>
+            </div>
           </div>
         </div>
 
-        <!-- Right Stats Panel -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+        <!-- Right Stats & Inventory Panel -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
           <div>
             <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center justify-between">
               <span><i class="fa-solid fa-chart-simple text-cyan-400 mr-2"></i>Tamer Status</span>
@@ -228,80 +265,91 @@
             </div>
 
             <!-- 4 Traits Allocation by Student -->
-            <div class="mt-5 space-y-2.5">
+            <div class="mt-4 space-y-2">
               <div class="flex justify-between items-center">
-                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Growth (Allocate Points)</p>
+                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Growth</p>
                 <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Unallocated: 0 pts</span>
               </div>
               
               <!-- Courage -->
               <div>
-                <div class="flex justify-between items-center text-xs mb-1">
+                <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
                   <div class="flex items-center gap-1">
-                    <span id="stValCourage" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('courage', 1)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer" id="btnAllocCourage1">+1</button>
-                    <button onclick="allocateTrait('courage', 5)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer" id="btnAllocCourage5">+5</button>
-                    <button onclick="allocateTrait('courage', 10)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer" id="btnAllocCourage10">+10</button>
+                    <span id="stValCourage" class="font-bold text-slate-300 mr-1 text-xs">0</span>
+                    <button onclick="allocateTrait('courage', 1)" class="px-1 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[9px] hover:bg-rose-800 font-bold cursor-pointer">+1</button>
+                    <button onclick="allocateTrait('courage', 5)" class="px-1 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[9px] hover:bg-rose-800 font-bold cursor-pointer">+5</button>
+                    <button onclick="allocateTrait('courage', 10)" class="px-1 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[9px] hover:bg-rose-800 font-bold cursor-pointer">+10</button>
                   </div>
                 </div>
-                <div class="w-full bg-slate-950 rounded-full h-2">
+                <div class="w-full bg-slate-950 rounded-full h-1.5">
                   <div id="stBarCourage" class="bg-rose-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
               </div>
 
               <!-- Friendship -->
               <div>
-                <div class="flex justify-between items-center text-xs mb-1">
+                <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
                   <div class="flex items-center gap-1">
-                    <span id="stValLove" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('love', 1)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer" id="btnAllocLove1">+1</button>
-                    <button onclick="allocateTrait('love', 5)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer" id="btnAllocLove5">+5</button>
-                    <button onclick="allocateTrait('love', 10)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer" id="btnAllocLove10">+10</button>
+                    <span id="stValLove" class="font-bold text-slate-300 mr-1 text-xs">0</span>
+                    <button onclick="allocateTrait('love', 1)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+1</button>
+                    <button onclick="allocateTrait('love', 5)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+5</button>
+                    <button onclick="allocateTrait('love', 10)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+10</button>
                   </div>
                 </div>
-                <div class="w-full bg-slate-950 rounded-full h-2">
+                <div class="w-full bg-slate-950 rounded-full h-1.5">
                   <div id="stBarLove" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
               </div>
 
               <!-- Discipline -->
               <div>
-                <div class="flex justify-between items-center text-xs mb-1">
+                <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
                   <div class="flex items-center gap-1">
-                    <span id="stValDiscipline" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('discipline', 1)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer" id="btnAllocDisc1">+1</button>
-                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer" id="btnAllocDisc5">+5</button>
-                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer" id="btnAllocDisc10">+10</button>
+                    <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
+                    <button onclick="allocateTrait('discipline', 1)" class="px-1 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[9px] hover:bg-amber-800 font-bold cursor-pointer">+1</button>
+                    <button onclick="allocateTrait('discipline', 5)" class="px-1 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[9px] hover:bg-amber-800 font-bold cursor-pointer">+5</button>
+                    <button onclick="allocateTrait('discipline', 10)" class="px-1 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[9px] hover:bg-amber-800 font-bold cursor-pointer">+10</button>
                   </div>
                 </div>
-                <div class="w-full bg-slate-950 rounded-full h-2">
+                <div class="w-full bg-slate-950 rounded-full h-1.5">
                   <div id="stBarDiscipline" class="bg-amber-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
               </div>
 
               <!-- Wisdom -->
               <div>
-                <div class="flex justify-between items-center text-xs mb-1">
+                <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
                   <div class="flex items-center gap-1">
-                    <span id="stValWisdom" class="font-bold text-slate-300 mr-1">0</span>
-                    <button onclick="allocateTrait('wisdom', 1)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer" id="btnAllocWis1">+1</button>
-                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer" id="btnAllocWis5">+5</button>
-                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer" id="btnAllocWis10">+10</button>
+                    <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
+                    <button onclick="allocateTrait('wisdom', 1)" class="px-1 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[9px] hover:bg-blue-800 font-bold cursor-pointer">+1</button>
+                    <button onclick="allocateTrait('wisdom', 5)" class="px-1 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[9px] hover:bg-blue-800 font-bold cursor-pointer">+5</button>
+                    <button onclick="allocateTrait('wisdom', 10)" class="px-1 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[9px] hover:bg-blue-800 font-bold cursor-pointer">+10</button>
                   </div>
                 </div>
-                <div class="w-full bg-slate-950 rounded-full h-2">
+                <div class="w-full bg-slate-950 rounded-full h-1.5">
                   <div id="stBarWisdom" class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="mt-5 pt-3 border-t border-slate-800 space-y-2">
-            <button onclick="toggleEvolutionTreeModal()" class="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer">
+          <!-- Student Inventory Bag -->
+          <div class="border-t border-slate-800 pt-3">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Inventory</span>
+              <button onclick="openGachaModal()" class="text-[10px] text-cyan-400 hover:underline">Get Items &rarr;</button>
+            </div>
+            <div id="stInventoryList" class="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar pr-1 text-xs">
+              <div class="col-span-2 text-slate-500 italic text-center py-3">Inventory is empty. Draw items via Gacha!</div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800">
+            <button onclick="toggleEvolutionTreeModal()" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer">
               <i class="fa-solid fa-sitemap mr-1"></i> View Evolution Tree
             </button>
           </div>
@@ -324,6 +372,7 @@
     <!-- 2. Teacher Master View -->
     <!-- ========================================== -->
     <div id="viewTeacher" class="space-y-6 hidden">
+      <!-- Boss Partner Banner -->
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
@@ -340,28 +389,30 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <!-- Special Move -->
+          <!-- Random Picker Button -->
+          <button onclick="startRandomPicker()" class="px-3.5 py-2 rounded bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 transition flex items-center gap-1.5 cursor-pointer animate-pulse">
+            <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker (抽籤)
+          </button>
+
+          <!-- Reward All Gacha Tickets -->
+          <button onclick="rewardAllGachaTickets(1)" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-ticket"></i> Class +1 Gacha
+          </button>
+
+          <!-- Boss Attacks -->
           <button onclick="teacherCastSkill('single_ult')" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-crosshairs"></i> Target 1 (Special)
           </button>
           <button onclick="teacherCastSkill('aoe_ult')" class="px-3 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-burst"></i> Full Class (Special)
           </button>
-
-          <!-- Signature Move -->
-          <button onclick="teacherCastSkill('single_tech')" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer">
-            <i class="fa-solid fa-hand-fist"></i> Target 1 (Signature)
-          </button>
-          <button onclick="teacherCastSkill('aoe_tech')" class="px-3 py-1.5 rounded bg-indigo-950 border border-indigo-600 text-indigo-300 text-xs font-bold hover:bg-indigo-900 transition flex items-center gap-1 cursor-pointer">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Full Class (Signature)
-          </button>
-
           <button onclick="teacherHealAll()" class="px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP
           </button>
         </div>
       </div>
 
+      <!-- Class Management Toolbar & Grid -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div class="flex items-center gap-3">
@@ -398,7 +449,7 @@
       <!-- Teacher View Battle Log Component -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
         <h4 class="text-xs font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-          <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Battle Log</span>
+          <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Activity & Battle Log</span>
           <span class="text-[10px] text-slate-500">Live Synchronized</span>
         </h4>
         <div id="teacherBattleLogs" class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar text-xs font-mono">
@@ -450,7 +501,149 @@
   <!-- MODALS -->
   <!-- ========================================== -->
 
-  <!-- Visualized Evolution Tree Modal -->
+  <!-- 1. Random Student Picker Modal (抽籤系統 - 放大顯示) -->
+  <div id="modalRandomPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-xl w-full p-6 text-slate-200 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
+      <!-- Background Glow Effect -->
+      <div class="absolute -top-24 -left-24 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="w-full flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-dice text-amber-400 text-xl animate-spin"></i>
+          <h3 class="font-black text-lg text-amber-300 uppercase tracking-wider">Tamer Lottery Terminal (抽籤系統)</h3>
+        </div>
+        <button onclick="closeRandomPickerModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Rolling Name Animation Display -->
+      <div id="pickerRollingBox" class="my-6 py-8 px-6 w-full rounded-2xl bg-slate-950 border border-amber-500/30 flex flex-col items-center justify-center min-h-[160px]">
+        <div class="text-xs font-mono text-cyan-400 mb-2 uppercase tracking-widest" id="pickerStatusText">SELECTING LUCKY TAMER...</div>
+        <div id="pickerRollingName" class="text-3xl font-black text-amber-300 tracking-wider">🎲 Rolling...</div>
+      </div>
+
+      <!-- Selected Winner Highlight Card (放大顯示) -->
+      <div id="pickerWinnerCard" class="hidden w-full bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 rounded-2xl p-6 shadow-2xl animate-winner-zoom flex flex-col items-center">
+        <div class="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 font-pixel text-[10px] mb-3">
+          ★ SELECTED TAMER ★
+        </div>
+        
+        <div class="w-28 h-28 bg-slate-900 rounded-2xl p-2 border-2 border-cyan-400 flex items-center justify-center shadow-lg my-2">
+          <img id="winnerDigiImg" src="" onerror="handleImgError(this)" class="max-w-full max-h-full object-contain animate-glow">
+        </div>
+
+        <h2 id="winnerStudentName" class="text-2xl font-black text-white mt-2">Alex Chan</h2>
+        <p id="winnerClassAndDigi" class="text-xs text-cyan-300 font-mono mt-0.5">Class 1A · Greymon (Champion)</p>
+
+        <!-- Winner Stats Strip -->
+        <div class="grid grid-cols-4 gap-2 w-full mt-4 text-xs">
+          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">HP</span>
+            <span id="winnerHp" class="font-bold text-emerald-400">100</span>
+          </div>
+          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">EXP</span>
+            <span id="winnerExp" class="font-bold text-cyan-400">0</span>
+          </div>
+          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">Quota</span>
+            <span id="winnerQuota" class="font-bold text-amber-400">0</span>
+          </div>
+          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">Tickets</span>
+            <span id="winnerTickets" class="font-bold text-purple-400">0</span>
+          </div>
+        </div>
+
+        <!-- Quick Reward Actions for Winner -->
+        <div class="w-full mt-5 grid grid-cols-3 gap-2">
+          <button onclick="rewardWinnerQuick('exp', 50)" class="py-2 px-3 rounded-xl bg-cyan-950 border border-cyan-500 hover:bg-cyan-900 text-cyan-300 font-bold text-xs cursor-pointer">
+            +50 EXP
+          </button>
+          <button onclick="rewardWinnerQuick('ticket', 1)" class="py-2 px-3 rounded-xl bg-amber-950 border border-amber-500 hover:bg-amber-900 text-amber-300 font-bold text-xs cursor-pointer">
+            +1 Gacha Ticket
+          </button>
+          <button onclick="rewardWinnerQuick('quota', 2)" class="py-2 px-3 rounded-xl bg-rose-950 border border-rose-500 hover:bg-rose-900 text-rose-300 font-bold text-xs cursor-pointer">
+            +2 Attacks
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-6 flex gap-3 w-full justify-center">
+        <button onclick="rerollPicker()" id="btnReroll" class="flex-1 max-w-[180px] py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg cursor-pointer">
+          <i class="fa-solid fa-rotate-right mr-1"></i> Pick Again
+        </button>
+        <button onclick="closeRandomPickerModal()" class="flex-1 max-w-[140px] py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Item Gacha Portal Modal (抽道具系統) -->
+  <div id="modalGacha" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative overflow-hidden">
+      <!-- Header -->
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 text-sm">
+            <i class="fa-solid fa-cube"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-base text-amber-300">DIGITAL CAPSULE GACHA (道具扭蛋機)</h3>
+            <p class="text-[11px] text-slate-400">Consume tickets to unlock powerful digital items & meats!</p>
+          </div>
+        </div>
+        <button onclick="closeGachaModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto custom-scrollbar my-4 space-y-4 pr-1">
+        <!-- Ticket balance & Gacha Banner -->
+        <div class="bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border border-amber-500/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div>
+            <div class="text-xs text-amber-300 font-bold uppercase tracking-wider">Available Item Tickets</div>
+            <div class="text-3xl font-black text-white mt-1 flex items-center justify-center sm:justify-start gap-2">
+              <i class="fa-solid fa-ticket text-amber-400"></i>
+              <span id="gachaAvailableTickets">0</span>
+              <span class="text-xs text-slate-400 font-normal">Tickets Remaining</span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="drawGacha(1)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-gift"></i> Draw 1x
+            </button>
+            <button onclick="drawGacha(5)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-black text-xs shadow-lg shadow-cyan-500/30 cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-boxes-stacked"></i> Draw 5x
+            </button>
+          </div>
+        </div>
+
+        <!-- Animated Pull Results Showcase -->
+        <div id="gachaResultContainer" class="hidden">
+          <div class="text-xs font-bold text-cyan-300 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-sparkles"></i> Unboxed Items:
+          </div>
+          <div id="gachaResultGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- Available Items Drop Table & Rarities -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+          <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check text-amber-400"></i> Gacha Drop Rates & Items Catalog (道具清單與機率)
+          </h4>
+          <div id="gachaDropTable" class="space-y-2 text-xs"></div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeGachaModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 cursor-pointer">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Visualized Evolution Tree Modal -->
   <div id="modalEvoTree" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -479,7 +672,7 @@
     </div>
   </div>
 
-  <!-- Class Leaderboard Modal -->
+  <!-- 4. Class Leaderboard Modal -->
   <div id="modalLeaderboard" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 text-slate-200 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -497,7 +690,7 @@
     </div>
   </div>
 
-  <!-- Create / Edit Teacher Modal (Super Admin) -->
+  <!-- 5. Create / Edit Teacher Modal (Super Admin) -->
   <div id="modalTeacherEdit" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 text-slate-200">
       <h3 class="font-bold text-base text-amber-300 mb-2"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher & Partner Setup</h3>
@@ -540,7 +733,7 @@
     </div>
   </div>
 
-  <!-- Global Account Credentials Manager Modal (Super Admin) -->
+  <!-- 6. Global Account Credentials Manager Modal (Super Admin) -->
   <div id="modalAccountCredentials" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -570,16 +763,16 @@
 
   <!-- JAVASCRIPT SYSTEM ENGINE -->
   <script>
-    // Bulletproof SVG Generator
+    // Bulletproof SVG Badge Generator
     function makeBadgeSvg(text, bgCol, borderCol, icon) {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
         <defs>
-          <radialGradient id="g_${bgCol}" cx="50%" cy="30%" r="70%">
+          <radialGradient id="g_${bgCol.replace('#','')}" cx="50%" cy="30%" r="70%">
             <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3"/>
             <stop offset="100%" stop-color="#020617" stop-opacity="0.95"/>
           </radialGradient>
         </defs>
-        <rect width="240" height="240" rx="28" fill="url(#g_${bgCol})"/>
+        <rect width="240" height="240" rx="28" fill="url(#g_${bgCol.replace('#','')})"/>
         <rect x="6" y="6" width="228" height="228" rx="24" fill="none" stroke="${borderCol}" stroke-width="3" stroke-dasharray="6,4"/>
         <circle cx="120" cy="100" r="52" fill="${bgCol}" opacity="0.25"/>
         <circle cx="120" cy="100" r="44" fill="none" stroke="${borderCol}" stroke-width="2"/>
@@ -593,6 +786,178 @@
     function handleImgError(img) {
       img.src = makeBadgeSvg("DIGITAMA", "#0284c7", "#38bdf8", "🥚");
     }
+
+    // =========================================================================
+    // 10+ EXPANDED ITEMS GACHA DATABASE & RARITIES
+    // =========================================================================
+    const ITEMS_DB = {
+      "meat_small": {
+        id: "meat_small",
+        name: "Small Digimon Meat (小數碼肉)",
+        rarity: "Common",
+        rarityColor: "text-slate-400 border-slate-600 bg-slate-900/60",
+        badgeBg: "bg-slate-700",
+        icon: "🥩",
+        weight: 300, // 30%
+        description: "Fresh tender meat! Instantly awards +30 EXP and +30 Stat Pool.",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 30;
+          st.statPool = (st.statPool || 0) + 30;
+          return "+30 EXP & +30 Stat Points";
+        }
+      },
+      "meat_medium": {
+        id: "meat_medium",
+        name: "Medium Digimon Meat (中數碼肉)",
+        rarity: "Uncommon",
+        rarityColor: "text-emerald-400 border-emerald-600 bg-emerald-950/40",
+        badgeBg: "bg-emerald-800",
+        icon: "🍖",
+        weight: 200, // 20%
+        description: "Juicy prime meat! Instantly awards +80 EXP and +80 Stat Pool.",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 80;
+          st.statPool = (st.statPool || 0) + 80;
+          return "+80 EXP & +80 Stat Points";
+        }
+      },
+      "meat_large": {
+        id: "meat_large",
+        name: "Giant Beast Meat (大數碼肉)",
+        rarity: "Rare",
+        rarityColor: "text-blue-400 border-blue-600 bg-blue-950/40",
+        badgeBg: "bg-blue-800",
+        icon: "🍗",
+        weight: 100, // 10%
+        description: "Gigantic savory meat chunk! Awards +200 EXP and +200 Stat Pool.",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 200;
+          st.statPool = (st.statPool || 0) + 200;
+          return "+200 EXP & +200 Stat Points";
+        }
+      },
+      "potion_small": {
+        id: "potion_small",
+        name: "Mini Recovery Potion (小回復藥)",
+        rarity: "Common",
+        rarityColor: "text-slate-400 border-slate-600 bg-slate-900/60",
+        badgeBg: "bg-slate-700",
+        icon: "🧪",
+        weight: 150, // 15%
+        description: "Standard medicine that recovers +50 HP.",
+        effect: (st) => {
+          const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+          st.hp = Math.min(d.maxHp, (st.hp || 100) + 50);
+          return "+50 HP Restored";
+        }
+      },
+      "potion_full": {
+        id: "potion_full",
+        name: "Max Recovery Elixir (全回復藥)",
+        rarity: "Uncommon",
+        rarityColor: "text-emerald-400 border-emerald-600 bg-emerald-950/40",
+        badgeBg: "bg-emerald-800",
+        icon: "💊",
+        weight: 80, // 8%
+        description: "Miracle remedy! Restores HP back to 100% full capacity.",
+        effect: (st) => {
+          const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+          st.hp = d.maxHp;
+          return "HP Fully Restored to 100%!";
+        }
+      },
+      "energy_booster": {
+        id: "energy_booster",
+        name: "Digi-Battery (能量電池)",
+        rarity: "Uncommon",
+        rarityColor: "text-emerald-400 border-emerald-600 bg-emerald-950/40",
+        badgeBg: "bg-emerald-800",
+        icon: "🔋",
+        weight: 70, // 7%
+        description: "Recharges tamer drive, granting +2 Attack Quotas.",
+        effect: (st) => {
+          st.attackQuota = (st.attackQuota || 0) + 2;
+          return "+2 Attack Quotas granted";
+        }
+      },
+      "crest_courage": {
+        id: "crest_courage",
+        name: "Crest of Courage Fragment (勇氣徽章碎片)",
+        rarity: "Rare",
+        rarityColor: "text-blue-400 border-blue-600 bg-blue-950/40",
+        badgeBg: "bg-blue-800",
+        icon: "🔥",
+        weight: 40, // 4%
+        description: "Glowing solar fragment! Permanently grants +50 Courage Trait.",
+        effect: (st) => {
+          st.courage = (st.courage || 0) + 50;
+          return "+50 Courage Trait added";
+        }
+      },
+      "crest_friendship": {
+        id: "crest_friendship",
+        name: "Crest of Friendship Emblem (友誼徽章碎片)",
+        rarity: "Rare",
+        rarityColor: "text-blue-400 border-blue-600 bg-blue-950/40",
+        badgeBg: "bg-blue-800",
+        icon: "🐺",
+        weight: 40, // 4%
+        description: "Loyal wolf crystal! Permanently grants +50 Friendship Trait.",
+        effect: (st) => {
+          st.love = (st.love || 0) + 50;
+          return "+50 Friendship Trait added";
+        }
+      },
+      "holy_feather": {
+        id: "holy_feather",
+        name: "Golden Holy Feather (神聖金羽)",
+        rarity: "Epic",
+        rarityColor: "text-purple-400 border-purple-600 bg-purple-950/40",
+        badgeBg: "bg-purple-800",
+        icon: "🪶",
+        weight: 15, // 1.5%
+        description: "Angelic blessing! Awards +100 EXP, +100 HP, and +2 Attack Quotas.",
+        effect: (st) => {
+          const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+          st.exp = (st.exp || 0) + 100;
+          st.statPool = (st.statPool || 0) + 100;
+          st.hp = Math.min(d.maxHp, (st.hp || 100) + 100);
+          st.attackQuota = (st.attackQuota || 0) + 2;
+          return "+100 EXP, +100 HP & +2 Quotas!";
+        }
+      },
+      "super_incubator": {
+        id: "super_incubator",
+        name: "Digi-Egg Hyper Incubator (極速孵化器)",
+        rarity: "Epic",
+        rarityColor: "text-purple-400 border-purple-600 bg-purple-950/40",
+        badgeBg: "bg-purple-800",
+        icon: "🧬",
+        weight: 4, // 0.4%
+        description: "Supercharged growth accelerator! Awards +350 EXP and +350 Stat Pool.",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 350;
+          st.statPool = (st.statPool || 0) + 350;
+          return "+350 EXP & +350 Stat Points!";
+        }
+      },
+      "overclock_chip": {
+        id: "overclock_chip",
+        name: "Legendary Overclock Core (傳奇超頻核心)",
+        rarity: "Legendary",
+        rarityColor: "text-amber-400 border-amber-500 bg-amber-950/60 shadow-lg shadow-amber-500/20",
+        badgeBg: "bg-amber-600",
+        icon: "👑",
+        weight: 1, // 0.1%
+        description: "Ultimate digital artifact! Grants +500 EXP, +500 Stat Pool, and +5 Attack Quotas!",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 500;
+          st.statPool = (st.statPool || 0) + 500;
+          st.attackQuota = (st.attackQuota || 0) + 5;
+          return "LEGENDARY: +500 EXP & +5 Quotas!";
+        }
+      }
+    };
 
     // Digimon Database with SVG & Multi-Source Image Fallbacks
     const DIGIMON_DB = {
@@ -705,6 +1070,8 @@
     let selectedTeacherClass = "ALL";
     let activeLoginTab = 'student';
     let dbRef = null;
+    let pickerInterval = null;
+    let currentPickedStudent = null;
 
     function initFirebase() {
       try {
@@ -735,7 +1102,7 @@
                 "Class-1A": { id: "Class-1A", name: "Class 1A (Dragon)", teacherId: "teacher1" }
               },
               students: {
-                "s01": { id: "s01", username: "s01", password: "123", name: "Alex Chan (01)", classId: "Class-1A", teacherId: "teacher1", exp: 0, statPool: 0, hp: 100, attackQuota: 0, currentDigiId: "digitama1", courage: 0, wisdom: 0, love: 0, discipline: 0 }
+                "s01": { id: "s01", username: "s01", password: "123", name: "Alex Chan (01)", classId: "Class-1A", teacherId: "teacher1", exp: 0, statPool: 0, hp: 100, attackQuota: 0, gachaTickets: 3, inventory: {}, currentDigiId: "digitama1", courage: 0, wisdom: 0, love: 0, discipline: 0 }
               },
               battleLogs: [
                 { id: "log_init", time: new Date().toLocaleTimeString(), text: "🌟 Digital World Classroom System Connected.", type: "system" }
@@ -784,11 +1151,14 @@
       } else if (type === "heal") {
         borderCol = "border-emerald-500 bg-emerald-950/95 text-emerald-200";
         icon = "fa-heart-circle-check";
+      } else if (type === "gacha") {
+        borderCol = "border-amber-400 bg-amber-950/95 text-amber-300";
+        icon = "fa-gift";
       }
 
       toast.className = `w-full border-2 rounded-xl p-3 shadow-2xl backdrop-blur flex items-center gap-3 animate-toast ${borderCol}`;
       toast.innerHTML = `
-        <div class="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center font-bold text-sm">
+        <div class="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center font-bold text-sm shrink-0">
           <i class="fa-solid ${icon}"></i>
         </div>
         <div class="flex-1 text-xs">
@@ -827,6 +1197,7 @@
           if (l.type === "evolution") badgeColor = "text-amber-400 font-bold";
           else if (l.type === "battle") badgeColor = "text-rose-400 font-bold";
           else if (l.type === "heal") badgeColor = "text-emerald-400 font-bold";
+          else if (l.type === "gacha") badgeColor = "text-purple-400 font-bold";
           html += `
             <div class="flex items-start gap-2 py-0.5 border-b border-slate-900/60">
               <span class="text-slate-500 text-[10px] shrink-0">[${l.time}]</span>
@@ -967,6 +1338,7 @@
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const maxHp = digi.maxHp || 100;
       if (st.hp === undefined) st.hp = maxHp;
+      if (!st.inventory) st.inventory = {};
 
       document.getElementById('stOwnerName').textContent = `Student: ${st.name}`;
       document.getElementById('stStageBadge').textContent = `STAGE: ${digi.stageName.toUpperCase()}`;
@@ -976,8 +1348,9 @@
       const imgEl = document.getElementById('stDigiImage');
       setDigiImageTag(imgEl, st.currentDigiId);
 
-      document.getElementById('stSkillBtnLabel').textContent = `${digi.skillName} (${digi.skillType === 'heal' ? 'Heal' : 'DMG'}: ${digi.skillPower})`;
-      document.getElementById('stAttackQuotaBadge').innerHTML = `<i class="fa-solid fa-crosshairs mr-1"></i> Attacks Left: ${st.attackQuota || 0}`;
+      document.getElementById('stMoveInfoBadge').textContent = `Move: ${digi.skillName} (${digi.skillPower} DMG)`;
+      document.getElementById('stAttackQuotaBadge').innerHTML = `<i class="fa-solid fa-bolt mr-1"></i> Attacks Left: ${st.attackQuota || 0}`;
+      document.getElementById('stGachaTicketsBadge').innerHTML = `<i class="fa-solid fa-ticket mr-1"></i> Draw Tickets: ${st.gachaTickets || 0}`;
 
       const hpPct = Math.max(0, Math.min(100, Math.round((st.hp / maxHp) * 100)));
       document.getElementById('stHpText').textContent = `${st.hp} / ${maxHp} HP`;
@@ -1019,6 +1392,62 @@
       document.getElementById('stBarDiscipline').style.width = `${((st.discipline || 0)/maxTrait)*100}%`;
       document.getElementById('stValWisdom').textContent = st.wisdom || 0;
       document.getElementById('stBarWisdom').style.width = `${((st.wisdom || 0)/maxTrait)*100}%`;
+
+      renderStudentInventory();
+    }
+
+    function renderStudentInventory() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.data.id];
+      const invList = document.getElementById('stInventoryList');
+      if (!invList || !st) return;
+      invList.innerHTML = '';
+
+      const items = Object.entries(st.inventory || {}).filter(([k, count]) => count > 0);
+      if (items.length === 0) {
+        invList.innerHTML = '<div class="col-span-2 text-slate-500 italic text-center py-3">Inventory is empty. Draw items via Gacha!</div>';
+        return;
+      }
+
+      items.forEach(([itemId, qty]) => {
+        const itemInfo = ITEMS_DB[itemId];
+        if (!itemInfo) return;
+        const card = document.createElement('div');
+        card.className = `p-2 rounded-xl border flex items-center justify-between gap-1.5 ${itemInfo.rarityColor}`;
+        card.innerHTML = `
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-base shrink-0">${itemInfo.icon}</span>
+            <div class="truncate">
+              <div class="font-bold text-[11px] truncate text-slate-200">${itemInfo.name}</div>
+              <div class="text-[9px] text-slate-400">Qty: <span class="font-bold text-amber-300">x${qty}</span></div>
+            </div>
+          </div>
+          <button onclick="useItem('${itemId}')" class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer shrink-0">
+            Use
+          </button>
+        `;
+        invList.appendChild(card);
+      });
+    }
+
+    function useItem(itemId) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.data.id];
+      if (!st || !st.inventory || !st.inventory[itemId] || st.inventory[itemId] <= 0) {
+        showToast("Use Item", "Item not found in inventory!", "info");
+        return;
+      }
+
+      const itemInfo = ITEMS_DB[itemId];
+      if (!itemInfo) return;
+
+      st.inventory[itemId]--;
+      const resultText = itemInfo.effect(st);
+      addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal");
+      showToast("Item Consumed!", `${itemInfo.name}: ${resultText}`, "heal");
+
+      saveData();
+      updateStudentUI();
     }
 
     function allocateTrait(trait, amount) {
@@ -1065,6 +1494,11 @@
       st.currentDigiId = nextId;
       st.hp = nextDigi.maxHp || 200;
 
+      // Confetti effect for evolution
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      }
+
       addBattleLog(`✨ [EVOLUTION] ${st.name}'s [${curDigi.name}] evolved into [${nextDigi.name}]!`, "evolution");
       showToast("Digivolution!", `Congratulations! ${curDigi.name} evolved into [${nextDigi.name}]!`, "evolution");
 
@@ -1072,7 +1506,8 @@
       updateStudentUI();
     }
 
-    function promptStudentCastSkill() {
+    // Student Attacks
+    function studentAttackBoss() {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.data.id];
       const quota = st.attackQuota || 0;
@@ -1084,24 +1519,271 @@
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const tc = appData.teachers[st.teacherId];
 
-      if (digi.skillType === "heal") {
-        st.hp = Math.min(digi.maxHp, (st.hp || 0) + digi.skillPower);
-        st.attackQuota--;
-        addBattleLog(`💚 [HEAL] ${st.name}'s ${digi.name} recovered +${digi.skillPower} HP!`, "heal");
-        showToast("Skill Cast", `${digi.name} restored +${digi.skillPower} HP!`, "heal");
-        saveData();
-        updateStudentUI();
+      if (!tc) {
+        alert("Teacher Partner is currently unavailable.");
         return;
       }
 
-      if (tc) {
-        tc.hp = Math.max(0, (tc.hp || tc.maxHp) - digi.skillPower);
+      tc.hp = Math.max(0, (tc.hp || tc.maxHp) - digi.skillPower);
+      st.attackQuota--;
+      addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} dealt ${digi.skillPower} DMG to Teacher Boss!`, "battle");
+      showToast("Boss Struck!", `Dealt ${digi.skillPower} DMG to Teacher Boss!`, "damage");
+      saveData();
+      updateStudentUI();
+    }
+
+    function studentAttackClassmate() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.data.id];
+      const quota = st.attackQuota || 0;
+      if (quota <= 0) {
+        showToast("Action Depleted", "❌ Attack actions left: 0! Wait for teacher reward.", "info");
+        return;
+      }
+
+      const peers = Object.values(appData.students || {}).filter(s => s.teacherId === st.teacherId && s.id !== st.id);
+      if (peers.length === 0) {
+        alert("No other classmates available in your classroom.");
+        return;
+      }
+
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+
+      let menu = `Choose a classmate to attack with ${digi.name}'s [${digi.skillName}] (${digi.skillPower} DMG):\n\n`;
+      peers.forEach((p, idx) => {
+        const peerDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
+        menu += `${idx + 1}. ${p.name} (${peerDigi.name}) - HP: ${p.hp || 100}\n`;
+      });
+
+      const choice = prompt(menu, "1");
+      if (choice === null) return;
+      const targetIdx = parseInt(choice) - 1;
+
+      if (targetIdx >= 0 && targetIdx < peers.length) {
+        const target = peers[targetIdx];
+        target.hp = Math.max(0, (target.hp || 100) - digi.skillPower);
         st.attackQuota--;
-        addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} dealt ${digi.skillPower} DMG to Teacher Boss!`, "battle");
-        showToast("Target Hit", `Dealt ${digi.skillPower} DMG to Teacher Boss!`, "damage");
+        
+        addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} attacked [${target.name}] for ${digi.skillPower} DMG!`, "battle");
+        showToast("Classmate Attacked", `Dealt ${digi.skillPower} DMG to ${target.name}!`, "damage");
+        
+        if (target.hp <= 0) {
+          target.currentDigiId = "digitama1";
+          target.hp = 100;
+          target.exp = 0;
+          target.statPool = 0;
+          addBattleLog(`💀 [DEFEAT] [${target.name}] was defeated by [${st.name}] and reverted to a Digi-Egg!`, "battle");
+          showToast("Target Defeated!", `${target.name} has been reverted to a Digi-Egg!`, "damage");
+        }
+        
         saveData();
         updateStudentUI();
+      } else {
+        alert("Invalid classmate selection.");
       }
+    }
+
+    // =========================================================================
+    // 抽籤系統 (RANDOM STUDENT PICKER SYSTEM)
+    // =========================================================================
+    function startRandomPicker() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      
+      const studentsList = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.data.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+
+      if (studentsList.length === 0) {
+        alert("No students available in the selected class filter!");
+        return;
+      }
+
+      document.getElementById('modalRandomPicker').classList.remove('hidden');
+      document.getElementById('pickerRollingBox').classList.remove('hidden');
+      document.getElementById('pickerWinnerCard').classList.add('hidden');
+      document.getElementById('btnReroll').classList.add('hidden');
+      document.getElementById('pickerStatusText').textContent = "SELECTING LUCKY TAMER...";
+
+      let counter = 0;
+      const maxTicks = 25;
+      if (pickerInterval) clearInterval(pickerInterval);
+
+      pickerInterval = setInterval(() => {
+        const randomSt = studentsList[Math.floor(Math.random() * studentsList.length)];
+        const rollingNameEl = document.getElementById('pickerRollingName');
+        rollingNameEl.textContent = `🎲 ${randomSt.name}`;
+        counter++;
+
+        if (counter >= maxTicks) {
+          clearInterval(pickerInterval);
+          finalizePickedStudent(randomSt);
+        }
+      }, 80);
+    }
+
+    function rerollPicker() {
+      startRandomPicker();
+    }
+
+    function finalizePickedStudent(winner) {
+      currentPickedStudent = winner;
+      document.getElementById('pickerRollingBox').classList.add('hidden');
+      document.getElementById('pickerWinnerCard').classList.remove('hidden');
+      document.getElementById('btnReroll').classList.remove('hidden');
+
+      const digi = DIGIMON_DB[winner.currentDigiId] || DIGIMON_DB['digitama1'];
+      document.getElementById('winnerStudentName').textContent = winner.name;
+      document.getElementById('winnerClassAndDigi').textContent = `${winner.classId || 'Class'} · ${digi.name} (${digi.stageName})`;
+      document.getElementById('winnerHp').textContent = `${winner.hp || 100} HP`;
+      document.getElementById('winnerExp').textContent = `${winner.exp || 0}`;
+      document.getElementById('winnerQuota').textContent = `${winner.attackQuota || 0}`;
+      document.getElementById('winnerTickets').textContent = `${winner.gachaTickets || 0}`;
+      setDigiImageTag(document.getElementById('winnerDigiImg'), winner.currentDigiId);
+
+      // Fireworks Confetti
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+      }
+
+      addBattleLog(`🎯 [LOTTERY] Lucky student selected: [${winner.name}]!`, "evolution");
+      showToast("Student Picked!", `Lucky Tamer: ${winner.name}!`, "evolution");
+    }
+
+    function rewardWinnerQuick(type, amount) {
+      if (!currentPickedStudent) return;
+      const st = appData.students[currentPickedStudent.id];
+      if (!st) return;
+
+      if (type === 'exp') {
+        st.exp = (st.exp || 0) + amount;
+        st.statPool = (st.statPool || 0) + amount;
+        document.getElementById('winnerExp').textContent = `${st.exp}`;
+        showToast("Bonus EXP", `Awarded +${amount} EXP to ${st.name}!`, "info");
+      } else if (type === 'ticket') {
+        st.gachaTickets = (st.gachaTickets || 0) + amount;
+        document.getElementById('winnerTickets').textContent = `${st.gachaTickets}`;
+        showToast("Bonus Gacha Ticket", `Awarded +${amount} Gacha Ticket to ${st.name}!`, "gacha");
+      } else if (type === 'quota') {
+        st.attackQuota = (st.attackQuota || 0) + amount;
+        document.getElementById('winnerQuota').textContent = `${st.attackQuota}`;
+        showToast("Bonus Attacks", `Awarded +${amount} Attacks to ${st.name}!`, "damage");
+      }
+
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function closeRandomPickerModal() {
+      if (pickerInterval) clearInterval(pickerInterval);
+      document.getElementById('modalRandomPicker').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // 抽道具系統 (ITEM GACHA SYSTEM)
+    // =========================================================================
+    function openGachaModal() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.data.id];
+      document.getElementById('gachaAvailableTickets').textContent = st.gachaTickets || 0;
+      document.getElementById('gachaResultContainer').classList.add('hidden');
+      renderGachaDropTable();
+      document.getElementById('modalGacha').classList.remove('hidden');
+    }
+
+    function closeGachaModal() {
+      document.getElementById('modalGacha').classList.add('hidden');
+    }
+
+    function renderGachaDropTable() {
+      const dropBox = document.getElementById('gachaDropTable');
+      if (!dropBox) return;
+      dropBox.innerHTML = '';
+
+      const totalWeight = Object.values(ITEMS_DB).reduce((acc, cur) => acc + cur.weight, 0);
+
+      Object.values(ITEMS_DB).forEach(item => {
+        const pct = ((item.weight / totalWeight) * 100).toFixed(1);
+        dropBox.innerHTML += `
+          <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="text-base">${item.icon}</span>
+              <div>
+                <span class="font-bold text-slate-200">${item.name}</span>
+                <span class="text-[10px] text-slate-400 block">${item.description}</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.rarityColor}">${item.rarity}</span>
+              <span class="text-[11px] font-mono text-amber-300 font-bold ml-1">${pct}%</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function pickRandomGachaItem() {
+      const totalWeight = Object.values(ITEMS_DB).reduce((acc, cur) => acc + cur.weight, 0);
+      let rand = Math.random() * totalWeight;
+      for (const item of Object.values(ITEMS_DB)) {
+        if (rand < item.weight) return item;
+        rand -= item.weight;
+      }
+      return ITEMS_DB["meat_small"];
+    }
+
+    function drawGacha(times = 1) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.data.id];
+      if (!st) return;
+
+      if ((st.gachaTickets || 0) < times) {
+        showToast("Not Enough Tickets", `You need ${times} ticket(s) to draw! Ask teacher for rewards.`, "info");
+        return;
+      }
+
+      st.gachaTickets -= times;
+      if (!st.inventory) st.inventory = {};
+
+      const pulledItems = [];
+      for (let i = 0; i < times; i++) {
+        const item = pickRandomGachaItem();
+        st.inventory[item.id] = (st.inventory[item.id] || 0) + 1;
+        pulledItems.push(item);
+      }
+
+      document.getElementById('gachaAvailableTickets').textContent = st.gachaTickets;
+
+      // Render results
+      const resContainer = document.getElementById('gachaResultContainer');
+      const resGrid = document.getElementById('gachaResultGrid');
+      resGrid.innerHTML = '';
+      resContainer.classList.remove('hidden');
+
+      pulledItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border-2 flex flex-col items-center text-center animate-gacha-spin ${item.rarityColor}`;
+        card.innerHTML = `
+          <div class="text-3xl mb-1">${item.icon}</div>
+          <div class="font-black text-xs text-white">${item.name}</div>
+          <div class="text-[10px] text-amber-300 font-bold mt-0.5">${item.rarity}</div>
+          <div class="text-[9px] text-slate-300 mt-1">${item.description}</div>
+        `;
+        resGrid.appendChild(card);
+      });
+
+      // Confetti for Rare+ draws
+      const hasRare = pulledItems.some(i => i.rarity === 'Epic' || i.rarity === 'Legendary' || i.rarity === 'Rare');
+      if (hasRare && typeof confetti === 'function') {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      }
+
+      addBattleLog(`🎁 [GACHA] ${st.name} performed ${times}x draw and received: ${pulledItems.map(p => p.name).join(', ')}!`, "gacha");
+      showToast("Capsule Unboxed!", `Received ${pulledItems.length} item(s)! Check your inventory!`, "gacha");
+
+      saveData();
+      updateStudentUI();
     }
 
     // Teacher View Logic
@@ -1153,6 +1835,91 @@
       renderTeacherGrid();
     }
 
+    function grantAttackQuota(studentId, amount) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      s.attackQuota = (s.attackQuota || 0) + amount;
+      addBattleLog(`⚔️ [ACTION QUOTA] Teacher granted +${amount} Attack Quota(s) to ${s.name}.`, "normal");
+      showToast("Quota Granted", `Granted +${amount} attack quota(s) to ${s.name}!`, "info");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function grantGachaTicket(studentId, amount) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      s.gachaTickets = (s.gachaTickets || 0) + amount;
+      addBattleLog(`🎁 [GACHA TICKET] Teacher rewarded +${amount} Gacha Ticket to ${s.name}.`, "gacha");
+      showToast("Gacha Ticket Rewarded", `Awarded +${amount} Gacha Ticket to ${s.name}!`, "gacha");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function rewardAllGachaTickets(amount = 1) {
+      if (!currentUser) return;
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.data.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+      myStudents.forEach(s => {
+        s.gachaTickets = (s.gachaTickets || 0) + amount;
+      });
+      addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
+      showToast("Class Gacha Tickets", `All students received +${amount} Gacha Ticket!`, "gacha");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function teacherCastSkill(mode) {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const tc = appData.teachers[currentUser.data.id];
+      const digi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
+      const isUlt = mode.includes('ult');
+      const pwr = isUlt ? (tc.skillPower || 180) : (tc.techPower || 90);
+      const moveName = isUlt ? "Special Move" : "Signature Move";
+
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.data.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+
+      if (myStudents.length === 0) {
+        alert("No students found in current class view.");
+        return;
+      }
+
+      if (mode.startsWith('aoe_')) {
+        if (!confirm(`💥 Unleash AOE [${moveName}] (${pwr} DMG) on ALL ${myStudents.length} students?`)) return;
+        myStudents.forEach(s => {
+          s.hp = Math.max(0, (s.hp || 100) - pwr);
+        });
+        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle");
+        showToast("Class AOE Strike", `All ${myStudents.length} students took ${pwr} DMG!`, "damage");
+      } else {
+        let menu = `Select target student for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
+        myStudents.forEach((s, idx) => {
+          menu += `${idx + 1}. ${s.name} (${s.classId || 'Class'}) - HP: ${s.hp || 100}\n`;
+        });
+        const choice = prompt(menu, "1");
+        if (choice === null) return;
+        const targetIdx = parseInt(choice) - 1;
+
+        if (targetIdx >= 0 && targetIdx < myStudents.length) {
+          const target = myStudents[targetIdx];
+          target.hp = Math.max(0, (target.hp || 100) - pwr);
+          addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle");
+          showToast("Single Target Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
+        } else {
+          alert("Invalid target selection.");
+          return;
+        }
+      }
+      saveData();
+      renderTeacherGrid();
+    }
+
     function renderTeacherGrid() {
       const container = document.getElementById('teacherStudentGrid');
       if (!container || !currentUser) return;
@@ -1186,21 +1953,24 @@
               <div class="text-xs">
                 <div class="font-bold text-slate-200">${digi.name}</div>
                 <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 100} / ${digi.maxHp}</div>
-                <div class="text-slate-400 font-mono text-[11px]">EXP: ${s.exp || 0} | Quotas: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span></div>
+                <div class="text-slate-400 font-mono text-[11px]">EXP: ${s.exp || 0} | Quotas: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span></div>
               </div>
             </div>
           </div>
           <div class="space-y-1.5 mt-2">
+            <!-- EXP Rewards -->
             <div class="grid grid-cols-3 gap-1">
               <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer">+10 EXP</button>
               <button onclick="rewardStudent('${s.id}', 25)" class="p-1 bg-blue-950 hover:bg-blue-900 border border-blue-800 rounded text-[10px] text-blue-300 font-bold cursor-pointer">+25 EXP</button>
-              <button onclick="rewardStudent('${s.id}', 50)" class="p-1 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 rounded text-[10px] text-indigo-300 font-bold cursor-pointer">+50 EXP</button>
+              <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer">+1 Ticket</button>
             </div>
+            <!-- Attack Quota & Healing & Damage -->
             <div class="grid grid-cols-3 gap-1">
-              <button onclick="grantQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">+1 Quota</button>
+              <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">+1 Quota</button>
               <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer">+50 HP</button>
               <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-800 rounded text-[10px] text-rose-300 font-bold cursor-pointer">-30 HP</button>
             </div>
+            <!-- Revert to Digi-Egg -->
             <button onclick="teacherRebirthStudent('${s.id}')" class="w-full py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 rounded text-[10px] text-amber-300 hover:text-amber-200 font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
               <i class="fa-solid fa-rotate-left"></i> Revert to Digi-Egg (變回數碼蛋)
             </button>
@@ -1223,22 +1993,17 @@
 
     function rewardAllStudents(exp) {
       if (!currentUser) return;
-      const myStudents = Object.values(appData.students || {}).filter(s => s.teacherId === currentUser.data.id);
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.data.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
       myStudents.forEach(s => {
         s.exp = (s.exp || 0) + exp;
         s.statPool = (s.statPool || 0) + exp;
       });
       addBattleLog(`🎉 [CLASS REWARD] Full class gained +${exp} EXP!`, "evolution");
       showToast("Class Reward", `All students gained +${exp} EXP!`, "evolution");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function grantQuota(id, amount) {
-      const s = appData.students[id];
-      if (!s) return;
-      s.attackQuota = (s.attackQuota || 0) + amount;
-      addBattleLog(`⚔️ ${s.name} received +${amount} Attack Quota.`, "normal");
       saveData();
       renderTeacherGrid();
     }
@@ -1262,32 +2027,13 @@
       renderTeacherGrid();
     }
 
-    function teacherCastSkill(type) {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      const tc = appData.teachers[currentUser.data.id];
-      const pwr = type.includes('ult') ? (tc.skillPower || 180) : (tc.techPower || 90);
-      const myStudents = Object.values(appData.students || {}).filter(s => s.teacherId === currentUser.data.id);
-
-      if (type.startsWith('aoe_')) {
-        myStudents.forEach(s => {
-          s.hp = Math.max(0, (s.hp || 100) - pwr);
-        });
-        addBattleLog(`🔥 [BOSS AOE] Teacher hit entire class for ${pwr} DMG!`, "battle");
-        showToast("Class Strike", `All students took ${pwr} AOE DMG!`, "damage");
-      } else {
-        if (myStudents.length === 0) return;
-        const target = myStudents[0];
-        target.hp = Math.max(0, (target.hp || 100) - pwr);
-        addBattleLog(`⚡ [BOSS STRIKE] Teacher struck ${target.name} for ${pwr} DMG!`, "battle");
-        showToast("Single Strike", `Struck ${target.name} for ${pwr} DMG!`, "damage");
-      }
-      saveData();
-      renderTeacherGrid();
-    }
-
     function teacherHealAll() {
       if (!currentUser) return;
-      const myStudents = Object.values(appData.students || {}).filter(s => s.teacherId === currentUser.data.id);
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.data.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
       myStudents.forEach(s => {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         s.hp = digi.maxHp || 100;
@@ -1320,7 +2066,7 @@
 
             appData.students[id] = {
               id: id, username: u, password: p, name: name, classId: classId,
-              teacherId: currentUser.data.id, exp: 0, statPool: 0, hp: 100, attackQuota: 0,
+              teacherId: currentUser.data.id, exp: 0, statPool: 0, hp: 100, attackQuota: 0, gachaTickets: 3, inventory: {},
               currentDigiId: "digitama1", courage: 0, love: 0, discipline: 0, wisdom: 0
             };
             count++;
