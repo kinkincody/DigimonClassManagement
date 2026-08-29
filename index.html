@@ -376,7 +376,7 @@
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
-            <img id="tcBossImg" src="" onerror="handleImgError(this)" class="max-w-full max-h-full object-contain">
+            <img id="tcBossImg" src="" class="max-w-full max-h-full object-contain">
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -529,7 +529,7 @@
         </div>
         
         <div class="w-28 h-28 bg-slate-900 rounded-2xl p-2 border-2 border-cyan-400 flex items-center justify-center shadow-lg my-2">
-          <img id="winnerDigiImg" src="" onerror="handleImgError(this)" class="max-w-full max-h-full object-contain animate-glow">
+          <img id="winnerDigiImg" src="" class="max-w-full max-h-full object-contain animate-glow">
         </div>
 
         <h2 id="winnerStudentName" class="text-2xl font-black text-white mt-2">Alex Chan</h2>
@@ -763,28 +763,26 @@
 
   <!-- JAVASCRIPT SYSTEM ENGINE -->
   <script>
-    // Bulletproof SVG Badge Generator
-    function makeBadgeSvg(text, bgCol, borderCol, icon) {
+    // Bulletproof High-Quality Vector SVG Badge Generator
+    function makeBadgeSvg(text, bgCol, borderCol, icon, stageBadge = "TAMER") {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
         <defs>
-          <radialGradient id="g_${bgCol.replace('#','')}" cx="50%" cy="30%" r="70%">
-            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="#020617" stop-opacity="0.95"/>
+          <radialGradient id="g_${text.replace(/[^a-zA-Z0-9]/g,'')}" cx="50%" cy="30%" r="70%">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#030712" stop-opacity="0.95"/>
           </radialGradient>
         </defs>
-        <rect width="240" height="240" rx="28" fill="url(#g_${bgCol.replace('#','')})"/>
+        <rect width="240" height="240" rx="28" fill="url(#g_${text.replace(/[^a-zA-Z0-9]/g,'')})"/>
         <rect x="6" y="6" width="228" height="228" rx="24" fill="none" stroke="${borderCol}" stroke-width="3" stroke-dasharray="6,4"/>
-        <circle cx="120" cy="100" r="52" fill="${bgCol}" opacity="0.25"/>
-        <circle cx="120" cy="100" r="44" fill="none" stroke="${borderCol}" stroke-width="2"/>
-        <text x="120" y="118" font-size="44" text-anchor="middle" dominant-baseline="middle">${icon}</text>
-        <rect x="20" y="174" width="200" height="36" rx="10" fill="#090d16" stroke="${borderCol}" stroke-width="1.5"/>
-        <text x="120" y="198" font-family="system-ui, sans-serif" font-size="14" font-weight="900" fill="#f8fafc" text-anchor="middle">${text.toUpperCase()}</text>
+        <circle cx="120" cy="95" r="54" fill="${bgCol}" opacity="0.3"/>
+        <circle cx="120" cy="95" r="46" fill="none" stroke="${borderCol}" stroke-width="2"/>
+        <text x="120" y="112" font-size="46" text-anchor="middle" dominant-baseline="middle">${icon}</text>
+        <rect x="75" y="18" width="90" height="18" rx="6" fill="#090d16" stroke="${borderCol}" stroke-width="1"/>
+        <text x="120" y="31" font-family="system-ui, sans-serif" font-size="9" font-weight="900" fill="${borderCol}" text-anchor="middle" letter-spacing="1">${stageBadge.toUpperCase()}</text>
+        <rect x="18" y="174" width="204" height="38" rx="10" fill="#090d16" stroke="${borderCol}" stroke-width="1.5"/>
+        <text x="120" y="198" font-family="system-ui, sans-serif" font-size="13" font-weight="900" fill="#f8fafc" text-anchor="middle" letter-spacing="0.5">${text.toUpperCase()}</text>
       </svg>`;
       return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-    }
-
-    function handleImgError(img) {
-      img.src = makeBadgeSvg("DIGITAMA", "#0284c7", "#38bdf8", "🥚");
     }
 
     // =========================================================================
@@ -959,61 +957,63 @@
       }
     };
 
-    // Digimon Database with SVG & Multi-Source Image Fallbacks
+    // Digimon Database with Self-contained High-Def SVG Graphic Fallbacks
     const DIGIMON_DB = {
-      "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚"), nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage" },
-      "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥"), nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage" },
-      "digitama3": { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama III", title: "Serene blue egg", img: "./images/digitama3.png", svg: makeBadgeSvg("Digitama III", "#2563eb", "#60a5fa", "💧"), nextExp: 100, maxHp: 100, skillName: "Bubble Shell", skillPower: 10, skillType: "damage" },
-      "digitama4": { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama IV", title: "Verdant green egg", img: "./images/digitama4.png", svg: makeBadgeSvg("Digitama IV", "#059669", "#34d399", "🌱"), nextExp: 100, maxHp: 100, skillName: "Sprout Blessing", skillPower: 15, skillType: "heal" },
-      "digitama5": { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama V", title: "Golden sacred egg", img: "./images/digitama5.png", svg: makeBadgeSvg("Digitama V", "#d97706", "#fbbf24", "✨"), nextExp: 100, maxHp: 100, skillName: "Holy Glow", skillPower: 15, skillType: "heal" },
+      "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage" },
+      "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage" },
+      "digitama3": { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama III", title: "Serene blue egg", img: "./images/digitama3.png", svg: makeBadgeSvg("Digitama III", "#2563eb", "#60a5fa", "💧", "EGG"), nextExp: 100, maxHp: 100, skillName: "Bubble Shell", skillPower: 10, skillType: "damage" },
+      "digitama4": { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama IV", title: "Verdant green egg", img: "./images/digitama4.png", svg: makeBadgeSvg("Digitama IV", "#059669", "#34d399", "🌱", "EGG"), nextExp: 100, maxHp: 100, skillName: "Sprout Blessing", skillPower: 15, skillType: "heal" },
+      "digitama5": { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama V", title: "Golden sacred egg", img: "./images/digitama5.png", svg: makeBadgeSvg("Digitama V", "#d97706", "#fbbf24", "✨", "EGG"), nextExp: 100, maxHp: 100, skillName: "Holy Glow", skillPower: 15, skillType: "heal" },
 
-      "baby_koromon": { id: "baby_koromon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Koromon", title: "Courageous baby Digimon", img: "./images/koromon.png", svg: makeBadgeSvg("Koromon", "#e11d48", "#fb7185", "🦖"), nextExp: 300, maxHp: 120, skillName: "Bubble Blow", skillPower: 15, skillType: "damage", prevForm: "digitama1" },
-      "baby_tsunomon": { id: "baby_tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tsunomon", title: "Horned friendship baby", img: "./images/tsunomon.png", svg: makeBadgeSvg("Tsunomon", "#d97706", "#fbbf24", "🦏"), nextExp: 300, maxHp: 120, skillName: "Horn Strike", skillPower: 15, skillType: "damage", prevForm: "digitama2" },
-      "baby_tokomon": { id: "baby_tokomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tokomon", title: "Disciplined sacred baby", img: "./images/tokomon.png", svg: makeBadgeSvg("Tokomon", "#0284c7", "#38bdf8", "👼"), nextExp: 300, maxHp: 120, skillName: "Bite Attack", skillPower: 15, skillType: "damage", prevForm: "digitama3" },
-      "baby_motimon": { id: "baby_motimon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Motimon", title: "Wise elastic baby", img: "./images/motimon.png", svg: makeBadgeSvg("Motimon", "#7c3aed", "#a78bfa", "👾"), nextExp: 300, maxHp: 120, skillName: "Elastic Bubble", skillPower: 15, skillType: "damage", prevForm: "digitama4" },
-      "baby_tanemon": { id: "baby_tanemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tanemon", title: "Sprouting nature baby", img: "./images/tanemon.png", svg: makeBadgeSvg("Tanemon", "#059669", "#34d399", "🌿"), nextExp: 300, maxHp: 120, skillName: "Bubble Sprout", skillPower: 15, skillType: "damage", prevForm: "digitama5" },
-      "baby_demiveemon": { id: "baby_demiveemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "DemiVeemon", title: "Energetic dragon baby", img: "./images/demiveemon.png", svg: makeBadgeSvg("DemiVeemon", "#2563eb", "#60a5fa", "🐲"), nextExp: 300, maxHp: 120, skillName: "Hop Attack", skillPower: 15, skillType: "damage", prevForm: "digitama1" },
+      "baby_koromon": { id: "baby_koromon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Koromon", title: "Courageous baby Digimon", img: "./images/koromon.png", svg: makeBadgeSvg("Koromon", "#e11d48", "#fb7185", "🦖", "BABY"), nextExp: 300, maxHp: 120, skillName: "Bubble Blow", skillPower: 15, skillType: "damage", prevForm: "digitama1" },
+      "baby_tsunomon": { id: "baby_tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tsunomon", title: "Horned friendship baby", img: "./images/tsunomon.png", svg: makeBadgeSvg("Tsunomon", "#d97706", "#fbbf24", "🦏", "BABY"), nextExp: 300, maxHp: 120, skillName: "Horn Strike", skillPower: 15, skillType: "damage", prevForm: "digitama2" },
+      "baby_tokomon": { id: "baby_tokomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tokomon", title: "Disciplined sacred baby", img: "./images/tokomon.png", svg: makeBadgeSvg("Tokomon", "#0284c7", "#38bdf8", "👼", "BABY"), nextExp: 300, maxHp: 120, skillName: "Bite Attack", skillPower: 15, skillType: "damage", prevForm: "digitama3" },
+      "baby_motimon": { id: "baby_motimon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Motimon", title: "Wise elastic baby", img: "./images/motimon.png", svg: makeBadgeSvg("Motimon", "#7c3aed", "#a78bfa", "👾", "BABY"), nextExp: 300, maxHp: 120, skillName: "Elastic Bubble", skillPower: 15, skillType: "damage", prevForm: "digitama4" },
+      "baby_tanemon": { id: "baby_tanemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tanemon", title: "Sprouting nature baby", img: "./images/tanemon.png", svg: makeBadgeSvg("Tanemon", "#059669", "#34d399", "🌿", "BABY"), nextExp: 300, maxHp: 120, skillName: "Bubble Sprout", skillPower: 15, skillType: "damage", prevForm: "digitama5" },
+      "baby_demiveemon": { id: "baby_demiveemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "DemiVeemon", title: "Energetic dragon baby", img: "./images/demiveemon.png", svg: makeBadgeSvg("DemiVeemon", "#2563eb", "#60a5fa", "🐲", "BABY"), nextExp: 300, maxHp: 120, skillName: "Hop Attack", skillPower: 15, skillType: "damage", prevForm: "digitama1" },
 
-      "rookie_agumon": { id: "rookie_agumon", stage: "ROOKIE", stageName: "Rookie", name: "Agumon", title: "Symbol of Courage and Fire", img: "./images/agumon.png", svg: makeBadgeSvg("Agumon", "#d97706", "#f59e0b", "🦖"), nextExp: 900, maxHp: 200, skillName: "Baby Flame", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
-      "rookie_gabumon": { id: "rookie_gabumon", stage: "ROOKIE", stageName: "Rookie", name: "Gabumon", title: "Guardian of Friendship wearing fur", img: "./images/gabumon.png", svg: makeBadgeSvg("Gabumon", "#2563eb", "#60a5fa", "🐺"), nextExp: 900, maxHp: 200, skillName: "Petit Fire", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
-      "rookie_patamon": { id: "rookie_patamon", stage: "ROOKIE", stageName: "Rookie", name: "Patamon", title: "Gliding bearer of Sacred Discipline", img: "./images/patamon.png", svg: makeBadgeSvg("Patamon", "#d97706", "#fbbf24", "🦇"), nextExp: 900, maxHp: 200, skillName: "Boom Bubble", skillPower: 20, skillType: "damage", prevForm: "baby_tokomon" },
-      "rookie_biyomon": { id: "rookie_biyomon", stage: "ROOKIE", stageName: "Rookie", name: "Biyomon", title: "Bird Type - Curious explorer", img: "./images/biyomon.png", svg: makeBadgeSvg("Biyomon", "#db2777", "#f472b6", "🦅"), nextExp: 900, maxHp: 200, skillName: "Spiral Twister", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
-      "rookie_palmon": { id: "rookie_palmon", stage: "ROOKIE", stageName: "Rookie", name: "Palmon", title: "Plant Type - Purehearted lover of nature", img: "./images/palmon.png", svg: makeBadgeSvg("Palmon", "#059669", "#34d399", "🌸"), nextExp: 900, maxHp: 200, skillName: "Poison Ivy", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
-      "rookie_tentomon": { id: "rookie_tentomon", stage: "ROOKIE", stageName: "Rookie", name: "Tentomon", title: "Insect Type - Symbol of Wisdom", img: "./images/tentomon.png", svg: makeBadgeSvg("Tentomon", "#e11d48", "#fb7185", "🐞"), nextExp: 900, maxHp: 200, skillName: "Super Shocker", skillPower: 25, skillType: "damage", prevForm: "baby_motimon" },
-      "rookie_gomamon": { id: "rookie_gomamon", stage: "ROOKIE", stageName: "Rookie", name: "Gomamon", title: "Sea Animal - Marching Fishes commander", img: "./images/gomamon.png", svg: makeBadgeSvg("Gomamon", "#0284c7", "#38bdf8", "🦭"), nextExp: 900, maxHp: 200, skillName: "Marching Fishes", skillPower: 25, skillType: "damage", prevForm: "baby_tanemon" },
-      "rookie_veemon": { id: "rookie_veemon", stage: "ROOKIE", stageName: "Rookie", name: "Veemon", title: "Ancient dragon descendant", img: "./images/veemon.png", svg: makeBadgeSvg("Veemon", "#2563eb", "#38bdf8", "🐉"), nextExp: 900, maxHp: 200, skillName: "Vee Headbutt", skillPower: 30, skillType: "damage", prevForm: "baby_demiveemon" },
+      "rookie_agumon": { id: "rookie_agumon", stage: "ROOKIE", stageName: "Rookie", name: "Agumon", title: "Symbol of Courage and Fire", img: "./images/agumon.png", svg: makeBadgeSvg("Agumon", "#ea580c", "#fb923c", "🦖", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Baby Flame", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
+      "rookie_gabumon": { id: "rookie_gabumon", stage: "ROOKIE", stageName: "Rookie", name: "Gabumon", title: "Guardian of Friendship wearing fur", img: "./images/gabumon.png", svg: makeBadgeSvg("Gabumon", "#2563eb", "#60a5fa", "🐺", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Petit Fire", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
+      "rookie_patamon": { id: "rookie_patamon", stage: "ROOKIE", stageName: "Rookie", name: "Patamon", title: "Gliding bearer of Sacred Discipline", img: "./images/patamon.png", svg: makeBadgeSvg("Patamon", "#d97706", "#fbbf24", "🦇", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Boom Bubble", skillPower: 20, skillType: "damage", prevForm: "baby_tokomon" },
+      "rookie_biyomon": { id: "rookie_biyomon", stage: "ROOKIE", stageName: "Rookie", name: "Biyomon", title: "Bird Type - Curious explorer", img: "./images/biyomon.png", svg: makeBadgeSvg("Biyomon", "#db2777", "#f472b6", "🦅", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Spiral Twister", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
+      "rookie_palmon": { id: "rookie_palmon", stage: "ROOKIE", stageName: "Rookie", name: "Palmon", title: "Plant Type - Purehearted lover of nature", img: "./images/palmon.png", svg: makeBadgeSvg("Palmon", "#059669", "#34d399", "🌸", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Poison Ivy", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
+      "rookie_tentomon": { id: "rookie_tentomon", stage: "ROOKIE", stageName: "Rookie", name: "Tentomon", title: "Insect Type - Symbol of Wisdom", img: "./images/tentomon.png", svg: makeBadgeSvg("Tentomon", "#e11d48", "#fb7185", "🐞", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Super Shocker", skillPower: 25, skillType: "damage", prevForm: "baby_motimon" },
+      "rookie_gomamon": { id: "rookie_gomamon", stage: "ROOKIE", stageName: "Rookie", name: "Gomamon", title: "Sea Animal - Marching Fishes commander", img: "./images/gomamon.png", svg: makeBadgeSvg("Gomamon", "#0284c7", "#38bdf8", "🦭", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Marching Fishes", skillPower: 25, skillType: "damage", prevForm: "baby_tanemon" },
+      "rookie_veemon": { id: "rookie_veemon", stage: "ROOKIE", stageName: "Rookie", name: "Veemon", title: "Ancient dragon descendant", img: "./images/veemon.png", svg: makeBadgeSvg("Veemon", "#2563eb", "#38bdf8", "🐉", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Vee Headbutt", skillPower: 30, skillType: "damage", prevForm: "baby_demiveemon" },
 
-      "champ_greymon": { id: "champ_greymon", stage: "CHAMPION", stageName: "Champion", name: "Greymon", title: "Dinosaur Type - Mega Flame", img: "./images/greymon.png", svg: makeBadgeSvg("Greymon", "#ea580c", "#fb923c", "🦖"), nextExp: 2200, maxHp: 350, skillName: "Mega Flame", skillPower: 50, skillType: "damage", prevForm: "rookie_agumon" },
-      "champ_garurumon": { id: "champ_garurumon", stage: "CHAMPION", stageName: "Champion", name: "Garurumon", title: "Beast Type - Fox Fire", img: "./images/garurumon.png", svg: makeBadgeSvg("Garurumon", "#2563eb", "#93c5fd", "🐺"), nextExp: 2200, maxHp: 350, skillName: "Fox Fire", skillPower: 50, skillType: "damage", prevForm: "rookie_gabumon" },
-      "champ_angemon": { id: "champ_angemon", stage: "CHAMPION", stageName: "Champion", name: "Angemon", title: "Angel Type - Fist of Fate", img: "./images/angemon.png", svg: makeBadgeSvg("Angemon", "#0284c7", "#38bdf8", "👼"), nextExp: 2200, maxHp: 350, skillName: "Fist of Fate", skillPower: 55, skillType: "damage", prevForm: "rookie_patamon" },
-      "champ_kabuterimon": { id: "champ_kabuterimon", stage: "CHAMPION", stageName: "Champion", name: "Kabuterimon", title: "Insect Type - Electro Shocker", img: "./images/kabuterimon.png", svg: makeBadgeSvg("Kabuterimon", "#1e3a8a", "#60a5fa", "🪲"), nextExp: 2200, maxHp: 350, skillName: "Electro Shocker", skillPower: 50, skillType: "damage", prevForm: "rookie_tentomon" },
-      "champ_exveemon": { id: "champ_exveemon", stage: "CHAMPION", stageName: "Champion", name: "ExVeemon", title: "Dragon warrior firing X-Laser", img: "./images/exveemon.png", svg: makeBadgeSvg("ExVeemon", "#0284c7", "#38bdf8", "🐲"), nextExp: 2200, maxHp: 350, skillName: "X-Laser", skillPower: 50, skillType: "damage", prevForm: "rookie_veemon" },
+      "champ_greymon": { id: "champ_greymon", stage: "CHAMPION", stageName: "Champion", name: "Greymon", title: "Dinosaur Type - Mega Flame", img: "./images/greymon.png", svg: makeBadgeSvg("Greymon", "#ea580c", "#fb923c", "🦖", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Mega Flame", skillPower: 50, skillType: "damage", prevForm: "rookie_agumon" },
+      "champ_garurumon": { id: "champ_garurumon", stage: "CHAMPION", stageName: "Champion", name: "Garurumon", title: "Beast Type - Fox Fire", img: "./images/garurumon.png", svg: makeBadgeSvg("Garurumon", "#2563eb", "#93c5fd", "🐺", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Fox Fire", skillPower: 50, skillType: "damage", prevForm: "rookie_gabumon" },
+      "champ_angemon": { id: "champ_angemon", stage: "CHAMPION", stageName: "Champion", name: "Angemon", title: "Angel Type - Fist of Fate", img: "./images/angemon.png", svg: makeBadgeSvg("Angemon", "#0284c7", "#38bdf8", "👼", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Fist of Fate", skillPower: 55, skillType: "damage", prevForm: "rookie_patamon" },
+      "champ_kabuterimon": { id: "champ_kabuterimon", stage: "CHAMPION", stageName: "Champion", name: "Kabuterimon", title: "Insect Type - Electro Shocker", img: "./images/kabuterimon.png", svg: makeBadgeSvg("Kabuterimon", "#1e3a8a", "#60a5fa", "🪲", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Electro Shocker", skillPower: 50, skillType: "damage", prevForm: "rookie_tentomon" },
+      "champ_exveemon": { id: "champ_exveemon", stage: "CHAMPION", stageName: "Champion", name: "ExVeemon", title: "Dragon warrior firing X-Laser", img: "./images/exveemon.png", svg: makeBadgeSvg("ExVeemon", "#0284c7", "#38bdf8", "🐲", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "X-Laser", skillPower: 50, skillType: "damage", prevForm: "rookie_veemon" },
 
-      "ult_metalgreymon": { id: "ult_metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalGreymon", title: "Cyborg Type - Giga Destroyer", img: "./images/metalgreymon.png", svg: makeBadgeSvg("MetalGreymon", "#ea580c", "#f97316", "🦾"), nextExp: 5000, maxHp: 600, skillName: "Giga Destroyer", skillPower: 100, skillType: "damage", prevForm: "champ_greymon" },
-      "ult_weregarurumon": { id: "ult_weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", name: "WereGarurumon", title: "Beast Man Type - Kaiser Nail", img: "./images/weregarurumon.png", svg: makeBadgeSvg("WereGarurumon", "#1e40af", "#60a5fa", "🥋"), nextExp: 5000, maxHp: 600, skillName: "Kaiser Nail", skillPower: 100, skillType: "damage", prevForm: "champ_garurumon" },
-      "ult_magnaangemon": { id: "ult_magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", name: "MagnaAngemon", title: "Archangel Type - Gate of Destiny", img: "./images/magnaangemon.png", svg: makeBadgeSvg("MagnaAngemon", "#7c3aed", "#c084fc", "⚔️"), nextExp: 5000, maxHp: 600, skillName: "Gate of Destiny", skillPower: 120, skillType: "heal", prevForm: "champ_angemon" },
-      "ult_megakabuterimon": { id: "ult_megakabuterimon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaKabuterimon", title: "Horn Buster shock", img: "./images/megakabuterimon.png", svg: makeBadgeSvg("MegaKabuterimon", "#b91c1c", "#f87171", "🪲"), nextExp: 5000, maxHp: 600, skillName: "Horn Buster", skillPower: 95, skillType: "damage", prevForm: "champ_kabuterimon" },
-      "ult_paildramon": { id: "ult_paildramon", stage: "ULTIMATE", stageName: "Ultimate", name: "Paildramon", title: "Desperado Blaster dragon", img: "./images/paildramon.png", svg: makeBadgeSvg("Paildramon", "#047857", "#34d399", "🔫"), nextExp: 5000, maxHp: 600, skillName: "Desperado Blaster", skillPower: 105, skillType: "damage", prevForm: "champ_exveemon" },
+      "ult_metalgreymon": { id: "ult_metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalGreymon", title: "Cyborg Type - Giga Destroyer", img: "./images/metalgreymon.png", svg: makeBadgeSvg("MetalGreymon", "#ea580c", "#f97316", "🦾", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Giga Destroyer", skillPower: 100, skillType: "damage", prevForm: "champ_greymon" },
+      "ult_weregarurumon": { id: "ult_weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", name: "WereGarurumon", title: "Beast Man Type - Kaiser Nail", img: "./images/weregarurumon.png", svg: makeBadgeSvg("WereGarurumon", "#1e40af", "#60a5fa", "🥋", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Kaiser Nail", skillPower: 100, skillType: "damage", prevForm: "champ_garurumon" },
+      "ult_magnaangemon": { id: "ult_magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", name: "MagnaAngemon", title: "Archangel Type - Gate of Destiny", img: "./images/magnaangemon.png", svg: makeBadgeSvg("MagnaAngemon", "#7c3aed", "#c084fc", "⚔️", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Gate of Destiny", skillPower: 120, skillType: "heal", prevForm: "champ_angemon" },
+      "ult_megakabuterimon": { id: "ult_megakabuterimon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaKabuterimon", title: "Horn Buster shock", img: "./images/megakabuterimon.png", svg: makeBadgeSvg("MegaKabuterimon", "#b91c1c", "#f87171", "🪲", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Horn Buster", skillPower: 95, skillType: "damage", prevForm: "champ_kabuterimon" },
+      "ult_paildramon": { id: "ult_paildramon", stage: "ULTIMATE", stageName: "Ultimate", name: "Paildramon", title: "Desperado Blaster dragon", img: "./images/paildramon.png", svg: makeBadgeSvg("Paildramon", "#047857", "#34d399", "🔫", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Desperado Blaster", skillPower: 105, skillType: "damage", prevForm: "champ_exveemon" },
 
-      "mega_wargreymon": { id: "mega_wargreymon", stage: "MEGA", stageName: "Mega", name: "WarGreymon", title: "Dragon Warrior Type - Gaia Force", img: "./images/wargreymon.png", svg: makeBadgeSvg("WarGreymon", "#d97706", "#f59e0b", "🛡️"), nextExp: 9999, maxHp: 1000, skillName: "Gaia Force", skillPower: 200, skillType: "damage", prevForm: "ult_metalgreymon" },
-      "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", name: "MetalGarurumon", title: "Cyborg Beast - Cocytus Breath", img: "./images/metalgarurumon.png", svg: makeBadgeSvg("MetalGarurumon", "#0284c7", "#38bdf8", "🐺"), nextExp: 9999, maxHp: 1000, skillName: "Cocytus Breath", skillPower: 200, skillType: "damage", prevForm: "ult_weregarurumon" },
-      "mega_seraphimon": { id: "mega_seraphimon", stage: "MEGA", stageName: "Mega", name: "Seraphimon", title: "Supreme Angel - Seven Heavens", img: "./images/seraphimon.png", svg: makeBadgeSvg("Seraphimon", "#4f46e5", "#818cf8", "👑"), nextExp: 9999, maxHp: 1000, skillName: "Seven Heavens", skillPower: 200, skillType: "damage", prevForm: "ult_magnaangemon" },
-      "mega_herculeskabuterimon": { id: "mega_herculeskabuterimon", stage: "MEGA", stageName: "Mega", name: "HerculesKabuterimon", title: "Ultimate golden beetle - Giga Blaster", img: "./images/herculeskabuterimon.png", svg: makeBadgeSvg("HerculesKabuterimon", "#ca8a04", "#fde047", "⚡"), nextExp: 9999, maxHp: 1000, skillName: "Giga Blaster", skillPower: 200, skillType: "damage", prevForm: "ult_megakabuterimon" }
+      "mega_wargreymon": { id: "mega_wargreymon", stage: "MEGA", stageName: "Mega", name: "WarGreymon", title: "Dragon Warrior Type - Gaia Force", img: "./images/wargreymon.png", svg: makeBadgeSvg("WarGreymon", "#d97706", "#f59e0b", "🛡️", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Gaia Force", skillPower: 200, skillType: "damage", prevForm: "ult_metalgreymon" },
+      "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", name: "MetalGarurumon", title: "Cyborg Beast - Cocytus Breath", img: "./images/metalgarurumon.png", svg: makeBadgeSvg("MetalGarurumon", "#0284c7", "#38bdf8", "🐺", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Cocytus Breath", skillPower: 200, skillType: "damage", prevForm: "ult_weregarurumon" },
+      "mega_seraphimon": { id: "mega_seraphimon", stage: "MEGA", stageName: "Mega", name: "Seraphimon", title: "Supreme Angel - Seven Heavens", img: "./images/seraphimon.png", svg: makeBadgeSvg("Seraphimon", "#4f46e5", "#818cf8", "👑", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Seven Heavens", skillPower: 200, skillType: "damage", prevForm: "ult_magnaangemon" },
+      "mega_herculeskabuterimon": { id: "mega_herculeskabuterimon", stage: "MEGA", stageName: "Mega", name: "HerculesKabuterimon", title: "Ultimate golden beetle - Giga Blaster", img: "./images/herculeskabuterimon.png", svg: makeBadgeSvg("HerculesKabuterimon", "#ca8a04", "#fde047", "⚡", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Giga Blaster", skillPower: 200, skillType: "damage", prevForm: "ult_megakabuterimon" }
     };
 
     function getDigiImgSrc(digiId) {
-      const d = DIGIMON_DB[digiId];
-      if (!d) return makeBadgeSvg("DIGITAMA", "#0284c7", "#38bdf8", "🥚");
+      const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
       return d.img || d.svg;
     }
 
+    // Smart Seamless Image Loader with Per-Digimon Fallback
     function setDigiImageTag(imgEl, digiId) {
       if (!imgEl) return;
       const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
-      imgEl.src = d.img || d.svg;
-      imgEl.onerror = () => {
-        imgEl.src = d.svg;
+      // Reset onerror first to avoid infinite fallback loops
+      imgEl.onerror = function() {
+        this.onerror = null;
+        this.src = d.svg;
       };
+      imgEl.src = d.img || d.svg;
     }
 
     // Evolution Tree Matrix
@@ -1948,7 +1948,7 @@
             </div>
             <div class="flex items-center gap-3 my-2">
               <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center">
-                <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="handleImgError(this)" class="max-w-full max-h-full object-contain">
+                <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain">
               </div>
               <div class="text-xs">
                 <div class="font-bold text-slate-200">${digi.name}</div>
@@ -2113,7 +2113,7 @@
         tcBox.innerHTML += `
           <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs flex justify-between items-center">
             <div class="flex items-center gap-3">
-              <img src="${getDigiImgSrc(t.partnerDigiId)}" onerror="handleImgError(this)" class="w-9 h-9 object-contain">
+              <img src="${getDigiImgSrc(t.partnerDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="w-9 h-9 object-contain">
               <div>
                 <div class="font-bold text-amber-300">${t.name} (${t.username})</div>
                 <div class="text-slate-400">Partner: ${digi.name} | HP: ${t.maxHp}</div>
@@ -2129,7 +2129,7 @@
         stBox.innerHTML += `
           <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs flex justify-between items-center">
             <div class="flex items-center gap-3">
-              <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="handleImgError(this)" class="w-9 h-9 object-contain">
+              <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="w-9 h-9 object-contain">
               <div>
                 <div class="font-bold text-cyan-300">${s.name} (${s.username})</div>
                 <div class="text-slate-400">Class: ${s.classId || 'None'} | Form: ${digi.name} | EXP: ${s.exp || 0}</div>
@@ -2232,7 +2232,7 @@
           <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between items-center text-xs">
             <div class="flex items-center gap-3">
               <span class="font-pixel text-amber-400 font-bold">#${idx + 1}</span>
-              <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="handleImgError(this)" class="w-8 h-8 object-contain">
+              <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="w-8 h-8 object-contain">
               <div>
                 <div class="font-bold text-slate-200">${s.name} (${s.classId || 'None'})</div>
                 <div class="text-[11px] text-cyan-400">${digi.name} · ${digi.stageName}</div>
@@ -2259,7 +2259,7 @@
         const matrix = EVOLUTION_MATRIX[d.id] || {};
         container.innerHTML += `
           <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center gap-4 text-xs">
-            <img src="${d.img || d.svg}" onerror="handleImgError(this)" class="w-14 h-14 object-contain">
+            <img src="${d.img || d.svg}" onerror="this.onerror=null;this.src='${d.svg}';" class="w-14 h-14 object-contain">
             <div class="flex-1">
               <div class="font-bold text-cyan-300 text-sm">${d.name} (${d.stageName})</div>
               <div class="text-slate-400 my-1">${d.title}</div>
