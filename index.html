@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digimon Classroom Management System</title>
+  <title>Digimon Classroom Management System PRO</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome -->
@@ -87,6 +87,33 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #0284c7;
     }
+
+    /* THEME SKINS */
+    .skin-classic {
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.3) !important;
+      background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%) !important;
+    }
+    .skin-d3_courage {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.45) !important;
+      background: radial-gradient(circle at top, #450a0a 0%, #180505 100%) !important;
+    }
+    .skin-d3_friendship {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.45) !important;
+      background: radial-gradient(circle at top, #172554 0%, #050b1a 100%) !important;
+    }
+    .skin-d_power_gold {
+      border-color: #eab308 !important;
+      box-shadow: 0 0 30px rgba(234, 179, 8, 0.5) !important;
+      background: radial-gradient(circle at top, #422006 0%, #170d03 100%) !important;
+    }
+    .skin-dark_d_ark {
+      border-color: #a855f7 !important;
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.5) !important;
+      background: radial-gradient(circle at top, #3b0764 0%, #0d0217 100%) !important;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen scanlines relative">
@@ -97,24 +124,31 @@
   <!-- Main Top Bar -->
   <header id="mainHeader" class="bg-slate-900/90 border-b border-cyan-500/30 sticky top-0 z-50 backdrop-blur px-6 py-3 flex justify-between items-center hidden">
     <div class="flex items-center space-x-3">
-      <div class="w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 font-pixel text-xs">
+      <div id="headerDigiviceIcon" class="w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 font-pixel text-xs transition-colors">
         D-3
       </div>
       <div>
         <h1 class="font-bold text-lg text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-amber-300">
-          DIGIMON TAMER SYSTEM
+          DIGIMON TAMER SYSTEM PRO
         </h1>
-        <p class="text-xs text-slate-400" id="headerUserInfo">Classroom Evolution, Lucky Draw & Battle Portal</p>
+        <p class="text-xs text-slate-400" id="headerUserInfo">Classroom Evolution & Battle Portal</p>
       </div>
     </div>
     
     <div class="flex items-center space-x-2">
-      <span id="syncIndicator" class="text-xs text-slate-400 flex items-center gap-1.5 mr-2">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        Firebase Live
+      <button onclick="toggleAudio()" id="btnSoundToggle" class="px-2.5 py-1.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:text-white cursor-pointer" title="Toggle Sound FX">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+
+      <span id="syncIndicator" class="text-xs text-slate-400 hidden sm:flex items-center gap-1.5 mr-2">
+        <span id="syncDot" class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="syncText">Firebase Live</span>
       </span>
+      <button onclick="toggleDexModal()" class="px-3 py-1.5 rounded text-xs font-bold bg-cyan-950 border border-cyan-600 text-cyan-300 hover:bg-cyan-900 cursor-pointer">
+        <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex
+      </button>
       <button onclick="toggleLeaderboardModal()" class="px-3 py-1.5 rounded text-xs font-bold bg-amber-950 border border-amber-600 text-amber-300 hover:bg-amber-900 cursor-pointer">
-        <i class="fa-solid fa-trophy mr-1"></i> Leaderboard
+        <i class="fa-solid fa-trophy mr-1"></i> Rank
       </button>
       <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900 cursor-pointer">
         <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
@@ -125,9 +159,7 @@
   <!-- Main Container -->
   <main class="max-w-6xl mx-auto p-4 md:p-6">
 
-    <!-- ========================================== -->
     <!-- 0. LOGIN VIEW -->
-    <!-- ========================================== -->
     <div id="viewLogin" class="max-w-md mx-auto my-12 bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
       <div class="text-center mb-6">
         <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 font-pixel text-lg mb-3 animate-pulse">
@@ -136,10 +168,9 @@
         <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-amber-300">
           TAMER ACCESS GATEWAY
         </h2>
-        <p class="text-xs text-slate-400 mt-1">Real-time Firebase Synchronized Portal</p>
+        <p class="text-xs text-slate-400 mt-1">Real-time Synchronized Digital Portal</p>
       </div>
 
-      <!-- Quick Login Tab Selector -->
       <div class="flex rounded-lg bg-slate-950 p-1 mb-5 border border-slate-800">
         <button id="tabStudent" type="button" onclick="switchLoginTab('student')" class="flex-1 py-2 rounded-md text-xs font-bold transition bg-cyan-600 text-white cursor-pointer">
           <i class="fa-solid fa-gamepad mr-1"></i> Student
@@ -152,7 +183,6 @@
         </button>
       </div>
 
-      <!-- Login Form -->
       <form id="loginFormElement" onsubmit="handleLogin(event)" class="space-y-4 text-xs">
         <div>
           <label class="block text-slate-400 mb-1 font-bold" id="lblUsername">Student ID / Username</label>
@@ -168,63 +198,65 @@
         </button>
       </form>
 
-      <div class="mt-5 text-center">
-        <span id="dbSyncStatus" class="text-[11px] text-slate-400">Connecting to Firebase Realtime Database...</span>
+      <div class="mt-5 text-center flex flex-col items-center gap-1.5">
+        <span id="dbSyncStatus" class="text-[11px] text-cyan-300 font-mono">Initializing Digital World Portal...</span>
+        <button onclick="retryFirebaseConnection()" class="text-[10px] text-slate-500 hover:text-cyan-300 underline cursor-pointer">Reconnect / Reload</button>
       </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- 1. Student / Tamer View -->
-    <!-- ========================================== -->
     <div id="viewStudent" class="space-y-6 hidden">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Digivice Hub -->
-        <div class="md:col-span-2 digi-card rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[440px]">
+        <div id="studentDigiviceCard" class="md:col-span-2 digi-card skin-classic rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500">
+          <div id="stShieldBanner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-cyan-500/20 border border-cyan-400 rounded-full text-[11px] text-cyan-300 font-bold flex items-center gap-1.5 backdrop-blur shadow-lg animate-pulse">
+            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active (1 Attack Immunized)
+          </div>
+
           <div class="w-full flex justify-between items-center z-10 mb-4">
-            <span id="stStageBadge" class="font-pixel text-[10px] px-2.5 py-1 rounded bg-cyan-950 border border-cyan-500/50 text-cyan-300">
-              STAGE: DIGI-EGG
-            </span>
+            <div class="flex items-center gap-2">
+              <span id="stStageBadge" class="font-pixel text-[10px] px-2.5 py-1 rounded bg-cyan-950 border border-cyan-500/50 text-cyan-300">
+                STAGE: DIGI-EGG
+              </span>
+              <span id="stFaintBadge" class="hidden font-pixel text-[10px] px-2.5 py-1 rounded bg-rose-950 border border-rose-500 text-rose-300 animate-pulse">
+                STATUS: FAINTED (瀕死)
+              </span>
+            </div>
             <div class="flex items-center gap-2">
               <span id="stGachaTicketsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center gap-1">
-                <i class="fa-solid fa-ticket"></i> Draw Tickets: 0
+                <i class="fa-solid fa-ticket"></i> Tickets: 0
               </span>
               <button onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer">
-                <i class="fa-solid fa-gift"></i> Item Gacha
+                <i class="fa-solid fa-gift"></i> Gacha
               </button>
             </div>
           </div>
 
-          <div class="relative my-4 z-10 flex flex-col items-center">
-            <div id="digiImageContainer" class="w-52 h-52 flex items-center justify-center">
+          <div class="relative my-3 z-10 flex flex-col items-center">
+            <div id="digiImageContainer" class="w-52 h-52 flex items-center justify-center relative">
               <img id="stDigiImage" src="" alt="Digimon" class="max-w-full max-h-full object-contain animate-glow transition-all duration-500">
+              <div id="stFaintOverlay" class="hidden absolute inset-0 bg-rose-950/70 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center text-rose-300">
+                <i class="fa-solid fa-skull-crossbones text-4xl animate-bounce mb-2"></i>
+                <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE</span>
+                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher's Revival</span>
+              </div>
             </div>
-            <h2 id="stDigiName" class="text-2xl font-black tracking-wider text-cyan-200 mt-3 drop-shadow">
-              Digitama
+            <h2 id="stDigiName" class="text-2xl font-black tracking-wider text-cyan-200 mt-3 drop-shadow flex items-center gap-2">
+              <span>Digitama</span>
+              <span id="stTypeTag" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Free</span>
             </h2>
             <p id="stDigiTitle" class="text-xs text-slate-400 mt-1">A mysterious egg full of potential</p>
           </div>
 
-          <!-- Battle / Skill Controls -->
           <div class="z-10 mt-2 flex flex-col items-center gap-2.5 w-full max-w-md">
             <button id="btnEvolve" onclick="triggerEvolution()" class="hidden w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer">
               <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
             </button>
             
-            <div class="flex flex-wrap gap-2 justify-center w-full">
-              <!-- Attack Teacher Button -->
-              <button onclick="studentAttackBoss()" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer">
-                <i class="fa-solid fa-skull"></i> <span>Attack Teacher Boss</span>
-              </button>
-              
-              <!-- Attack Classmate Button -->
-              <button onclick="studentAttackClassmate()" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer">
-                <i class="fa-solid fa-crosshairs"></i> <span>Attack Classmate</span>
-              </button>
-            </div>
+            <div id="stSkillsGrid" class="grid grid-cols-2 gap-2 w-full"></div>
 
             <div class="flex items-center justify-between w-full px-2 text-xs">
-              <span id="stMoveInfoBadge" class="text-cyan-300 font-mono text-[11px] bg-slate-900/90 px-2.5 py-1 rounded border border-cyan-800/50">
-                Move: --
+              <span id="stSkinBadge" class="text-slate-400 font-mono text-[10px]">
+                Skin: Classic Cyan
               </span>
               <span id="stAttackQuotaBadge" class="text-amber-300 font-bold bg-amber-950/90 px-3 py-1 rounded border border-amber-600/50">
                 <i class="fa-solid fa-bolt mr-1"></i> Attacks Left: 0
@@ -271,7 +303,6 @@
                 <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Unallocated: 0 pts</span>
               </div>
               
-              <!-- Courage -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
@@ -287,14 +318,13 @@
                 </div>
               </div>
 
-              <!-- Friendship -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
                   <div class="flex items-center gap-1">
                     <span id="stValLove" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('love', 1)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+1</button>
-                    <button onclick="allocateTrait('love', 5)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+5</button>
+                    <button onclick="allocateTrait('love', 5)" class="px-1 py-0.5 rounded bg-emerald-950 border border-rose-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+5</button>
                     <button onclick="allocateTrait('love', 10)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+10</button>
                   </div>
                 </div>
@@ -303,7 +333,6 @@
                 </div>
               </div>
 
-              <!-- Discipline -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
@@ -319,7 +348,6 @@
                 </div>
               </div>
 
-              <!-- Wisdom -->
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
                   <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
@@ -337,26 +365,27 @@
             </div>
           </div>
 
-          <!-- Student Inventory Bag -->
           <div class="border-t border-slate-800 pt-3">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Inventory</span>
+              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Bag</span>
               <button onclick="openGachaModal()" class="text-[10px] text-cyan-400 hover:underline">Get Items &rarr;</button>
             </div>
             <div id="stInventoryList" class="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar pr-1 text-xs">
-              <div class="col-span-2 text-slate-500 italic text-center py-3">Inventory is empty. Draw items via Gacha!</div>
+              <div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha!</div>
             </div>
           </div>
 
-          <div class="pt-2 border-t border-slate-800">
-            <button onclick="toggleEvolutionTreeModal()" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer">
-              <i class="fa-solid fa-sitemap mr-1"></i> View Evolution Tree
+          <div class="pt-2 border-t border-slate-800 flex gap-2">
+            <button onclick="toggleEvolutionTreeModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer">
+              <i class="fa-solid fa-sitemap mr-1"></i> Evo Tree
+            </button>
+            <button onclick="toggleDexModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 font-bold border border-amber-500/20 cursor-pointer">
+              <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Student View Battle Log Component -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
         <h4 class="text-xs font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
           <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Live Events & Battle Logs</span>
@@ -368,11 +397,8 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- 2. Teacher Master View -->
-    <!-- ========================================== -->
     <div id="viewTeacher" class="space-y-6 hidden">
-      <!-- Boss Partner Banner -->
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
@@ -389,17 +415,12 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <!-- Random Picker Button -->
           <button onclick="startRandomPicker()" class="px-3.5 py-2 rounded bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 transition flex items-center gap-1.5 cursor-pointer animate-pulse">
             <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker (抽籤)
           </button>
-
-          <!-- Reward All Gacha Tickets -->
           <button onclick="rewardAllGachaTickets(1)" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-ticket"></i> Class +1 Gacha
           </button>
-
-          <!-- Boss Attacks -->
           <button onclick="teacherCastSkill('single_ult')" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-crosshairs"></i> Target 1 (Special)
           </button>
@@ -412,7 +433,6 @@
         </div>
       </div>
 
-      <!-- Class Management Toolbar & Grid -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div class="flex items-center gap-3">
@@ -446,7 +466,6 @@
         </div>
       </div>
 
-      <!-- Teacher View Battle Log Component -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
         <h4 class="text-xs font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
           <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Activity & Battle Log</span>
@@ -458,16 +477,17 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- 3. Super Admin View -->
-    <!-- ========================================== -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
-      <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
-          <div>
-            <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-key mr-2"></i>Global Account Credentials Manager</h2>
-            <p class="text-xs text-slate-400">Modify Username (ID) and Password for any Teacher, Student, or Admin account directly in Firebase.</p>
-          </div>
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-key mr-2"></i>Global Superadmin Operations</h2>
+          <p class="text-xs text-slate-400">Manage credentials or execute full account state resets directly in Firebase.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="superadminFullResetAllStudents()" class="px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer flex items-center gap-1.5">
+            <i class="fa-solid fa-triangle-exclamation"></i> Full Class Reset (全班初始化並歸零 Ticket)
+          </button>
           <button onclick="openCredentialsModal()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer">
             <i class="fa-solid fa-user-pen mr-1.5"></i> Manage All Accounts (ID / PWD)
           </button>
@@ -490,21 +510,23 @@
 
       <!-- Students List -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <h2 class="text-base font-bold text-cyan-300 border-b border-slate-800 pb-4 mb-4"><i class="fa-solid fa-users-gear mr-2"></i>Global Students Directory</h2>
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-users-gear mr-2"></i>Global Students Directory</h2>
+            <p class="text-xs text-slate-400">Full Reset allows clearing all student progression, inventory, Gacha Tickets, and Digi-Dex without deleting credentials.</p>
+          </div>
+        </div>
         <div id="superAdminStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
     </div>
 
   </main>
 
-  <!-- ========================================== -->
   <!-- MODALS -->
-  <!-- ========================================== -->
 
-  <!-- 1. Random Student Picker Modal (抽籤系統 - 放大顯示) -->
+  <!-- 1. Random Student Picker Modal -->
   <div id="modalRandomPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-xl w-full p-6 text-slate-200 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
-      <!-- Background Glow Effect -->
       <div class="absolute -top-24 -left-24 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -516,13 +538,11 @@
         <button onclick="closeRandomPickerModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <!-- Rolling Name Animation Display -->
       <div id="pickerRollingBox" class="my-6 py-8 px-6 w-full rounded-2xl bg-slate-950 border border-amber-500/30 flex flex-col items-center justify-center min-h-[160px]">
         <div class="text-xs font-mono text-cyan-400 mb-2 uppercase tracking-widest" id="pickerStatusText">SELECTING LUCKY TAMER...</div>
         <div id="pickerRollingName" class="text-3xl font-black text-amber-300 tracking-wider">🎲 Rolling...</div>
       </div>
 
-      <!-- Selected Winner Highlight Card (放大顯示) -->
       <div id="pickerWinnerCard" class="hidden w-full bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 rounded-2xl p-6 shadow-2xl animate-winner-zoom flex flex-col items-center">
         <div class="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 font-pixel text-[10px] mb-3">
           ★ SELECTED TAMER ★
@@ -535,7 +555,6 @@
         <h2 id="winnerStudentName" class="text-2xl font-black text-white mt-2">Alex Chan</h2>
         <p id="winnerClassAndDigi" class="text-xs text-cyan-300 font-mono mt-0.5">Class 1A · Greymon (Champion)</p>
 
-        <!-- Winner Stats Strip -->
         <div class="grid grid-cols-4 gap-2 w-full mt-4 text-xs">
           <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
             <span class="text-slate-500 block text-[10px]">HP</span>
@@ -555,7 +574,6 @@
           </div>
         </div>
 
-        <!-- Quick Reward Actions for Winner -->
         <div class="w-full mt-5 grid grid-cols-3 gap-2">
           <button onclick="rewardWinnerQuick('exp', 50)" class="py-2 px-3 rounded-xl bg-cyan-950 border border-cyan-500 hover:bg-cyan-900 text-cyan-300 font-bold text-xs cursor-pointer">
             +50 EXP
@@ -580,10 +598,9 @@
     </div>
   </div>
 
-  <!-- 2. Item Gacha Portal Modal (抽道具系統) -->
+  <!-- 2. Item Gacha Portal Modal -->
   <div id="modalGacha" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative overflow-hidden">
-      <!-- Header -->
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 text-sm">
@@ -591,14 +608,13 @@
           </div>
           <div>
             <h3 class="font-black text-base text-amber-300">DIGITAL CAPSULE GACHA (道具扭蛋機)</h3>
-            <p class="text-[11px] text-slate-400">Consume tickets to unlock powerful digital items & meats!</p>
+            <p class="text-[11px] text-slate-400">Unlock Digimon meats, protective shields, and exclusive Digivice Skins!</p>
           </div>
         </div>
         <button onclick="closeGachaModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
       <div class="flex-1 overflow-y-auto custom-scrollbar my-4 space-y-4 pr-1">
-        <!-- Ticket balance & Gacha Banner -->
         <div class="bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border border-amber-500/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div>
             <div class="text-xs text-amber-300 font-bold uppercase tracking-wider">Available Item Tickets</div>
@@ -618,7 +634,6 @@
           </div>
         </div>
 
-        <!-- Animated Pull Results Showcase -->
         <div id="gachaResultContainer" class="hidden">
           <div class="text-xs font-bold text-cyan-300 mb-2 flex items-center gap-1.5">
             <i class="fa-solid fa-sparkles"></i> Unboxed Items:
@@ -626,7 +641,6 @@
           <div id="gachaResultGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </div>
 
-        <!-- Available Items Drop Table & Rarities -->
         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
           <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center gap-1.5">
             <i class="fa-solid fa-list-check text-amber-400"></i> Gacha Drop Rates & Items Catalog (道具清單與機率)
@@ -643,7 +657,7 @@
     </div>
   </div>
 
-  <!-- 3. Visualized Evolution Tree Modal -->
+  <!-- 3. Evolution Tree Modal -->
   <div id="modalEvoTree" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -654,7 +668,6 @@
         <button onclick="toggleEvolutionTreeModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <!-- Stage Selector Tabs -->
       <div class="flex gap-2 my-4 border-b border-slate-800 pb-3 overflow-x-auto text-xs font-bold">
         <button onclick="renderEvoTreeTab('ROOKIE')" id="tabEvoRookie" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer">Rookie</button>
         <button onclick="renderEvoTreeTab('CHAMPION')" id="tabEvoChampion" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Champion</button>
@@ -662,7 +675,6 @@
         <button onclick="renderEvoTreeTab('MEGA')" id="tabEvoMega" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Mega</button>
       </div>
 
-      <!-- Evolutionary Content Cards -->
       <div id="evoTreeContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1"></div>
 
       <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
@@ -690,7 +702,42 @@
     </div>
   </div>
 
-  <!-- 5. Create / Edit Teacher Modal (Super Admin) -->
+  <!-- 5. Digi-Dex Modal -->
+  <div id="modalDigiDex" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-cyan-500/50 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-base font-pixel">
+            <i class="fa-solid fa-book-journal-whills"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-lg text-cyan-300">TAMER DIGI-DEX (數碼圖鑑檔案庫)</h3>
+            <p class="text-xs text-slate-400" id="dexProgressInfo">Unlocked: 0 / 23 (0%)</p>
+          </div>
+        </div>
+        <button onclick="toggleDexModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="flex gap-2 my-3 border-b border-slate-800 pb-3 text-xs font-bold overflow-x-auto">
+        <button onclick="filterDexStage('ALL')" id="dexTab_ALL" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer">All Forms</button>
+        <button onclick="filterDexStage('DIGI-EGG')" id="dexTab_DIGI-EGG" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Eggs</button>
+        <button onclick="filterDexStage('IN-TRAINING')" id="dexTab_IN-TRAINING" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">In-Training</button>
+        <button onclick="filterDexStage('ROOKIE')" id="dexTab_ROOKIE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Rookie</button>
+        <button onclick="filterDexStage('CHAMPION')" id="dexTab_CHAMPION" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Champion</button>
+        <button onclick="filterDexStage('ULTIMATE')" id="dexTab_ULTIMATE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Ultimate</button>
+        <button onclick="filterDexStage('MEGA')" id="dexTab_MEGA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Mega</button>
+      </div>
+
+      <div id="dexGridContainer" class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-1">
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="toggleDexModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Create / Edit Teacher Modal -->
   <div id="modalTeacherEdit" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 text-slate-200">
       <h3 class="font-bold text-base text-amber-300 mb-2"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher & Partner Setup</h3>
@@ -733,7 +780,7 @@
     </div>
   </div>
 
-  <!-- 6. Global Account Credentials Manager Modal (Super Admin) -->
+  <!-- 7. Global Account Credentials Manager Modal -->
   <div id="modalAccountCredentials" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -763,7 +810,119 @@
 
   <!-- JAVASCRIPT SYSTEM ENGINE -->
   <script>
-    // Bulletproof High-Quality Vector SVG Badge Generator
+    const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V2";
+
+    let audioCtx = null;
+    let isSoundMuted = false;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function toggleAudio() {
+      isSoundMuted = !isSoundMuted;
+      const btn = document.getElementById('btnSoundToggle');
+      if (btn) {
+        btn.innerHTML = isSoundMuted ? '<i class="fa-solid fa-volume-xmark text-rose-400"></i>' : '<i class="fa-solid fa-volume-high text-emerald-400"></i>';
+      }
+      showToast("Audio Setting", isSoundMuted ? "Sound Effects Muted" : "Sound Effects Enabled", "info");
+    }
+
+    function playSound(type) {
+      if (isSoundMuted) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        if (type === 'attack') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(350, now);
+          osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'heal') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.07);
+            gain.gain.setValueAtTime(0.2, now + i * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.25);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + i * 0.07);
+            osc.stop(now + i * 0.07 + 0.25);
+          });
+        } else if (type === 'evolve') {
+          [440, 554.37, 659.25, 880, 1108.73].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + i * 0.09);
+            gain.gain.setValueAtTime(0.3, now + i * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + i * 0.09);
+            osc.stop(now + i * 0.09 + 0.4);
+          });
+        } else if (type === 'shield') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.35);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'gacha') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(987.77, now);
+          osc.frequency.exponentialRampToValueAtTime(1318.51, now + 0.15);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'faint') {
+          [400, 300, 200, 100].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, now + i * 0.1);
+            gain.gain.setValueAtTime(0.25, now + i * 0.1);
+            gain.gain.linearRampToValueAtTime(0.01, now + i * 0.1 + 0.12);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.12);
+          });
+        }
+      } catch(e) {
+        console.warn("Audio playback error:", e);
+      }
+    }
+
     function makeBadgeSvg(text, bgCol, borderCol, icon, stageBadge = "TAMER") {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
         <defs>
@@ -785,10 +944,73 @@
       return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
     }
 
-    // =========================================================================
-    // 10+ EXPANDED ITEMS GACHA DATABASE & RARITIES
-    // =========================================================================
+    const EGG_POOL = ["digitama1", "digitama2", "digitama3", "digitama4", "digitama5"];
+
+    function getRandomEggId() {
+      return EGG_POOL[Math.floor(Math.random() * EGG_POOL.length)];
+    }
+
     const ITEMS_DB = {
+      "item_shield": {
+        id: "item_shield",
+        name: "Aegis Digital Shield (數碼防護盾)",
+        rarity: "Rare",
+        rarityColor: "text-cyan-400 border-cyan-500 bg-cyan-950/50",
+        badgeBg: "bg-cyan-800",
+        icon: "🛡️",
+        weight: 120,
+        description: "Creates a digital forcefield that immunizes from 1 incoming attack!",
+        effect: (st) => {
+          st.hasShield = true;
+          playSound('shield');
+          return "Aegis Shield deployed! Next attack will be completely blocked!";
+        }
+      },
+      "skin_courage": {
+        id: "skin_courage",
+        name: "D-3 Flame Red Skin (熾熱紅外殼)",
+        rarity: "Epic",
+        rarityColor: "text-rose-400 border-rose-500 bg-rose-950/50",
+        badgeBg: "bg-rose-800",
+        icon: "🎨",
+        weight: 20,
+        description: "Cosmetic Card: Changes personal Digivice theme into Crimson Flame D-3!",
+        effect: (st) => {
+          st.skinId = "skin-d3_courage";
+          playSound('evolve');
+          return "Digivice Theme changed to Flame Red D-3!";
+        }
+      },
+      "skin_friendship": {
+        id: "skin_friendship",
+        name: "D-3 Wolf Blue Skin (藍色戰狼外殼)",
+        rarity: "Epic",
+        rarityColor: "text-blue-400 border-blue-500 bg-blue-950/50",
+        badgeBg: "bg-blue-800",
+        icon: "🎨",
+        weight: 20,
+        description: "Cosmetic Card: Changes personal Digivice theme into Deep Ocean Wolf Blue D-3!",
+        effect: (st) => {
+          st.skinId = "skin-d3_friendship";
+          playSound('evolve');
+          return "Digivice Theme changed to Wolf Blue D-3!";
+        }
+      },
+      "skin_gold": {
+        id: "skin_gold",
+        name: "D-Power Sacred Gold Skin (神聖金光外殼)",
+        rarity: "Legendary",
+        rarityColor: "text-amber-400 border-amber-500 bg-amber-950/60 shadow-lg shadow-amber-500/20",
+        badgeBg: "bg-amber-600",
+        icon: "👑",
+        weight: 5,
+        description: "Cosmetic Card: Changes personal Digivice into Legendary Golden D-Power!",
+        effect: (st) => {
+          st.skinId = "skin-d_power_gold";
+          playSound('evolve');
+          return "Legendary Golden Digivice skin equipped!";
+        }
+      },
       "meat_small": {
         id: "meat_small",
         name: "Small Digimon Meat (小數碼肉)",
@@ -796,11 +1018,12 @@
         rarityColor: "text-slate-400 border-slate-600 bg-slate-900/60",
         badgeBg: "bg-slate-700",
         icon: "🥩",
-        weight: 300, // 30%
+        weight: 280,
         description: "Fresh tender meat! Instantly awards +30 EXP and +30 Stat Pool.",
         effect: (st) => {
           st.exp = (st.exp || 0) + 30;
           st.statPool = (st.statPool || 0) + 30;
+          playSound('heal');
           return "+30 EXP & +30 Stat Points";
         }
       },
@@ -811,11 +1034,12 @@
         rarityColor: "text-emerald-400 border-emerald-600 bg-emerald-950/40",
         badgeBg: "bg-emerald-800",
         icon: "🍖",
-        weight: 200, // 20%
+        weight: 180,
         description: "Juicy prime meat! Instantly awards +80 EXP and +80 Stat Pool.",
         effect: (st) => {
           st.exp = (st.exp || 0) + 80;
           st.statPool = (st.statPool || 0) + 80;
+          playSound('heal');
           return "+80 EXP & +80 Stat Points";
         }
       },
@@ -826,11 +1050,12 @@
         rarityColor: "text-blue-400 border-blue-600 bg-blue-950/40",
         badgeBg: "bg-blue-800",
         icon: "🍗",
-        weight: 100, // 10%
+        weight: 90,
         description: "Gigantic savory meat chunk! Awards +200 EXP and +200 Stat Pool.",
         effect: (st) => {
           st.exp = (st.exp || 0) + 200;
           st.statPool = (st.statPool || 0) + 200;
+          playSound('heal');
           return "+200 EXP & +200 Stat Points";
         }
       },
@@ -841,11 +1066,12 @@
         rarityColor: "text-slate-400 border-slate-600 bg-slate-900/60",
         badgeBg: "bg-slate-700",
         icon: "🧪",
-        weight: 150, // 15%
+        weight: 130,
         description: "Standard medicine that recovers +50 HP.",
         effect: (st) => {
           const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
           st.hp = Math.min(d.maxHp, (st.hp || 100) + 50);
+          playSound('heal');
           return "+50 HP Restored";
         }
       },
@@ -856,11 +1082,12 @@
         rarityColor: "text-emerald-400 border-emerald-600 bg-emerald-950/40",
         badgeBg: "bg-emerald-800",
         icon: "💊",
-        weight: 80, // 8%
+        weight: 75,
         description: "Miracle remedy! Restores HP back to 100% full capacity.",
         effect: (st) => {
           const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
           st.hp = d.maxHp;
+          playSound('heal');
           return "HP Fully Restored to 100%!";
         }
       },
@@ -871,10 +1098,11 @@
         rarityColor: "text-emerald-400 border-emerald-600 bg-emerald-950/40",
         badgeBg: "bg-emerald-800",
         icon: "🔋",
-        weight: 70, // 7%
+        weight: 60,
         description: "Recharges tamer drive, granting +2 Attack Quotas.",
         effect: (st) => {
           st.attackQuota = (st.attackQuota || 0) + 2;
+          playSound('shield');
           return "+2 Attack Quotas granted";
         }
       },
@@ -885,10 +1113,11 @@
         rarityColor: "text-blue-400 border-blue-600 bg-blue-950/40",
         badgeBg: "bg-blue-800",
         icon: "🔥",
-        weight: 40, // 4%
+        weight: 30,
         description: "Glowing solar fragment! Permanently grants +50 Courage Trait.",
         effect: (st) => {
           st.courage = (st.courage || 0) + 50;
+          playSound('heal');
           return "+50 Courage Trait added";
         }
       },
@@ -899,10 +1128,11 @@
         rarityColor: "text-blue-400 border-blue-600 bg-blue-950/40",
         badgeBg: "bg-blue-800",
         icon: "🐺",
-        weight: 40, // 4%
+        weight: 30,
         description: "Loyal wolf crystal! Permanently grants +50 Friendship Trait.",
         effect: (st) => {
           st.love = (st.love || 0) + 50;
+          playSound('heal');
           return "+50 Friendship Trait added";
         }
       },
@@ -913,7 +1143,7 @@
         rarityColor: "text-purple-400 border-purple-600 bg-purple-950/40",
         badgeBg: "bg-purple-800",
         icon: "🪶",
-        weight: 15, // 1.5%
+        weight: 15,
         description: "Angelic blessing! Awards +100 EXP, +100 HP, and +2 Attack Quotas.",
         effect: (st) => {
           const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
@@ -921,6 +1151,7 @@
           st.statPool = (st.statPool || 0) + 100;
           st.hp = Math.min(d.maxHp, (st.hp || 100) + 100);
           st.attackQuota = (st.attackQuota || 0) + 2;
+          playSound('heal');
           return "+100 EXP, +100 HP & +2 Quotas!";
         }
       },
@@ -931,11 +1162,12 @@
         rarityColor: "text-purple-400 border-purple-600 bg-purple-950/40",
         badgeBg: "bg-purple-800",
         icon: "🧬",
-        weight: 4, // 0.4%
+        weight: 4,
         description: "Supercharged growth accelerator! Awards +350 EXP and +350 Stat Pool.",
         effect: (st) => {
           st.exp = (st.exp || 0) + 350;
           st.statPool = (st.statPool || 0) + 350;
+          playSound('evolve');
           return "+350 EXP & +350 Stat Points!";
         }
       },
@@ -946,57 +1178,57 @@
         rarityColor: "text-amber-400 border-amber-500 bg-amber-950/60 shadow-lg shadow-amber-500/20",
         badgeBg: "bg-amber-600",
         icon: "👑",
-        weight: 1, // 0.1%
+        weight: 1,
         description: "Ultimate digital artifact! Grants +500 EXP, +500 Stat Pool, and +5 Attack Quotas!",
         effect: (st) => {
           st.exp = (st.exp || 0) + 500;
           st.statPool = (st.statPool || 0) + 500;
           st.attackQuota = (st.attackQuota || 0) + 5;
+          playSound('evolve');
           return "LEGENDARY: +500 EXP & +5 Quotas!";
         }
       }
     };
 
-    // Digimon Database with Self-contained High-Def SVG Graphic Fallbacks
     const DIGIMON_DB = {
-      "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skillName: "Egg Shell Armor", skillPower: 10, skillType: "damage" },
-      "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skillName: "Ember Spark", skillPower: 10, skillType: "damage" },
-      "digitama3": { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama III", title: "Serene blue egg", img: "./images/digitama3.png", svg: makeBadgeSvg("Digitama III", "#2563eb", "#60a5fa", "💧", "EGG"), nextExp: 100, maxHp: 100, skillName: "Bubble Shell", skillPower: 10, skillType: "damage" },
-      "digitama4": { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama IV", title: "Verdant green egg", img: "./images/digitama4.png", svg: makeBadgeSvg("Digitama IV", "#059669", "#34d399", "🌱", "EGG"), nextExp: 100, maxHp: 100, skillName: "Sprout Blessing", skillPower: 15, skillType: "heal" },
-      "digitama5": { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", name: "Digitama V", title: "Golden sacred egg", img: "./images/digitama5.png", svg: makeBadgeSvg("Digitama V", "#d97706", "#fbbf24", "✨", "EGG"), nextExp: 100, maxHp: 100, skillName: "Holy Glow", skillPower: 15, skillType: "heal" },
+      "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I (白色數碼蛋)", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor (蛋殼防護)", power: 10, type: "damage", icon: "fa-shield" }] },
+      "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama II (熾熱數碼蛋)", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Ember Spark (火花飛濺)", power: 12, type: "damage", icon: "fa-fire" }] },
+      "digitama3": { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama III (靜謐數碼蛋)", title: "Serene blue egg", img: "./images/digitama3.png", svg: makeBadgeSvg("Digitama III", "#2563eb", "#60a5fa", "💧", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Bubble Shell (泡沫外殼)", power: 10, type: "damage", icon: "fa-droplet" }] },
+      "digitama4": { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama IV (翠綠數碼蛋)", title: "Verdant green egg", img: "./images/digitama4.png", svg: makeBadgeSvg("Digitama IV", "#059669", "#34d399", "🌱", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Sprout Blessing (萌芽祝福)", power: 15, type: "heal", icon: "fa-seedling" }] },
+      "digitama5": { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama V (黃金數碼蛋)", title: "Golden sacred egg", img: "./images/digitama5.png", svg: makeBadgeSvg("Digitama V", "#d97706", "#fbbf24", "✨", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Holy Glow (聖光微芒)", power: 15, type: "heal", icon: "fa-sun" }] },
 
-      "baby_koromon": { id: "baby_koromon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Koromon", title: "Courageous baby Digimon", img: "./images/koromon.png", svg: makeBadgeSvg("Koromon", "#e11d48", "#fb7185", "🦖", "BABY"), nextExp: 300, maxHp: 120, skillName: "Bubble Blow", skillPower: 15, skillType: "damage", prevForm: "digitama1" },
-      "baby_tsunomon": { id: "baby_tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tsunomon", title: "Horned friendship baby", img: "./images/tsunomon.png", svg: makeBadgeSvg("Tsunomon", "#d97706", "#fbbf24", "🦏", "BABY"), nextExp: 300, maxHp: 120, skillName: "Horn Strike", skillPower: 15, skillType: "damage", prevForm: "digitama2" },
-      "baby_tokomon": { id: "baby_tokomon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tokomon", title: "Disciplined sacred baby", img: "./images/tokomon.png", svg: makeBadgeSvg("Tokomon", "#0284c7", "#38bdf8", "👼", "BABY"), nextExp: 300, maxHp: 120, skillName: "Bite Attack", skillPower: 15, skillType: "damage", prevForm: "digitama3" },
-      "baby_motimon": { id: "baby_motimon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Motimon", title: "Wise elastic baby", img: "./images/motimon.png", svg: makeBadgeSvg("Motimon", "#7c3aed", "#a78bfa", "👾", "BABY"), nextExp: 300, maxHp: 120, skillName: "Elastic Bubble", skillPower: 15, skillType: "damage", prevForm: "digitama4" },
-      "baby_tanemon": { id: "baby_tanemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "Tanemon", title: "Sprouting nature baby", img: "./images/tanemon.png", svg: makeBadgeSvg("Tanemon", "#059669", "#34d399", "🌿", "BABY"), nextExp: 300, maxHp: 120, skillName: "Bubble Sprout", skillPower: 15, skillType: "damage", prevForm: "digitama5" },
-      "baby_demiveemon": { id: "baby_demiveemon", stage: "IN-TRAINING", stageName: "In-Training II", name: "DemiVeemon", title: "Energetic dragon baby", img: "./images/demiveemon.png", svg: makeBadgeSvg("DemiVeemon", "#2563eb", "#60a5fa", "🐲", "BABY"), nextExp: 300, maxHp: 120, skillName: "Hop Attack", skillPower: 15, skillType: "damage", prevForm: "digitama1" },
+      "baby_koromon": { id: "baby_koromon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Koromon (滾球獸)", title: "Courageous baby Digimon", img: "./images/koromon.png", svg: makeBadgeSvg("Koromon", "#e11d48", "#fb7185", "🦖", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama1", skills: [{ name: "Awa (酸性泡沫)", power: 15, type: "damage", icon: "fa-soap" }, { name: "Bite (輕咬)", power: 12, type: "damage", icon: "fa-tooth" }] },
+      "baby_tsunomon": { id: "baby_tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tsunomon (獨角獸)", title: "Horned friendship baby", img: "./images/tsunomon.png", svg: makeBadgeSvg("Tsunomon", "#d97706", "#fbbf24", "🦏", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama2", skills: [{ name: "Horn Attack (角突)", power: 16, type: "damage", icon: "fa-bolt" }] },
+      "baby_tokomon": { id: "baby_tokomon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tokomon (迪哥獸)", title: "Disciplined sacred baby", img: "./images/tokomon.png", svg: makeBadgeSvg("Tokomon", "#0284c7", "#38bdf8", "👼", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama3", skills: [{ name: "Bite Attack (囓咬)", power: 15, type: "damage", icon: "fa-teeth-open" }] },
+      "baby_motimon": { id: "baby_motimon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Motimon (年幼獸)", title: "Wise elastic baby", img: "./images/motimon.png", svg: makeBadgeSvg("Motimon", "#7c3aed", "#a78bfa", "👾", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama4", skills: [{ name: "Elastic Bubbles (伸縮泡沫)", power: 15, type: "damage", icon: "fa-soap" }] },
+      "baby_tanemon": { id: "baby_tanemon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tanemon (種子獸)", title: "Sprouting nature baby", img: "./images/tanemon.png", svg: makeBadgeSvg("Tanemon", "#059669", "#34d399", "🌿", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama5", skills: [{ name: "Adhesive Bubbles (黏著泡沫)", power: 15, type: "damage", icon: "fa-plant-wilt" }] },
+      "baby_demiveemon": { id: "baby_demiveemon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Free", name: "DemiVeemon (豆丁獸)", title: "Energetic dragon baby", img: "./images/demiveemon.png", svg: makeBadgeSvg("DemiVeemon", "#2563eb", "#60a5fa", "🐲", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama1", skills: [{ name: "Pop Attack (衝撞泡沫)", power: 16, type: "damage", icon: "fa-wind" }] },
 
-      "rookie_agumon": { id: "rookie_agumon", stage: "ROOKIE", stageName: "Rookie", name: "Agumon", title: "Symbol of Courage and Fire", img: "./images/agumon.png", svg: makeBadgeSvg("Agumon", "#ea580c", "#fb923c", "🦖", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Baby Flame", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
-      "rookie_gabumon": { id: "rookie_gabumon", stage: "ROOKIE", stageName: "Rookie", name: "Gabumon", title: "Guardian of Friendship wearing fur", img: "./images/gabumon.png", svg: makeBadgeSvg("Gabumon", "#2563eb", "#60a5fa", "🐺", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Petit Fire", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
-      "rookie_patamon": { id: "rookie_patamon", stage: "ROOKIE", stageName: "Rookie", name: "Patamon", title: "Gliding bearer of Sacred Discipline", img: "./images/patamon.png", svg: makeBadgeSvg("Patamon", "#d97706", "#fbbf24", "🦇", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Boom Bubble", skillPower: 20, skillType: "damage", prevForm: "baby_tokomon" },
-      "rookie_biyomon": { id: "rookie_biyomon", stage: "ROOKIE", stageName: "Rookie", name: "Biyomon", title: "Bird Type - Curious explorer", img: "./images/biyomon.png", svg: makeBadgeSvg("Biyomon", "#db2777", "#f472b6", "🦅", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Spiral Twister", skillPower: 25, skillType: "damage", prevForm: "baby_koromon" },
-      "rookie_palmon": { id: "rookie_palmon", stage: "ROOKIE", stageName: "Rookie", name: "Palmon", title: "Plant Type - Purehearted lover of nature", img: "./images/palmon.png", svg: makeBadgeSvg("Palmon", "#059669", "#34d399", "🌸", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Poison Ivy", skillPower: 25, skillType: "damage", prevForm: "baby_tsunomon" },
-      "rookie_tentomon": { id: "rookie_tentomon", stage: "ROOKIE", stageName: "Rookie", name: "Tentomon", title: "Insect Type - Symbol of Wisdom", img: "./images/tentomon.png", svg: makeBadgeSvg("Tentomon", "#e11d48", "#fb7185", "🐞", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Super Shocker", skillPower: 25, skillType: "damage", prevForm: "baby_motimon" },
-      "rookie_gomamon": { id: "rookie_gomamon", stage: "ROOKIE", stageName: "Rookie", name: "Gomamon", title: "Sea Animal - Marching Fishes commander", img: "./images/gomamon.png", svg: makeBadgeSvg("Gomamon", "#0284c7", "#38bdf8", "🦭", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Marching Fishes", skillPower: 25, skillType: "damage", prevForm: "baby_tanemon" },
-      "rookie_veemon": { id: "rookie_veemon", stage: "ROOKIE", stageName: "Rookie", name: "Veemon", title: "Ancient dragon descendant", img: "./images/veemon.png", svg: makeBadgeSvg("Veemon", "#2563eb", "#38bdf8", "🐉", "ROOKIE"), nextExp: 900, maxHp: 200, skillName: "Vee Headbutt", skillPower: 30, skillType: "damage", prevForm: "baby_demiveemon" },
+      "rookie_agumon": { id: "rookie_agumon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Agumon (亞古獸)", title: "Symbol of Courage and Flame", img: "./images/agumon.png", svg: makeBadgeSvg("Agumon", "#ea580c", "#fb923c", "🦖", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_koromon", skills: [{ name: "Baby Flame (小型火焰)", power: 30, type: "damage", icon: "fa-fire" }, { name: "Spitfire (噴火爪擊)", power: 22, type: "damage", icon: "fa-hand-fist" }] },
+      "rookie_gabumon": { id: "rookie_gabumon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Gabumon (加魯魯獸幼體/加布獸)", title: "Guardian of Friendship wearing pelt", img: "./images/gabumon.png", svg: makeBadgeSvg("Gabumon", "#2563eb", "#60a5fa", "🐺", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_tsunomon", skills: [{ name: "Petit Fire (小型火焰彈)", power: 28, type: "damage", icon: "fa-snowflake" }, { name: "Horn Attack (獨角攻擊)", power: 22, type: "damage", icon: "fa-bolt" }] },
+      "rookie_patamon": { id: "rookie_patamon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Patamon (巴達獸)", title: "Gliding bearer of Sacred Air", img: "./images/patamon.png", svg: makeBadgeSvg("Patamon", "#d97706", "#fbbf24", "🦇", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_tokomon", skills: [{ name: "Air Shot (空氣砲)", power: 26, type: "damage", icon: "fa-wind" }, { name: "Hane Binta (飛翼拍擊)", power: 20, type: "damage", icon: "fa-feather-pointed" }] },
+      "rookie_biyomon": { id: "rookie_biyomon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Biyomon (比丘獸)", title: "Curious wind explorer", img: "./images/biyomon.png", svg: makeBadgeSvg("Biyomon", "#db2777", "#f472b6", "🦅", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_koromon", skills: [{ name: "Magical Fire (魔法火焰)", power: 28, type: "damage", icon: "fa-fire-burner" }] },
+      "rookie_palmon": { id: "rookie_palmon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Palmon (巴魯獸)", title: "Purehearted flower of nature", img: "./images/palmon.png", svg: makeBadgeSvg("Palmon", "#059669", "#34d399", "🌸", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_tsunomon", skills: [{ name: "Poison Ivy (毒蔓藤)", power: 28, type: "damage", icon: "fa-spa" }] },
+      "rookie_tentomon": { id: "rookie_tentomon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Tentomon (甲蟲獸)", title: "Symbol of Wisdom & Lightning", img: "./images/tentomon.png", svg: makeBadgeSvg("Tentomon", "#e11d48", "#fb7185", "🐞", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_motimon", skills: [{ name: "Petit Thunder (小型雷電)", power: 28, type: "damage", icon: "fa-bolt-lightning" }] },
+      "rookie_gomamon": { id: "rookie_gomamon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Gomamon (哥瑪獸)", title: "Marching fishes commander", img: "./images/gomamon.png", svg: makeBadgeSvg("Gomamon", "#0284c7", "#38bdf8", "🦭", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_tanemon", skills: [{ name: "Marching Fishes (魚群大暴走)", power: 28, type: "damage", icon: "fa-fish" }] },
+      "rookie_veemon": { id: "rookie_veemon", stage: "ROOKIE", stageName: "Rookie", type: "Free", name: "Veemon (V仔獸)", title: "Ancient dragon descendant", img: "./images/veemon.png", svg: makeBadgeSvg("Veemon", "#2563eb", "#38bdf8", "🐉", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "baby_demiveemon", skills: [{ name: "Vee Headbutt (V仔頭槌)", power: 32, type: "damage", icon: "fa-hammer" }, { name: "Vee Punch (V仔拳)", power: 24, type: "damage", icon: "fa-hand-back-fist" }] },
 
-      "champ_greymon": { id: "champ_greymon", stage: "CHAMPION", stageName: "Champion", name: "Greymon", title: "Dinosaur Type - Mega Flame", img: "./images/greymon.png", svg: makeBadgeSvg("Greymon", "#ea580c", "#fb923c", "🦖", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Mega Flame", skillPower: 50, skillType: "damage", prevForm: "rookie_agumon" },
-      "champ_garurumon": { id: "champ_garurumon", stage: "CHAMPION", stageName: "Champion", name: "Garurumon", title: "Beast Type - Fox Fire", img: "./images/garurumon.png", svg: makeBadgeSvg("Garurumon", "#2563eb", "#93c5fd", "🐺", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Fox Fire", skillPower: 50, skillType: "damage", prevForm: "rookie_gabumon" },
-      "champ_angemon": { id: "champ_angemon", stage: "CHAMPION", stageName: "Champion", name: "Angemon", title: "Angel Type - Fist of Fate", img: "./images/angemon.png", svg: makeBadgeSvg("Angemon", "#0284c7", "#38bdf8", "👼", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Fist of Fate", skillPower: 55, skillType: "damage", prevForm: "rookie_patamon" },
-      "champ_kabuterimon": { id: "champ_kabuterimon", stage: "CHAMPION", stageName: "Champion", name: "Kabuterimon", title: "Insect Type - Electro Shocker", img: "./images/kabuterimon.png", svg: makeBadgeSvg("Kabuterimon", "#1e3a8a", "#60a5fa", "🪲", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "Electro Shocker", skillPower: 50, skillType: "damage", prevForm: "rookie_tentomon" },
-      "champ_exveemon": { id: "champ_exveemon", stage: "CHAMPION", stageName: "Champion", name: "ExVeemon", title: "Dragon warrior firing X-Laser", img: "./images/exveemon.png", svg: makeBadgeSvg("ExVeemon", "#0284c7", "#38bdf8", "🐲", "CHAMPION"), nextExp: 2200, maxHp: 350, skillName: "X-Laser", skillPower: 50, skillType: "damage", prevForm: "rookie_veemon" },
+      "champ_greymon": { id: "champ_greymon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Greymon (暴龍獸)", title: "Dinosaur Warrior - Mega Flame", img: "./images/greymon.png", svg: makeBadgeSvg("Greymon", "#ea580c", "#fb923c", "🦖", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "rookie_agumon", skills: [{ name: "Mega Flame (超級火焰)", power: 55, type: "damage", icon: "fa-fire" }, { name: "Great Antler (巨角衝擊)", power: 42, type: "damage", icon: "fa-shield-halved" }] },
+      "champ_garurumon": { id: "champ_garurumon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Garurumon (加魯魯獸)", title: "Ice Wolf Beast - Fox Fire", img: "./images/garurumon.png", svg: makeBadgeSvg("Garurumon", "#2563eb", "#93c5fd", "🐺", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "rookie_gabumon", skills: [{ name: "Fox Fire (妖狐火焰)", power: 55, type: "damage", icon: "fa-icicles" }, { name: "Freeze Fang (冰凍之牙)", power: 40, type: "damage", icon: "fa-teeth" }] },
+      "champ_angemon": { id: "champ_angemon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Angemon (天使獸)", title: "Angel of Light - Fist of Fate", img: "./images/angemon.png", svg: makeBadgeSvg("Angemon", "#0284c7", "#38bdf8", "👼", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "rookie_patamon", skills: [{ name: "Heaven's Knuckle (天堂之拳)", power: 60, type: "damage", icon: "fa-sun" }, { name: "God Halo (神聖光環)", power: 40, type: "heal", icon: "fa-ring" }] },
+      "champ_kabuterimon": { id: "champ_kabuterimon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Kabuterimon (比多獸)", title: "Electro Shocker Beetle", img: "./images/kabuterimon.png", svg: makeBadgeSvg("Kabuterimon", "#1e3a8a", "#60a5fa", "🪲", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "rookie_tentomon", skills: [{ name: "Mega Blaster (米加巨炮)", power: 55, type: "damage", icon: "fa-bolt-lightning" }] },
+      "champ_exveemon": { id: "champ_exveemon", stage: "CHAMPION", stageName: "Champion", type: "Free", name: "ExVeemon (XV獸)", title: "Mythical dragon warrior with X-Laser", img: "./images/exveemon.png", svg: makeBadgeSvg("ExVeemon", "#0284c7", "#38bdf8", "🐲", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "rookie_veemon", skills: [{ name: "X-Laser (X光線)", power: 56, type: "damage", icon: "fa-crosshairs" }] },
 
-      "ult_metalgreymon": { id: "ult_metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", name: "MetalGreymon", title: "Cyborg Type - Giga Destroyer", img: "./images/metalgreymon.png", svg: makeBadgeSvg("MetalGreymon", "#ea580c", "#f97316", "🦾", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Giga Destroyer", skillPower: 100, skillType: "damage", prevForm: "champ_greymon" },
-      "ult_weregarurumon": { id: "ult_weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", name: "WereGarurumon", title: "Beast Man Type - Kaiser Nail", img: "./images/weregarurumon.png", svg: makeBadgeSvg("WereGarurumon", "#1e40af", "#60a5fa", "🥋", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Kaiser Nail", skillPower: 100, skillType: "damage", prevForm: "champ_garurumon" },
-      "ult_magnaangemon": { id: "ult_magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", name: "MagnaAngemon", title: "Archangel Type - Gate of Destiny", img: "./images/magnaangemon.png", svg: makeBadgeSvg("MagnaAngemon", "#7c3aed", "#c084fc", "⚔️", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Gate of Destiny", skillPower: 120, skillType: "heal", prevForm: "champ_angemon" },
-      "ult_megakabuterimon": { id: "ult_megakabuterimon", stage: "ULTIMATE", stageName: "Ultimate", name: "MegaKabuterimon", title: "Horn Buster shock", img: "./images/megakabuterimon.png", svg: makeBadgeSvg("MegaKabuterimon", "#b91c1c", "#f87171", "🪲", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Horn Buster", skillPower: 95, skillType: "damage", prevForm: "champ_kabuterimon" },
-      "ult_paildramon": { id: "ult_paildramon", stage: "ULTIMATE", stageName: "Ultimate", name: "Paildramon", title: "Desperado Blaster dragon", img: "./images/paildramon.png", svg: makeBadgeSvg("Paildramon", "#047857", "#34d399", "🔫", "ULTIMATE"), nextExp: 5000, maxHp: 600, skillName: "Desperado Blaster", skillPower: 105, skillType: "damage", prevForm: "champ_exveemon" },
+      "ult_metalgreymon": { id: "ult_metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "MetalGreymon (機械暴龍獸)", title: "Cyborg Dragon - Giga Destroyer", img: "./images/metalgreymon.png", svg: makeBadgeSvg("MetalGreymon", "#ea580c", "#f97316", "🦾", "ULTIMATE"), nextExp: 5000, maxHp: 600, prevForm: "champ_greymon", skills: [{ name: "Giga Destroyer (千兆破壞砲)", power: 110, type: "damage", icon: "fa-rocket" }, { name: "Trident Arm (三叉戟臂)", power: 80, type: "damage", icon: "fa-hand-back-fist" }] },
+      "ult_weregarurumon": { id: "ult_weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "WereGarurumon (狼人加魯魯獸)", title: "Beast Combatant - Kaiser Nail", img: "./images/weregarurumon.png", svg: makeBadgeSvg("WereGarurumon", "#1e40af", "#60a5fa", "🥋", "ULTIMATE"), nextExp: 5000, maxHp: 600, prevForm: "champ_garurumon", skills: [{ name: "Kaiser Nail (凱撒銳爪)", power: 105, type: "damage", icon: "fa-hand-peace" }, { name: "Engetsugeri (圓月彎踢)", power: 85, type: "damage", icon: "fa-moon" }] },
+      "ult_magnaangemon": { id: "ult_magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "MagnaAngemon (神聖天使獸)", title: "Archangel - Gate of Destiny", img: "./images/magnaangemon.png", svg: makeBadgeSvg("MagnaAngemon", "#7c3aed", "#c084fc", "⚔️", "ULTIMATE"), nextExp: 5000, maxHp: 600, prevForm: "champ_angemon", skills: [{ name: "Heaven's Gate (天國之門)", power: 125, type: "damage", icon: "fa-door-open" }, { name: "Holy Disinfection (神聖復活之光)", power: 120, type: "heal", icon: "fa-heart-circle-bolt" }] },
+      "ult_megakabuterimon": { id: "ult_megakabuterimon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "MegaKabuterimon (超比多獸)", title: "Horn Buster Shock Beast", img: "./images/megakabuterimon.png", svg: makeBadgeSvg("MegaKabuterimon", "#b91c1c", "#f87171", "🪲", "ULTIMATE"), nextExp: 5000, maxHp: 600, prevForm: "champ_kabuterimon", skills: [{ name: "Horn Buster (超角炮)", power: 105, type: "damage", icon: "fa-burst" }] },
+      "ult_paildramon": { id: "ult_paildramon", stage: "ULTIMATE", stageName: "Ultimate", type: "Free", name: "Paildramon (機甲龍獸)", title: "Desperado Blaster Dragon", img: "./images/paildramon.png", svg: makeBadgeSvg("Paildramon", "#047857", "#34d399", "🔫", "ULTIMATE"), nextExp: 5000, maxHp: 600, prevForm: "champ_exveemon", skills: [{ name: "Desperado Blaster (死亡火箭炮)", power: 115, type: "damage", icon: "fa-gun" }] },
 
-      "mega_wargreymon": { id: "mega_wargreymon", stage: "MEGA", stageName: "Mega", name: "WarGreymon", title: "Dragon Warrior Type - Gaia Force", img: "./images/wargreymon.png", svg: makeBadgeSvg("WarGreymon", "#d97706", "#f59e0b", "🛡️", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Gaia Force", skillPower: 200, skillType: "damage", prevForm: "ult_metalgreymon" },
-      "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", name: "MetalGarurumon", title: "Cyborg Beast - Cocytus Breath", img: "./images/metalgarurumon.png", svg: makeBadgeSvg("MetalGarurumon", "#0284c7", "#38bdf8", "🐺", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Cocytus Breath", skillPower: 200, skillType: "damage", prevForm: "ult_weregarurumon" },
-      "mega_seraphimon": { id: "mega_seraphimon", stage: "MEGA", stageName: "Mega", name: "Seraphimon", title: "Supreme Angel - Seven Heavens", img: "./images/seraphimon.png", svg: makeBadgeSvg("Seraphimon", "#4f46e5", "#818cf8", "👑", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Seven Heavens", skillPower: 200, skillType: "damage", prevForm: "ult_magnaangemon" },
-      "mega_herculeskabuterimon": { id: "mega_herculeskabuterimon", stage: "MEGA", stageName: "Mega", name: "HerculesKabuterimon", title: "Ultimate golden beetle - Giga Blaster", img: "./images/herculeskabuterimon.png", svg: makeBadgeSvg("HerculesKabuterimon", "#ca8a04", "#fde047", "⚡", "MEGA"), nextExp: 9999, maxHp: 1000, skillName: "Giga Blaster", skillPower: 200, skillType: "damage", prevForm: "ult_megakabuterimon" }
+      "mega_wargreymon": { id: "mega_wargreymon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "WarGreymon (戰鬥暴龍獸)", title: "Dragon Warrior - Gaia Force", img: "./images/wargreymon.png", svg: makeBadgeSvg("WarGreymon", "#d97706", "#f59e0b", "🛡️", "MEGA"), nextExp: 9999, maxHp: 1000, prevForm: "ult_metalgreymon", skills: [{ name: "Gaia Force (蓋亞能量炮)", power: 220, type: "damage", icon: "fa-globe" }, { name: "Dramon Killer (恐龍剋星)", power: 180, type: "damage", icon: "fa-khanda" }, { name: "Brave Shield (勇者之盾)", power: 150, type: "heal", icon: "fa-shield" }] },
+      "mega_metalgarurumon": { id: "mega_metalgarurumon", stage: "MEGA", stageName: "Mega", type: "Data", name: "MetalGarurumon (鋼鐵加魯魯獸)", title: "Cyborg Beast - Cocytus Breath", img: "./images/metalgarurumon.png", svg: makeBadgeSvg("MetalGarurumon", "#0284c7", "#38bdf8", "🐺", "MEGA"), nextExp: 9999, maxHp: 1000, prevForm: "ult_weregarurumon", skills: [{ name: "Cocytus Breath (絕對冷凍氣)", power: 220, type: "damage", icon: "fa-snowflake" }, { name: "Grace Cross Freezer (冰獄飛彈)", power: 180, type: "damage", icon: "fa-crosshairs" }] },
+      "mega_seraphimon": { id: "mega_seraphimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Seraphimon (究極天使獸)", title: "Supreme Angel - Seven Heavens", img: "./images/seraphimon.png", svg: makeBadgeSvg("Seraphimon", "#4f46e5", "#818cf8", "👑", "MEGA"), nextExp: 9999, maxHp: 1000, prevForm: "ult_magnaangemon", skills: [{ name: "Seven Heavens (七重天堂)", power: 230, type: "damage", icon: "fa-star" }, { name: "Testament (聖約淨化)", power: 200, type: "heal", icon: "fa-feather" }] },
+      "mega_herculeskabuterimon": { id: "mega_herculeskabuterimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "HerculesKabuterimon (究極比多獸)", title: "Ultimate golden beetle - Giga Blaster", img: "./images/herculeskabuterimon.png", svg: makeBadgeSvg("HerculesKabuterimon", "#ca8a04", "#fde047", "⚡", "MEGA"), nextExp: 9999, maxHp: 1000, prevForm: "ult_megakabuterimon", skills: [{ name: "Giga Blaster (千兆大衝擊)", power: 220, type: "damage", icon: "fa-bolt-lightning" }] }
     };
 
     function getDigiImgSrc(digiId) {
@@ -1004,11 +1236,9 @@
       return d.img || d.svg;
     }
 
-    // Smart Seamless Image Loader with Per-Digimon Fallback
     function setDigiImageTag(imgEl, digiId) {
       if (!imgEl) return;
       const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
-      // Reset onerror first to avoid infinite fallback loops
       imgEl.onerror = function() {
         this.onerror = null;
         this.src = d.svg;
@@ -1016,7 +1246,6 @@
       imgEl.src = d.img || d.svg;
     }
 
-    // Evolution Tree Matrix
     const EVOLUTION_MATRIX = {
       "DIGI-EGG": { courage: "baby_koromon", friendship: "baby_tsunomon", discipline: "baby_tokomon", wisdom: "baby_motimon", alt1: "baby_demiveemon", alt2: "baby_tanemon" },
       "baby_koromon": { courage: "rookie_agumon", friendship: "rookie_palmon", discipline: "rookie_patamon", wisdom: "rookie_biyomon", alt1: "rookie_veemon", alt2: "rookie_tentomon" },
@@ -1048,7 +1277,31 @@
       "ult_paildramon": { courage: "mega_wargreymon", friendship: "mega_metalgarurumon", discipline: "mega_seraphimon", wisdom: "mega_herculeskabuterimon", alt1: "mega_wargreymon", alt2: "mega_herculeskabuterimon" }
     };
 
-    // Firebase Configuration
+    function getPreviousDigiId(currentId) {
+      const cur = DIGIMON_DB[currentId];
+      if (!cur) return getRandomEggId();
+
+      if (cur.prevForm && DIGIMON_DB[cur.prevForm]) {
+        return cur.prevForm;
+      }
+
+      for (const [sourceId, targetMap] of Object.entries(EVOLUTION_MATRIX)) {
+        for (const [branchKey, targetId] of Object.entries(targetMap)) {
+          if (targetId === currentId) {
+            if (sourceId === "DIGI-EGG") return getRandomEggId();
+            return sourceId;
+          }
+        }
+      }
+
+      if (cur.stage === "MEGA") return "ult_metalgreymon";
+      if (cur.stage === "ULTIMATE") return "champ_greymon";
+      if (cur.stage === "CHAMPION") return "rookie_agumon";
+      if (cur.stage === "ROOKIE") return "baby_koromon";
+      if (cur.stage === "IN-TRAINING") return getRandomEggId();
+      return getRandomEggId();
+    }
+
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyBkP5_NpSfWZubW1z4hdXXWRBuTBijAM9M",
       authDomain: "digimonclass-e493c.firebaseapp.com",
@@ -1072,66 +1325,254 @@
     let dbRef = null;
     let pickerInterval = null;
     let currentPickedStudent = null;
+    let currentDexFilter = 'ALL';
+    let isFirebaseConnected = false;
 
-    function initFirebase() {
-      try {
-        if (!firebase.apps.length) {
-          firebase.initializeApp(FIREBASE_CONFIG);
-        }
-        dbRef = firebase.database().ref('/');
-        
-        dbRef.on('value', (snapshot) => {
-          const val = snapshot.val();
-          if (val && typeof val === 'object') {
-            appData = {
-              superAdmins: val.superAdmins || {},
-              teachers: val.teachers || {},
-              classes: val.classes || {},
-              students: val.students || {},
-              battleLogs: val.battleLogs || []
-            };
-          } else {
-            appData = {
-              superAdmins: {
-                "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master" }
-              },
-              teachers: {
-                "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "mega_wargreymon", maxHp: 1200, hp: 1200, skillPower: 180, techPower: 90 }
-              },
-              classes: {
-                "Class-1A": { id: "Class-1A", name: "Class 1A (Dragon)", teacherId: "teacher1" }
-              },
-              students: {
-                "s01": { id: "s01", username: "s01", password: "123", name: "Alex Chan (01)", classId: "Class-1A", teacherId: "teacher1", exp: 0, statPool: 0, hp: 100, attackQuota: 0, gachaTickets: 3, inventory: {}, currentDigiId: "digitama1", courage: 0, wisdom: 0, love: 0, discipline: 0 }
-              },
-              battleLogs: [
-                { id: "log_init", time: new Date().toLocaleTimeString(), text: "🌟 Digital World Classroom System Connected.", type: "system" }
-              ]
-            };
-            dbRef.set(appData);
+    function sanitizeObjectMap(raw) {
+      if (!raw) return {};
+      if (Array.isArray(raw)) {
+        const obj = {};
+        raw.forEach((item, index) => {
+          if (item) {
+            const key = item.id || item.username || String(index);
+            obj[key] = item;
           }
-          document.getElementById('dbSyncStatus').textContent = "● Connected to Firebase Live Database";
-          document.getElementById('dbSyncStatus').className = "text-[11px] text-emerald-400 font-bold";
-          refreshCurrentView();
-          renderBattleLogs();
-        }, (error) => {
-          console.warn("Firebase listener error:", error);
-          document.getElementById('dbSyncStatus').textContent = "⚠️ Firebase Offline / Connecting locally...";
-          document.getElementById('dbSyncStatus').className = "text-[11px] text-amber-400";
         });
-      } catch (err) {
-        console.error("Firebase init failed:", err);
-        document.getElementById('dbSyncStatus').textContent = "⚠️ Connection Error: " + err.message;
+        return obj;
+      }
+      if (typeof raw === 'object') {
+        const clean = {};
+        Object.keys(raw).forEach(k => {
+          if (raw[k]) clean[k] = raw[k];
+        });
+        return clean;
+      }
+      return {};
+    }
+
+    function normalizeStudent(s, keyId) {
+      if (!s || typeof s !== 'object') return null;
+      const id = String(s.id || s.username || keyId || '').toLowerCase();
+      if (!id) return null;
+
+      let currentDigiId = s.currentDigiId || 'digitama1';
+      if (!DIGIMON_DB[currentDigiId]) {
+        currentDigiId = 'digitama1';
+      }
+
+      return {
+        id: id,
+        username: String(s.username || id),
+        password: String(s.password || '123'),
+        name: String(s.name || s.username || id),
+        classId: String(s.classId || 'Class-1A'),
+        teacherId: String(s.teacherId || 'teacher1'),
+        exp: Number(s.exp) || 0,
+        statPool: Number(s.statPool) || 0,
+        hp: (s.hp !== undefined && s.hp !== null) ? Number(s.hp) : (DIGIMON_DB[currentDigiId]?.maxHp || 100),
+        isFainted: !!s.isFainted,
+        hasShield: !!s.hasShield,
+        skinId: s.skinId || 'skin-classic',
+        attackQuota: Number(s.attackQuota) || 0,
+        gachaTickets: (s.gachaTickets !== undefined && s.gachaTickets !== null) ? Number(s.gachaTickets) : 0,
+        inventory: (s.inventory && typeof s.inventory === 'object') ? s.inventory : {},
+        unlockedDex: (s.unlockedDex && typeof s.unlockedDex === 'object') ? s.unlockedDex : { [currentDigiId]: true },
+        currentDigiId: currentDigiId,
+        courage: Number(s.courage) || 0,
+        love: Number(s.love) || 0,
+        discipline: Number(s.discipline) || 0,
+        wisdom: Number(s.wisdom) || 0
+      };
+    }
+
+    function normalizeTeacher(t, keyId) {
+      if (!t || typeof t !== 'object') return null;
+      const id = String(t.id || t.username || keyId || '');
+      if (!id) return null;
+      return {
+        id: id,
+        username: String(t.username || id),
+        password: String(t.password || '123'),
+        name: String(t.name || id),
+        partnerDigiId: t.partnerDigiId || 'mega_wargreymon',
+        maxHp: Number(t.maxHp) || 1200,
+        hp: (t.hp !== undefined && t.hp !== null) ? Number(t.hp) : (Number(t.maxHp) || 1200),
+        skillPower: Number(t.skillPower) || 180,
+        techPower: Number(t.techPower) || 90
+      };
+    }
+
+    function loadLocalCache() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            appData = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Local cache load warning:", e);
+      }
+
+      // Default baseline accounts if completely empty
+      if (!appData.superAdmins || Object.keys(appData.superAdmins).length === 0) {
+        appData.superAdmins = { "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master" } };
+      }
+      if (!appData.teachers || Object.keys(appData.teachers).length === 0) {
+        appData.teachers = { "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "mega_wargreymon", maxHp: 1200, hp: 1200, skillPower: 180, techPower: 90 } };
+      }
+      if (!appData.students || Object.keys(appData.students).length === 0) {
+        const initEgg = getRandomEggId();
+        appData.students = { "s01": { id: "s01", username: "s01", password: "123", name: "Alex Chan (01)", classId: "Class-1A", teacherId: "teacher1", exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 3, inventory: {}, unlockedDex: { [initEgg]: true }, currentDigiId: initEgg, courage: 0, wisdom: 0, love: 0, discipline: 0 } };
+      }
+      if (!appData.classes || Object.keys(appData.classes).length === 0) {
+        appData.classes = { "Class-1A": { id: "Class-1A", name: "Class 1A (Dragon)", teacherId: "teacher1" } };
+      }
+      if (!appData.battleLogs) appData.battleLogs = [];
+    }
+
+    function saveLocalCache() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      } catch (e) {
+        console.warn("Local cache save warning:", e);
       }
     }
 
+    function initFirebase() {
+      // 1. Instant local boot to never leave user hanging
+      loadLocalCache();
+      updateSyncStatusUI(false, "Connecting to Firebase Live Database...");
+
+      // Set a 4-second safety watchdog so user always knows they can log in offline
+      const connectWatchdog = setTimeout(() => {
+        if (!isFirebaseConnected) {
+          updateSyncStatusUI(false, "⚠️ Local Cache Mode Active (Ready to Log In)");
+        }
+      }, 3500);
+
+      try {
+        if (typeof firebase === 'undefined') {
+          clearTimeout(connectWatchdog);
+          updateSyncStatusUI(false, "⚠️ Firebase SDK not reachable. Running on Local Cache.");
+          return;
+        }
+
+        if (!firebase.apps.length) {
+          firebase.initializeApp(FIREBASE_CONFIG);
+        }
+
+        dbRef = firebase.database().ref('/');
+
+        // Listen to live database changes
+        dbRef.on('value', (snapshot) => {
+          clearTimeout(connectWatchdog);
+          isFirebaseConnected = true;
+          const val = snapshot.val();
+
+          if (val && typeof val === 'object') {
+            const rawSuperAdmins = sanitizeObjectMap(val.superAdmins);
+            const rawTeachers = sanitizeObjectMap(val.teachers);
+            const rawClasses = sanitizeObjectMap(val.classes);
+            const rawStudents = sanitizeObjectMap(val.students);
+
+            const cleanStudents = {};
+            Object.keys(rawStudents).forEach(k => {
+              const norm = normalizeStudent(rawStudents[k], k);
+              if (norm) cleanStudents[norm.id] = norm;
+            });
+
+            const cleanTeachers = {};
+            Object.keys(rawTeachers).forEach(k => {
+              const norm = normalizeTeacher(rawTeachers[k], k);
+              if (norm) cleanTeachers[norm.id] = norm;
+            });
+
+            let cleanLogs = [];
+            if (Array.isArray(val.battleLogs)) {
+              cleanLogs = val.battleLogs.filter(Boolean);
+            } else if (val.battleLogs && typeof val.battleLogs === 'object') {
+              cleanLogs = Object.values(val.battleLogs).filter(Boolean);
+            }
+
+            if (Object.keys(rawSuperAdmins).length === 0) {
+              rawSuperAdmins["superadmin"] = { username: "superadmin", password: "superpassword", name: "Grand Master" };
+            }
+
+            appData = {
+              superAdmins: rawSuperAdmins,
+              teachers: cleanTeachers,
+              classes: rawClasses,
+              students: cleanStudents,
+              battleLogs: cleanLogs
+            };
+            saveLocalCache();
+          } else {
+            // First time setup in Firebase
+            dbRef.set(appData);
+          }
+
+          updateSyncStatusUI(true, "● Connected to Firebase Live Database");
+          refreshCurrentView();
+          renderBattleLogs();
+        }, (error) => {
+          clearTimeout(connectWatchdog);
+          console.warn("Firebase listener warning:", error);
+          updateSyncStatusUI(false, `⚠️ Firebase Sync Offline: ${error.message}`);
+        });
+
+      } catch (err) {
+        clearTimeout(connectWatchdog);
+        console.error("Firebase init failed:", err);
+        updateSyncStatusUI(false, `⚠️ Local Mode (${err.message})`);
+      }
+    }
+
+    function updateSyncStatusUI(isLive, msg) {
+      const statusEl = document.getElementById('dbSyncStatus');
+      const syncDot = document.getElementById('syncDot');
+      const syncText = document.getElementById('syncText');
+
+      if (statusEl) {
+        statusEl.textContent = msg;
+        statusEl.className = isLive ? "text-[11px] text-emerald-400 font-bold font-mono" : "text-[11px] text-amber-400 font-mono";
+      }
+      if (syncDot) {
+        syncDot.className = isLive ? "inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" : "inline-block w-2 h-2 rounded-full bg-amber-400";
+      }
+      if (syncText) {
+        syncText.textContent = isLive ? "Firebase Live" : "Local / Offline";
+      }
+    }
+
+    function retryFirebaseConnection() {
+      updateSyncStatusUI(false, "Reconnecting to Firebase...");
+      initFirebase();
+    }
+
     function saveData() {
+      saveLocalCache();
       try {
         if (dbRef) {
           dbRef.set(appData);
         }
       } catch(e) {
-        console.warn("Firebase save failed:", e);
+        console.warn("Firebase save failed, cached locally:", e);
+      }
+    }
+
+    function syncSingleStudent(studentId) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      saveLocalCache();
+      try {
+        if (dbRef) {
+          firebase.database().ref('students/' + studentId).set(s);
+          saveData();
+        }
+      } catch (e) {
+        console.warn("Direct student sync failed, cached locally:", e);
       }
     }
 
@@ -1252,25 +1693,25 @@
       }
 
       if (activeLoginTab === 'superadmin') {
-        const sa = Object.values(appData.superAdmins || {}).find(a => (a.username || '').toLowerCase() === u && a.password === p);
+        const sa = Object.values(appData.superAdmins || {}).find(a => a && (a.username || '').toLowerCase() === u && String(a.password) === p);
         if (sa) {
-          currentUser = { role: 'superadmin', data: sa };
+          currentUser = { role: 'superadmin', id: sa.username, data: sa };
           enterDashboard();
           return;
         }
-        alert("Super Admin login failed. Invalid credentials in Firebase database.");
+        alert("Super Admin login failed. Invalid username or password.");
       } else if (activeLoginTab === 'teacher') {
-        const tc = Object.values(appData.teachers || {}).find(t => (t.username || t.id || '').toLowerCase() === u && t.password === p);
+        const tc = Object.values(appData.teachers || {}).find(t => t && (t.username || t.id || '').toLowerCase() === u && String(t.password) === p);
         if (tc) {
-          currentUser = { role: 'teacher', data: tc };
+          currentUser = { role: 'teacher', id: tc.id || tc.username, data: tc };
           enterDashboard();
           return;
         }
         alert("Teacher login failed. Invalid username or password.");
       } else {
-        const st = Object.values(appData.students || {}).find(s => (s.username || s.id || '').toLowerCase() === u && s.password === p);
+        const st = Object.values(appData.students || {}).find(s => s && (s.username || s.id || '').toLowerCase() === u && String(s.password) === p);
         if (st) {
-          currentUser = { role: 'student', data: st };
+          currentUser = { role: 'student', id: st.id, data: st };
           enterDashboard();
           return;
         }
@@ -1284,13 +1725,15 @@
       document.getElementById('mainHeader').classList.remove('hidden');
 
       if (currentUser.role === 'superadmin') {
-        document.getElementById('headerUserInfo').textContent = `Super Admin: ${currentUser.data.name}`;
+        const sa = appData.superAdmins[currentUser.id] || currentUser.data;
+        document.getElementById('headerUserInfo').textContent = `Super Admin: ${sa.name}`;
         document.getElementById('viewStudent').classList.add('hidden');
         document.getElementById('viewTeacher').classList.add('hidden');
         document.getElementById('viewSuperAdmin').classList.remove('hidden');
         renderSuperAdminDashboard();
       } else if (currentUser.role === 'teacher') {
-        document.getElementById('headerUserInfo').textContent = `Teacher: ${currentUser.data.name}`;
+        const tc = appData.teachers[currentUser.id] || currentUser.data;
+        document.getElementById('headerUserInfo').textContent = `Teacher: ${tc.name}`;
         document.getElementById('viewStudent').classList.add('hidden');
         document.getElementById('viewSuperAdmin').classList.add('hidden');
         document.getElementById('viewTeacher').classList.remove('hidden');
@@ -1298,7 +1741,7 @@
         populateClassDropdown();
         renderTeacherGrid();
       } else {
-        const st = appData.students[currentUser.data.id] || currentUser.data;
+        const st = appData.students[currentUser.id] || currentUser.data;
         document.getElementById('headerUserInfo').textContent = `Tamer: ${st.name} (${st.classId || 'Class'})`;
         document.getElementById('viewTeacher').classList.add('hidden');
         document.getElementById('viewSuperAdmin').classList.add('hidden');
@@ -1331,26 +1774,55 @@
       }
     }
 
-    // Student View Logic
     function updateStudentUI() {
       if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id] || currentUser.data;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const maxHp = digi.maxHp || 100;
       if (st.hp === undefined) st.hp = maxHp;
       if (!st.inventory) st.inventory = {};
+      if (!st.unlockedDex) st.unlockedDex = {};
+      st.unlockedDex[digi.id] = true;
 
       document.getElementById('stOwnerName').textContent = `Student: ${st.name}`;
       document.getElementById('stStageBadge').textContent = `STAGE: ${digi.stageName.toUpperCase()}`;
-      document.getElementById('stDigiName').textContent = digi.name;
+      document.getElementById('stDigiName').innerHTML = `${digi.name} <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">${digi.type || 'Free'}</span>`;
       document.getElementById('stDigiTitle').textContent = digi.title;
       
       const imgEl = document.getElementById('stDigiImage');
       setDigiImageTag(imgEl, st.currentDigiId);
 
-      document.getElementById('stMoveInfoBadge').textContent = `Move: ${digi.skillName} (${digi.skillPower} DMG)`;
+      const faintOverlay = document.getElementById('stFaintOverlay');
+      const faintBadge = document.getElementById('stFaintBadge');
+      if (st.isFainted) {
+        faintOverlay.classList.remove('hidden');
+        faintBadge.classList.remove('hidden');
+      } else {
+        faintOverlay.classList.add('hidden');
+        faintBadge.classList.add('hidden');
+      }
+
+      const shieldBanner = document.getElementById('stShieldBanner');
+      if (st.hasShield) {
+        shieldBanner.classList.remove('hidden');
+      } else {
+        shieldBanner.classList.add('hidden');
+      }
+
+      const digiviceCard = document.getElementById('studentDigiviceCard');
+      digiviceCard.className = `md:col-span-2 digi-card ${st.skinId || 'skin-classic'} rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500`;
+      
+      const skinNames = {
+        'skin-classic': 'Classic Cyan',
+        'skin-d3_courage': 'Flame Red D-3',
+        'skin-d3_friendship': 'Wolf Blue D-3',
+        'skin-d_power_gold': 'Sacred Gold D-Power'
+      };
+      document.getElementById('stSkinBadge').textContent = `Skin: ${skinNames[st.skinId] || 'Classic'}`;
       document.getElementById('stAttackQuotaBadge').innerHTML = `<i class="fa-solid fa-bolt mr-1"></i> Attacks Left: ${st.attackQuota || 0}`;
-      document.getElementById('stGachaTicketsBadge').innerHTML = `<i class="fa-solid fa-ticket mr-1"></i> Draw Tickets: ${st.gachaTickets || 0}`;
+      document.getElementById('stGachaTicketsBadge').innerHTML = `<i class="fa-solid fa-ticket mr-1"></i> Tickets: ${st.gachaTickets || 0}`;
 
       const hpPct = Math.max(0, Math.min(100, Math.round((st.hp / maxHp) * 100)));
       document.getElementById('stHpText').textContent = `${st.hp} / ${maxHp} HP`;
@@ -1377,7 +1849,7 @@
       }
 
       const btnEvolve = document.getElementById('btnEvolve');
-      if (st.exp >= nextExp && totalTraits >= nextExp && canStillEvolve) {
+      if (st.exp >= nextExp && totalTraits >= nextExp && canStillEvolve && !st.isFainted) {
         btnEvolve.classList.remove('hidden');
       } else {
         btnEvolve.classList.add('hidden');
@@ -1393,19 +1865,143 @@
       document.getElementById('stValWisdom').textContent = st.wisdom || 0;
       document.getElementById('stBarWisdom').style.width = `${((st.wisdom || 0)/maxTrait)*100}%`;
 
+      renderStudentSkills(digi, st);
       renderStudentInventory();
+    }
+
+    function renderStudentSkills(digi, st) {
+      const grid = document.getElementById('stSkillsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const skills = digi.skills || [{ name: "Tackle Strike", power: 20, type: "damage", icon: "fa-hand-fist" }];
+
+      skills.forEach((sk, idx) => {
+        const isHeal = sk.type === "heal";
+        const btnColor = isHeal ? "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500" : "from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500";
+        const disabledAttr = st.isFainted ? 'disabled' : '';
+
+        grid.innerHTML += `
+          <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-200 truncate"><i class="fa-solid ${sk.icon || 'fa-bolt'} mr-1 text-cyan-400"></i>${sk.name}</span>
+                <span class="text-[10px] font-mono ${isHeal ? 'text-emerald-400' : 'text-amber-400'} font-bold">${sk.power} ${isHeal ? 'HEAL' : 'DMG'}</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1 mt-2">
+              <button onclick="castStudentSkill(${idx}, 'boss')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r ${btnColor} text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                vs Boss
+              </button>
+              <button onclick="castStudentSkill(${idx}, 'pvp')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                vs Classmate
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function castStudentSkill(skillIdx, targetMode) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      if (st.isFainted) {
+        showToast("Action Forbidden", "❌ Your Digimon is fainted (瀕死)! Request your teacher to revive you.", "info");
+        playSound('faint');
+        return;
+      }
+
+      const quota = st.attackQuota || 0;
+      if (quota <= 0) {
+        showToast("Action Depleted", "❌ Attacks left: 0! Wait for teacher reward or use Digi-Battery.", "info");
+        return;
+      }
+
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
+
+      if (targetMode === 'boss') {
+        const tc = appData.teachers[st.teacherId];
+        if (!tc) return alert("Teacher Partner is currently offline.");
+
+        if (skill.type === 'heal') {
+          st.hp = Math.min(digi.maxHp, (st.hp || 100) + skill.power);
+          addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal");
+          showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
+          playSound('heal');
+        } else {
+          tc.hp = Math.max(0, (tc.hp || tc.maxHp) - skill.power);
+          addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} unleashed [${skill.name}] on Teacher Boss for ${skill.power} DMG!`, "battle");
+          showToast("Boss Struck!", `Dealt ${skill.power} DMG to Teacher Boss!`, "damage");
+          playSound('attack');
+        }
+        st.attackQuota--;
+      } else {
+        const peers = Object.values(appData.students || {}).filter(s => s.teacherId === st.teacherId && s.id !== st.id);
+        if (peers.length === 0) return alert("No other classmates in your classroom.");
+
+        let menu = `Choose a classmate for ${digi.name}'s [${skill.name}] (${skill.power} ${skill.type.toUpperCase()}):\n\n`;
+        peers.forEach((p, idx) => {
+          const peerDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
+          menu += `${idx + 1}. ${p.name} (${peerDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''} ${p.hasShield ? '🛡️' : ''}\n`;
+        });
+
+        const choice = prompt(menu, "1");
+        if (choice === null) return;
+        const targetIdx = parseInt(choice) - 1;
+
+        if (targetIdx >= 0 && targetIdx < peers.length) {
+          const target = peers[targetIdx];
+          st.attackQuota--;
+
+          if (skill.type === 'heal') {
+            target.hp = Math.min(DIGIMON_DB[target.currentDigiId]?.maxHp || 100, (target.hp || 100) + skill.power);
+            addBattleLog(`💚 [FRIENDSHIP] ${st.name} healed classmate [${target.name}] for +${skill.power} HP!`, "heal");
+            showToast("Classmate Healed", `Healed ${target.name} for +${skill.power} HP!`, "heal");
+            playSound('heal');
+          } else {
+            if (target.hasShield) {
+              target.hasShield = false;
+              addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield neutralized ${st.name}'s [${skill.name}]!`, "battle");
+              showToast("Attack Blocked!", `${target.name}'s shield completely blocked your damage!`, "info");
+              playSound('shield');
+            } else {
+              target.hp = Math.max(0, (target.hp || 100) - skill.power);
+              addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck [${target.name}] with [${skill.name}] for ${skill.power} DMG!`, "battle");
+              showToast("PVP Hit!", `Dealt ${skill.power} DMG to ${target.name}!`, "damage");
+              playSound('attack');
+
+              if (target.hp <= 0) {
+                target.isFainted = true;
+                target.hp = 0;
+                addBattleLog(`💀 [FAINTED] [${target.name}] was incapacitated in battle! (Now Fainted)`, "battle");
+                showToast("Target Fainted!", `${target.name} is now incapacitated (瀕死狀態)!`, "damage");
+                playSound('faint');
+              }
+            }
+          }
+        } else {
+          alert("Invalid classmate selection.");
+          return;
+        }
+      }
+
+      saveData();
+      updateStudentUI();
     }
 
     function renderStudentInventory() {
       if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
+      const st = appData.students[currentUser.id];
       const invList = document.getElementById('stInventoryList');
       if (!invList || !st) return;
       invList.innerHTML = '';
 
       const items = Object.entries(st.inventory || {}).filter(([k, count]) => count > 0);
       if (items.length === 0) {
-        invList.innerHTML = '<div class="col-span-2 text-slate-500 italic text-center py-3">Inventory is empty. Draw items via Gacha!</div>';
+        invList.innerHTML = '<div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha!</div>';
         return;
       }
 
@@ -1432,7 +2028,7 @@
 
     function useItem(itemId) {
       if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
+      const st = appData.students[currentUser.id];
       if (!st || !st.inventory || !st.inventory[itemId] || st.inventory[itemId] <= 0) {
         showToast("Use Item", "Item not found in inventory!", "info");
         return;
@@ -1452,7 +2048,7 @@
 
     function allocateTrait(trait, amount) {
       if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
+      const st = appData.students[currentUser.id];
       if (!st) return;
       if ((st.statPool || 0) < amount) {
         showToast("Trait Allocation", `Not enough points! You have ${st.statPool || 0} pts remaining.`, "info");
@@ -1467,7 +2063,7 @@
 
     function triggerEvolution() {
       if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
+      const st = appData.students[currentUser.id];
       const curDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const branch = curDigi.stage === "DIGI-EGG" ? EVOLUTION_MATRIX["DIGI-EGG"] : EVOLUTION_MATRIX[curDigi.id];
 
@@ -1493,10 +2089,13 @@
       const nextDigi = DIGIMON_DB[nextId] || curDigi;
       st.currentDigiId = nextId;
       st.hp = nextDigi.maxHp || 200;
+      if (!st.unlockedDex) st.unlockedDex = {};
+      st.unlockedDex[nextId] = true;
 
-      // Confetti effect for evolution
+      playSound('evolve');
+
       if (typeof confetti === 'function') {
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        confetti({ particleCount: 130, spread: 85, origin: { y: 0.6 } });
       }
 
       addBattleLog(`✨ [EVOLUTION] ${st.name}'s [${curDigi.name}] evolved into [${nextDigi.name}]!`, "evolution");
@@ -1506,91 +2105,490 @@
       updateStudentUI();
     }
 
-    // Student Attacks
-    function studentAttackBoss() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
-      const quota = st.attackQuota || 0;
-      if (quota <= 0) {
-        showToast("Action Depleted", "❌ Attack actions left: 0! Wait for teacher reward.", "info");
-        return;
-      }
-
-      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      const tc = appData.teachers[st.teacherId];
-
-      if (!tc) {
-        alert("Teacher Partner is currently unavailable.");
-        return;
-      }
-
-      tc.hp = Math.max(0, (tc.hp || tc.maxHp) - digi.skillPower);
-      st.attackQuota--;
-      addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} dealt ${digi.skillPower} DMG to Teacher Boss!`, "battle");
-      showToast("Boss Struck!", `Dealt ${digi.skillPower} DMG to Teacher Boss!`, "damage");
-      saveData();
-      updateStudentUI();
+    function teacherReviveStudent(studentId) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+      s.isFainted = false;
+      s.hp = Math.round(digi.maxHp * 0.5);
+      playSound('heal');
+      addBattleLog(`✨ [REVIVAL] Teacher revived [${s.name}] back to life with ${s.hp} HP!`, "heal");
+      showToast("Student Revived!", `Restored ${s.name} from fainted state!`, "heal");
+      syncSingleStudent(studentId);
+      renderTeacherGrid();
     }
 
-    function studentAttackClassmate() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
-      const quota = st.attackQuota || 0;
-      if (quota <= 0) {
-        showToast("Action Depleted", "❌ Attack actions left: 0! Wait for teacher reward.", "info");
+    function teacherDegradeStudent(studentId) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      const curDigi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+
+      if (curDigi.stage === "DIGI-EGG") {
+        alert("This Digimon is already at the Digi-Egg stage!");
         return;
       }
 
-      const peers = Object.values(appData.students || {}).filter(s => s.teacherId === st.teacherId && s.id !== st.id);
-      if (peers.length === 0) {
-        alert("No other classmates available in your classroom.");
+      const prevDigiId = getPreviousDigiId(s.currentDigiId);
+      const prevDigi = DIGIMON_DB[prevDigiId] || DIGIMON_DB['digitama1'];
+
+      if (!confirm(`Are you sure you want to degrade ${s.name}'s [${curDigi.name}] down to [${prevDigi.name}]?`)) return;
+
+      s.currentDigiId = prevDigiId;
+      s.hp = prevDigi.maxHp || 100;
+      s.isFainted = false;
+      s.exp = 0;
+      s.statPool = 0;
+      s.courage = 0;
+      s.love = 0;
+      s.discipline = 0;
+      s.wisdom = 0;
+      playSound('faint');
+
+      addBattleLog(`🔻 [DE-EVOLVE] Teacher degraded [${s.name}]'s Digimon back to [${prevDigi.name}].`, "battle");
+      showToast("De-Evolution", `${s.name}'s Digimon degraded to ${prevDigi.name}!`, "damage");
+
+      syncSingleStudent(studentId);
+      renderTeacherGrid();
+    }
+
+    function teacherRebirthStudent(studentId) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      if (!confirm(`Revert ${s.name}'s Digimon completely back into a random Digi-Egg? All stats and EXP will be reset.`)) return;
+
+      const randomEgg = getRandomEggId();
+      const eggDigi = DIGIMON_DB[randomEgg];
+
+      s.currentDigiId = randomEgg;
+      s.exp = 0;
+      s.statPool = 0;
+      s.hp = 100;
+      s.isFainted = false;
+      s.attackQuota = 0;
+      s.courage = 0;
+      s.love = 0;
+      s.discipline = 0;
+      s.wisdom = 0;
+
+      playSound('faint');
+      addBattleLog(`🔄 [REBIRTH] Teacher reverted [${s.name}] back to [${eggDigi.name}].`, "battle");
+      showToast("Revert to Digi-Egg", `${s.name}'s Digimon reverted to [${eggDigi.name}]!`, "damage");
+
+      syncSingleStudent(studentId);
+      renderTeacherGrid();
+    }
+
+    function superadminFullResetStudent(studentId) {
+      const s = appData.students[studentId];
+      if (!s) return;
+
+      const promptMsg = `⚠️ WARNING: FULL FACTORY RESET FOR [${s.name}] (${s.username})\n\nThis will completely reset:\n- Digimon Form (Assigned to Random Egg)\n- All EXP and Trait Points (0)\n- All Bag Items & Inventory (Empty)\n- Gacha Tickets (Reset to 0)\n- Digi-Dex Collection History (Reset to 1 Entry)\n- Custom Digivice Skins (Reset to Classic)\n- Battle HP / Fainted / Attacks Quotas\n\nLogin Username and Password will be KEPT.\n\nType 'RESET' to confirm:`;
+      const input = prompt(promptMsg, "");
+      if (input !== 'RESET') {
+        if (input !== null) alert("Reset aborted. You must type 'RESET' exactly.");
         return;
       }
 
-      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const randomEgg = getRandomEggId();
+      s.currentDigiId = randomEgg;
+      s.exp = 0;
+      s.statPool = 0;
+      s.hp = 100;
+      s.isFainted = false;
+      s.hasShield = false;
+      s.attackQuota = 0;
+      s.gachaTickets = 0;
+      s.skinId = "skin-classic";
+      s.inventory = {};
+      s.unlockedDex = { [randomEgg]: true };
+      s.courage = 0;
+      s.love = 0;
+      s.discipline = 0;
+      s.wisdom = 0;
 
-      let menu = `Choose a classmate to attack with ${digi.name}'s [${digi.skillName}] (${digi.skillPower} DMG):\n\n`;
-      peers.forEach((p, idx) => {
-        const peerDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-        menu += `${idx + 1}. ${p.name} (${peerDigi.name}) - HP: ${p.hp || 100}\n`;
+      playSound('faint');
+      addBattleLog(`⚡ [SUPERADMIN RESET] Student account [${s.name}] was completely factory-reset!`, "battle");
+      showToast("Student Reset", `${s.name}'s account data, tickets & Dex have been completely wiped!`, "damage");
+
+      syncSingleStudent(studentId);
+      renderSuperAdminDashboard();
+    }
+
+    function superadminFullResetAllStudents() {
+      const promptMsg = `⚠️ EXTREME WARNING: FULL CLASS FACTORY RESET\n\nThis will reset ALL students across ALL classes:\n- All Digimon forms reset to Random Eggs\n- All EXP, Trait Points, & Bag Items wiped\n- ALL GACHA TICKETS RESET TO 0 (包括抽獎券全數歸零)\n- All Digi-Dex collections wiped\n\nStudent usernames and passwords remain active.\n\nType 'RESET ALL' to confirm:`;
+      const input = prompt(promptMsg, "");
+      if (input !== 'RESET ALL') {
+        if (input !== null) alert("Class reset aborted. You must type 'RESET ALL' exactly.");
+        return;
+      }
+
+      const students = appData.students || {};
+      let count = 0;
+
+      Object.keys(students).forEach(id => {
+        const s = students[id];
+        const randomEgg = getRandomEggId();
+        s.currentDigiId = randomEgg;
+        s.exp = 0;
+        s.statPool = 0;
+        s.hp = 100;
+        s.isFainted = false;
+        s.hasShield = false;
+        s.attackQuota = 0;
+        s.gachaTickets = 0;
+        s.skinId = "skin-classic";
+        s.inventory = {};
+        s.unlockedDex = { [randomEgg]: true };
+        s.courage = 0;
+        s.love = 0;
+        s.discipline = 0;
+        s.wisdom = 0;
+        count++;
       });
 
-      const choice = prompt(menu, "1");
-      if (choice === null) return;
-      const targetIdx = parseInt(choice) - 1;
+      playSound('faint');
+      addBattleLog(`⚡ [SUPERADMIN FULL CLASS RESET] All ${count} student accounts were fully reset and tickets zeroed!`, "battle");
+      showToast("Class Reset Complete", `All ${count} students have been completely reset and tickets zeroed!`, "evolution");
 
-      if (targetIdx >= 0 && targetIdx < peers.length) {
-        const target = peers[targetIdx];
-        target.hp = Math.max(0, (target.hp || 100) - digi.skillPower);
-        st.attackQuota--;
-        
-        addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} attacked [${target.name}] for ${digi.skillPower} DMG!`, "battle");
-        showToast("Classmate Attacked", `Dealt ${digi.skillPower} DMG to ${target.name}!`, "damage");
-        
-        if (target.hp <= 0) {
-          target.currentDigiId = "digitama1";
-          target.hp = 100;
-          target.exp = 0;
-          target.statPool = 0;
-          addBattleLog(`💀 [DEFEAT] [${target.name}] was defeated by [${st.name}] and reverted to a Digi-Egg!`, "battle");
-          showToast("Target Defeated!", `${target.name} has been reverted to a Digi-Egg!`, "damage");
-        }
-        
-        saveData();
-        updateStudentUI();
-      } else {
-        alert("Invalid classmate selection.");
-      }
+      saveData();
+      renderSuperAdminDashboard();
     }
 
-    // =========================================================================
-    // 抽籤系統 (RANDOM STUDENT PICKER SYSTEM)
-    // =========================================================================
+    function updateTeacherBossHeader() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const tc = appData.teachers[currentUser.id] || currentUser.data;
+      const digi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
+      document.getElementById('tcBossName').textContent = `${digi.name} (Partner)`;
+      document.getElementById('tcBossStage').textContent = digi.stageName;
+      setDigiImageTag(document.getElementById('tcBossImg'), tc.partnerDigiId);
+      document.getElementById('tcBossHp').textContent = `HP: ${tc.hp || tc.maxHp} / ${tc.maxHp} | Special: ${tc.skillPower || 180} DMG | Signature: ${tc.techPower || 90} DMG`;
+    }
+
+    function populateClassDropdown() {
+      const sel = document.getElementById('teacherClassFilter');
+      if (!sel || !currentUser) return;
+      const myClasses = Object.values(appData.classes || {}).filter(c => c.teacherId === currentUser.id);
+      sel.innerHTML = '<option value="ALL">All Classes (View All)</option>';
+      myClasses.forEach(c => {
+        sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+      });
+      sel.value = selectedTeacherClass;
+    }
+
+    function onClassFilterChange(val) {
+      selectedTeacherClass = val;
+      renderTeacherGrid();
+    }
+
+    function grantAttackQuota(studentId, amount) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      s.attackQuota = (s.attackQuota || 0) + amount;
+      playSound('shield');
+      addBattleLog(`⚔️ [ACTION QUOTA] Teacher granted +${amount} Attack Quota(s) to ${s.name}.`, "normal");
+      showToast("Quota Granted", `Granted +${amount} attack quota(s) to ${s.name}!`, "info");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function grantGachaTicket(studentId, amount) {
+      const s = appData.students[studentId];
+      if (!s) return;
+      s.gachaTickets = (s.gachaTickets || 0) + amount;
+      playSound('gacha');
+      addBattleLog(`🎁 [GACHA TICKET] Teacher rewarded +${amount} Gacha Ticket to ${s.name}.`, "gacha");
+      showToast("Gacha Ticket Rewarded", `Awarded +${amount} Gacha Ticket to ${s.name}!`, "gacha");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function rewardAllGachaTickets(amount = 1) {
+      if (!currentUser) return;
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+      myStudents.forEach(s => {
+        s.gachaTickets = (s.gachaTickets || 0) + amount;
+      });
+      playSound('gacha');
+      addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
+      showToast("Class Gacha Tickets", `All students received +${amount} Gacha Ticket!`, "gacha");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function teacherCastSkill(mode) {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const tc = appData.teachers[currentUser.id];
+      const digi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
+      const isUlt = mode.includes('ult');
+      const pwr = isUlt ? (tc.skillPower || 180) : (tc.techPower || 90);
+      const moveName = isUlt ? "Special Move" : "Signature Move";
+
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+
+      if (myStudents.length === 0) {
+        alert("No students found in current class view.");
+        return;
+      }
+
+      if (mode.startsWith('aoe_')) {
+        if (!confirm(`💥 Unleash AOE [${moveName}] (${pwr} DMG) on ALL ${myStudents.length} students?`)) return;
+        myStudents.forEach(s => {
+          if (s.hasShield) {
+            s.hasShield = false;
+          } else {
+            s.hp = Math.max(0, (s.hp || 100) - pwr);
+            if (s.hp === 0) s.isFainted = true;
+          }
+        });
+        playSound('attack');
+        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle");
+        showToast("Class AOE Strike", `All ${myStudents.length} students took ${pwr} DMG!`, "damage");
+      } else {
+        let menu = `Select target student for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
+        myStudents.forEach((s, idx) => {
+          menu += `${idx + 1}. ${s.name} (${s.classId || 'Class'}) - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''}\n`;
+        });
+        const choice = prompt(menu, "1");
+        if (choice === null) return;
+        const targetIdx = parseInt(choice) - 1;
+
+        if (targetIdx >= 0 && targetIdx < myStudents.length) {
+          const target = myStudents[targetIdx];
+          if (target.hasShield) {
+            target.hasShield = false;
+            addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield blocked Boss [${moveName}]!`, "battle");
+            showToast("Attack Blocked!", `${target.name}'s shield absorbed the boss attack!`, "info");
+            playSound('shield');
+          } else {
+            target.hp = Math.max(0, (target.hp || 100) - pwr);
+            if (target.hp === 0) target.isFainted = true;
+            playSound('attack');
+            addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle");
+            showToast("Single Target Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
+          }
+        } else {
+          alert("Invalid target selection.");
+          return;
+        }
+      }
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function renderTeacherGrid() {
+      const container = document.getElementById('teacherStudentGrid');
+      if (!container || !currentUser) return;
+      container.innerHTML = '';
+
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+
+      if (myStudents.length === 0) {
+        container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No students found in this workspace.</div>';
+        return;
+      }
+
+      myStudents.forEach(s => {
+        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+        const card = document.createElement('div');
+        card.className = `bg-slate-950 border ${s.isFainted ? 'border-rose-700 bg-rose-950/20' : 'border-slate-800'} rounded-xl p-4 flex flex-col justify-between`;
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold ${s.isFainted ? 'text-rose-400' : 'text-cyan-300'} text-sm flex items-center gap-1.5">
+                ${s.name} ${s.hasShield ? '<span title="Shield Active">🛡️</span>' : ''}
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded ${s.isFainted ? 'bg-rose-950 text-rose-300 border border-rose-600' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
+                ${s.isFainted ? 'FAINTED' : digi.stageName}
+              </span>
+            </div>
+            <div class="flex items-center gap-3 my-2">
+              <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center">
+                <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain ${s.isFainted ? 'opacity-40 grayscale' : ''}">
+              </div>
+              <div class="text-xs">
+                <div class="font-bold text-slate-200">${digi.name}</div>
+                <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 0} / ${digi.maxHp}</div>
+                <div class="text-slate-400 font-mono text-[11px]">EXP: ${s.exp || 0} | Quotas: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-1.5 mt-2">
+            <div class="grid grid-cols-3 gap-1">
+              <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer">+10 EXP</button>
+              <button onclick="rewardStudent('${s.id}', 25)" class="p-1 bg-blue-950 hover:bg-blue-900 border border-blue-800 rounded text-[10px] text-blue-300 font-bold cursor-pointer">+25 EXP</button>
+              <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer">+1 Ticket</button>
+            </div>
+            <div class="grid grid-cols-3 gap-1">
+              <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">+1 Quota</button>
+              <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer">+50 HP</button>
+              <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-800 rounded text-[10px] text-rose-300 font-bold cursor-pointer">-30 HP</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-900">
+              ${s.isFainted ? `
+                <button onclick="teacherReviveStudent('${s.id}')" class="col-span-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse">
+                  <i class="fa-solid fa-heart-pulse"></i> Revive Student (復活)
+                </button>
+              ` : `
+                <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-arrow-down"></i> De-Evolve (退化)
+                </button>
+                <button onclick="teacherRebirthStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-rotate-left"></i> Random Egg (變隨機蛋)
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function rewardStudent(id, exp) {
+      const s = appData.students[id];
+      if (!s) return;
+      s.exp = (s.exp || 0) + exp;
+      s.statPool = (s.statPool || 0) + exp;
+      playSound('heal');
+      addBattleLog(`⭐ [REWARD] ${s.name} received +${exp} EXP!`, "normal");
+      showToast("Reward Given", `Awarded +${exp} EXP to ${s.name}!`, "info");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function rewardAllStudents(exp) {
+      if (!currentUser) return;
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+      myStudents.forEach(s => {
+        s.exp = (s.exp || 0) + exp;
+        s.statPool = (s.statPool || 0) + exp;
+      });
+      playSound('evolve');
+      addBattleLog(`🎉 [CLASS REWARD] Full class gained +${exp} EXP!`, "evolution");
+      showToast("Class Reward", `All students gained +${exp} EXP!`, "evolution");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function healStudent(id, amount) {
+      const s = appData.students[id];
+      if (!s) return;
+      const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+      s.hp = Math.min(digi.maxHp, (s.hp || 0) + amount);
+      if (s.hp > 0) s.isFainted = false;
+      playSound('heal');
+      addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function penalizeHp(id, amount) {
+      const s = appData.students[id];
+      if (!s) return;
+      s.hp = Math.max(0, (s.hp || 100) - amount);
+      if (s.hp === 0) s.isFainted = true;
+      playSound('attack');
+      addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP.`, "battle");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function teacherHealAll() {
+      if (!currentUser) return;
+      const myStudents = Object.values(appData.students || {}).filter(s => {
+        const belongs = s.teacherId === currentUser.id;
+        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
+        return belongs && matches;
+      });
+      myStudents.forEach(s => {
+        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+        s.hp = digi.maxHp || 100;
+        s.isFainted = false;
+      });
+      playSound('heal');
+      addBattleLog("💚 [FULL HEAL] Teacher restored all students to 100% HP!", "heal");
+      showToast("Full Recovery", "All students restored to full HP!", "heal");
+      saveData();
+      renderTeacherGrid();
+    }
+
+    function handleExcelImport(event) {
+      const file = event.target.files[0];
+      if (!file || !currentUser) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+          let count = 0;
+
+          for (let i = 1; i < jsonRows.length; i++) {
+            const row = jsonRows[i];
+            if (!row || !row[0]) continue;
+            const u = String(row[0]).trim();
+            const p = String(row[1] || '123').trim();
+            const name = String(row[2] || u).trim();
+            const classId = String(row[3] || 'Class-1A').trim();
+            const id = u.toLowerCase();
+            const randomEgg = getRandomEggId();
+
+            appData.students[id] = {
+              id: id, username: u, password: p, name: name, classId: classId,
+              teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 3, inventory: {},
+              unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
+            };
+            count++;
+          }
+          saveData();
+          renderTeacherGrid();
+          alert(`✅ Successfully imported ${count} students to Firebase with randomized Digi-Eggs!`);
+        } catch(err) {
+          alert("Import error: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function promptCreateClass() {
+      const code = prompt("Enter Class Code (e.g. Class-3A):");
+      if (!code) return;
+      appData.classes[code] = { id: code, name: code, teacherId: currentUser.id };
+      saveData();
+      populateClassDropdown();
+      renderTeacherGrid();
+    }
+
+    function promptDeleteCurrentClass() {
+      if (selectedTeacherClass === 'ALL') return alert("Select a specific class first.");
+      delete appData.classes[selectedTeacherClass];
+      selectedTeacherClass = 'ALL';
+      saveData();
+      populateClassDropdown();
+      renderTeacherGrid();
+    }
+
     function startRandomPicker() {
       if (!currentUser || currentUser.role !== 'teacher') return;
       
       const studentsList = Object.values(appData.students || {}).filter(s => {
-        const belongs = s.teacherId === currentUser.data.id;
+        const belongs = s.teacherId === currentUser.id;
         const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
         return belongs && matches;
       });
@@ -1642,7 +2640,8 @@
       document.getElementById('winnerTickets').textContent = `${winner.gachaTickets || 0}`;
       setDigiImageTag(document.getElementById('winnerDigiImg'), winner.currentDigiId);
 
-      // Fireworks Confetti
+      playSound('evolve');
+
       if (typeof confetti === 'function') {
         confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
       }
@@ -1680,12 +2679,9 @@
       document.getElementById('modalRandomPicker').classList.add('hidden');
     }
 
-    // =========================================================================
-    // 抽道具系統 (ITEM GACHA SYSTEM)
-    // =========================================================================
     function openGachaModal() {
       if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
+      const st = appData.students[currentUser.id];
       document.getElementById('gachaAvailableTickets').textContent = st.gachaTickets || 0;
       document.getElementById('gachaResultContainer').classList.add('hidden');
       renderGachaDropTable();
@@ -1735,7 +2731,7 @@
 
     function drawGacha(times = 1) {
       if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.data.id];
+      const st = appData.students[currentUser.id];
       if (!st) return;
 
       if ((st.gachaTickets || 0) < times) {
@@ -1755,7 +2751,6 @@
 
       document.getElementById('gachaAvailableTickets').textContent = st.gachaTickets;
 
-      // Render results
       const resContainer = document.getElementById('gachaResultContainer');
       const resGrid = document.getElementById('gachaResultGrid');
       resGrid.innerHTML = '';
@@ -1773,7 +2768,8 @@
         resGrid.appendChild(card);
       });
 
-      // Confetti for Rare+ draws
+      playSound('gacha');
+
       const hasRare = pulledItems.some(i => i.rarity === 'Epic' || i.rarity === 'Legendary' || i.rarity === 'Rare');
       if (hasRare && typeof confetti === 'function') {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -1786,320 +2782,72 @@
       updateStudentUI();
     }
 
-    // Teacher View Logic
-    function updateTeacherBossHeader() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      const tc = appData.teachers[currentUser.data.id] || currentUser.data;
-      const digi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
-      document.getElementById('tcBossName').textContent = `${digi.name} (Partner)`;
-      document.getElementById('tcBossStage').textContent = digi.stageName;
-      setDigiImageTag(document.getElementById('tcBossImg'), tc.partnerDigiId);
-      document.getElementById('tcBossHp').textContent = `HP: ${tc.hp || tc.maxHp} / ${tc.maxHp} | Special: ${tc.skillPower || 180} DMG | Signature: ${tc.techPower || 90} DMG`;
+    function toggleDexModal() {
+      const modal = document.getElementById('modalDigiDex');
+      const isHidden = modal.classList.toggle('hidden');
+      if (!isHidden) renderDexCatalog();
     }
 
-    function populateClassDropdown() {
-      const sel = document.getElementById('teacherClassFilter');
-      if (!sel || !currentUser) return;
-      const myClasses = Object.values(appData.classes || {}).filter(c => c.teacherId === currentUser.data.id);
-      sel.innerHTML = '<option value="ALL">All Classes (View All)</option>';
-      myClasses.forEach(c => {
-        sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    function filterDexStage(stage) {
+      currentDexFilter = stage;
+      ['ALL', 'DIGI-EGG', 'IN-TRAINING', 'ROOKIE', 'CHAMPION', 'ULTIMATE', 'MEGA'].forEach(s => {
+        const tab = document.getElementById(`dexTab_${s}`);
+        if (tab) {
+          tab.className = (s === stage) ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer";
+        }
       });
-      sel.value = selectedTeacherClass;
+      renderDexCatalog();
     }
 
-    function onClassFilterChange(val) {
-      selectedTeacherClass = val;
-      renderTeacherGrid();
-    }
+    function renderDexCatalog() {
+      const grid = document.getElementById('dexGridContainer');
+      if (!grid) return;
+      grid.innerHTML = '';
 
-    function teacherRebirthStudent(studentId) {
-      const s = appData.students[studentId];
-      if (!s) return;
-      if (!confirm(`Are you sure you want to revert ${s.name}'s Digimon back into a Digi-Egg? All stats, attributes, and EXP will be reset.`)) return;
-
-      s.currentDigiId = "digitama1";
-      s.exp = 0;
-      s.statPool = 0;
-      s.hp = 100;
-      s.attackQuota = 0;
-      s.courage = 0;
-      s.love = 0;
-      s.discipline = 0;
-      s.wisdom = 0;
-
-      addBattleLog(`🔄 [REBIRTH] Teacher reverted [${s.name}] back to a Digi-Egg.`, "battle");
-      showToast("Revert to Digi-Egg", `${s.name}'s Digimon has been reverted to a Digi-Egg!`, "damage");
-
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function grantAttackQuota(studentId, amount) {
-      const s = appData.students[studentId];
-      if (!s) return;
-      s.attackQuota = (s.attackQuota || 0) + amount;
-      addBattleLog(`⚔️ [ACTION QUOTA] Teacher granted +${amount} Attack Quota(s) to ${s.name}.`, "normal");
-      showToast("Quota Granted", `Granted +${amount} attack quota(s) to ${s.name}!`, "info");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function grantGachaTicket(studentId, amount) {
-      const s = appData.students[studentId];
-      if (!s) return;
-      s.gachaTickets = (s.gachaTickets || 0) + amount;
-      addBattleLog(`🎁 [GACHA TICKET] Teacher rewarded +${amount} Gacha Ticket to ${s.name}.`, "gacha");
-      showToast("Gacha Ticket Rewarded", `Awarded +${amount} Gacha Ticket to ${s.name}!`, "gacha");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function rewardAllGachaTickets(amount = 1) {
-      if (!currentUser) return;
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        const belongs = s.teacherId === currentUser.data.id;
-        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
-        return belongs && matches;
-      });
-      myStudents.forEach(s => {
-        s.gachaTickets = (s.gachaTickets || 0) + amount;
-      });
-      addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
-      showToast("Class Gacha Tickets", `All students received +${amount} Gacha Ticket!`, "gacha");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function teacherCastSkill(mode) {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      const tc = appData.teachers[currentUser.data.id];
-      const digi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['mega_wargreymon'];
-      const isUlt = mode.includes('ult');
-      const pwr = isUlt ? (tc.skillPower || 180) : (tc.techPower || 90);
-      const moveName = isUlt ? "Special Move" : "Signature Move";
-
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        const belongs = s.teacherId === currentUser.data.id;
-        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
-        return belongs && matches;
-      });
-
-      if (myStudents.length === 0) {
-        alert("No students found in current class view.");
-        return;
-      }
-
-      if (mode.startsWith('aoe_')) {
-        if (!confirm(`💥 Unleash AOE [${moveName}] (${pwr} DMG) on ALL ${myStudents.length} students?`)) return;
-        myStudents.forEach(s => {
-          s.hp = Math.max(0, (s.hp || 100) - pwr);
-        });
-        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle");
-        showToast("Class AOE Strike", `All ${myStudents.length} students took ${pwr} DMG!`, "damage");
+      let studentUnlocked = {};
+      if (currentUser && currentUser.role === 'student') {
+        const st = appData.students[currentUser.id];
+        studentUnlocked = (st && st.unlockedDex) ? st.unlockedDex : {};
       } else {
-        let menu = `Select target student for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
-        myStudents.forEach((s, idx) => {
-          menu += `${idx + 1}. ${s.name} (${s.classId || 'Class'}) - HP: ${s.hp || 100}\n`;
-        });
-        const choice = prompt(menu, "1");
-        if (choice === null) return;
-        const targetIdx = parseInt(choice) - 1;
-
-        if (targetIdx >= 0 && targetIdx < myStudents.length) {
-          const target = myStudents[targetIdx];
-          target.hp = Math.max(0, (target.hp || 100) - pwr);
-          addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle");
-          showToast("Single Target Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
-        } else {
-          alert("Invalid target selection.");
-          return;
-        }
-      }
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function renderTeacherGrid() {
-      const container = document.getElementById('teacherStudentGrid');
-      if (!container || !currentUser) return;
-      container.innerHTML = '';
-
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        const belongs = s.teacherId === currentUser.data.id;
-        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
-        return belongs && matches;
-      });
-
-      if (myStudents.length === 0) {
-        container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No students found in this workspace.</div>';
-        return;
+        Object.keys(DIGIMON_DB).forEach(k => studentUnlocked[k] = true);
       }
 
-      myStudents.forEach(s => {
-        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+      const totalMons = Object.keys(DIGIMON_DB).length;
+      const unlockedCount = Object.keys(studentUnlocked).length;
+      const pct = Math.round((unlockedCount / totalMons) * 100);
+      document.getElementById('dexProgressInfo').textContent = `Unlocked: ${unlockedCount} / ${totalMons} (${pct}%)`;
+
+      const list = Object.values(DIGIMON_DB).filter(d => currentDexFilter === 'ALL' || d.stage === currentDexFilter);
+
+      list.forEach(d => {
+        const isUnlocked = !!studentUnlocked[d.id];
         const card = document.createElement('div');
-        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between";
-        card.innerHTML = `
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="font-bold text-cyan-300 text-sm">${s.name}</span>
-              <span class="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400">${digi.stageName}</span>
+        
+        if (isUnlocked) {
+          card.className = "bg-slate-950 border border-cyan-500/40 rounded-xl p-3 flex flex-col items-center text-center shadow";
+          card.innerHTML = `
+            <div class="w-16 h-16 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center mb-1">
+              <img src="${getDigiImgSrc(d.id)}" onerror="this.onerror=null;this.src='${d.svg}';" class="max-w-full max-h-full object-contain">
             </div>
-            <div class="flex items-center gap-3 my-2">
-              <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center">
-                <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain">
-              </div>
-              <div class="text-xs">
-                <div class="font-bold text-slate-200">${digi.name}</div>
-                <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 100} / ${digi.maxHp}</div>
-                <div class="text-slate-400 font-mono text-[11px]">EXP: ${s.exp || 0} | Quotas: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span></div>
-              </div>
+            <div class="font-bold text-xs text-slate-100">${d.name}</div>
+            <div class="text-[10px] text-cyan-400 font-mono mt-0.5">${d.stageName} · ${d.type || 'Free'}</div>
+            <div class="text-[9px] text-slate-400 mt-1 line-clamp-2">${d.title}</div>
+          `;
+        } else {
+          card.className = "bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center text-center opacity-40";
+          card.innerHTML = `
+            <div class="w-16 h-16 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center mb-1 text-slate-600 text-2xl">
+              <i class="fa-solid fa-question"></i>
             </div>
-          </div>
-          <div class="space-y-1.5 mt-2">
-            <!-- EXP Rewards -->
-            <div class="grid grid-cols-3 gap-1">
-              <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer">+10 EXP</button>
-              <button onclick="rewardStudent('${s.id}', 25)" class="p-1 bg-blue-950 hover:bg-blue-900 border border-blue-800 rounded text-[10px] text-blue-300 font-bold cursor-pointer">+25 EXP</button>
-              <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer">+1 Ticket</button>
-            </div>
-            <!-- Attack Quota & Healing & Damage -->
-            <div class="grid grid-cols-3 gap-1">
-              <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">+1 Quota</button>
-              <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer">+50 HP</button>
-              <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-800 rounded text-[10px] text-rose-300 font-bold cursor-pointer">-30 HP</button>
-            </div>
-            <!-- Revert to Digi-Egg -->
-            <button onclick="teacherRebirthStudent('${s.id}')" class="w-full py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 rounded text-[10px] text-amber-300 hover:text-amber-200 font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
-              <i class="fa-solid fa-rotate-left"></i> Revert to Digi-Egg (變回數碼蛋)
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function rewardStudent(id, exp) {
-      const s = appData.students[id];
-      if (!s) return;
-      s.exp = (s.exp || 0) + exp;
-      s.statPool = (s.statPool || 0) + exp;
-      addBattleLog(`⭐ [REWARD] ${s.name} received +${exp} EXP!`, "normal");
-      showToast("Reward Given", `Awarded +${exp} EXP to ${s.name}!`, "info");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function rewardAllStudents(exp) {
-      if (!currentUser) return;
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        const belongs = s.teacherId === currentUser.data.id;
-        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
-        return belongs && matches;
-      });
-      myStudents.forEach(s => {
-        s.exp = (s.exp || 0) + exp;
-        s.statPool = (s.statPool || 0) + exp;
-      });
-      addBattleLog(`🎉 [CLASS REWARD] Full class gained +${exp} EXP!`, "evolution");
-      showToast("Class Reward", `All students gained +${exp} EXP!`, "evolution");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function healStudent(id, amount) {
-      const s = appData.students[id];
-      if (!s) return;
-      const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-      s.hp = Math.min(digi.maxHp, (s.hp || 0) + amount);
-      addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function penalizeHp(id, amount) {
-      const s = appData.students[id];
-      if (!s) return;
-      s.hp = Math.max(0, (s.hp || 100) - amount);
-      addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP.`, "battle");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function teacherHealAll() {
-      if (!currentUser) return;
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        const belongs = s.teacherId === currentUser.data.id;
-        const matches = selectedTeacherClass === 'ALL' || s.classId === selectedTeacherClass;
-        return belongs && matches;
-      });
-      myStudents.forEach(s => {
-        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-        s.hp = digi.maxHp || 100;
-      });
-      addBattleLog("💚 [FULL HEAL] Teacher restored all students to 100% HP!", "heal");
-      showToast("Full Recovery", "All students restored to full HP!", "heal");
-      saveData();
-      renderTeacherGrid();
-    }
-
-    function handleExcelImport(event) {
-      const file = event.target.files[0];
-      if (!file || !currentUser) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-          let count = 0;
-
-          for (let i = 1; i < jsonRows.length; i++) {
-            const row = jsonRows[i];
-            if (!row || !row[0]) continue;
-            const u = String(row[0]).trim();
-            const p = String(row[1] || '123').trim();
-            const name = String(row[2] || u).trim();
-            const classId = String(row[3] || 'Class-1A').trim();
-            const id = u.toLowerCase();
-
-            appData.students[id] = {
-              id: id, username: u, password: p, name: name, classId: classId,
-              teacherId: currentUser.data.id, exp: 0, statPool: 0, hp: 100, attackQuota: 0, gachaTickets: 3, inventory: {},
-              currentDigiId: "digitama1", courage: 0, love: 0, discipline: 0, wisdom: 0
-            };
-            count++;
-          }
-          saveData();
-          renderTeacherGrid();
-          alert(`✅ Successfully imported ${count} students to Firebase!`);
-        } catch(err) {
-          alert("Import error: " + err.message);
+            <div class="font-bold text-xs text-slate-500">???</div>
+            <div class="text-[10px] text-slate-600 font-mono mt-0.5">${d.stageName}</div>
+            <div class="text-[9px] text-slate-600 mt-1">Undiscovered Entry</div>
+          `;
         }
-      };
-      reader.readAsArrayBuffer(file);
+        grid.appendChild(card);
+      });
     }
 
-    function promptCreateClass() {
-      const code = prompt("Enter Class Code (e.g. Class-3A):");
-      if (!code) return;
-      appData.classes[code] = { id: code, name: code, teacherId: currentUser.data.id };
-      saveData();
-      populateClassDropdown();
-      renderTeacherGrid();
-    }
-
-    function promptDeleteCurrentClass() {
-      if (selectedTeacherClass === 'ALL') return alert("Select a specific class first.");
-      delete appData.classes[selectedTeacherClass];
-      selectedTeacherClass = 'ALL';
-      saveData();
-      populateClassDropdown();
-      renderTeacherGrid();
-    }
-
-    // Super Admin Dashboard Logic
     function renderSuperAdminDashboard() {
       const tcBox = document.getElementById('superAdminTeacherGrid');
       const stBox = document.getElementById('superAdminStudentGrid');
@@ -2119,7 +2867,7 @@
                 <div class="text-slate-400">Partner: ${digi.name} | HP: ${t.maxHp}</div>
               </div>
             </div>
-            <button onclick="deleteTeacher('${t.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+            <button onclick="deleteTeacher('${t.id}')" class="text-rose-400 hover:text-rose-300 p-1 cursor-pointer" title="Delete Teacher"><i class="fa-solid fa-trash"></i></button>
           </div>
         `;
       });
@@ -2127,29 +2875,37 @@
       Object.values(appData.students || {}).forEach(s => {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         stBox.innerHTML += `
-          <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs flex justify-between items-center">
-            <div class="flex items-center gap-3">
-              <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="w-9 h-9 object-contain">
-              <div>
-                <div class="font-bold text-cyan-300">${s.name} (${s.username})</div>
-                <div class="text-slate-400">Class: ${s.classId || 'None'} | Form: ${digi.name} | EXP: ${s.exp || 0}</div>
+          <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs flex flex-col justify-between gap-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="w-9 h-9 object-contain">
+                <div>
+                  <div class="font-bold text-cyan-300">${s.name} (${s.username})</div>
+                  <div class="text-slate-400 text-[11px]">Class: ${s.classId || 'None'} | Form: ${digi.name}</div>
+                </div>
               </div>
+              <button onclick="deleteStudent('${s.id}')" class="text-rose-400 hover:text-rose-300 p-1 cursor-pointer" title="Delete Account Permanently"><i class="fa-solid fa-trash"></i></button>
             </div>
-            <button onclick="deleteStudent('${s.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+            <div class="pt-2 border-t border-slate-900 flex justify-between items-center">
+              <span class="text-[10px] text-slate-500">EXP: ${s.exp || 0} | HP: ${s.hp || 100}</span>
+              <button onclick="superadminFullResetStudent('${s.id}')" class="px-2 py-1 bg-amber-950 hover:bg-amber-900 border border-amber-600/70 text-amber-300 font-bold rounded text-[10px] transition flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Full Reset (初始化)
+              </button>
+            </div>
           </div>
         `;
       });
     }
 
     function deleteTeacher(id) {
-      if (!confirm("Delete this teacher account from Firebase?")) return;
+      if (!confirm("Delete this teacher account from database?")) return;
       delete appData.teachers[id];
       saveData();
       renderSuperAdminDashboard();
     }
 
     function deleteStudent(id) {
-      if (!confirm("Delete this student account from Firebase?")) return;
+      if (!confirm("Delete this student account from database?")) return;
       delete appData.students[id];
       saveData();
       renderSuperAdminDashboard();
@@ -2206,7 +2962,7 @@
       if (appData[category] && appData[category][id]) {
         appData[category][id].password = newPwd;
         saveData();
-        showToast("Password Updated", "Account credentials synced to Firebase!", "info");
+        showToast("Password Updated", "Account credentials updated successfully!", "info");
       }
     }
 
@@ -2214,7 +2970,6 @@
       document.getElementById('modalAccountCredentials').classList.add('hidden');
     }
 
-    // Leaderboard
     function toggleLeaderboardModal() {
       const modal = document.getElementById('modalLeaderboard');
       const isHidden = modal.classList.toggle('hidden');
@@ -2244,7 +2999,6 @@
       });
     }
 
-    // Evolution Tree Visualizer
     function toggleEvolutionTreeModal() {
       document.getElementById('modalEvoTree').classList.toggle('hidden');
       renderEvoTreeTab('ROOKIE');
@@ -2275,7 +3029,6 @@
       });
     }
 
-    // Start App with Firebase sync
     window.addEventListener('DOMContentLoaded', () => {
       initFirebase();
     });
