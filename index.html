@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Digimon Classroom Management System PRO</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -113,6 +113,16 @@
       border-color: #a855f7 !important;
       box-shadow: 0 0 30px rgba(168, 85, 247, 0.5) !important;
       background: radial-gradient(circle at top, #3b0764 0%, #0d0217 100%) !important;
+    }
+  
+    /* iPad / iOS Safari Optimizations */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    html, body {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: none;
     }
   </style>
 </head>
@@ -293,19 +303,19 @@
               <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
                 <div id="stExpBar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
               </div>
-              <p id="stNextEvolveNotice" class="text-[11px] text-slate-500 text-right">-- EXP needed for next evolution</p>
+              <p id="stNextEvolveNotice" class="text-[11px] text-slate-400 text-right">-- EXP needed for next evolution</p>
             </div>
 
             <!-- 4 Traits Allocation by Student -->
             <div class="mt-4 space-y-2">
               <div class="flex justify-between items-center">
                 <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Growth</p>
-                <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Unallocated: 0 pts</span>
+                <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">未分配特質點: 0 pts</span>
               </div>
               
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
+                  <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage (勇氣)</span>
                   <div class="flex items-center gap-1">
                     <span id="stValCourage" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('courage', 1)" class="px-1 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[9px] hover:bg-rose-800 font-bold cursor-pointer">+1</button>
@@ -320,7 +330,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
+                  <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship (友誼)</span>
                   <div class="flex items-center gap-1">
                     <span id="stValLove" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('love', 1)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+1</button>
@@ -335,7 +345,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
+                  <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline (紀律)</span>
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('discipline', 1)" class="px-1 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[9px] hover:bg-amber-800 font-bold cursor-pointer">+1</button>
@@ -350,7 +360,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
+                  <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom (智慧)</span>
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('wisdom', 1)" class="px-1 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[9px] hover:bg-blue-800 font-bold cursor-pointer">+1</button>
@@ -477,7 +487,7 @@
       </div>
     </div>
 
-        <!-- 3. Super Admin View -->
+    <!-- 3. Super Admin View -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
       <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
         <div>
@@ -929,7 +939,7 @@
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(freq, now + i * 0.1);
             gain.gain.setValueAtTime(0.25, now + i * 0.1);
-            gain.gain.linearRampToValueAtTime(0.01, now + i * 0.1 + 0.12);
+            gain.linearRampToValueAtTime(0.01, now + i * 0.1 + 0.12);
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start(now + i * 0.1);
@@ -1208,7 +1218,6 @@
       }
     };
 
-
     const DIGIMON_DB = {
       // 1. DIGI-EGGS (5)
       "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I (白色數碼蛋)", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor (蛋殼防護)", power: 10, type: "damage", icon: "fa-shield" }] },
@@ -1353,7 +1362,6 @@
       "rapidmon": { courage: "saintgargomon", friendship: "herculeskabuterimon", discipline: "vikemon", wisdom: "metalgarurumon", alt1: "wargreymon", alt2: "saintgargomon" },
       "taomon": { courage: "sakuyamon", friendship: "ophanimon", discipline: "piedmon", wisdom: "lotusmon", alt1: "rosemon", alt2: "sakuyamon" }
     };
-
 
     function getDigiImgSrc(digiId) {
       const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
@@ -1517,7 +1525,7 @@
       }
       if (!appData.students || Object.keys(appData.students).length === 0) {
         const initEgg = getRandomEggId();
-        appData.students = { "s01": { id: "s01", username: "s01", password: "123", name: "Alex Chan (01)", classId: "Class-1A", teacherId: "teacher1", exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 3, inventory: {}, unlockedDex: { [initEgg]: true }, currentDigiId: initEgg, courage: 0, wisdom: 0, love: 0, discipline: 0 } };
+        appData.students = { "s01": { id: "s01", username: "s01", password: "123", name: "Alex Chan (01)", classId: "Class-1A", teacherId: "teacher1", exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {}, unlockedDex: { [initEgg]: true }, currentDigiId: initEgg, courage: 0, wisdom: 0, love: 0, discipline: 0 } };
       }
       if (!appData.classes || Object.keys(appData.classes).length === 0) {
         appData.classes = { "Class-1A": { id: "Class-1A", name: "Class 1A (Dragon)", teacherId: "teacher1" } };
@@ -1867,7 +1875,6 @@
       }
     }
 
-
     function getEvolutionRequirements(digi, st) {
       const stage = digi.stage;
       const nextExp = digi.nextExp || 1000;
@@ -1937,7 +1944,6 @@
       };
     }
 
-
     function updateStudentUI() {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -1988,6 +1994,11 @@
       document.getElementById('stAttackQuotaBadge').innerHTML = `<i class="fa-solid fa-bolt mr-1"></i> Attacks Left: ${st.attackQuota || 0}`;
       document.getElementById('stGachaTicketsBadge').innerHTML = `<i class="fa-solid fa-ticket mr-1"></i> Tickets: ${st.gachaTickets || 0}`;
 
+      const gachaModalTickets = document.getElementById('gachaAvailableTickets');
+      if (gachaModalTickets) {
+        gachaModalTickets.textContent = st.gachaTickets || 0;
+      }
+
       const hpPct = Math.max(0, Math.min(100, Math.round((st.hp / maxHp) * 100)));
       document.getElementById('stHpText').textContent = `${st.hp} / ${maxHp} HP`;
       document.getElementById('stHpBar').style.width = `${hpPct}%`;
@@ -2028,8 +2039,6 @@
       renderStudentInventory();
     }
 
-
-
     function allocateTrait(trait, amount) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -2067,11 +2076,9 @@
       let nextId = branch.courage;
 
       if (activeCount >= 3) {
-        // 全方位均勻成長：從 6 條分支隨機覺醒
         const pool = [branch.courage, branch.friendship, branch.discipline, branch.wisdom, branch.alt1, branch.alt2].filter(Boolean);
         nextId = pool[Math.floor(Math.random() * pool.length)];
       } else {
-        // 專精路線：依最高特質決定對應數碼暴龍
         const maxVal = Math.max(...traits);
         if ((st.love || 0) === maxVal) nextId = branch.friendship || branch.courage;
         else if ((st.discipline || 0) === maxVal) nextId = branch.discipline || branch.courage;
@@ -2093,6 +2100,183 @@
 
       addBattleLog(`✨ [數碼進化] ${st.name} 的 [${curDigi.name}] 成功進化為 [${nextDigi.name}]！`, "evolution");
       showToast("數碼進化成功！", `恭喜！你的數碼暴龍已進化為【${nextDigi.name}】！`, "evolution");
+
+      saveData();
+      updateStudentUI();
+    }
+
+    function renderStudentSkills(digi, st) {
+      const grid = document.getElementById('stSkillsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const skills = digi.skills || [{ name: "Tackle Strike", power: 20, type: "damage", icon: "fa-hand-fist" }];
+
+      skills.forEach((sk, idx) => {
+        const isHeal = sk.type === "heal";
+        const btnColor = isHeal ? "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500" : "from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500";
+        const disabledAttr = st.isFainted ? 'disabled' : '';
+
+        grid.innerHTML += `
+          <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-200 truncate"><i class="fa-solid ${sk.icon || 'fa-bolt'} mr-1 text-cyan-400"></i>${sk.name}</span>
+                <span class="text-[10px] font-mono ${isHeal ? 'text-emerald-400' : 'text-amber-400'} font-bold">${sk.power} ${isHeal ? 'HEAL' : 'DMG'}</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1 mt-2">
+              <button onclick="castStudentSkill(${idx}, 'boss')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r ${btnColor} text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                vs Boss
+              </button>
+              <button onclick="castStudentSkill(${idx}, 'pvp')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                vs Classmate
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function castStudentSkill(skillIdx, targetMode) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      if (st.isFainted) {
+        showToast("Action Forbidden", "❌ Your Digimon is fainted (瀕死)! Request your teacher to revive you.", "info");
+        playSound('faint');
+        return;
+      }
+
+      const quota = st.attackQuota || 0;
+      if (quota <= 0) {
+        showToast("Action Depleted", "❌ Attacks left: 0! Wait for teacher reward or use Digi-Battery.", "info");
+        return;
+      }
+
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
+
+      if (targetMode === 'boss') {
+        const tc = appData.teachers[st.teacherId];
+        if (!tc) return alert("Teacher Partner is currently offline.");
+
+        if (skill.type === 'heal') {
+          st.hp = Math.min(digi.maxHp, (st.hp || 100) + skill.power);
+          addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal");
+          showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
+          playSound('heal');
+        } else {
+          tc.hp = Math.max(0, (tc.hp || tc.maxHp) - skill.power);
+          addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} unleashed [${skill.name}] on Teacher Boss for ${skill.power} DMG!`, "battle");
+          showToast("Boss Struck!", `Dealt ${skill.power} DMG to Teacher Boss!`, "damage");
+          playSound('attack');
+        }
+        st.attackQuota--;
+      } else {
+        const peers = Object.values(appData.students || {}).filter(s => s.teacherId === st.teacherId && s.id !== st.id);
+        if (peers.length === 0) return alert("No other classmates in your classroom.");
+
+        let menu = `Choose a classmate for ${digi.name}'s [${skill.name}] (${skill.power} ${skill.type.toUpperCase()}):\n\n`;
+        peers.forEach((p, idx) => {
+          const peerDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
+          menu += `${idx + 1}. ${p.name} (${peerDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''} ${p.hasShield ? '🛡️' : ''}\n`;
+        });
+
+        const choice = prompt(menu, "1");
+        if (choice === null) return;
+        const targetIdx = parseInt(choice) - 1;
+
+        if (targetIdx >= 0 && targetIdx < peers.length) {
+          const target = peers[targetIdx];
+          st.attackQuota--;
+
+          if (skill.type === 'heal') {
+            target.hp = Math.min(DIGIMON_DB[target.currentDigiId]?.maxHp || 100, (target.hp || 100) + skill.power);
+            addBattleLog(`💚 [FRIENDSHIP] ${st.name} healed classmate [${target.name}] for +${skill.power} HP!`, "heal");
+            showToast("Classmate Healed", `Healed ${target.name} for +${skill.power} HP!`, "heal");
+            playSound('heal');
+          } else {
+            if (target.hasShield) {
+              target.hasShield = false;
+              addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield neutralized ${st.name}'s [${skill.name}]!`, "battle");
+              showToast("Attack Blocked!", `${target.name}'s shield absorbed the boss attack!`, "info");
+              playSound('shield');
+            } else {
+              target.hp = Math.max(0, (target.hp || 100) - skill.power);
+              addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck [${target.name}] with [${skill.name}] for ${skill.power} DMG!`, "battle");
+              showToast("PVP Hit!", `Dealt ${skill.power} DMG to ${target.name}!`, "damage");
+              playSound('attack');
+
+              if (target.hp <= 0) {
+                target.isFainted = true;
+                target.hp = 0;
+                addBattleLog(`💀 [FAINTED] [${target.name}] was incapacitated in battle! (Now Fainted)`, "battle");
+                showToast("Target Fainted!", `${target.name} is now incapacitated (瀕死狀態)!`, "damage");
+                playSound('faint');
+              }
+            }
+          }
+        } else {
+          alert("Invalid classmate selection.");
+          return;
+        }
+      }
+
+      saveData();
+      updateStudentUI();
+    }
+
+    function renderStudentInventory() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      const invList = document.getElementById('stInventoryList');
+      if (!invList || !st) return;
+      invList.innerHTML = '';
+
+      const items = Object.entries(st.inventory || {}).filter(([k, count]) => count > 0);
+      if (items.length === 0) {
+        invList.innerHTML = '<div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha!</div>';
+        return;
+      }
+
+      items.forEach(([itemId, qty]) => {
+        const itemInfo = ITEMS_DB[itemId];
+        if (!itemInfo) return;
+        const card = document.createElement('div');
+        card.className = `p-2 rounded-xl border flex items-center justify-between gap-1.5 ${itemInfo.rarityColor}`;
+        card.innerHTML = `
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-base shrink-0">${itemInfo.icon}</span>
+            <div class="truncate">
+              <div class="font-bold text-[11px] truncate text-slate-200">${itemInfo.name}</div>
+              <div class="text-[9px] text-slate-400">Qty: <span class="font-bold text-amber-300">x${qty}</span></div>
+            </div>
+          </div>
+          <button onclick="useItem('${itemId}')" class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer shrink-0">
+            Use
+          </button>
+        `;
+        invList.appendChild(card);
+      });
+    }
+
+    function useItem(itemId) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st || !st.inventory || !st.inventory[itemId] || st.inventory[itemId] <= 0) {
+        showToast("Use Item", "Item not found in inventory!", "info");
+        return;
+      }
+
+      const itemInfo = ITEMS_DB[itemId];
+      if (!itemInfo) return;
+
+      st.inventory[itemId]--;
+      const resultText = itemInfo.effect(st);
+      addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal");
+      showToast("Item Consumed!", `${itemInfo.name}: ${resultText}`, "heal");
 
       saveData();
       updateStudentUI();
@@ -2280,6 +2464,7 @@
       playSound('shield');
       addBattleLog(`⚔️ [ACTION QUOTA] Teacher granted +${amount} Attack Quota(s) to ${s.name}.`, "normal");
       showToast("Quota Granted", `Granted +${amount} attack quota(s) to ${s.name}!`, "info");
+      syncSingleStudent(studentId);
       saveData();
       renderTeacherGrid();
     }
@@ -2291,6 +2476,7 @@
       playSound('gacha');
       addBattleLog(`🎁 [GACHA TICKET] Teacher rewarded +${amount} Gacha Ticket to ${s.name}.`, "gacha");
       showToast("Gacha Ticket Rewarded", `Awarded +${amount} Gacha Ticket to ${s.name}!`, "gacha");
+      syncSingleStudent(studentId);
       saveData();
       renderTeacherGrid();
     }
@@ -2304,6 +2490,7 @@
       });
       myStudents.forEach(s => {
         s.gachaTickets = (s.gachaTickets || 0) + amount;
+        syncSingleStudent(s.id);
       });
       playSound('gacha');
       addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
@@ -2340,6 +2527,7 @@
             s.hp = Math.max(0, (s.hp || 100) - pwr);
             if (s.hp === 0) s.isFainted = true;
           }
+          syncSingleStudent(s.id);
         });
         playSound('attack');
         addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle");
@@ -2367,6 +2555,7 @@
             addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle");
             showToast("Single Target Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
           }
+          syncSingleStudent(target.id);
         } else {
           alert("Invalid target selection.");
           return;
@@ -2457,6 +2646,7 @@
       playSound('heal');
       addBattleLog(`⭐ [REWARD] ${s.name} received +${exp} EXP!`, "normal");
       showToast("Reward Given", `Awarded +${exp} EXP to ${s.name}!`, "info");
+      syncSingleStudent(id);
       saveData();
       renderTeacherGrid();
     }
@@ -2471,6 +2661,7 @@
       myStudents.forEach(s => {
         s.exp = (s.exp || 0) + exp;
         s.statPool = (s.statPool || 0) + exp;
+        syncSingleStudent(s.id);
       });
       playSound('evolve');
       addBattleLog(`🎉 [CLASS REWARD] Full class gained +${exp} EXP!`, "evolution");
@@ -2487,6 +2678,7 @@
       if (s.hp > 0) s.isFainted = false;
       playSound('heal');
       addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal");
+      syncSingleStudent(id);
       saveData();
       renderTeacherGrid();
     }
@@ -2498,6 +2690,7 @@
       if (s.hp === 0) s.isFainted = true;
       playSound('attack');
       addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP.`, "battle");
+      syncSingleStudent(id);
       saveData();
       renderTeacherGrid();
     }
@@ -2513,6 +2706,7 @@
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         s.hp = digi.maxHp || 100;
         s.isFainted = false;
+        syncSingleStudent(s.id);
       });
       playSound('heal');
       addBattleLog("💚 [FULL HEAL] Teacher restored all students to 100% HP!", "heal");
@@ -2544,9 +2738,10 @@
 
             appData.students[id] = {
               id: id, username: u, password: p, name: name, classId: classId,
-              teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 3, inventory: {},
+              teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
               unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
             };
+            syncSingleStudent(id);
             count++;
           }
           saveData();
@@ -2663,6 +2858,7 @@
         showToast("Bonus Attacks", `Awarded +${amount} Attacks to ${st.name}!`, "damage");
       }
 
+      syncSingleStudent(currentPickedStudent.id);
       saveData();
       renderTeacherGrid();
     }
@@ -2742,7 +2938,8 @@
         pulledItems.push(item);
       }
 
-      document.getElementById('gachaAvailableTickets').textContent = st.gachaTickets;
+      const countEl = document.getElementById('gachaAvailableTickets');
+      if (countEl) countEl.textContent = st.gachaTickets;
 
       const resContainer = document.getElementById('gachaResultContainer');
       const resGrid = document.getElementById('gachaResultGrid');
@@ -2771,6 +2968,7 @@
       addBattleLog(`🎁 [GACHA] ${st.name} performed ${times}x draw and received: ${pulledItems.map(p => p.name).join(', ')}!`, "gacha");
       showToast("Capsule Unboxed!", `Received ${pulledItems.length} item(s)! Check your inventory!`, "gacha");
 
+      syncSingleStudent(currentUser.id);
       saveData();
       updateStudentUI();
     }
@@ -2841,7 +3039,6 @@
       });
     }
 
-
     let selectedStudentIds = new Set();
     let selectedTeacherIds = new Set();
 
@@ -2866,7 +3063,7 @@
       if (btnBatch) {
         btnBatch.disabled = selectedStudentIds.size === 0;
         btnBatch.className = selectedStudentIds.size === 0
-          ? "px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed"
+          ? "px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed transition"
           : "px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded text-xs shadow-md cursor-pointer transition";
       }
     }
@@ -2911,7 +3108,6 @@
       saveData();
       renderSuperAdminDashboard();
     }
-
 
     function renderSuperAdminDashboard() {
       const tcBox = document.getElementById('superAdminTeacherGrid');
@@ -3122,7 +3318,7 @@
         const matrix = EVOLUTION_MATRIX[d.id] || { courage: "greymon", friendship: "garurumon", discipline: "angemon", wisdom: "kabuterimon" };
         container.innerHTML += `
           <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center gap-4 text-xs">
-            <img src="${getDigiImgSrc(d.id)}" onerror="this.onerror=null;this.src='${d.svg}';" class="w-14 h-14 object-contain">
+            <img src="${d.img || d.svg}" onerror="this.onerror=null;this.src='${d.svg}';" class="w-14 h-14 object-contain">
             <div class="flex-1">
               <div class="font-bold text-cyan-300 text-sm">${d.name} (${d.stageName})</div>
               <div class="text-slate-400 my-1">${d.title}</div>
@@ -3140,6 +3336,14 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initFirebase();
+      // Unlock iOS Safari / iPad AudioContext on first touch
+      const unlockAudio = () => {
+        getAudioContext();
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('click', unlockAudio);
+      };
+      document.addEventListener('touchstart', unlockAudio, { once: true });
+      document.addEventListener('click', unlockAudio, { once: true });
     });
   </script>
 </body>
