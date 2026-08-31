@@ -183,7 +183,7 @@
         </button>
       </div>
 
-      <form id="loginFormElement" onsubmit="handleLogin(event)" class="space-y-4 text-xs">
+      <form id="loginFormElement" onsubmit="handleLogin(event); return false;" class="space-y-4 text-xs">
         <div>
           <label class="block text-slate-400 mb-1 font-bold" id="lblUsername">Student ID / Username</label>
           <input id="loginUsername" type="text" required placeholder="Enter your ID / username" autocomplete="username" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:border-cyan-400 outline-none">
@@ -477,7 +477,7 @@
       </div>
     </div>
 
-    <!-- 3. Super Admin View -->
+        <!-- 3. Super Admin View -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
       <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
         <div>
@@ -1208,6 +1208,7 @@
       }
     };
 
+
     const DIGIMON_DB = {
       // 1. DIGI-EGGS (5)
       "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I (白色數碼蛋)", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor (蛋殼防護)", power: 10, type: "damage", icon: "fa-shield" }] },
@@ -1352,6 +1353,7 @@
       "rapidmon": { courage: "saintgargomon", friendship: "herculeskabuterimon", discipline: "vikemon", wisdom: "metalgarurumon", alt1: "wargreymon", alt2: "saintgargomon" },
       "taomon": { courage: "sakuyamon", friendship: "ophanimon", discipline: "piedmon", wisdom: "lotusmon", alt1: "rosemon", alt2: "sakuyamon" }
     };
+
 
     function getDigiImgSrc(digiId) {
       const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
@@ -2027,6 +2029,22 @@
     }
 
 
+
+    function allocateTrait(trait, amount) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+      if ((st.statPool || 0) < amount) {
+        showToast("Trait Allocation", `Not enough points! You have ${st.statPool || 0} pts remaining.`, "info");
+        return;
+      }
+      st.statPool -= amount;
+      st[trait] = (st[trait] || 0) + amount;
+      addBattleLog(`🧬 ${st.name} allocated +${amount} to [${trait.toUpperCase()}].`, "normal");
+      saveData();
+      updateStudentUI();
+    }
+
     function triggerEvolution() {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -2076,198 +2094,6 @@
       addBattleLog(`✨ [數碼進化] ${st.name} 的 [${curDigi.name}] 成功進化為 [${nextDigi.name}]！`, "evolution");
       showToast("數碼進化成功！", `恭喜！你的數碼暴龍已進化為【${nextDigi.name}】！`, "evolution");
 
-      saveData();
-      updateStudentUI();
-    }
-
-    function renderStudentSkills(digi, st) {
-      const grid = document.getElementById('stSkillsGrid');
-      if (!grid) return;
-      grid.innerHTML = '';
-
-      const skills = digi.skills || [{ name: "Tackle Strike", power: 20, type: "damage", icon: "fa-hand-fist" }];
-
-      skills.forEach((sk, idx) => {
-        const isHeal = sk.type === "heal";
-        const btnColor = isHeal ? "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500" : "from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500";
-        const disabledAttr = st.isFainted ? 'disabled' : '';
-
-        grid.innerHTML += `
-          <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
-            <div>
-              <div class="flex justify-between items-center text-xs">
-                <span class="font-bold text-slate-200 truncate"><i class="fa-solid ${sk.icon || 'fa-bolt'} mr-1 text-cyan-400"></i>${sk.name}</span>
-                <span class="text-[10px] font-mono ${isHeal ? 'text-emerald-400' : 'text-amber-400'} font-bold">${sk.power} ${isHeal ? 'HEAL' : 'DMG'}</span>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-1 mt-2">
-              <button onclick="castStudentSkill(${idx}, 'boss')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r ${btnColor} text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
-                vs Boss
-              </button>
-              <button onclick="castStudentSkill(${idx}, 'pvp')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
-                vs Classmate
-              </button>
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    function castStudentSkill(skillIdx, targetMode) {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      if (!st) return;
-
-      if (st.isFainted) {
-        showToast("Action Forbidden", "❌ Your Digimon is fainted (瀕死)! Request your teacher to revive you.", "info");
-        playSound('faint');
-        return;
-      }
-
-      const quota = st.attackQuota || 0;
-      if (quota <= 0) {
-        showToast("Action Depleted", "❌ Attacks left: 0! Wait for teacher reward or use Digi-Battery.", "info");
-        return;
-      }
-
-      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
-
-      if (targetMode === 'boss') {
-        const tc = appData.teachers[st.teacherId];
-        if (!tc) return alert("Teacher Partner is currently offline.");
-
-        if (skill.type === 'heal') {
-          st.hp = Math.min(digi.maxHp, (st.hp || 100) + skill.power);
-          addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal");
-          showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
-          playSound('heal');
-        } else {
-          tc.hp = Math.max(0, (tc.hp || tc.maxHp) - skill.power);
-          addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} unleashed [${skill.name}] on Teacher Boss for ${skill.power} DMG!`, "battle");
-          showToast("Boss Struck!", `Dealt ${skill.power} DMG to Teacher Boss!`, "damage");
-          playSound('attack');
-        }
-        st.attackQuota--;
-      } else {
-        const peers = Object.values(appData.students || {}).filter(s => s.teacherId === st.teacherId && s.id !== st.id);
-        if (peers.length === 0) return alert("No other classmates in your classroom.");
-
-        let menu = `Choose a classmate for ${digi.name}'s [${skill.name}] (${skill.power} ${skill.type.toUpperCase()}):\n\n`;
-        peers.forEach((p, idx) => {
-          const peerDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-          menu += `${idx + 1}. ${p.name} (${peerDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''} ${p.hasShield ? '🛡️' : ''}\n`;
-        });
-
-        const choice = prompt(menu, "1");
-        if (choice === null) return;
-        const targetIdx = parseInt(choice) - 1;
-
-        if (targetIdx >= 0 && targetIdx < peers.length) {
-          const target = peers[targetIdx];
-          st.attackQuota--;
-
-          if (skill.type === 'heal') {
-            target.hp = Math.min(DIGIMON_DB[target.currentDigiId]?.maxHp || 100, (target.hp || 100) + skill.power);
-            addBattleLog(`💚 [FRIENDSHIP] ${st.name} healed classmate [${target.name}] for +${skill.power} HP!`, "heal");
-            showToast("Classmate Healed", `Healed ${target.name} for +${skill.power} HP!`, "heal");
-            playSound('heal');
-          } else {
-            if (target.hasShield) {
-              target.hasShield = false;
-              addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield neutralized ${st.name}'s [${skill.name}]!`, "battle");
-              showToast("Attack Blocked!", `${target.name}'s shield completely blocked your damage!`, "info");
-              playSound('shield');
-            } else {
-              target.hp = Math.max(0, (target.hp || 100) - skill.power);
-              addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck [${target.name}] with [${skill.name}] for ${skill.power} DMG!`, "battle");
-              showToast("PVP Hit!", `Dealt ${skill.power} DMG to ${target.name}!`, "damage");
-              playSound('attack');
-
-              if (target.hp <= 0) {
-                target.isFainted = true;
-                target.hp = 0;
-                addBattleLog(`💀 [FAINTED] [${target.name}] was incapacitated in battle! (Now Fainted)`, "battle");
-                showToast("Target Fainted!", `${target.name} is now incapacitated (瀕死狀態)!`, "damage");
-                playSound('faint');
-              }
-            }
-          }
-        } else {
-          alert("Invalid classmate selection.");
-          return;
-        }
-      }
-
-      saveData();
-      updateStudentUI();
-    }
-
-    function renderStudentInventory() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      const invList = document.getElementById('stInventoryList');
-      if (!invList || !st) return;
-      invList.innerHTML = '';
-
-      const items = Object.entries(st.inventory || {}).filter(([k, count]) => count > 0);
-      if (items.length === 0) {
-        invList.innerHTML = '<div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha!</div>';
-        return;
-      }
-
-      items.forEach(([itemId, qty]) => {
-        const itemInfo = ITEMS_DB[itemId];
-        if (!itemInfo) return;
-        const card = document.createElement('div');
-        card.className = `p-2 rounded-xl border flex items-center justify-between gap-1.5 ${itemInfo.rarityColor}`;
-        card.innerHTML = `
-          <div class="flex items-center gap-1.5 min-w-0">
-            <span class="text-base shrink-0">${itemInfo.icon}</span>
-            <div class="truncate">
-              <div class="font-bold text-[11px] truncate text-slate-200">${itemInfo.name}</div>
-              <div class="text-[9px] text-slate-400">Qty: <span class="font-bold text-amber-300">x${qty}</span></div>
-            </div>
-          </div>
-          <button onclick="useItem('${itemId}')" class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer shrink-0">
-            Use
-          </button>
-        `;
-        invList.appendChild(card);
-      });
-    }
-
-    function useItem(itemId) {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      if (!st || !st.inventory || !st.inventory[itemId] || st.inventory[itemId] <= 0) {
-        showToast("Use Item", "Item not found in inventory!", "info");
-        return;
-      }
-
-      const itemInfo = ITEMS_DB[itemId];
-      if (!itemInfo) return;
-
-      st.inventory[itemId]--;
-      const resultText = itemInfo.effect(st);
-      addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal");
-      showToast("Item Consumed!", `${itemInfo.name}: ${resultText}`, "heal");
-
-      saveData();
-      updateStudentUI();
-    }
-
-    function allocateTrait(trait, amount) {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      if (!st) return;
-      if ((st.statPool || 0) < amount) {
-        showToast("Trait Allocation", `Not enough points! You have ${st.statPool || 0} pts remaining.`, "info");
-        return;
-      }
-      st.statPool -= amount;
-      st[trait] = (st[trait] || 0) + amount;
-      addBattleLog(`🧬 ${st.name} allocated +${amount} to [${trait.toUpperCase()}].`, "normal");
       saveData();
       updateStudentUI();
     }
@@ -3012,6 +2838,154 @@
           `;
         }
         grid.appendChild(card);
+      });
+    }
+
+
+    let selectedStudentIds = new Set();
+    let selectedTeacherIds = new Set();
+
+    function toggleSelectAllStudents(checked) {
+      selectedStudentIds.clear();
+      if (checked) {
+        Object.keys(appData.students || {}).forEach(id => selectedStudentIds.add(id));
+      }
+      renderSuperAdminDashboard();
+    }
+
+    function toggleStudentSelection(id, checked) {
+      if (checked) selectedStudentIds.add(id);
+      else selectedStudentIds.delete(id);
+      updateSelectedStudentCountUI();
+    }
+
+    function updateSelectedStudentCountUI() {
+      const countEl = document.getElementById('selectedStudentsCount');
+      if (countEl) countEl.textContent = selectedStudentIds.size;
+      const btnBatch = document.getElementById('btnBatchDeleteStudents');
+      if (btnBatch) {
+        btnBatch.disabled = selectedStudentIds.size === 0;
+        btnBatch.className = selectedStudentIds.size === 0
+          ? "px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed"
+          : "px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded text-xs shadow-md cursor-pointer transition";
+      }
+    }
+
+    function superadminBatchDeleteStudents() {
+      if (selectedStudentIds.size === 0) return alert("請先勾選欲刪除的學生帳戶！");
+      const count = selectedStudentIds.size;
+      if (!confirm(`⚠️ 確定要永久刪除所選取的 ${count} 個學生帳戶嗎？此動作無法復原！`)) return;
+
+      selectedStudentIds.forEach(id => {
+        delete appData.students[id];
+      });
+      selectedStudentIds.clear();
+
+      playSound('faint');
+      addBattleLog(`🗑️ [SUPERADMIN 批次刪除] 管理員永久刪除了 ${count} 個學生帳戶。`, "battle");
+      showToast("批次刪除成功", `已成功刪除 ${count} 個學生帳戶！`, "damage");
+
+      saveData();
+      renderSuperAdminDashboard();
+    }
+
+    function superadminDeleteAllStudents() {
+      const allStudentIds = Object.keys(appData.students || {});
+      const totalCount = allStudentIds.length;
+      if (totalCount === 0) return alert("目前資料庫中沒有任何學生帳戶。");
+
+      const promptMsg = `🚨 極度危險操作：全校學生帳戶清空\n\n此動作將「永久刪除」全部 ${totalCount} 個學生帳戶及其所有進化、背包、成績記錄！\n\n如確定執行，請在下方輸入「DELETE ALL」確認：`;
+      const input = prompt(promptMsg, "");
+      if (input !== 'DELETE ALL') {
+        if (input !== null) alert("刪除已取消。輸入不符合「DELETE ALL」。");
+        return;
+      }
+
+      appData.students = {};
+      selectedStudentIds.clear();
+
+      playSound('faint');
+      addBattleLog(`💥 [SUPERADMIN 全數刪除] 管理員清空了全部 ${totalCount} 個學生帳戶！`, "battle");
+      showToast("全數學生帳戶已刪除", `已永久刪除全體 ${totalCount} 個學生帳戶！`, "damage");
+
+      saveData();
+      renderSuperAdminDashboard();
+    }
+
+
+    function renderSuperAdminDashboard() {
+      const tcBox = document.getElementById('superAdminTeacherGrid');
+      const stBox = document.getElementById('superAdminStudentGrid');
+      if (!tcBox || !stBox) return;
+
+      tcBox.innerHTML = '';
+      stBox.innerHTML = '';
+
+      // Teachers List
+      Object.values(appData.teachers || {}).forEach(t => {
+        const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['wargreymon'];
+        tcBox.innerHTML += `
+          <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs flex justify-between items-center shadow">
+            <div class="flex items-center gap-3">
+              <img src="${getDigiImgSrc(t.partnerDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="w-10 h-10 object-contain">
+              <div>
+                <div class="font-bold text-amber-300 text-sm">${t.name} (${t.username})</div>
+                <div class="text-slate-400 text-[11px]">搭檔: ${digi.name} | HP: ${t.maxHp}</div>
+              </div>
+            </div>
+            <button onclick="deleteTeacher('${t.id}')" class="text-rose-400 hover:text-rose-300 p-2 cursor-pointer transition" title="刪除教師帳戶"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+      });
+
+      // Students List
+      const studentsList = Object.values(appData.students || {});
+      const selectAllCheckbox = document.getElementById('chkSelectAllStudents');
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = studentsList.length > 0 && selectedStudentIds.size === studentsList.length;
+      }
+      updateSelectedStudentCountUI();
+
+      if (studentsList.length === 0) {
+        stBox.innerHTML = '<div class="col-span-full py-10 text-center text-slate-500 italic text-xs">目前無任何學生帳戶。可透過上方按鈕批次匯入或建立。</div>';
+        return;
+      }
+
+      studentsList.forEach(s => {
+        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+        const isChecked = selectedStudentIds.has(s.id);
+        const card = document.createElement('div');
+        card.className = `p-3.5 bg-slate-950 border ${isChecked ? 'border-cyan-400 bg-cyan-950/20' : 'border-slate-800'} rounded-xl text-xs flex flex-col justify-between gap-2.5 transition`;
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleStudentSelection('${s.id}', this.checked)" class="w-4 h-4 rounded text-cyan-600 bg-slate-900 border-slate-700 cursor-pointer accent-cyan-500">
+                <span class="font-bold ${isChecked ? 'text-cyan-300' : 'text-slate-200'} text-sm">${s.name}</span>
+                <span class="text-[10px] text-slate-500 font-mono">(${s.username})</span>
+              </label>
+              <button onclick="deleteStudent('${s.id}')" class="text-rose-400 hover:text-rose-300 p-1 cursor-pointer transition" title="個別刪除此帳戶"><i class="fa-solid fa-trash"></i></button>
+            </div>
+
+            <div class="flex items-center gap-3 my-2 pl-6">
+              <div class="w-10 h-10 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center shrink-0">
+                <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain">
+              </div>
+              <div class="text-[11px] text-slate-300">
+                <div><b>班級:</b> <span class="text-cyan-300">${s.classId || '未設定'}</span> | <b>形態:</b> ${digi.name}</div>
+                <div class="text-slate-400 font-mono text-[10px]">EXP: ${s.exp || 0} | HP: ${s.hp || 100} | 抽獎券: ${s.gachaTickets || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-900 flex justify-between items-center pl-6">
+            <span class="text-[10px] text-slate-500">特質: 勇${s.courage||0} 友${s.love||0} 律${s.discipline||0} 智${s.wisdom||0}</span>
+            <button onclick="superadminFullResetStudent('${s.id}')" class="px-2 py-1 bg-amber-950 hover:bg-amber-900 border border-amber-600/70 text-amber-300 font-bold rounded text-[10px] transition flex items-center gap-1 cursor-pointer">
+              <i class="fa-solid fa-arrow-rotate-left"></i> 重設數值 (Reset)
+            </button>
+          </div>
+        `;
+        stBox.appendChild(card);
       });
     }
 
