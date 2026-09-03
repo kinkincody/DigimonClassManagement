@@ -883,7 +883,6 @@
 
   <!-- JAVASCRIPT SYSTEM ENGINE -->
   <script>
-    // 1. Global Config & Constants
     const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V2";
 
     const FIREBASE_CONFIG = {
@@ -1349,18 +1348,13 @@
     };
 
     const EVOLUTION_MATRIX = {
-      // Eggs -> In-Training
       "DIGI-EGG": { courage: "koromon", friendship: "tsunomon", discipline: "tokomon", wisdom: "motimon", alt1: "demiveemon", alt2: "tanemon" },
-
-      // In-Training -> Rookie
       "koromon": { courage: "agumon", friendship: "biyomon", discipline: "patamon", wisdom: "tentomon", alt1: "veemon", alt2: "gomamon" },
       "tsunomon": { courage: "agumon", friendship: "gabumon", discipline: "patamon", wisdom: "tentomon", alt1: "gomamon", alt2: "palmon" },
       "tokomon": { courage: "patamon", friendship: "veemon", discipline: "palmon", wisdom: "biyomon", alt1: "agumon", alt2: "tentomon" },
       "motimon": { courage: "tentomon", friendship: "gomamon", discipline: "agumon", wisdom: "biyomon", alt1: "palmon", alt2: "gabumon" },
       "tanemon": { courage: "palmon", friendship: "gomamon", discipline: "biyomon", wisdom: "tentomon", alt1: "veemon", alt2: "patamon" },
       "demiveemon": { courage: "veemon", friendship: "gabumon", discipline: "agumon", wisdom: "patamon", alt1: "tentomon", alt2: "gomamon" },
-
-      // Rookie -> Champion
       "agumon": { courage: "greymon", friendship: "tyrannomon", discipline: "airdramon", wisdom: "wizardmon", alt1: "exveemon", alt2: "greymon" },
       "gabumon": { courage: "garurumon", friendship: "kyubimon", discipline: "wizardmon", wisdom: "seadramon", alt1: "greymon", alt2: "garurumon" },
       "patamon": { courage: "angemon", friendship: "gatomon", discipline: "unimon", wisdom: "gargomon", alt1: "wizardmon", alt2: "angemon" },
@@ -1369,8 +1363,6 @@
       "tentomon": { courage: "kabuterimon", friendship: "kuwagamon", discipline: "gargomon", wisdom: "wizardmon", alt1: "greymon", alt2: "kabuterimon" },
       "gomamon": { courage: "ikkakumon", friendship: "seadramon", discipline: "garurumon", wisdom: "tyrannomon", alt1: "exveemon", alt2: "ikkakumon" },
       "veemon": { courage: "exveemon", friendship: "airdramon", discipline: "greymon", wisdom: "gargomon", alt1: "tyrannomon", alt2: "exveemon" },
-
-      // Champion -> Ultimate
       "greymon": { courage: "metalgreymon", friendship: "weregarurumon", discipline: "magnaangemon", wisdom: "megakabuterimon", alt1: "metaltyrannomon", alt2: "metalgreymon" },
       "garurumon": { courage: "weregarurumon", friendship: "weregarurumon", discipline: "zudomon", wisdom: "megaseadramon", alt1: "metalgreymon", alt2: "weregarurumon" },
       "angemon": { courage: "magnaangemon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "seraphimon", alt1: "angewomon", alt2: "magnaangemon" },
@@ -1389,8 +1381,6 @@
       "kyubimon": { courage: "weregarurumon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "lillymon", alt1: "garudamon", alt2: "weregarurumon" },
       "unimon": { courage: "magnaangemon", friendship: "angewomon", discipline: "garudamon", wisdom: "megakabuterimon", alt1: "zudomon", alt2: "magnaangemon" },
       "wizardmon": { courage: "magnaangemon", friendship: "weregarurumon", discipline: "angewomon", wisdom: "megakabuterimon", alt1: "metalgreymon", alt2: "magnaangemon" },
-
-      // Ultimate -> Mega
       "metalgreymon": { courage: "wargreymon", friendship: "metalgarurumon", discipline: "imperialdramon", wisdom: "herculeskabuterimon", alt1: "wargreymon", alt2: "wargreymon" },
       "weregarurumon": { courage: "metalgarurumon", friendship: "metalgarurumon", discipline: "vikemon", wisdom: "wargreymon", alt1: "metalgarurumon", alt2: "metalgarurumon" },
       "magnaangemon": { courage: "seraphimon", friendship: "ophanimon", discipline: "seraphimon", wisdom: "seraphimon", alt1: "seraphimon", alt2: "seraphimon" },
@@ -1463,7 +1453,6 @@
       return getRandomEggId();
     }
 
-    // Multi-Class Helper Functions
     function parseStudentClasses(rawClass) {
       if (!rawClass) return ['Class-1A'];
       if (Array.isArray(rawClass)) {
@@ -1474,7 +1463,7 @@
 
     function studentIsInClass(student, classId) {
       if (!student) return false;
-      if (classId === 'ALL') return true;
+      if (!classId || classId === 'ALL') return true;
       const list = parseStudentClasses(student.classId || student.classes);
       return list.includes(classId);
     }
@@ -1739,7 +1728,6 @@
       try {
         if (dbRef) {
           firebase.database().ref('students/' + studentId).set(s);
-          saveData();
         }
       } catch (e) {
         console.warn("Direct student sync failed, cached locally:", e);
@@ -2257,13 +2245,10 @@
         const peers = getStudentsSharingClass(st);
         if (peers.length === 0) return alert("No classmates found in your class(es) to challenge.");
 
-        let menu = `Choose a classmate from your class for ${digi.name}'s [${skill.name}] (${skill.power} ${skill.type.toUpperCase()}):
-
-`;
+        let menu = `Choose a classmate from your class for ${digi.name}'s [${skill.name}] (${skill.power} ${skill.type.toUpperCase()}):\n\n`;
         peers.forEach((p, idx) => {
           const peerDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-          menu += `${idx + 1}. ${p.name} [${formatStudentClassesDisplay(p)}] (${peerDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''} ${p.hasShield ? '🛡️' : ''}
-`;
+          menu += `${idx + 1}. ${p.name} [${formatStudentClassesDisplay(p)}] (${peerDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''} ${p.hasShield ? '🛡️' : ''}\n`;
         });
 
         const choice = prompt(menu, "1");
@@ -2374,6 +2359,7 @@
       addBattleLog(`✨ [REVIVAL] Teacher revived [${s.name}] back to life with ${s.hp} HP!`, "heal");
       showToast("Student Revived!", `Restored ${s.name} from fainted state!`, "heal");
       syncSingleStudent(studentId);
+      saveData();
       renderTeacherGrid();
     }
 
@@ -2407,6 +2393,7 @@
       showToast("De-Evolution", `${s.name}'s Digimon degraded to ${prevDigi.name}!`, "damage");
 
       syncSingleStudent(studentId);
+      saveData();
       renderTeacherGrid();
     }
 
@@ -2434,6 +2421,7 @@
       showToast("Revert to Digi-Egg", `${s.name}'s Digimon reverted to [${eggDigi.name}]!`, "damage");
 
       syncSingleStudent(studentId);
+      saveData();
       renderTeacherGrid();
     }
 
@@ -2441,20 +2429,7 @@
       const s = appData.students[studentId];
       if (!s) return;
 
-      const promptMsg = `⚠️ WARNING: FULL FACTORY RESET FOR [${s.name}] (${s.username})
-
-This will completely reset:
-- Digimon Form (Assigned to Random Egg)
-- All EXP and Trait Points (0)
-- All Bag Items & Inventory (Empty)
-- Gacha Tickets (Reset to 0)
-- Digi-Dex Collection History (Reset to 1 Entry)
-- Custom Digivice Skins (Reset to Classic)
-- Battle HP / Fainted / Attacks Quotas
-
-Login Username and Password will be KEPT.
-
-Type 'RESET' to confirm:`;
+      const promptMsg = `⚠️ WARNING: FULL FACTORY RESET FOR [${s.name}] (${s.username})\n\nThis will completely reset:\n- Digimon Form (Assigned to Random Egg)\n- All EXP and Trait Points (0)\n- All Bag Items & Inventory (Empty)\n- Gacha Tickets (Reset to 0)\n- Digi-Dex Collection History (Reset to 1 Entry)\n- Custom Digivice Skins (Reset to Classic)\n- Battle HP / Fainted / Attacks Quotas\n\nLogin Username and Password will be KEPT.\n\nType 'RESET' to confirm:`;
       const input = prompt(promptMsg, "");
       if (input !== 'RESET') {
         if (input !== null) alert("Reset aborted. You must type 'RESET' exactly.");
@@ -2483,21 +2458,12 @@ Type 'RESET' to confirm:`;
       showToast("Student Reset", `${s.name}'s account data, tickets & Dex have been completely wiped!`, "damage");
 
       syncSingleStudent(studentId);
+      saveData();
       renderSuperAdminDashboard();
     }
 
     function superadminFullResetAllStudents() {
-      const promptMsg = `⚠️ EXTREME WARNING: FULL CLASS FACTORY RESET
-
-This will reset ALL students across ALL classes:
-- All Digimon forms reset to Random Eggs
-- All EXP, Trait Points, & Bag Items wiped
-- ALL GACHA TICKETS RESET TO 0
-- All Digi-Dex collections wiped
-
-Student usernames and passwords remain active.
-
-Type 'RESET ALL' to confirm:`;
+      const promptMsg = `⚠️ EXTREME WARNING: FULL CLASS FACTORY RESET\n\nThis will reset ALL students across ALL classes:\n- All Digimon forms reset to Random Eggs\n- All EXP, Trait Points, & Bag Items wiped\n- ALL GACHA TICKETS RESET TO 0\n- All Digi-Dex collections wiped\n\nStudent usernames and passwords remain active.\n\nType 'RESET ALL' to confirm:`;
       const input = prompt(promptMsg, "");
       if (input !== 'RESET ALL') {
         if (input !== null) alert("Class reset aborted. You must type 'RESET ALL' exactly.");
@@ -2558,7 +2524,6 @@ Type 'RESET ALL' to confirm:`;
       updateTeacherBossHeader();
     }
 
-    // Populate all classes across the school (Shared Management)
     function populateClassDropdown() {
       const sel = document.getElementById('teacherClassFilter');
       if (!sel || !currentUser) return;
@@ -2619,13 +2584,16 @@ Type 'RESET ALL' to confirm:`;
       const myStudents = Object.values(appData.students || {}).filter(s => {
         return studentIsInClass(s, selectedTeacherClass);
       });
+      if (myStudents.length === 0) {
+        showToast("Class Gacha", "No students found in the current class view.", "info");
+        return;
+      }
       myStudents.forEach(s => {
         s.gachaTickets = (s.gachaTickets || 0) + amount;
-        syncSingleStudent(s.id);
       });
       playSound('gacha');
       addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
-      showToast("Class Gacha Tickets", `All students received +${amount} Gacha Ticket!`, "gacha");
+      showToast("Class Gacha Tickets", `All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
       saveData();
       renderTeacherGrid();
     }
@@ -2656,18 +2624,14 @@ Type 'RESET ALL' to confirm:`;
             s.hp = Math.max(0, (s.hp || 100) - pwr);
             if (s.hp === 0) s.isFainted = true;
           }
-          syncSingleStudent(s.id);
         });
         playSound('attack');
         addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle");
         showToast("Class AOE Strike", `All ${myStudents.length} students took ${pwr} DMG!`, "damage");
       } else {
-        let menu = `Select target student for ${digi.name}'s [${moveName}] (${pwr} DMG):
-
-`;
+        let menu = `Select target student for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
         myStudents.forEach((s, idx) => {
-          menu += `${idx + 1}. ${s.name} [${formatStudentClassesDisplay(s)}] - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''}
-`;
+          menu += `${idx + 1}. ${s.name} [${formatStudentClassesDisplay(s)}] - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''}\n`;
         });
         const choice = prompt(menu, "1");
         if (choice === null) return;
@@ -2687,7 +2651,6 @@ Type 'RESET ALL' to confirm:`;
             addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle");
             showToast("Single Target Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
           }
-          syncSingleStudent(target.id);
         } else {
           alert("Invalid target selection.");
           return;
@@ -2697,7 +2660,6 @@ Type 'RESET ALL' to confirm:`;
       renderTeacherGrid();
     }
 
-    // Renders all students in current class filter regardless of teacher owner
     function renderTeacherGrid() {
       const container = document.getElementById('teacherStudentGrid');
       if (!container || !currentUser) return;
@@ -2747,7 +2709,7 @@ Type 'RESET ALL' to confirm:`;
             <div class="grid grid-cols-3 gap-1">
               <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">+1 Quota</button>
               <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer">+50 HP</button>
-              <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-800 rounded text-[10px] text-rose-300 font-bold cursor-pointer">-30 HP</button>
+              <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-[10px] text-rose-300 font-bold cursor-pointer">-30 HP</button>
             </div>
             
             <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-900">
@@ -2783,19 +2745,29 @@ Type 'RESET ALL' to confirm:`;
       renderTeacherGrid();
     }
 
+    // [已修復] 老師戶口批次增加經驗按鈕：正確迭代並更新該班所有學生，並統一儲存
     function rewardAllStudents(exp) {
       if (!currentUser) return;
+      const targetClass = selectedTeacherClass;
       const myStudents = Object.values(appData.students || {}).filter(s => {
-        return studentIsInClass(s, selectedTeacherClass);
+        return studentIsInClass(s, targetClass);
       });
+
+      if (myStudents.length === 0) {
+        showToast("Class Reward", "No students found in the current class view to reward.", "info");
+        return;
+      }
+
       myStudents.forEach(s => {
         s.exp = (s.exp || 0) + exp;
         s.statPool = (s.statPool || 0) + exp;
-        syncSingleStudent(s.id);
       });
+
       playSound('evolve');
-      addBattleLog(`🎉 [CLASS REWARD] Full class gained +${exp} EXP!`, "evolution");
-      showToast("Class Reward", `All students in this class gained +${exp} EXP!`, "evolution");
+      const classNameDisplay = targetClass === 'ALL' ? 'All Classes' : targetClass;
+      addBattleLog(`🎉 [CLASS REWARD] Full class (${classNameDisplay}, ${myStudents.length} students) gained +${exp} EXP!`, "evolution");
+      showToast("Class Reward", `All ${myStudents.length} students in [${classNameDisplay}] gained +${exp} EXP & Points!`, "evolution");
+      
       saveData();
       renderTeacherGrid();
     }
@@ -2830,15 +2802,18 @@ Type 'RESET ALL' to confirm:`;
       const myStudents = Object.values(appData.students || {}).filter(s => {
         return studentIsInClass(s, selectedTeacherClass);
       });
+      if (myStudents.length === 0) {
+        showToast("Full Recovery", "No students found in current class view.", "info");
+        return;
+      }
       myStudents.forEach(s => {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         s.hp = digi.maxHp || 100;
         s.isFainted = false;
-        syncSingleStudent(s.id);
       });
       playSound('heal');
       addBattleLog("💚 [FULL HEAL] Teacher restored all students to 100% HP!", "heal");
-      showToast("Full Recovery", "All students in this class restored to full HP!", "heal");
+      showToast("Full Recovery", `All ${myStudents.length} students in this class restored to full HP!`, "heal");
       saveData();
       renderTeacherGrid();
     }
@@ -2874,7 +2849,6 @@ Type 'RESET ALL' to confirm:`;
               existing.classId = existingClasses.join(', ');
               existing.name = name || existing.name;
               existing.password = p || existing.password;
-              syncSingleStudent(id);
             } else {
               const randomEgg = getRandomEggId();
               appData.students[id] = {
@@ -2882,7 +2856,6 @@ Type 'RESET ALL' to confirm:`;
                 teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
               };
-              syncSingleStudent(id);
             }
             count++;
           }
@@ -2935,7 +2908,6 @@ Type 'RESET ALL' to confirm:`;
               existing.classId = existingClasses.join(', ');
               existing.name = name || existing.name;
               existing.password = p || existing.password;
-              syncSingleStudent(id);
             } else {
               const randomEgg = getRandomEggId();
               appData.students[id] = {
@@ -2943,7 +2915,6 @@ Type 'RESET ALL' to confirm:`;
                 teacherId: assignedTeacher, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
               };
-              syncSingleStudent(id);
             }
             count++;
           }
@@ -2957,7 +2928,6 @@ Type 'RESET ALL' to confirm:`;
       reader.readAsArrayBuffer(file);
     }
 
-    // Teacher Manage Students in Class Modal (Co-Management across all students in school)
     let mgrSearchQuery = "";
     function openManageClassStudentsModal() {
       if (selectedTeacherClass === 'ALL') {
@@ -3074,7 +3044,6 @@ Type 'RESET ALL' to confirm:`;
         if (idx >= 0) {
           classes.splice(idx, 1);
           s.classId = classes.join(', ');
-          syncSingleStudent(s.id);
         }
       });
 
@@ -3401,11 +3370,7 @@ Type 'RESET ALL' to confirm:`;
       const totalCount = allStudentIds.length;
       if (totalCount === 0) return alert("No student accounts in database.");
 
-      const promptMsg = `🚨 DANGER: DELETE ALL STUDENT ACCOUNTS
-
-This will permanently delete all ${totalCount} student accounts, evolutionary records, and bags!
-
-Type 'DELETE ALL' to confirm:`;
+      const promptMsg = `🚨 DANGER: DELETE ALL STUDENT ACCOUNTS\n\nThis will permanently delete all ${totalCount} student accounts, evolutionary records, and bags!\n\nType 'DELETE ALL' to confirm:`;
       const input = prompt(promptMsg, "");
       if (input !== 'DELETE ALL') {
         if (input !== null) alert("Deletion aborted. Input must match 'DELETE ALL'.");
@@ -3431,7 +3396,6 @@ Type 'DELETE ALL' to confirm:`;
       tcBox.innerHTML = '';
       stBox.innerHTML = '';
 
-      // Teachers List (With Full Edit Capability)
       Object.values(appData.teachers || {}).forEach(t => {
         const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['wargreymon'];
         tcBox.innerHTML += `
@@ -3458,7 +3422,6 @@ Type 'DELETE ALL' to confirm:`;
         `;
       });
 
-      // Students List
       const studentsList = Object.values(appData.students || {});
       const selectAllCheckbox = document.getElementById('chkSelectAllStudents');
       if (selectAllCheckbox) {
