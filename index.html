@@ -1277,14 +1277,12 @@
     };
 
     const DIGIMON_DB = {
-      // 1. DIGI-EGGS (5)
       "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor", power: 10, type: "damage", icon: "fa-shield" }] },
       "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Ember Spark", power: 12, type: "damage", icon: "fa-fire" }] },
       "digitama3": { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama III", title: "Serene blue egg", img: "./images/digitama3.png", svg: makeBadgeSvg("Digitama III", "#2563eb", "#60a5fa", "💧", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Bubble Shell", power: 10, type: "damage", icon: "fa-droplet" }] },
       "digitama4": { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama IV", title: "Verdant green egg", img: "./images/digitama4.png", svg: makeBadgeSvg("Digitama IV", "#059669", "#34d399", "🌱", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Sprout Blessing", power: 15, type: "heal", icon: "fa-seedling" }] },
       "digitama5": { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama V", title: "Golden sacred egg", img: "./images/digitama5.png", svg: makeBadgeSvg("Digitama V", "#d97706", "#fbbf24", "✨", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Holy Glow", power: 15, type: "heal", icon: "fa-sun" }] },
 
-      // 2. IN-TRAINING II (6)
       "koromon": { id: "koromon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Koromon", title: "Courageous baby Digimon", img: "./images/koromon.png", svg: makeBadgeSvg("Koromon", "#e11d48", "#fb7185", "🦖", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama1", skills: [{ name: "Awa", power: 15, type: "damage", icon: "fa-soap" }, { name: "Bite", power: 12, type: "damage", icon: "fa-tooth" }] },
       "tsunomon": { id: "tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tsunomon", title: "Horned friendship baby", img: "./images/tsunomon.png", svg: makeBadgeSvg("Tsunomon", "#d97706", "#fbbf24", "🦏", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama2", skills: [{ name: "Horn Attack", power: 16, type: "damage", icon: "fa-bolt" }] },
       "tokomon": { id: "tokomon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tokomon", title: "Disciplined sacred baby", img: "./images/tokomon.png", svg: makeBadgeSvg("Tokomon", "#0284c7", "#38bdf8", "👼", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama3", skills: [{ name: "Bite Attack", power: 15, type: "damage", icon: "fa-teeth-open" }] },
@@ -1292,7 +1290,6 @@
       "tanemon": { id: "tanemon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tanemon", title: "Sprouting nature baby", img: "./images/tanemon.png", svg: makeBadgeSvg("Tanemon", "#059669", "#34d399", "🌿", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama5", skills: [{ name: "Adhesive Bubbles", power: 15, type: "damage", icon: "fa-plant-wilt" }] },
       "demiveemon": { id: "demiveemon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Free", name: "DemiVeemon", title: "Energetic dragon baby", img: "./images/demiveemon.png", svg: makeBadgeSvg("DemiVeemon", "#2563eb", "#60a5fa", "🐲", "BABY"), nextExp: 300, maxHp: 120, prevForm: "digitama1", skills: [{ name: "Pop Attack", power: 16, type: "damage", icon: "fa-wind" }] },
 
-      // 3. ROOKIE (8)
       "agumon": { id: "agumon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Agumon", title: "Symbol of Courage and Flame", img: "./images/agumon.png", svg: makeBadgeSvg("Agumon", "#ea580c", "#fb923c", "🦖", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "koromon", skills: [{ name: "Baby Flame", power: 30, type: "damage", icon: "fa-fire" }, { name: "Spitfire", power: 22, type: "damage", icon: "fa-hand-fist" }] },
       "gabumon": { id: "gabumon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Gabumon", title: "Guardian of Friendship wearing pelt", img: "./images/gabumon.png", svg: makeBadgeSvg("Gabumon", "#2563eb", "#60a5fa", "🐺", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "tsunomon", skills: [{ name: "Petit Fire", power: 28, type: "damage", icon: "fa-snowflake" }, { name: "Horn Attack", power: 22, type: "damage", icon: "fa-bolt" }] },
       "patamon": { id: "patamon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Patamon", title: "Gliding bearer of Sacred Air", img: "./images/patamon.png", svg: makeBadgeSvg("Patamon", "#d97706", "#fbbf24", "🦇", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "tokomon", skills: [{ name: "Air Shot", power: 26, type: "damage", icon: "fa-wind" }, { name: "Hane Binta", power: 20, type: "damage", icon: "fa-feather-pointed" }] },
@@ -1302,7 +1299,6 @@
       "gomamon": { id: "gomamon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Gomamon", title: "Marching fishes commander", img: "./images/gomamon.png", svg: makeBadgeSvg("Gomamon", "#0284c7", "#38bdf8", "🦭", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "tanemon", skills: [{ name: "Marching Fishes", power: 28, type: "damage", icon: "fa-fish" }] },
       "veemon": { id: "veemon", stage: "ROOKIE", stageName: "Rookie", type: "Free", name: "Veemon", title: "Ancient dragon descendant", img: "./images/veemon.png", svg: makeBadgeSvg("Veemon", "#2563eb", "#38bdf8", "🐉", "ROOKIE"), nextExp: 900, maxHp: 200, prevForm: "demiveemon", skills: [{ name: "Vee Headbutt", power: 32, type: "damage", icon: "fa-hammer" }, { name: "Vee Punch", power: 24, type: "damage", icon: "fa-hand-back-fist" }] },
 
-      // 4. CHAMPION (18)
       "greymon": { id: "greymon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Greymon", title: "Dinosaur Warrior - Mega Flame", img: "./images/greymon.png", svg: makeBadgeSvg("Greymon", "#ea580c", "#fb923c", "🦖", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "agumon", skills: [{ name: "Mega Flame", power: 55, type: "damage", icon: "fa-fire" }] },
       "garurumon": { id: "garurumon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Garurumon", title: "Ice Wolf Beast - Fox Fire", img: "./images/garurumon.png", svg: makeBadgeSvg("Garurumon", "#2563eb", "#93c5fd", "🐺", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "gabumon", skills: [{ name: "Fox Fire", power: 55, type: "damage", icon: "fa-icicles" }] },
       "angemon": { id: "angemon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Angemon", title: "Angel of Light - Fist of Fate", img: "./images/angemon.png", svg: makeBadgeSvg("Angemon", "#0284c7", "#38bdf8", "👼", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "patamon", skills: [{ name: "Heaven's Knuckle", power: 60, type: "damage", icon: "fa-sun" }] },
@@ -1322,7 +1318,6 @@
       "wizardmon": { id: "wizardmon", stage: "CHAMPION", stageName: "Champion", type: "Data", name: "Wizardmon", title: "Thunder Sorcerer", img: "./images/wizardmon.png", svg: makeBadgeSvg("Wizardmon", "#7c3aed", "#c084fc", "🧙", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "gabumon", skills: [{ name: "Thunder Cloud", power: 56, type: "damage", icon: "fa-wand-magic-sparkles" }] },
       "togemon": { id: "togemon", stage: "CHAMPION", stageName: "Champion", type: "Data", name: "Togemon", title: "Prickly Boxing Cactus", img: "./images/togemon.png", svg: makeBadgeSvg("Togemon", "#16a34a", "#86efac", "🌵", "CHAMPION"), nextExp: 2200, maxHp: 350, prevForm: "palmon", skills: [{ name: "Chikuchiku Bang Bang", power: 54, type: "damage", icon: "fa-hand-fist" }] },
 
-      // 5. ULTIMATE (11)
       "metalgreymon": { id: "metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "MetalGreymon", title: "Cyborg Dragon - Giga Destroyer", img: "./images/metalgreymon.png", svg: makeBadgeSvg("MetalGreymon", "#ea580c", "#f97316", "🦾", "ULTIMATE"), nextExp: 4500, maxHp: 650, prevForm: "greymon", skills: [{ name: "Giga Destroyer", power: 95, type: "damage", icon: "fa-rocket" }] },
       "weregarurumon": { id: "weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "WereGarurumon", title: "Bipedal Beast Warrior - Wolf Claw", img: "./images/weregarurumon.png", svg: makeBadgeSvg("WereGarurumon", "#2563eb", "#60a5fa", "🐺", "ULTIMATE"), nextExp: 4500, maxHp: 650, prevForm: "garurumon", skills: [{ name: "Wolf Claw", power: 95, type: "damage", icon: "fa-hand-scissors" }] },
       "magnaangemon": { id: "magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "MagnaAngemon", title: "Archangel of Judgment - Gate of Destiny", img: "./images/magnaangemon.png", svg: makeBadgeSvg("MagnaAngemon", "#0284c7", "#38bdf8", "⚔️", "ULTIMATE"), nextExp: 4500, maxHp: 650, prevForm: "angemon", skills: [{ name: "Gate of Destiny", power: 105, type: "damage", icon: "fa-door-open" }] },
@@ -1335,7 +1330,6 @@
       "megaseadramon": { id: "megaseadramon", stage: "ULTIMATE", stageName: "Ultimate", type: "Data", name: "MegaSeadramon", title: "Lightning Ocean Dragon - Mailstrom", img: "./images/megaseadramon.png", svg: makeBadgeSvg("MegaSeadramon", "#0284c7", "#38bdf8", "🌊", "ULTIMATE"), nextExp: 4500, maxHp: 650, prevForm: "seadramon", skills: [{ name: "Mailstrom", power: 93, type: "damage", icon: "fa-water" }] },
       "metaltyrannomon": { id: "metaltyrannomon", stage: "ULTIMATE", stageName: "Ultimate", type: "Virus", name: "MetalTyrannomon", title: "Cyborg Dinosaur - Giga Destroyer II", img: "./images/metaltyrannomon.png", svg: makeBadgeSvg("MetalTyrannomon", "#475569", "#94a3b8", "🦖", "ULTIMATE"), nextExp: 4500, maxHp: 650, prevForm: "tyrannomon", skills: [{ name: "Nuclear Laser", power: 95, type: "damage", icon: "fa-radiation" }] },
 
-      // 6. MEGA (9)
       "wargreymon": { id: "wargreymon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "WarGreymon", title: "Dragon Warrior - Gaia Force", img: "./images/wargreymon.png", svg: makeBadgeSvg("WarGreymon", "#ea580c", "#f97316", "🔥", "MEGA"), nextExp: 0, maxHp: 1200, prevForm: "metalgreymon", skills: [{ name: "Gaia Force", power: 150, type: "damage", icon: "fa-sun" }, { name: "Great Tornado", power: 115, type: "damage", icon: "fa-tornado" }] },
       "metalgarurumon": { id: "metalgarurumon", stage: "MEGA", stageName: "Mega", type: "Data", name: "MetalGarurumon", title: "Cyborg Wolf Titan - Cocytus Breath", img: "./images/metalgarurumon.png", svg: makeBadgeSvg("MetalGarurumon", "#2563eb", "#60a5fa", "🐺", "MEGA"), nextExp: 0, maxHp: 1200, prevForm: "weregarurumon", skills: [{ name: "Cocytus Breath", power: 148, type: "damage", icon: "fa-icicles" }] },
       "seraphimon": { id: "seraphimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Seraphimon", title: "Supreme Angel - Seven Heavens", img: "./images/seraphimon.png", svg: makeBadgeSvg("Seraphimon", "#0284c7", "#38bdf8", "👑", "MEGA"), nextExp: 0, maxHp: 1200, prevForm: "magnaangemon", skills: [{ name: "Seven Heavens", power: 155, type: "damage", icon: "fa-star" }] },
@@ -1453,19 +1447,20 @@
       return getRandomEggId();
     }
 
+    // [已修復] 僅以逗號、頓號、分號、斜線為分隔，不切割空格，確保 "Class 1A" 等班名不被拆散
     function parseStudentClasses(rawClass) {
-      if (!rawClass) return ['Class-1A'];
+      if (rawClass === undefined || rawClass === null || rawClass === '') return [];
       if (Array.isArray(rawClass)) {
         return rawClass.map(c => String(c).trim()).filter(Boolean);
       }
-      return String(rawClass).split(/[,[,，、/ ]+/).map(c => c.trim()).filter(Boolean);
+      return String(rawClass).split(/[,，、;；/]+/).map(c => c.trim()).filter(Boolean);
     }
 
     function studentIsInClass(student, classId) {
       if (!student) return false;
       if (!classId || classId === 'ALL') return true;
       const list = parseStudentClasses(student.classId || student.classes);
-      return list.includes(classId);
+      return list.some(c => c.toLowerCase() === classId.toLowerCase());
     }
 
     function formatStudentClassesDisplay(student) {
@@ -1475,10 +1470,10 @@
 
     function getStudentsSharingClass(targetStudent) {
       if (!targetStudent) return [];
-      const myClasses = parseStudentClasses(targetStudent.classId || targetStudent.classes);
+      const myClasses = parseStudentClasses(targetStudent.classId || targetStudent.classes).map(c => c.toLowerCase());
       return Object.values(appData.students || {}).filter(s => {
         if (s.id === targetStudent.id) return false;
-        const otherClasses = parseStudentClasses(s.classId || s.classes);
+        const otherClasses = parseStudentClasses(s.classId || s.classes).map(c => c.toLowerCase());
         return myClasses.some(c => otherClasses.includes(c));
       });
     }
@@ -1486,10 +1481,8 @@
     let appData = {
       superAdmins: { "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master" } },
       teachers: { "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "wargreymon", maxHp: 2000, hp: 2000, skillPower: 220, techPower: 120 } },
-      classes: { "Class-1A": { id: "Class-1A", name: "Class 1A", teacherId: "teacher1" } },
-      students: {
-        "s01": { id: "s01", username: "s01", password: "123", name: "Alex Chan (01)", classId: "Class-1A", teacherId: "teacher1", exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {}, unlockedDex: { "digitama1": true }, currentDigiId: "digitama1", courage: 0, wisdom: 0, love: 0, discipline: 0 }
-      },
+      classes: {},
+      students: {},
       battleLogs: []
     };
 
@@ -1524,6 +1517,7 @@
       return {};
     }
 
+    // [已修復] 移除 || 'Class-1A' 強制預設，學生未指派班級時保留空字串，防止 Class-1A 復活
     function normalizeStudent(s, keyId) {
       if (!s || typeof s !== 'object') return null;
       const id = String(s.id || s.username || keyId || '').toLowerCase();
@@ -1534,7 +1528,7 @@
         currentDigiId = 'digitama1';
       }
 
-      const rawClass = s.classId || s.classes || 'Class-1A';
+      const rawClass = (s.classId !== undefined && s.classId !== null) ? s.classId : (s.classes || '');
       const classesArr = parseStudentClasses(rawClass);
       const cleanClassStr = classesArr.join(', ');
 
@@ -1590,8 +1584,8 @@
           if (parsed && typeof parsed === 'object') {
             if (parsed.superAdmins && Object.keys(parsed.superAdmins).length > 0) appData.superAdmins = parsed.superAdmins;
             if (parsed.teachers && Object.keys(parsed.teachers).length > 0) appData.teachers = parsed.teachers;
-            if (parsed.classes && Object.keys(parsed.classes).length > 0) appData.classes = parsed.classes;
-            if (parsed.students && Object.keys(parsed.students).length > 0) appData.students = parsed.students;
+            if (parsed.classes) appData.classes = parsed.classes;
+            if (parsed.students) appData.students = parsed.students;
             if (Array.isArray(parsed.battleLogs)) appData.battleLogs = parsed.battleLogs;
           }
         }
@@ -1663,8 +1657,8 @@
 
             if (Object.keys(rawSuperAdmins).length > 0) appData.superAdmins = rawSuperAdmins;
             if (Object.keys(cleanTeachers).length > 0) appData.teachers = cleanTeachers;
-            if (Object.keys(rawClasses).length > 0) appData.classes = rawClasses;
-            if (Object.keys(cleanStudents).length > 0) appData.students = cleanStudents;
+            appData.classes = rawClasses;
+            appData.students = cleanStudents;
             if (cleanLogs.length > 0) appData.battleLogs = cleanLogs;
 
             saveLocalCache();
@@ -2542,8 +2536,9 @@
         sel.innerHTML += `<option value="${c}">${displayName}</option>`;
       });
 
-      if (sortedClasses.includes(selectedTeacherClass) || selectedTeacherClass === 'ALL') {
-        sel.value = selectedTeacherClass;
+      if (sortedClasses.some(c => c.toLowerCase() === selectedTeacherClass.toLowerCase()) || selectedTeacherClass === 'ALL') {
+        const match = sortedClasses.find(c => c.toLowerCase() === selectedTeacherClass.toLowerCase());
+        sel.value = match || selectedTeacherClass;
       } else {
         selectedTeacherClass = 'ALL';
         sel.value = 'ALL';
@@ -2745,7 +2740,6 @@
       renderTeacherGrid();
     }
 
-    // [已修復] 老師戶口批次增加經驗按鈕：正確迭代並更新該班所有學生，並統一儲存
     function rewardAllStudents(exp) {
       if (!currentUser) return;
       const targetClass = selectedTeacherClass;
@@ -2844,7 +2838,7 @@
               const existingClasses = parseStudentClasses(existing.classId);
               const incomingClasses = parseStudentClasses(classVal);
               incomingClasses.forEach(c => {
-                if (!existingClasses.includes(c)) existingClasses.push(c);
+                if (!existingClasses.some(ec => ec.toLowerCase() === c.toLowerCase())) existingClasses.push(c);
               });
               existing.classId = existingClasses.join(', ');
               existing.name = name || existing.name;
@@ -2894,7 +2888,8 @@
 
             const classesArr = parseStudentClasses(classVal);
             classesArr.forEach(c => {
-              if (!appData.classes[c]) {
+              const existingKey = Object.keys(appData.classes || {}).find(k => k.toLowerCase() === c.toLowerCase());
+              if (!existingKey) {
                 appData.classes[c] = { id: c, name: c, teacherId: assignedTeacher };
               }
             });
@@ -2903,7 +2898,7 @@
             if (existing) {
               const existingClasses = parseStudentClasses(existing.classId);
               classesArr.forEach(c => {
-                if (!existingClasses.includes(c)) existingClasses.push(c);
+                if (!existingClasses.some(ec => ec.toLowerCase() === c.toLowerCase())) existingClasses.push(c);
               });
               existing.classId = existingClasses.join(', ');
               existing.name = name || existing.name;
@@ -2996,25 +2991,39 @@
       });
     }
 
+    // [徹底修復] 增減學生功能：直接修改 student.classId，寫入本地快取並定向同步至 Firebase 該學生節點
     function toggleStudentClassMembership(studentId, classId, add) {
       const s = appData.students[studentId];
       if (!s) return;
 
-      const classes = parseStudentClasses(s.classId);
+      let classes = parseStudentClasses(s.classId);
+      const targetClass = classId.trim();
+
       if (add) {
-        if (!classes.includes(classId)) classes.push(classId);
-        addBattleLog(`➕ Teacher added student [${s.name}] to [${classId}].`, "normal");
-        showToast("Student Added", `Added ${s.name} to ${classId}!`, "info");
+        if (!classes.some(c => c.toLowerCase() === targetClass.toLowerCase())) {
+          classes.push(targetClass);
+        }
+        if (!appData.classes[targetClass]) {
+          appData.classes[targetClass] = { id: targetClass, name: targetClass, teacherId: currentUser.id };
+          if (dbRef) {
+            firebase.database().ref('classes/' + targetClass).set(appData.classes[targetClass]);
+          }
+        }
+        addBattleLog(`➕ 老師將學生 [${s.name}] 加入班級 [${targetClass}]。`, "normal");
+        showToast("已加入班級", `已將 ${s.name} 加入 ${targetClass}！`, "info");
       } else {
-        const idx = classes.indexOf(classId);
-        if (idx >= 0) classes.splice(idx, 1);
-        addBattleLog(`➖ Teacher removed student [${s.name}] from [${classId}].`, "normal");
-        showToast("Student Removed", `Removed ${s.name} from ${classId}!`, "info");
+        classes = classes.filter(c => c.toLowerCase() !== targetClass.toLowerCase());
+        addBattleLog(`➖ 老師將學生 [${s.name}] 從 [${targetClass}] 移除。`, "normal");
+        showToast("已移出班級", `已將 ${s.name} 從 ${targetClass} 移除！`, "info");
       }
 
       s.classId = classes.join(', ');
-      syncSingleStudent(studentId);
-      saveData();
+      delete s.classes;
+      
+      saveLocalCache();
+      if (dbRef) {
+        firebase.database().ref('students/' + studentId + '/classId').set(s.classId);
+      }
       renderManagerStudentsList();
     }
 
@@ -3031,27 +3040,51 @@
       showToast("Class Created", `Class [${cleanCode}] is ready! You can now manage students in it.`, "info");
     }
 
+    // [徹底修復] 刪除班級功能：清除 classes 集合對應鍵、遍歷清除所有學生關聯，並使用原子更新同步 Firebase
     function promptDeleteCurrentClass() {
-      if (selectedTeacherClass === 'ALL') return alert("Select a specific class first to delete.");
-      if (!confirm(`Are you sure you want to delete class [${selectedTeacherClass}]? Student accounts will not be deleted, only unassigned from this class.`)) return;
-
+      if (selectedTeacherClass === 'ALL') {
+        alert("請先在下拉選單選擇要刪除的特定班別！");
+        return;
+      }
+      
       const target = selectedTeacherClass;
-      delete appData.classes[target];
+      if (!confirm(`確定要刪除班別 [${target}] 嗎？此操作將解除所有學生在該班的登記。`)) return;
 
-      Object.values(appData.students || {}).forEach(s => {
-        const classes = parseStudentClasses(s.classId);
-        const idx = classes.indexOf(target);
-        if (idx >= 0) {
-          classes.splice(idx, 1);
-          s.classId = classes.join(', ');
+      const deletedKeys = [];
+      Object.keys(appData.classes || {}).forEach(cKey => {
+        if (cKey.toLowerCase() === target.toLowerCase()) {
+          deletedKeys.push(cKey);
+          delete appData.classes[cKey];
         }
       });
 
+      const updates = {};
+      deletedKeys.forEach(k => {
+        updates['classes/' + k] = null;
+      });
+
+      Object.values(appData.students || {}).forEach(s => {
+        let classes = parseStudentClasses(s.classId);
+        const initialLen = classes.length;
+        classes = classes.filter(c => c.toLowerCase() !== target.toLowerCase());
+        
+        if (classes.length !== initialLen) {
+          s.classId = classes.join(', ');
+          delete s.classes;
+          updates['students/' + s.id + '/classId'] = s.classId;
+        }
+      });
+
+      if (dbRef) {
+        firebase.database().ref().update(updates);
+      }
+
+      saveLocalCache();
       selectedTeacherClass = 'ALL';
-      saveData();
       populateClassDropdown();
       renderTeacherGrid();
-      showToast("Class Deleted", `Class [${target}] was removed from the list.`, "info");
+      addBattleLog(`🗑️ [CLASS DELETED] 老師刪除了班別 [${target}]。`, "battle");
+      showToast("班別已刪除", `已清除 [${target}] 且相關學生已解除關聯。`, "info");
     }
 
     function startRandomPicker() {
