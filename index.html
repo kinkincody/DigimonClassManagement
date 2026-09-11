@@ -123,6 +123,12 @@
     html, body {
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input, textarea, select {
+      -webkit-user-select: auto;
+      user-select: auto;
     }
   </style>
 </head>
@@ -146,7 +152,7 @@
     </div>
     
     <div class="flex items-center space-x-2">
-      <button onclick="toggleAudio()" id="btnSoundToggle" class="px-2.5 py-1.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:text-white cursor-pointer" title="Toggle Sound FX">
+      <button onclick="toggleAudio()" id="btnSoundToggle" class="px-2.5 py-1.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:text-white cursor-pointer active:scale-95" title="Toggle Sound FX">
         <i class="fa-solid fa-volume-high"></i>
       </button>
 
@@ -154,13 +160,13 @@
         <span id="syncDot" class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span id="syncText">Firebase Live</span>
       </span>
-      <button onclick="toggleDexModal()" class="px-3 py-1.5 rounded text-xs font-bold bg-cyan-950 border border-cyan-600 text-cyan-300 hover:bg-cyan-900 cursor-pointer">
+      <button onclick="toggleDexModal()" class="px-3 py-1.5 rounded text-xs font-bold bg-cyan-950 border border-cyan-600 text-cyan-300 hover:bg-cyan-900 cursor-pointer active:scale-95">
         <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex
       </button>
-      <button onclick="toggleLeaderboardModal()" class="px-3 py-1.5 rounded text-xs font-bold bg-amber-950 border border-amber-600 text-amber-300 hover:bg-amber-900 cursor-pointer">
+      <button onclick="toggleLeaderboardModal()" class="px-3 py-1.5 rounded text-xs font-bold bg-amber-950 border border-amber-600 text-amber-300 hover:bg-amber-900 cursor-pointer active:scale-95">
         <i class="fa-solid fa-trophy mr-1"></i> Rank
       </button>
-      <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900 cursor-pointer">
+      <button onclick="logout()" class="px-3 py-1.5 rounded text-xs font-bold transition bg-rose-950 border border-rose-700/60 text-rose-300 hover:bg-rose-900 cursor-pointer active:scale-95">
         <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
       </button>
     </div>
@@ -182,13 +188,13 @@
       </div>
 
       <div class="flex rounded-lg bg-slate-950 p-1 mb-5 border border-slate-800">
-        <button id="tabStudent" type="button" onclick="switchLoginTab('student')" class="flex-1 py-2 rounded-md text-xs font-bold transition bg-cyan-600 text-white cursor-pointer">
+        <button id="tabStudent" type="button" onclick="switchLoginTab('student')" class="flex-1 py-2 rounded-md text-xs font-bold transition bg-cyan-600 text-white cursor-pointer active:scale-95">
           <i class="fa-solid fa-gamepad mr-1"></i> Student
         </button>
-        <button id="tabTeacher" type="button" onclick="switchLoginTab('teacher')" class="flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer">
+        <button id="tabTeacher" type="button" onclick="switchLoginTab('teacher')" class="flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer active:scale-95">
           <i class="fa-solid fa-chalkboard-user mr-1"></i> Teacher
         </button>
-        <button id="tabAdmin" type="button" onclick="switchLoginTab('superadmin')" class="flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer">
+        <button id="tabAdmin" type="button" onclick="switchLoginTab('superadmin')" class="flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer active:scale-95">
           <i class="fa-solid fa-shield-halved mr-1"></i> Admin
         </button>
       </div>
@@ -203,7 +209,7 @@
           <input id="loginPassword" type="password" required placeholder="Enter password" autocomplete="current-password" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:border-cyan-400 outline-none">
         </div>
 
-        <button type="submit" id="btnLoginSubmit" class="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition cursor-pointer flex items-center justify-center gap-2">
+        <button type="submit" id="btnLoginSubmit" class="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition cursor-pointer flex items-center justify-center gap-2 active:scale-95">
           <i class="fa-solid fa-door-open"></i> Sign In to Digital World
         </button>
       </form>
@@ -216,6 +222,35 @@
 
     <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
+      
+      <!-- Target Teacher Boss Bar -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-amber-500/40 rounded-2xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-[260px]">
+          <div class="w-14 h-14 bg-slate-950 rounded-xl p-1 border border-amber-400 flex items-center justify-center shrink-0">
+            <img id="stBossImg" src="" class="max-w-full max-h-full object-contain">
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-amber-300 font-pixel uppercase">Teacher Partner Boss</span>
+              <span id="stBossStageBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">MEGA</span>
+            </div>
+            <h3 id="stBossName" class="text-sm font-black text-white truncate">WarGreymon</h3>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 p-0.5 border border-slate-800 mt-1">
+              <div id="stBossHpBar" class="bg-gradient-to-r from-rose-500 to-amber-500 h-full rounded-full transition-all duration-300" style="width: 100%"></div>
+            </div>
+            <div class="text-[10px] text-emerald-400 font-mono font-bold mt-0.5" id="stBossHpText">HP: 2000 / 2000</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-crosshairs"></i> Target Teacher Boss:
+          </label>
+          <select id="stTeacherBossSelect" onchange="onStudentSelectTeacherBoss(this.value)" class="bg-slate-950 border border-amber-500/60 text-xs font-bold rounded-lg px-3 py-1.5 text-amber-200 outline-none">
+          </select>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div id="studentDigiviceCard" class="md:col-span-2 digi-card skin-classic rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500">
           <div id="stShieldBanner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-cyan-500/20 border border-cyan-400 rounded-full text-[11px] text-cyan-300 font-bold flex items-center gap-1.5 backdrop-blur shadow-lg animate-pulse">
@@ -235,7 +270,7 @@
               <span id="stGachaTicketsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center gap-1">
                 <i class="fa-solid fa-ticket"></i> Tickets: 0
               </span>
-              <button onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer">
+              <button onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
                 <i class="fa-solid fa-gift"></i> Gacha
               </button>
             </div>
@@ -247,7 +282,7 @@
               <div id="stFaintOverlay" class="hidden absolute inset-0 bg-rose-950/70 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center text-rose-300">
                 <i class="fa-solid fa-skull-crossbones text-4xl animate-bounce mb-2"></i>
                 <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE</span>
-                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher's Revival</span>
+                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher's Action</span>
               </div>
             </div>
             <h2 id="stDigiName" class="text-2xl font-black tracking-wider text-cyan-200 mt-3 drop-shadow flex items-center gap-2">
@@ -258,7 +293,7 @@
           </div>
 
           <div class="z-10 mt-2 flex flex-col items-center gap-2.5 w-full max-w-md">
-            <button id="btnEvolve" onclick="triggerEvolution()" class="hidden w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer">
+            <button id="btnEvolve" onclick="triggerEvolution()" class="hidden w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer active:scale-95">
               <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
             </button>
             
@@ -318,9 +353,9 @@
                   <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
                   <div class="flex items-center gap-1">
                     <span id="stValCourage" class="font-bold text-slate-300 mr-1 text-xs">0</span>
-                    <button onclick="allocateTrait('courage', 1)" class="px-1 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[9px] hover:bg-rose-800 font-bold cursor-pointer">+1</button>
-                    <button onclick="allocateTrait('courage', 5)" class="px-1 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[9px] hover:bg-rose-800 font-bold cursor-pointer">+5</button>
-                    <button onclick="allocateTrait('courage', 10)" class="px-1 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[9px] hover:bg-rose-800 font-bold cursor-pointer">+10</button>
+                    <button onclick="allocateTrait('courage', 1)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer active:scale-90">+1</button>
+                    <button onclick="allocateTrait('courage', 5)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer active:scale-90">+5</button>
+                    <button onclick="allocateTrait('courage', 10)" class="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer active:scale-90">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -333,9 +368,9 @@
                   <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
                   <div class="flex items-center gap-1">
                     <span id="stValLove" class="font-bold text-slate-300 mr-1 text-xs">0</span>
-                    <button onclick="allocateTrait('love', 1)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+1</button>
-                    <button onclick="allocateTrait('love', 5)" class="px-1 py-0.5 rounded bg-emerald-950 border border-rose-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+5</button>
-                    <button onclick="allocateTrait('love', 10)" class="px-1 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[9px] hover:bg-emerald-800 font-bold cursor-pointer">+10</button>
+                    <button onclick="allocateTrait('love', 1)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+1</button>
+                    <button onclick="allocateTrait('love', 5)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-rose-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+5</button>
+                    <button onclick="allocateTrait('love', 10)" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -348,9 +383,9 @@
                   <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
-                    <button onclick="allocateTrait('discipline', 1)" class="px-1 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[9px] hover:bg-amber-800 font-bold cursor-pointer">+1</button>
-                    <button onclick="allocateTrait('discipline', 5)" class="px-1 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[9px] hover:bg-amber-800 font-bold cursor-pointer">+5</button>
-                    <button onclick="allocateTrait('discipline', 10)" class="px-1 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[9px] hover:bg-amber-800 font-bold cursor-pointer">+10</button>
+                    <button onclick="allocateTrait('discipline', 1)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+1</button>
+                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+5</button>
+                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -363,9 +398,9 @@
                   <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
-                    <button onclick="allocateTrait('wisdom', 1)" class="px-1 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[9px] hover:bg-blue-800 font-bold cursor-pointer">+1</button>
-                    <button onclick="allocateTrait('wisdom', 5)" class="px-1 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[9px] hover:bg-blue-800 font-bold cursor-pointer">+5</button>
-                    <button onclick="allocateTrait('wisdom', 10)" class="px-1 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[9px] hover:bg-blue-800 font-bold cursor-pointer">+10</button>
+                    <button onclick="allocateTrait('wisdom', 1)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+1</button>
+                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+5</button>
+                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -386,10 +421,10 @@
           </div>
 
           <div class="pt-2 border-t border-slate-800 flex gap-2">
-            <button onclick="toggleEvolutionTreeModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer">
+            <button onclick="toggleEvolutionTreeModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer active:scale-95">
               <i class="fa-solid fa-sitemap mr-1"></i> Evo Tree
             </button>
-            <button onclick="toggleDexModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 font-bold border border-amber-500/20 cursor-pointer">
+            <button onclick="toggleDexModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 font-bold border border-amber-500/20 cursor-pointer active:scale-95">
               <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex
             </button>
           </div>
@@ -398,11 +433,11 @@
 
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
         <h4 class="text-xs font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-          <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Live Events & Battle Logs</span>
-          <span class="text-[10px] text-slate-500">Real-time Feed</span>
+          <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Class Events & Battle Logs</span>
+          <span class="text-[10px] text-slate-500" id="studentLogScopeTag">Classroom Log Feed</span>
         </h4>
         <div id="studentBattleLogs" class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar text-xs font-mono">
-          <div class="text-slate-500 italic">No events recorded yet.</div>
+          <div class="text-slate-500 italic">No events recorded for your class yet.</div>
         </div>
       </div>
     </div>
@@ -425,22 +460,30 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="startRandomPicker()" class="px-3.5 py-2 rounded bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 transition flex items-center gap-1.5 cursor-pointer animate-pulse">
-            <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker
-          </button>
-          <button onclick="rewardAllGachaTickets(1)" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer">
+          <!-- 偽裝成單一按鈕的雙觸發抽獎鈕 (iPad 觸控完全相容) -->
+          <div class="relative inline-flex rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 overflow-hidden select-none active:scale-95">
+            <div class="px-3.5 py-2 flex items-center gap-1.5 pointer-events-none">
+              <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker
+            </div>
+            <!-- 左半部：全班抽籤 -->
+            <button onclick="startRandomPicker(false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title=""></button>
+            <!-- 右半部：喜愛學生暗抽 -->
+            <button onclick="startRandomPicker(true)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title=""></button>
+          </div>
+
+          <button onclick="rewardAllGachaTickets(1)" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-ticket"></i> Class +1 Gacha
           </button>
-          <button onclick="teacherCastSkill('single_ult')" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer">
+          <button onclick="teacherCastSkill('single_ult')" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-crosshairs"></i> Target 1 (Special)
           </button>
-          <button onclick="teacherCastSkill('aoe_ult')" class="px-3 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer">
+          <button onclick="teacherCastSkill('aoe_ult')" class="px-3 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-burst"></i> Full Class (Special)
           </button>
-          <button onclick="teacherHealAll()" class="px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer">
+          <button onclick="teacherHealAll()" class="px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP
           </button>
-          <button onclick="teacherHealSelf()" class="px-3 py-1.5 rounded bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer">
+          <button onclick="teacherHealSelf()" class="px-3 py-1.5 rounded bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-heart-pulse"></i> Restore Boss HP
           </button>
         </div>
@@ -452,27 +495,27 @@
             <label class="text-xs font-bold text-cyan-400"><i class="fa-solid fa-school mr-1"></i> Current Class:</label>
             <select id="teacherClassFilter" onchange="onClassFilterChange(this.value)" class="bg-slate-950 border border-cyan-500/50 text-xs font-bold rounded-lg px-3 py-1.5 text-cyan-200 outline-none">
             </select>
-            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 font-bold cursor-pointer">
+            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 font-bold cursor-pointer active:scale-95">
               <i class="fa-solid fa-plus mr-1"></i> Add Class
             </button>
-            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-xs text-rose-300 font-bold cursor-pointer">
+            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-xs text-rose-300 font-bold cursor-pointer active:scale-95">
               <i class="fa-solid fa-trash mr-1"></i> Delete Class
             </button>
           </div>
 
           <div class="flex items-center gap-2">
-            <button onclick="openManageClassStudentsModal()" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer">
+            <button onclick="openManageClassStudentsModal()" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
               <i class="fa-solid fa-user-gear"></i> Manage Students in Class
             </button>
-            <label for="excelFileInput" class="cursor-pointer px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5">
+            <label for="excelFileInput" class="cursor-pointer px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
               <i class="fa-solid fa-file-excel"></i> Import Students (Excel)
             </label>
             <input id="excelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(event)" class="hidden">
             
-            <button onclick="rewardAllStudents(20)" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 cursor-pointer">
+            <button onclick="rewardAllStudents(20)" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 cursor-pointer active:scale-95">
               Class +20 EXP
             </button>
-            <button onclick="rewardAllStudents(50)" class="px-3 py-1.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-xs font-bold hover:bg-blue-900 cursor-pointer">
+            <button onclick="rewardAllStudents(50)" class="px-3 py-1.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-xs font-bold hover:bg-blue-900 cursor-pointer active:scale-95">
               Class +50 EXP
             </button>
           </div>
@@ -488,8 +531,8 @@
             <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Activity & Battle Log
           </h4>
           <div class="flex items-center gap-2">
-            <span class="text-[10px] text-slate-500">Live Synchronized</span>
-            <button onclick="clearBattleLogs()" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer">
+            <span class="text-[10px] text-slate-500" id="teacherLogFilterBadge">Viewing: All Classes</span>
+            <button onclick="clearBattleLogs()" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95">
               <i class="fa-solid fa-trash-can"></i> Clear Logs
             </button>
           </div>
@@ -508,18 +551,18 @@
           <p class="text-xs text-slate-400">Manage all accounts, batch import with multi-class assignments, delete, or reset classroom progression.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <label for="adminExcelFileInput" class="cursor-pointer px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow-md flex items-center gap-1.5 transition">
+          <label for="adminExcelFileInput" class="cursor-pointer px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow-md flex items-center gap-1.5 transition active:scale-95">
             <i class="fa-solid fa-file-excel"></i> Admin Excel Import
           </label>
           <input id="adminExcelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleAdminExcelImport(event)" class="hidden">
 
-          <button onclick="superadminDeleteAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer flex items-center gap-1.5 transition">
+          <button onclick="superadminDeleteAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer flex items-center gap-1.5 transition active:scale-95">
             <i class="fa-solid fa-trash-can"></i> Delete All Students
           </button>
-          <button onclick="superadminFullResetAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-slate-950 font-black rounded-lg text-xs shadow-md cursor-pointer flex items-center gap-1.5 transition">
+          <button onclick="superadminFullResetAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-slate-950 font-black rounded-lg text-xs shadow-md cursor-pointer flex items-center gap-1.5 transition active:scale-95">
             <i class="fa-solid fa-triangle-exclamation"></i> Reset Class Progression
           </button>
-          <button onclick="openCredentialsModal()" class="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer transition">
+          <button onclick="openCredentialsModal()" class="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer transition active:scale-95">
             <i class="fa-solid fa-user-pen mr-1.5"></i> Manage Credentials
           </button>
         </div>
@@ -532,7 +575,7 @@
             <h2 class="text-base font-bold text-amber-300"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher Accounts & Mega Partners</h2>
             <p class="text-xs text-slate-400">Modify teacher IDs, passwords, Mega partner Digimon, HP and battle power.</p>
           </div>
-          <button onclick="openCreateTeacherModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs cursor-pointer transition flex items-center gap-1">
+          <button onclick="openCreateTeacherModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs cursor-pointer transition flex items-center gap-1 active:scale-95">
             <i class="fa-solid fa-user-plus"></i> Add Teacher Account
           </button>
         </div>
@@ -557,7 +600,7 @@
             </label>
             <span class="text-slate-600">|</span>
             <span class="text-xs text-slate-400">Selected: <b id="selectedStudentsCount" class="text-cyan-300 font-mono">0</b></span>
-            <button onclick="superadminBatchDeleteStudents()" id="btnBatchDeleteStudents" disabled class="px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed transition flex items-center gap-1">
+            <button onclick="superadminBatchDeleteStudents()" id="btnBatchDeleteStudents" disabled class="px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed transition flex items-center gap-1 active:scale-95">
               <i class="fa-solid fa-trash-can"></i> Batch Delete Selected
             </button>
           </div>
@@ -592,7 +635,7 @@
 
       <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
         <span class="text-xs text-slate-400" id="mgrSelectedCount">Class Size: 0</span>
-        <button onclick="closeManageClassStudentsModal()" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs cursor-pointer">
+        <button onclick="closeManageClassStudentsModal()" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs cursor-pointer active:scale-95">
           Done
         </button>
       </div>
@@ -647,23 +690,23 @@
         </div>
 
         <div class="w-full mt-5 grid grid-cols-3 gap-2">
-          <button onclick="rewardWinnerQuick('exp', 50)" class="py-2 px-3 rounded-xl bg-cyan-950 border border-cyan-500 hover:bg-cyan-900 text-cyan-300 font-bold text-xs cursor-pointer">
+          <button onclick="rewardWinnerQuick('exp', 50)" class="py-2 px-3 rounded-xl bg-cyan-950 border border-cyan-500 hover:bg-cyan-900 text-cyan-300 font-bold text-xs cursor-pointer active:scale-95">
             +50 EXP
           </button>
-          <button onclick="rewardWinnerQuick('ticket', 1)" class="py-2 px-3 rounded-xl bg-amber-950 border border-amber-500 hover:bg-amber-900 text-amber-300 font-bold text-xs cursor-pointer">
+          <button onclick="rewardWinnerQuick('ticket', 1)" class="py-2 px-3 rounded-xl bg-amber-950 border border-amber-500 hover:bg-amber-900 text-amber-300 font-bold text-xs cursor-pointer active:scale-95">
             +1 Gacha Ticket
           </button>
-          <button onclick="rewardWinnerQuick('quota', 2)" class="py-2 px-3 rounded-xl bg-rose-950 border border-rose-500 hover:bg-rose-900 text-rose-300 font-bold text-xs cursor-pointer">
+          <button onclick="rewardWinnerQuick('quota', 2)" class="py-2 px-3 rounded-xl bg-rose-950 border border-rose-500 hover:bg-rose-900 text-rose-300 font-bold text-xs cursor-pointer active:scale-95">
             +2 Attacks
           </button>
         </div>
       </div>
 
       <div class="mt-6 flex gap-3 w-full justify-center">
-        <button onclick="rerollPicker()" id="btnReroll" class="flex-1 max-w-[180px] py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg cursor-pointer">
+        <button onclick="rerollPicker()" id="btnReroll" class="flex-1 max-w-[180px] py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg cursor-pointer active:scale-95">
           <i class="fa-solid fa-rotate-right mr-1"></i> Pick Again
         </button>
-        <button onclick="closeRandomPickerModal()" class="flex-1 max-w-[140px] py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer">
+        <button onclick="closeRandomPickerModal()" class="flex-1 max-w-[140px] py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer active:scale-95">
           Done
         </button>
       </div>
@@ -697,10 +740,10 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button onclick="drawGacha(1)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 cursor-pointer flex items-center gap-1.5">
+            <button onclick="drawGacha(1)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 cursor-pointer flex items-center gap-1.5 active:scale-95">
               <i class="fa-solid fa-gift"></i> Draw 1x
             </button>
-            <button onclick="drawGacha(5)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-black text-xs shadow-lg shadow-cyan-500/30 cursor-pointer flex items-center gap-1.5">
+            <button onclick="drawGacha(5)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-black text-xs shadow-lg shadow-cyan-500/30 cursor-pointer flex items-center gap-1.5 active:scale-95">
               <i class="fa-solid fa-boxes-stacked"></i> Draw 5x
             </button>
           </div>
@@ -722,7 +765,7 @@
       </div>
 
       <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="closeGachaModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 cursor-pointer">
+        <button onclick="closeGachaModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 cursor-pointer active:scale-95">
           Close
         </button>
       </div>
@@ -741,17 +784,17 @@
       </div>
 
       <div class="flex gap-2 my-4 border-b border-slate-800 pb-3 overflow-x-auto text-xs font-bold">
-        <button onclick="renderEvoTreeTab('ROOKIE')" id="tabEvoRookie" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer">Rookie</button>
-        <button onclick="renderEvoTreeTab('CHAMPION')" id="tabEvoChampion" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Champion</button>
-        <button onclick="renderEvoTreeTab('ULTIMATE')" id="tabEvoUltimate" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Ultimate</button>
-        <button onclick="renderEvoTreeTab('MEGA')" id="tabEvoMega" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Mega</button>
+        <button onclick="renderEvoTreeTab('ROOKIE')" id="tabEvoRookie" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95">Rookie</button>
+        <button onclick="renderEvoTreeTab('CHAMPION')" id="tabEvoChampion" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Champion</button>
+        <button onclick="renderEvoTreeTab('ULTIMATE')" id="tabEvoUltimate" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Ultimate</button>
+        <button onclick="renderEvoTreeTab('MEGA')" id="tabEvoMega" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Mega</button>
       </div>
 
       <div id="evoTreeContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1"></div>
 
       <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
         <span>★ Tip: The dominant trait unlocks direct evolutionary branches; balanced traits unlock varied paths!</span>
-        <button onclick="toggleEvolutionTreeModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer">Close</button>
+        <button onclick="toggleEvolutionTreeModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">Close</button>
       </div>
     </div>
   </div>
@@ -769,7 +812,7 @@
       <p class="text-xs text-slate-400 my-2">Rankings are calculated dynamically based on Stage, Total EXP, and Trait allocations.</p>
       <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="leaderboardList"></div>
       <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="toggleLeaderboardModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer">Close</button>
+        <button onclick="toggleLeaderboardModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer active:scale-95">Close</button>
       </div>
     </div>
   </div>
@@ -791,25 +834,25 @@
       </div>
 
       <div class="flex gap-2 my-3 border-b border-slate-800 pb-3 text-xs font-bold overflow-x-auto">
-        <button onclick="filterDexStage('ALL')" id="dexTab_ALL" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer">All Forms</button>
-        <button onclick="filterDexStage('DIGI-EGG')" id="dexTab_DIGI-EGG" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Eggs</button>
-        <button onclick="filterDexStage('IN-TRAINING')" id="dexTab_IN-TRAINING" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">In-Training</button>
-        <button onclick="filterDexStage('ROOKIE')" id="dexTab_ROOKIE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Rookie</button>
-        <button onclick="filterDexStage('CHAMPION')" id="dexTab_CHAMPION" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Champion</button>
-        <button onclick="filterDexStage('ULTIMATE')" id="dexTab_ULTIMATE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Ultimate</button>
-        <button onclick="filterDexStage('MEGA')" id="dexTab_MEGA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer">Mega</button>
+        <button onclick="filterDexStage('ALL')" id="dexTab_ALL" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95">All Forms</button>
+        <button onclick="filterDexStage('DIGI-EGG')" id="dexTab_DIGI-EGG" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Eggs</button>
+        <button onclick="filterDexStage('IN-TRAINING')" id="dexTab_IN-TRAINING" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">In-Training</button>
+        <button onclick="filterDexStage('ROOKIE')" id="dexTab_ROOKIE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Rookie</button>
+        <button onclick="filterDexStage('CHAMPION')" id="dexTab_CHAMPION" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Champion</button>
+        <button onclick="filterDexStage('ULTIMATE')" id="dexTab_ULTIMATE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Ultimate</button>
+        <button onclick="filterDexStage('MEGA')" id="dexTab_MEGA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Mega</button>
       </div>
 
       <div id="dexGridContainer" class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-1">
       </div>
 
       <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="toggleDexModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer">Close</button>
+        <button onclick="toggleDexModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer active:scale-95">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- 6. Create / Edit Teacher Modal (Full Capability Modifier) -->
+  <!-- 6. Create / Edit Teacher Modal -->
   <div id="modalTeacherEdit" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 text-slate-200">
       <input type="hidden" id="modalTcOriginalId" value="">
@@ -847,8 +890,8 @@
         </div>
       </div>
       <div class="mt-6 flex justify-end gap-2">
-        <button onclick="closeTeacherEditModal()" class="px-3 py-1.5 rounded bg-slate-800 text-xs cursor-pointer">Cancel</button>
-        <button onclick="saveTeacherFromModal()" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer">Save Teacher</button>
+        <button onclick="closeTeacherEditModal()" class="px-3 py-1.5 rounded bg-slate-800 text-xs cursor-pointer active:scale-95">Cancel</button>
+        <button onclick="saveTeacherFromModal()" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer active:scale-95">Save Teacher</button>
       </div>
     </div>
   </div>
@@ -876,7 +919,7 @@
         </div>
       </div>
       <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="closeCredentialsModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer">Close</button>
+        <button onclick="closeCredentialsModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer active:scale-95">Close</button>
       </div>
     </div>
   </div>
@@ -1447,7 +1490,6 @@
       return getRandomEggId();
     }
 
-    // [已修復] 僅以逗號、頓號、分號、斜線為分隔，不切割空格，確保 "Class 1A" 等班名不被拆散
     function parseStudentClasses(rawClass) {
       if (rawClass === undefined || rawClass === null || rawClass === '') return [];
       if (Array.isArray(rawClass)) {
@@ -1494,6 +1536,7 @@
     let currentPickedStudent = null;
     let currentDexFilter = 'ALL';
     let isFirebaseConnected = false;
+    let studentTargetTeacherId = 'teacher1';
 
     function sanitizeObjectMap(raw) {
       if (!raw) return {};
@@ -1517,7 +1560,6 @@
       return {};
     }
 
-    // [已修復] 移除 || 'Class-1A' 強制預設，學生未指派班級時保留空字串，防止 Class-1A 復活
     function normalizeStudent(s, keyId) {
       if (!s || typeof s !== 'object') return null;
       const id = String(s.id || s.username || keyId || '').toLowerCase();
@@ -1544,6 +1586,7 @@
         hp: (s.hp !== undefined && s.hp !== null) ? Number(s.hp) : (DIGIMON_DB[currentDigiId]?.maxHp || 100),
         isFainted: !!s.isFainted,
         hasShield: !!s.hasShield,
+        isStarred: !!s.isStarred,
         skinId: s.skinId || 'skin-classic',
         attackQuota: Number(s.attackQuota) || 0,
         gachaTickets: (s.gachaTickets !== undefined && s.gachaTickets !== null) ? Number(s.gachaTickets) : 0,
@@ -1763,22 +1806,34 @@
       setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
     }
 
-    function addBattleLog(text, type = "normal") {
+    function addBattleLog(text, type = "normal", classTag = null) {
       if (!appData.battleLogs) appData.battleLogs = [];
+      
+      let targetClassTag = classTag;
+      if (!targetClassTag && currentUser) {
+        if (currentUser.role === 'student') {
+          const st = appData.students[currentUser.id];
+          targetClassTag = st ? (st.classId || '') : '';
+        } else if (currentUser.role === 'teacher') {
+          targetClassTag = selectedTeacherClass;
+        }
+      }
+
       const newLog = {
-        id: "log_" + Date.now(),
+        id: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         text: text,
-        type: type
+        type: type,
+        classTag: targetClassTag || 'ALL'
       };
       appData.battleLogs.unshift(newLog);
-      if (appData.battleLogs.length > 50) appData.battleLogs.pop();
+      if (appData.battleLogs.length > 100) appData.battleLogs.pop();
       saveData();
       renderBattleLogs();
     }
 
     function clearBattleLogs() {
-      if (!confirm("Are you sure you want to clear all classroom events and battle logs?")) return;
+      if (!confirm("Are you sure you want to clear classroom events and battle logs?")) return;
       appData.battleLogs = [];
       saveData();
       renderBattleLogs();
@@ -1788,27 +1843,79 @@
     function renderBattleLogs() {
       const stLogBox = document.getElementById('studentBattleLogs');
       const tcLogBox = document.getElementById('teacherBattleLogs');
-      const logs = appData.battleLogs || [];
-      let html = '';
-      if (logs.length === 0) {
-        html = '<div class="text-slate-500 italic">No events recorded yet.</div>';
-      } else {
-        logs.forEach(l => {
-          let badgeColor = "text-cyan-400";
-          if (l.type === "evolution") badgeColor = "text-amber-400 font-bold";
-          else if (l.type === "battle") badgeColor = "text-rose-400 font-bold";
-          else if (l.type === "heal") badgeColor = "text-emerald-400 font-bold";
-          else if (l.type === "gacha") badgeColor = "text-purple-400 font-bold";
-          html += `
-            <div class="flex items-start gap-2 py-0.5 border-b border-slate-900/60">
-              <span class="text-slate-500 text-[10px] shrink-0">[${l.time}]</span>
-              <span class="${badgeColor}">${l.text}</span>
-            </div>
-          `;
+      const allLogs = appData.battleLogs || [];
+
+      // 1. 學生端
+      if (stLogBox && currentUser && currentUser.role === 'student') {
+        const st = appData.students[currentUser.id];
+        const studentClasses = st ? parseStudentClasses(st.classId).map(c => c.toLowerCase()) : [];
+        const scopeTag = document.getElementById('studentLogScopeTag');
+        if (scopeTag) {
+          scopeTag.textContent = studentClasses.length > 0 ? `Filtered: ${formatStudentClassesDisplay(st)}` : 'All Classes';
+        }
+
+        const filteredLogs = allLogs.filter(l => {
+          if (!l.classTag || l.classTag === 'ALL') return true;
+          const logClasses = parseStudentClasses(l.classTag).map(c => c.toLowerCase());
+          return studentClasses.some(c => logClasses.includes(c));
         });
+
+        let html = '';
+        if (filteredLogs.length === 0) {
+          html = '<div class="text-slate-500 italic">No events recorded for your class yet.</div>';
+        } else {
+          filteredLogs.forEach(l => {
+            let badgeColor = "text-cyan-400";
+            if (l.type === "evolution") badgeColor = "text-amber-400 font-bold";
+            else if (l.type === "battle") badgeColor = "text-rose-400 font-bold";
+            else if (l.type === "heal") badgeColor = "text-emerald-400 font-bold";
+            else if (l.type === "gacha") badgeColor = "text-purple-400 font-bold";
+            html += `
+              <div class="flex items-start gap-2 py-0.5 border-b border-slate-900/60">
+                <span class="text-slate-500 text-[10px] shrink-0">[${l.time}]</span>
+                <span class="${badgeColor}">${l.text}</span>
+              </div>
+            `;
+          });
+        }
+        stLogBox.innerHTML = html;
       }
-      if (stLogBox) stLogBox.innerHTML = html;
-      if (tcLogBox) tcLogBox.innerHTML = html;
+
+      // 2. 老師端
+      if (tcLogBox && currentUser && currentUser.role === 'teacher') {
+        const targetClass = selectedTeacherClass || 'ALL';
+        const badgeEl = document.getElementById('teacherLogFilterBadge');
+        if (badgeEl) {
+          badgeEl.textContent = targetClass === 'ALL' ? 'Viewing: All Classes' : `Viewing Class: ${targetClass}`;
+        }
+
+        const filteredLogs = allLogs.filter(l => {
+          if (targetClass === 'ALL') return true;
+          if (!l.classTag || l.classTag === 'ALL') return true;
+          const logClasses = parseStudentClasses(l.classTag).map(c => c.toLowerCase());
+          return logClasses.includes(targetClass.toLowerCase());
+        });
+
+        let html = '';
+        if (filteredLogs.length === 0) {
+          html = `<div class="text-slate-500 italic">No activity recorded for class [${targetClass}].</div>`;
+        } else {
+          filteredLogs.forEach(l => {
+            let badgeColor = "text-cyan-400";
+            if (l.type === "evolution") badgeColor = "text-amber-400 font-bold";
+            else if (l.type === "battle") badgeColor = "text-rose-400 font-bold";
+            else if (l.type === "heal") badgeColor = "text-emerald-400 font-bold";
+            else if (l.type === "gacha") badgeColor = "text-purple-400 font-bold";
+            html += `
+              <div class="flex items-start gap-2 py-0.5 border-b border-slate-900/60">
+                <span class="text-slate-500 text-[10px] shrink-0">[${l.time}]</span>
+                <span class="${badgeColor}">${l.text}</span>
+              </div>
+            `;
+          });
+        }
+        tcLogBox.innerHTML = html;
+      }
     }
 
     function switchLoginTab(type) {
@@ -1820,23 +1927,23 @@
       const inputUser = document.getElementById('loginUsername');
       const inputPass = document.getElementById('loginPassword');
 
-      tSt.className = "flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer";
-      tTc.className = "flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer";
-      tAd.className = "flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer";
+      tSt.className = "flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer active:scale-95";
+      tTc.className = "flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer active:scale-95";
+      tAd.className = "flex-1 py-2 rounded-md text-xs font-bold transition text-slate-400 hover:text-white cursor-pointer active:scale-95";
 
       inputUser.value = "";
       inputPass.value = "";
 
       if (type === 'student') {
-        tSt.className = "flex-1 py-2 rounded-md text-xs font-bold transition bg-cyan-600 text-white cursor-pointer";
+        tSt.className = "flex-1 py-2 rounded-md text-xs font-bold transition bg-cyan-600 text-white cursor-pointer active:scale-95";
         lblUser.textContent = "Student ID / Username";
         inputUser.placeholder = "e.g. s01";
       } else if (type === 'teacher') {
-        tTc.className = "flex-1 py-2 rounded-md text-xs font-bold transition bg-amber-600 text-white cursor-pointer";
+        tTc.className = "flex-1 py-2 rounded-md text-xs font-bold transition bg-amber-600 text-white cursor-pointer active:scale-95";
         lblUser.textContent = "Teacher ID / Username";
         inputUser.placeholder = "e.g. teacher1";
       } else {
-        tAd.className = "flex-1 py-2 rounded-md text-xs font-bold transition bg-purple-600 text-white cursor-pointer";
+        tAd.className = "flex-1 py-2 rounded-md text-xs font-bold transition bg-purple-600 text-white cursor-pointer active:scale-95";
         lblUser.textContent = "Super Admin Username";
         inputUser.placeholder = "e.g. superadmin";
       }
@@ -1906,6 +2013,7 @@
         document.getElementById('viewTeacher').classList.add('hidden');
         document.getElementById('viewSuperAdmin').classList.add('hidden');
         document.getElementById('viewStudent').classList.remove('hidden');
+        populateStudentTeacherBossOptions();
         updateStudentUI();
       }
       renderBattleLogs();
@@ -1924,14 +2032,66 @@
 
     function refreshCurrentView() {
       if (!currentUser) return;
-      if (currentUser.role === 'student') updateStudentUI();
-      else if (currentUser.role === 'teacher') {
+      if (currentUser.role === 'student') {
+        populateStudentTeacherBossOptions();
+        updateStudentUI();
+      } else if (currentUser.role === 'teacher') {
         updateTeacherBossHeader();
         populateClassDropdown();
         renderTeacherGrid();
       } else if (currentUser.role === 'superadmin') {
         renderSuperAdminDashboard();
       }
+    }
+
+    // 學生端：填充可供選擇的老師夥伴 Boss
+    function populateStudentTeacherBossOptions() {
+      const select = document.getElementById('stTeacherBossSelect');
+      if (!select) return;
+      const teachers = Object.values(appData.teachers || {});
+      if (teachers.length === 0) {
+        select.innerHTML = '<option value="">No Active Teacher</option>';
+        return;
+      }
+
+      if (!teachers.some(t => t.id === studentTargetTeacherId)) {
+        studentTargetTeacherId = teachers[0].id;
+      }
+
+      select.innerHTML = '';
+      teachers.forEach(t => {
+        const digi = DIGIMON_DB[t.partnerDigiId] || DIGIMON_DB['wargreymon'];
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = `${t.name} (${digi.name})`;
+        if (t.id === studentTargetTeacherId) opt.selected = true;
+        select.appendChild(opt);
+      });
+      renderStudentBossBar();
+    }
+
+    function onStudentSelectTeacherBoss(tId) {
+      studentTargetTeacherId = tId;
+      renderStudentBossBar();
+    }
+
+    // 學生端：即時渲染所選老師的夥伴 Boss 血量
+    function renderStudentBossBar() {
+      const tc = appData.teachers[studentTargetTeacherId] || Object.values(appData.teachers || {})[0];
+      if (!tc) return;
+
+      const digi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+      const maxHp = tc.maxHp || 2000;
+      const curHp = Math.max(0, tc.hp !== undefined ? tc.hp : maxHp);
+      const hpPct = Math.max(0, Math.min(100, Math.round((curHp / maxHp) * 100)));
+
+      document.getElementById('stBossName').textContent = `${digi.name} (Teacher: ${tc.name})`;
+      document.getElementById('stBossStageBadge').textContent = digi.stageName || 'MEGA';
+      document.getElementById('stBossHpText').textContent = `HP: ${curHp} / ${maxHp} (${hpPct}%)`;
+      document.getElementById('stBossHpBar').style.width = `${hpPct}%`;
+
+      const bossImg = document.getElementById('stBossImg');
+      setDigiImageTag(bossImg, tc.partnerDigiId);
     }
 
     function getEvolutionRequirements(digi, st) {
@@ -2008,6 +2168,8 @@
       const st = appData.students[currentUser.id];
       if (!st) return;
 
+      renderStudentBossBar();
+
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const maxHp = digi.maxHp || 100;
       if (st.hp === undefined) st.hp = maxHp;
@@ -2017,7 +2179,7 @@
 
       document.getElementById('stOwnerName').textContent = `Student: ${st.name}`;
       document.getElementById('stStageBadge').textContent = `STAGE: ${digi.stageName.toUpperCase()}`;
-      document.getElementById('stDigiName').innerHTML = `${digi.name} <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">${digi.type || 'Free'}</span>`;
+      document.getElementById('stDigiName').innerHTML = `${st.name} (${digi.name}) <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">${digi.type || 'Free'}</span>`;
       document.getElementById('stDigiTitle').textContent = digi.title;
       
       const imgEl = document.getElementById('stDigiImage');
@@ -2108,7 +2270,7 @@
       }
       st.statPool -= amount;
       st[trait] = (st[trait] || 0) + amount;
-      addBattleLog(`🧬 ${st.name} allocated +${amount} to [${trait.toUpperCase()}].`, "normal");
+      addBattleLog(`🧬 ${st.name} allocated +${amount} to [${trait.toUpperCase()}].`, "normal", st.classId);
       saveData();
       updateStudentUI();
     }
@@ -2157,7 +2319,7 @@
         confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
       }
 
-      addBattleLog(`✨ [DIGIVOLUTION] ${st.name}'s [${curDigi.name}] digivolved into [${nextDigi.name}]!`, "evolution");
+      addBattleLog(`✨ [DIGIVOLUTION] ${st.name}'s [${curDigi.name}] digivolved into [${nextDigi.name}]!`, "evolution", st.classId);
       showToast("Digivolution Complete!", `Congratulations! Your Digimon evolved into [${nextDigi.name}]!`, "evolution");
 
       saveData();
@@ -2185,10 +2347,10 @@
               </div>
             </div>
             <div class="grid grid-cols-2 gap-1 mt-2">
-              <button onclick="castStudentSkill(${idx}, 'boss')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r ${btnColor} text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+              <button onclick="castStudentSkill(${idx}, 'boss')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r ${btnColor} text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-95">
                 vs Boss
               </button>
-              <button onclick="castStudentSkill(${idx}, 'pvp')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+              <button onclick="castStudentSkill(${idx}, 'pvp')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-95">
                 vs Classmate
               </button>
             </div>
@@ -2197,6 +2359,7 @@
       });
     }
 
+    // 擊殺同學後獲得 100 EXP 與 100 Trait Point
     function castStudentSkill(skillIdx, targetMode) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -2219,19 +2382,21 @@
 
       if (targetMode === 'boss') {
         const teachersList = Object.values(appData.teachers || {});
-        let tc = appData.teachers[st.teacherId];
+        let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId];
         if (!tc && teachersList.length > 0) tc = teachersList[0];
         if (!tc) return alert("No active Teacher Boss found.");
 
+        const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+
         if (skill.type === 'heal') {
           st.hp = Math.min(digi.maxHp, (st.hp || 100) + skill.power);
-          addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal");
+          addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
           showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
           playSound('heal');
         } else {
-          tc.hp = Math.max(0, (tc.hp || tc.maxHp) - skill.power);
-          addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} unleashed [${skill.name}] on Teacher Mega Boss for ${skill.power} DMG!`, "battle");
-          showToast("Boss Struck!", `Dealt ${skill.power} DMG to Teacher Mega Boss!`, "damage");
+          tc.hp = Math.max(0, (tc.hp !== undefined ? tc.hp : tc.maxHp) - skill.power);
+          addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} unleashed [${skill.name}] on ${tc.name}'s ${tcDigi.name} for ${skill.power} DMG!`, "battle", st.classId);
+          showToast("Boss Struck!", `Dealt ${skill.power} DMG to ${tc.name}'s Boss!`, "damage");
           playSound('attack');
         }
         st.attackQuota--;
@@ -2255,30 +2420,36 @@
 
           if (skill.type === 'heal') {
             target.hp = Math.min(DIGIMON_DB[target.currentDigiId]?.maxHp || 100, (target.hp || 100) + skill.power);
-            addBattleLog(`💚 [FRIENDSHIP] ${st.name} healed classmate [${target.name}] for +${skill.power} HP!`, "heal");
+            addBattleLog(`💚 [FRIENDSHIP] ${st.name} healed classmate [${target.name}] for +${skill.power} HP!`, "heal", st.classId);
             showToast("Classmate Healed", `Healed ${target.name} for +${skill.power} HP!`, "heal");
             playSound('heal');
           } else {
             if (target.hasShield) {
               target.hasShield = false;
-              addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield neutralized ${st.name}'s [${skill.name}]!`, "battle");
+              addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield neutralized ${st.name}'s [${skill.name}]!`, "battle", st.classId);
               showToast("Attack Blocked!", `${target.name}'s shield absorbed the attack!`, "info");
               playSound('shield');
             } else {
               target.hp = Math.max(0, (target.hp || 100) - skill.power);
-              addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck classmate [${target.name}] with [${skill.name}] for ${skill.power} DMG!`, "battle");
+              addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck classmate [${target.name}] with [${skill.name}] for ${skill.power} DMG!`, "battle", st.classId);
               showToast("PVP Hit!", `Dealt ${skill.power} DMG to ${target.name}!`, "damage");
               playSound('attack');
 
               if (target.hp <= 0) {
                 target.isFainted = true;
                 target.hp = 0;
-                addBattleLog(`💀 [FAINTED] [${target.name}] was incapacitated in battle!`, "battle");
-                showToast("Target Fainted!", `${target.name} is now incapacitated!`, "damage");
-                playSound('faint');
+
+                // 擊殺獎勵：+100 EXP 與 +100 Trait Point
+                st.exp = (st.exp || 0) + 100;
+                st.statPool = (st.statPool || 0) + 100;
+
+                addBattleLog(`💀 [FATAL STRIKE] [${target.name}] was defeated by [${st.name}]! ${st.name} gained +100 EXP & +100 Trait Points!`, "battle", st.classId);
+                showToast("Enemy Incapacitated!", `Defeated ${target.name}! Gained +100 EXP & +100 Trait Points!`, "evolution");
+                playSound('evolve');
               }
             }
           }
+          syncSingleStudent(target.id);
         } else {
           alert("Invalid classmate selection.");
           return;
@@ -2315,7 +2486,7 @@
               <div class="text-[9px] text-slate-400">Qty: <span class="font-bold text-amber-300">x${qty}</span></div>
             </div>
           </div>
-          <button onclick="useItem('${itemId}')" class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer shrink-0">
+          <button onclick="useItem('${itemId}')" class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer shrink-0 active:scale-95">
             Use
           </button>
         `;
@@ -2336,11 +2507,23 @@
 
       st.inventory[itemId]--;
       const resultText = itemInfo.effect(st);
-      addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal");
+      addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal", st.classId);
       showToast("Item Consumed!", `${itemInfo.name}: ${resultText}`, "heal");
 
       saveData();
       updateStudentUI();
+    }
+
+    // 老師標記喜愛學生（在學生名字最後加上小黑點 . 作為標記，支援多名喜愛學生）
+    function toggleStudentStarMark(studentId, e) {
+      if (e) e.stopPropagation();
+      const s = appData.students[studentId];
+      if (!s) return;
+
+      s.isStarred = !s.isStarred;
+      syncSingleStudent(studentId);
+      saveLocalCache();
+      renderTeacherGrid();
     }
 
     function teacherReviveStudent(studentId) {
@@ -2350,7 +2533,7 @@
       s.isFainted = false;
       s.hp = Math.round(digi.maxHp * 0.5);
       playSound('heal');
-      addBattleLog(`✨ [REVIVAL] Teacher revived [${s.name}] back to life with ${s.hp} HP!`, "heal");
+      addBattleLog(`✨ [REVIVAL] Teacher revived [${s.name}] back to life with ${s.hp} HP!`, "heal", s.classId);
       showToast("Student Revived!", `Restored ${s.name} from fainted state!`, "heal");
       syncSingleStudent(studentId);
       saveData();
@@ -2383,7 +2566,7 @@
       s.wisdom = 0;
       playSound('faint');
 
-      addBattleLog(`🔻 [DE-EVOLVE] Teacher degraded [${s.name}]'s Digimon back to [${prevDigi.name}].`, "battle");
+      addBattleLog(`🔻 [DE-EVOLVE] Teacher degraded [${s.name}]'s Digimon back to [${prevDigi.name}].`, "battle", s.classId);
       showToast("De-Evolution", `${s.name}'s Digimon degraded to ${prevDigi.name}!`, "damage");
 
       syncSingleStudent(studentId);
@@ -2411,7 +2594,7 @@
       s.wisdom = 0;
 
       playSound('faint');
-      addBattleLog(`🔄 [REBIRTH] Teacher reverted [${s.name}] back to [${eggDigi.name}].`, "battle");
+      addBattleLog(`🔄 [REBIRTH] Teacher reverted [${s.name}] back to [${eggDigi.name}].`, "battle", s.classId);
       showToast("Revert to Digi-Egg", `${s.name}'s Digimon reverted to [${eggDigi.name}]!`, "damage");
 
       syncSingleStudent(studentId);
@@ -2437,6 +2620,7 @@
       s.hp = 100;
       s.isFainted = false;
       s.hasShield = false;
+      s.isStarred = false;
       s.attackQuota = 0;
       s.gachaTickets = 0;
       s.skinId = "skin-classic";
@@ -2448,7 +2632,7 @@
       s.wisdom = 0;
 
       playSound('faint');
-      addBattleLog(`⚡ [SUPERADMIN RESET] Student account [${s.name}] was completely factory-reset!`, "battle");
+      addBattleLog(`⚡ [SUPERADMIN RESET] Student account [${s.name}] was completely factory-reset!`, "battle", s.classId);
       showToast("Student Reset", `${s.name}'s account data, tickets & Dex have been completely wiped!`, "damage");
 
       syncSingleStudent(studentId);
@@ -2476,6 +2660,7 @@
         s.hp = 100;
         s.isFainted = false;
         s.hasShield = false;
+        s.isStarred = false;
         s.attackQuota = 0;
         s.gachaTickets = 0;
         s.skinId = "skin-classic";
@@ -2489,7 +2674,7 @@
       });
 
       playSound('faint');
-      addBattleLog(`⚡ [SUPERADMIN FULL CLASS RESET] All ${count} student accounts were fully reset and tickets zeroed!`, "battle");
+      addBattleLog(`⚡ [SUPERADMIN FULL CLASS RESET] All ${count} student accounts were fully reset and tickets zeroed!`, "battle", "ALL");
       showToast("Class Reset Complete", `All ${count} students have been completely reset and tickets zeroed!`, "evolution");
 
       saveData();
@@ -2503,7 +2688,7 @@
       document.getElementById('tcBossName').textContent = `${digi.name} (Partner: ${tc.name})`;
       document.getElementById('tcBossStage').textContent = digi.stageName;
       setDigiImageTag(document.getElementById('tcBossImg'), tc.partnerDigiId);
-      document.getElementById('tcBossHp').textContent = `HP: ${tc.hp || tc.maxHp} / ${tc.maxHp} | Special: ${tc.skillPower || 220} DMG | Signature: ${tc.techPower || 120} DMG`;
+      document.getElementById('tcBossHp').textContent = `HP: ${tc.hp !== undefined ? tc.hp : tc.maxHp} / ${tc.maxHp} | Special: ${tc.skillPower || 220} DMG | Signature: ${tc.techPower || 120} DMG`;
     }
 
     function teacherHealSelf() {
@@ -2512,7 +2697,7 @@
       if (!tc) return;
       tc.hp = tc.maxHp || 2000;
       playSound('heal');
-      addBattleLog(`💚 [TEACHER RECOVER] ${tc.name} fully restored Mega Partner HP to 100%!`, "heal");
+      addBattleLog(`💚 [TEACHER RECOVER] ${tc.name} fully restored Mega Partner HP to 100%!`, "heal", selectedTeacherClass);
       showToast("Boss HP Restored", `Partner HP restored to ${tc.maxHp}/${tc.maxHp}!`, "heal");
       saveData();
       updateTeacherBossHeader();
@@ -2548,6 +2733,7 @@
     function onClassFilterChange(val) {
       selectedTeacherClass = val;
       renderTeacherGrid();
+      renderBattleLogs();
     }
 
     function grantAttackQuota(studentId, amount) {
@@ -2555,7 +2741,7 @@
       if (!s) return;
       s.attackQuota = (s.attackQuota || 0) + amount;
       playSound('shield');
-      addBattleLog(`⚔️ [ACTION QUOTA] Teacher granted +${amount} Attack Quota(s) to ${s.name}.`, "normal");
+      addBattleLog(`⚔️ [ACTION QUOTA] Teacher granted +${amount} Attack Quota(s) to ${s.name}.`, "normal", s.classId);
       showToast("Quota Granted", `Granted +${amount} attack quota(s) to ${s.name}!`, "info");
       syncSingleStudent(studentId);
       saveData();
@@ -2567,7 +2753,7 @@
       if (!s) return;
       s.gachaTickets = (s.gachaTickets || 0) + amount;
       playSound('gacha');
-      addBattleLog(`🎁 [GACHA TICKET] Teacher rewarded +${amount} Gacha Ticket to ${s.name}.`, "gacha");
+      addBattleLog(`🎁 [GACHA TICKET] Teacher rewarded +${amount} Gacha Ticket to ${s.name}.`, "gacha", s.classId);
       showToast("Gacha Ticket Rewarded", `Awarded +${amount} Gacha Ticket to ${s.name}!`, "gacha");
       syncSingleStudent(studentId);
       saveData();
@@ -2587,7 +2773,7 @@
         s.gachaTickets = (s.gachaTickets || 0) + amount;
       });
       playSound('gacha');
-      addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
+      addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha", selectedTeacherClass);
       showToast("Class Gacha Tickets", `All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
       saveData();
       renderTeacherGrid();
@@ -2621,7 +2807,7 @@
           }
         });
         playSound('attack');
-        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle");
+        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle", selectedTeacherClass);
         showToast("Class AOE Strike", `All ${myStudents.length} students took ${pwr} DMG!`, "damage");
       } else {
         let menu = `Select target student for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
@@ -2636,14 +2822,14 @@
           const target = myStudents[targetIdx];
           if (target.hasShield) {
             target.hasShield = false;
-            addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield blocked Boss [${moveName}]!`, "battle");
+            addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield blocked Boss [${moveName}]!`, "battle", target.classId);
             showToast("Attack Blocked!", `${target.name}'s shield absorbed the boss attack!`, "info");
             playSound('shield');
           } else {
             target.hp = Math.max(0, (target.hp || 100) - pwr);
             if (target.hp === 0) target.isFainted = true;
             playSound('attack');
-            addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle");
+            addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle", target.classId);
             showToast("Single Target Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
           }
         } else {
@@ -2655,6 +2841,7 @@
       renderTeacherGrid();
     }
 
+    // 老師端學生列表：名字末尾以「.」作為暗號，可多選，卡片最右側清楚標示學生登入 ID
     function renderTeacherGrid() {
       const container = document.getElementById('teacherStudentGrid');
       if (!container || !currentUser) return;
@@ -2669,19 +2856,36 @@
         return;
       }
 
-      myStudents.forEach(s => {
+      myStudents.forEach((s, index) => {
+        const studentIndex = index + 1;
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         const card = document.createElement('div');
-        card.className = `bg-slate-950 border ${s.isFainted ? 'border-rose-700 bg-rose-950/20' : 'border-slate-800'} rounded-xl p-4 flex flex-col justify-between`;
+        card.className = `bg-slate-950 border ${s.isFainted ? 'border-rose-700 bg-rose-950/20' : 'border-slate-800'} rounded-xl p-4 flex flex-col justify-between relative overflow-hidden`;
+        
+        // 將星號取消，改為在學生名字最後加上小黑點 .
+        const markDot = s.isStarred ? '.' : '';
+
         card.innerHTML = `
           <div>
             <div class="flex justify-between items-center mb-1">
-              <span class="font-bold ${s.isFainted ? 'text-rose-400' : 'text-cyan-300'} text-sm flex items-center gap-1.5">
-                ${s.name} ${s.hasShield ? '<span title="Shield Active">🛡️</span>' : ''}
-              </span>
-              <span class="text-[10px] px-2 py-0.5 rounded ${s.isFainted ? 'bg-rose-950 text-rose-300 border border-rose-600' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
-                ${s.isFainted ? 'FAINTED' : digi.stageName}
-              </span>
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-pixel text-[11px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-bold shadow shrink-0">
+                  #${studentIndex}
+                </span>
+                <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${s.isFainted ? 'text-rose-400' : 'text-cyan-300'} text-sm flex items-center gap-0.5 cursor-pointer select-none truncate" title="Click to toggle favorite mark">
+                  ${s.name}${markDot} ${s.hasShield ? '<span title="Shield Active">🛡️</span>' : ''}
+                </span>
+              </div>
+              
+              <!-- 最右邊顯示學生登入 ID 與狀態 -->
+              <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold" title="Student Login ID">
+                  ID: ${s.username || s.id}
+                </span>
+                <span class="text-[10px] px-2 py-0.5 rounded ${s.isFainted ? 'bg-rose-950 text-rose-300 border border-rose-600' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
+                  ${s.isFainted ? 'FAINTED' : digi.stageName}
+                </span>
+              </div>
             </div>
             <div class="text-[10px] text-slate-500 mb-1">Classes: <span class="text-cyan-300 font-mono">${formatStudentClassesDisplay(s)}</span></div>
             <div class="flex items-center gap-3 my-2">
@@ -2697,26 +2901,29 @@
           </div>
           <div class="space-y-1.5 mt-2">
             <div class="grid grid-cols-3 gap-1">
-              <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer">+10 EXP</button>
-              <button onclick="rewardStudent('${s.id}', 25)" class="p-1 bg-blue-950 hover:bg-blue-900 border border-blue-800 rounded text-[10px] text-blue-300 font-bold cursor-pointer">+25 EXP</button>
-              <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer">+1 Ticket</button>
+              <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+10 EXP</button>
+              <button onclick="rewardStudent('${s.id}', 25)" class="p-1 bg-blue-950 hover:bg-blue-900 border border-blue-800 rounded text-[10px] text-blue-300 font-bold cursor-pointer active:scale-95">+25 EXP</button>
+              <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 Ticket</button>
             </div>
             <div class="grid grid-cols-3 gap-1">
-              <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer">+1 Quota</button>
-              <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer">+50 HP</button>
-              <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-[10px] text-rose-300 font-bold cursor-pointer">-30 HP</button>
+              <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 Quota</button>
+              <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
+              <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-30 HP</button>
             </div>
             
             <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-900">
               ${s.isFainted ? `
-                <button onclick="teacherReviveStudent('${s.id}')" class="col-span-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse">
-                  <i class="fa-solid fa-heart-pulse"></i> Revive Student
+                <button onclick="teacherReviveStudent('${s.id}')" class="py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
+                  <i class="fa-solid fa-heart-pulse"></i> Revive
                 </button>
-              ` : `
-                <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
                   <i class="fa-solid fa-arrow-down"></i> De-Evolve
                 </button>
-                <button onclick="teacherRebirthStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+              ` : `
+                <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+                  <i class="fa-solid fa-arrow-down"></i> De-Evolve
+                </button>
+                <button onclick="teacherRebirthStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
                   <i class="fa-solid fa-rotate-left"></i> Random Egg
                 </button>
               `}
@@ -2733,7 +2940,7 @@
       s.exp = (s.exp || 0) + exp;
       s.statPool = (s.statPool || 0) + exp;
       playSound('heal');
-      addBattleLog(`⭐ [REWARD] ${s.name} received +${exp} EXP!`, "normal");
+      addBattleLog(`⭐ [REWARD] ${s.name} received +${exp} EXP!`, "normal", s.classId);
       showToast("Reward Given", `Awarded +${exp} EXP to ${s.name}!`, "info");
       syncSingleStudent(id);
       saveData();
@@ -2759,7 +2966,7 @@
 
       playSound('evolve');
       const classNameDisplay = targetClass === 'ALL' ? 'All Classes' : targetClass;
-      addBattleLog(`🎉 [CLASS REWARD] Full class (${classNameDisplay}, ${myStudents.length} students) gained +${exp} EXP!`, "evolution");
+      addBattleLog(`🎉 [CLASS REWARD] Full class (${classNameDisplay}, ${myStudents.length} students) gained +${exp} EXP!`, "evolution", targetClass);
       showToast("Class Reward", `All ${myStudents.length} students in [${classNameDisplay}] gained +${exp} EXP & Points!`, "evolution");
       
       saveData();
@@ -2773,7 +2980,7 @@
       s.hp = Math.min(digi.maxHp, (s.hp || 0) + amount);
       if (s.hp > 0) s.isFainted = false;
       playSound('heal');
-      addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal");
+      addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal", s.classId);
       syncSingleStudent(id);
       saveData();
       renderTeacherGrid();
@@ -2785,7 +2992,7 @@
       s.hp = Math.max(0, (s.hp || 100) - amount);
       if (s.hp === 0) s.isFainted = true;
       playSound('attack');
-      addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP.`, "battle");
+      addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP.`, "battle", s.classId);
       syncSingleStudent(id);
       saveData();
       renderTeacherGrid();
@@ -2806,7 +3013,7 @@
         s.isFainted = false;
       });
       playSound('heal');
-      addBattleLog("💚 [FULL HEAL] Teacher restored all students to 100% HP!", "heal");
+      addBattleLog("💚 [FULL HEAL] Teacher restored all students to 100% HP!", "heal", selectedTeacherClass);
       showToast("Full Recovery", `All ${myStudents.length} students in this class restored to full HP!`, "heal");
       saveData();
       renderTeacherGrid();
@@ -2847,7 +3054,7 @@
               const randomEgg = getRandomEggId();
               appData.students[id] = {
                 id: id, username: u, password: p, name: name, classId: parseStudentClasses(classVal).join(', '),
-                teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
+                teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
               };
             }
@@ -2907,7 +3114,7 @@
               const randomEgg = getRandomEggId();
               appData.students[id] = {
                 id: id, username: u, password: p, name: name, classId: classesArr.join(', '),
-                teacherId: assignedTeacher, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
+                teacherId: assignedTeacher, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
               };
             }
@@ -2991,7 +3198,6 @@
       });
     }
 
-    // [徹底修復] 增減學生功能：直接修改 student.classId，寫入本地快取並定向同步至 Firebase 該學生節點
     function toggleStudentClassMembership(studentId, classId, add) {
       const s = appData.students[studentId];
       if (!s) return;
@@ -3009,11 +3215,11 @@
             firebase.database().ref('classes/' + targetClass).set(appData.classes[targetClass]);
           }
         }
-        addBattleLog(`➕ 老師將學生 [${s.name}] 加入班級 [${targetClass}]。`, "normal");
+        addBattleLog(`➕ 老師將學生 [${s.name}] 加入班級 [${targetClass}]。`, "normal", targetClass);
         showToast("已加入班級", `已將 ${s.name} 加入 ${targetClass}！`, "info");
       } else {
         classes = classes.filter(c => c.toLowerCase() !== targetClass.toLowerCase());
-        addBattleLog(`➖ 老師將學生 [${s.name}] 從 [${targetClass}] 移除。`, "normal");
+        addBattleLog(`➖ 老師將學生 [${s.name}] 從 [${targetClass}] 移除。`, "normal", targetClass);
         showToast("已移出班級", `已將 ${s.name} 從 ${targetClass} 移除！`, "info");
       }
 
@@ -3037,10 +3243,10 @@
       saveData();
       populateClassDropdown();
       renderTeacherGrid();
+      renderBattleLogs();
       showToast("Class Created", `Class [${cleanCode}] is ready! You can now manage students in it.`, "info");
     }
 
-    // [徹底修復] 刪除班級功能：清除 classes 集合對應鍵、遍歷清除所有學生關聯，並使用原子更新同步 Firebase
     function promptDeleteCurrentClass() {
       if (selectedTeacherClass === 'ALL') {
         alert("請先在下拉選單選擇要刪除的特定班別！");
@@ -3083,21 +3289,36 @@
       selectedTeacherClass = 'ALL';
       populateClassDropdown();
       renderTeacherGrid();
-      addBattleLog(`🗑️ [CLASS DELETED] 老師刪除了班別 [${target}]。`, "battle");
+      renderBattleLogs();
+      addBattleLog(`🗑️ [CLASS DELETED] 老師刪除了班別 [${target}]。`, "battle", "ALL");
       showToast("班別已刪除", `已清除 [${target}] 且相關學生已解除關聯。`, "info");
     }
 
-    function startRandomPicker() {
+    // 抽籤邏輯：右側點擊偏好模式（preferStarred），動畫隨機輪播全班名字，最終結果鎖定喜愛學生
+    let lastPickerStarredMode = false;
+
+    function startRandomPicker(preferStarred = false) {
       if (!currentUser || currentUser.role !== 'teacher') return;
+      lastPickerStarredMode = preferStarred;
       
-      const studentsList = Object.values(appData.students || {}).filter(s => {
+      const allClassStudents = Object.values(appData.students || {}).filter(s => {
         return studentIsInClass(s, selectedTeacherClass);
       });
 
-      if (studentsList.length === 0) {
+      if (allClassStudents.length === 0) {
         alert("No students available in the selected class filter!");
         return;
       }
+
+      let candidatePool = allClassStudents;
+      if (preferStarred) {
+        const starredStudents = allClassStudents.filter(s => !!s.isStarred);
+        if (starredStudents.length > 0) {
+          candidatePool = starredStudents;
+        }
+      }
+
+      const winner = candidatePool[Math.floor(Math.random() * candidatePool.length)];
 
       document.getElementById('modalRandomPicker').classList.remove('hidden');
       document.getElementById('pickerRollingBox').classList.remove('hidden');
@@ -3110,20 +3331,20 @@
       if (pickerInterval) clearInterval(pickerInterval);
 
       pickerInterval = setInterval(() => {
-        const randomSt = studentsList[Math.floor(Math.random() * studentsList.length)];
+        const displaySt = allClassStudents[Math.floor(Math.random() * allClassStudents.length)];
         const rollingNameEl = document.getElementById('pickerRollingName');
-        rollingNameEl.textContent = `🎲 ${randomSt.name}`;
+        rollingNameEl.textContent = `🎲 ${displaySt.name}`;
         counter++;
 
         if (counter >= maxTicks) {
           clearInterval(pickerInterval);
-          finalizePickedStudent(randomSt);
+          finalizePickedStudent(winner);
         }
       }, 80);
     }
 
     function rerollPicker() {
-      startRandomPicker();
+      startRandomPicker(lastPickerStarredMode);
     }
 
     function finalizePickedStudent(winner) {
@@ -3147,7 +3368,7 @@
         confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
       }
 
-      addBattleLog(`🎯 [LOTTERY] Lucky student selected: [${winner.name}]!`, "evolution");
+      addBattleLog(`🎯 [LOTTERY] Lucky student selected: [${winner.name}]!`, "evolution", winner.classId);
       showToast("Student Picked!", `Lucky Tamer: ${winner.name}!`, "evolution");
     }
 
@@ -3278,7 +3499,7 @@
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       }
 
-      addBattleLog(`🎁 [GACHA] ${st.name} performed ${times}x draw and received: ${pulledItems.map(p => p.name).join(', ')}!`, "gacha");
+      addBattleLog(`🎁 [GACHA] ${st.name} performed ${times}x draw and received: ${pulledItems.map(p => p.name).join(', ')}!`, "gacha", st.classId);
       showToast("Capsule Unboxed!", `Received ${pulledItems.length} item(s)! Check your inventory!`, "gacha");
 
       syncSingleStudent(currentUser.id);
@@ -3297,7 +3518,7 @@
       ['ALL', 'DIGI-EGG', 'IN-TRAINING', 'ROOKIE', 'CHAMPION', 'ULTIMATE', 'MEGA'].forEach(s => {
         const tab = document.getElementById(`dexTab_${s}`);
         if (tab) {
-          tab.className = (s === stage) ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer";
+          tab.className = (s === stage) ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
         }
       });
       renderDexCatalog();
@@ -3376,7 +3597,7 @@
         btnBatch.disabled = selectedStudentIds.size === 0;
         btnBatch.className = selectedStudentIds.size === 0
           ? "px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed transition"
-          : "px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded text-xs shadow-md cursor-pointer transition";
+          : "px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded text-xs shadow-md cursor-pointer transition active:scale-95";
       }
     }
 
@@ -3391,7 +3612,7 @@
       selectedStudentIds.clear();
 
       playSound('faint');
-      addBattleLog(`🗑️ [SUPERADMIN BATCH DELETE] Admin deleted ${count} student accounts.`, "battle");
+      addBattleLog(`🗑️ [SUPERADMIN BATCH DELETE] Admin deleted ${count} student accounts.`, "battle", "ALL");
       showToast("Batch Deletion", `Successfully deleted ${count} student accounts!`, "damage");
 
       saveData();
@@ -3414,7 +3635,7 @@
       selectedStudentIds.clear();
 
       playSound('faint');
-      addBattleLog(`💥 [SUPERADMIN DELETE ALL] All ${totalCount} student accounts were permanently cleared!`, "battle");
+      addBattleLog(`💥 [SUPERADMIN DELETE ALL] All ${totalCount} student accounts were permanently cleared!`, "battle", "ALL");
       showToast("All Students Cleared", `Deleted all ${totalCount} student accounts!`, "damage");
 
       saveData();
@@ -3444,10 +3665,10 @@
               </div>
             </div>
             <div class="flex items-center gap-1.5">
-              <button onclick="openEditTeacherModal('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-cyan-500/50 text-cyan-300 hover:text-cyan-200 rounded-lg cursor-pointer transition" title="Edit Teacher & Partner Stats">
+              <button onclick="openEditTeacherModal('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-cyan-500/50 text-cyan-300 hover:text-cyan-200 rounded-lg cursor-pointer transition active:scale-95" title="Edit Teacher & Partner Stats">
                 <i class="fa-solid fa-user-pen"></i>
               </button>
-              <button onclick="deleteTeacher('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-rose-700/50 text-rose-400 hover:text-rose-300 rounded-lg cursor-pointer transition" title="Delete Teacher">
+              <button onclick="deleteTeacher('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-rose-700/50 text-rose-400 hover:text-rose-300 rounded-lg cursor-pointer transition active:scale-95" title="Delete Teacher">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -3476,11 +3697,11 @@
           <div>
             <div class="flex items-center justify-between">
               <label class="flex items-center gap-2.5 cursor-pointer select-none">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleStudentSelection('${s.id}', this.checked)" class="w-4 h-4 rounded text-cyan-600 bg-slate-900 border-slate-700 cursor-pointer accent-cyan-500">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleStudentSelection('${s.id}', this.checked)" class="w-4 h-4 rounded text-cyan-600 bg-slate-950 border-slate-700 cursor-pointer accent-cyan-500">
                 <span class="font-bold ${isChecked ? 'text-cyan-300' : 'text-slate-200'} text-sm">${s.name}</span>
                 <span class="text-[10px] text-slate-500 font-mono">(${s.username})</span>
               </label>
-              <button onclick="deleteStudent('${s.id}')" class="text-rose-400 hover:text-rose-300 p-1 cursor-pointer transition" title="Delete Student"><i class="fa-solid fa-trash"></i></button>
+              <button onclick="deleteStudent('${s.id}')" class="text-rose-400 hover:text-rose-300 p-1 cursor-pointer transition active:scale-90" title="Delete Student"><i class="fa-solid fa-trash"></i></button>
             </div>
 
             <div class="flex items-center gap-3 my-2 pl-6">
@@ -3496,7 +3717,7 @@
 
           <div class="pt-2 border-t border-slate-900 flex justify-between items-center pl-6">
             <span class="text-[10px] text-slate-500">Traits: C${s.courage||0} F${s.love||0} D${s.discipline||0} W${s.wisdom||0}</span>
-            <button onclick="superadminFullResetStudent('${s.id}')" class="px-2 py-1 bg-amber-950 hover:bg-amber-900 border border-amber-600/70 text-amber-300 font-bold rounded text-[10px] transition flex items-center gap-1 cursor-pointer">
+            <button onclick="superadminFullResetStudent('${s.id}')" class="px-2 py-1 bg-amber-950 hover:bg-amber-900 border border-amber-600/70 text-amber-300 font-bold rounded text-[10px] transition flex items-center gap-1 cursor-pointer active:scale-95">
               <i class="fa-solid fa-arrow-rotate-left"></i> Reset Progression
             </button>
           </div>
@@ -3671,9 +3892,9 @@
         const el = document.getElementById(tabId);
         if (el) {
           if (tabId.toUpperCase().includes(stage)) {
-            el.className = "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer";
+            el.className = "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95";
           } else {
-            el.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer";
+            el.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
           }
         }
       });
