@@ -15,6 +15,8 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- html2canvas for Tamer ID Card Export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800;900&display=swap');
@@ -130,12 +132,113 @@
       -webkit-user-select: auto;
       user-select: auto;
     }
+
+    /* Evolution Stage Cutscene Overlay */
+    @keyframes evoRays {
+      0% { transform: rotate(0deg) scale(1); opacity: 0.7; }
+      50% { transform: rotate(180deg) scale(1.4); opacity: 1; }
+      100% { transform: rotate(360deg) scale(1); opacity: 0.7; }
+    }
+    .evo-rotating-bg {
+      background: conic-gradient(from 0deg, #38bdf8, #f59e0b, #ec4899, #8b5cf6, #38bdf8);
+      animation: evoRays 4s linear infinite;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen scanlines relative">
 
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-11/12 max-w-md"></div>
+
+  <!-- Fullscreen Digivolution Cutscene Overlay -->
+  <div id="evoCutsceneOverlay" class="fixed inset-0 z-[120] bg-slate-950 flex flex-col items-center justify-center overflow-hidden hidden">
+    <div class="absolute inset-0 evo-rotating-bg opacity-30 blur-3xl"></div>
+    <div class="absolute inset-0 bg-radial from-transparent via-slate-950/80 to-slate-950 pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col items-center text-center px-4 max-w-lg w-full">
+      <div id="evoSequenceTitle" class="font-pixel text-amber-300 text-lg md:text-xl tracking-widest drop-shadow-[0_0_15px_rgba(245,158,11,0.8)] animate-pulse">
+        ★ DIGIVOLUTION IN PROGRESS ★
+      </div>
+      <p id="evoTamerSubtitle" class="text-cyan-300 font-bold text-xs mt-2 font-mono">Tamer: Alex Chan</p>
+
+      <!-- Digimon Showcase Box with morphing animation -->
+      <div class="relative my-8 w-64 h-64 flex items-center justify-center">
+        <div id="evoAuraRing" class="absolute inset-0 rounded-full border-4 border-cyan-400/60 animate-ping opacity-60"></div>
+        <img id="evoCutscenePrevImg" src="" class="absolute max-w-full max-h-full object-contain filter brightness-150 drop-shadow-[0_0_20px_#38bdf8] transition-all duration-700">
+        <img id="evoCutsceneNextImg" src="" class="absolute max-w-full max-h-full object-contain filter brightness-150 drop-shadow-[0_0_35px_#f59e0b] opacity-0 transition-all duration-700">
+      </div>
+
+      <div class="h-16 flex flex-col items-center justify-center">
+        <h2 id="evoCutsceneName" class="font-black text-2xl md:text-3xl text-white tracking-wider drop-shadow-md">
+          AGUMON DIGIVOLVE TO...
+        </h2>
+        <span id="evoCutsceneStage" class="font-pixel text-xs text-amber-400 mt-1">CHAMPION LEVEL</span>
+      </div>
+
+      <button id="btnSkipEvo" onclick="closeEvoCutsceneImmediately()" class="mt-8 px-6 py-2 bg-slate-900/80 border border-slate-700 hover:border-amber-400 rounded-full text-xs font-bold text-slate-300 hover:text-white cursor-pointer transition active:scale-95">
+        Skip Animation &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- Offscreen Render Canvas for Tamer ID Card -->
+  <div id="idCardRenderWrapper" style="position: absolute; left: -9999px; top: -9999px;">
+    <div id="tamerIdCardNode" style="width: 480px; padding: 24px; border-radius: 24px; background: radial-gradient(circle at top, #1e293b 0%, #090d16 100%); border: 3px solid #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.4); font-family: 'Inter', sans-serif; color: #f8fafc;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(56,189,248,0.3); padding-bottom: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; background: rgba(56,189,248,0.2); border: 1px solid #38bdf8; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Press Start 2P', monospace; font-size: 11px; color: #38bdf8;">D-3</div>
+          <div>
+            <div style="font-size: 13px; font-weight: 900; color: #38bdf8; letter-spacing: 0.5px;">DIGITAL TAMER LICENSE</div>
+            <div style="font-size: 10px; color: #94a3b8;" id="cardSubHeader">Classroom Evolution Portal</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 9px; font-family: 'Press Start 2P', monospace; color: #f59e0b; padding: 3px 8px; background: rgba(245,158,11,0.15); border: 1px solid #f59e0b; border-radius: 6px;" id="cardStageBadge">ROOKIE</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 16px;">
+        <div style="width: 140px; height: 140px; background: #030712; border: 2px solid rgba(56,189,248,0.5); border-radius: 18px; padding: 8px; display: flex; align-items: center; justify-content: center; shrink-0;">
+          <img id="cardDigiImg" src="" style="max-width: 100%; max-height: 100%; object-contain;">
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 20px; font-weight: 900; color: #ffffff;" id="cardStudentName">Alex Chan</div>
+          <div style="font-size: 11px; color: #38bdf8; font-weight: bold; margin-top: 2px;" id="cardDigiName">Agumon (Vaccine)</div>
+          <div style="font-size: 10px; color: #64748b; margin-top: 2px;" id="cardClassInfo">Class: 5A</div>
+
+          <div style="margin-top: 10px; font-size: 10px; font-family: monospace; color: #34d399;" id="cardHpText">HP: 200 / 200</div>
+          <div style="font-size: 10px; font-family: monospace; color: #38bdf8;" id="cardExpText">EXP: 450</div>
+        </div>
+      </div>
+
+      <div style="background: #090d16; border-radius: 14px; padding: 12px; border: 1px solid #1e293b;">
+        <div style="font-size: 9px; font-weight: 900; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px;">TRAIT MATRIX</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; font-size: 10px;">
+          <div style="background: #1e1215; border: 1px solid #881337; border-radius: 8px; padding: 6px 2px;">
+            <span style="color: #fb7185; display: block; font-size: 9px;">🔥 COURAGE</span>
+            <b style="color: #fff; font-size: 12px;" id="cardValCourage">0</b>
+          </div>
+          <div style="background: #061e18; border: 1px solid #064e3b; border-radius: 8px; padding: 6px 2px;">
+            <span style="color: #34d399; display: block; font-size: 9px;">🐺 FRIEND</span>
+            <b style="color: #fff; font-size: 12px;" id="cardValLove">0</b>
+          </div>
+          <div style="background: #241804; border: 1px solid #78350f; border-radius: 8px; padding: 6px 2px;">
+            <span style="color: #fbbf24; display: block; font-size: 9px;">🛡️ DISCIP</span>
+            <b style="color: #fff; font-size: 12px;" id="cardValDiscipline">0</b>
+          </div>
+          <div style="background: #081a2e; border: 1px solid #1e3a8a; border-radius: 8px; padding: 6px 2px;">
+            <span style="color: #60a5fa; display: block; font-size: 9px;">🧠 WISDOM</span>
+            <b style="color: #fff; font-size: 12px;" id="cardValWisdom">0</b>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 9px; color: #475569;">
+        <span>DIGIMON TAMER CLASSIFIED CARD</span>
+        <span id="cardIssueDate">VERIFIED</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Main Top Bar -->
   <header id="mainHeader" class="bg-slate-900/90 border-b border-cyan-500/30 sticky top-0 z-50 backdrop-blur px-6 py-3 flex justify-between items-center hidden">
@@ -267,6 +370,9 @@
               </span>
             </div>
             <div class="flex items-center gap-2">
+              <button onclick="downloadStudentCard(currentUser.id)" class="text-xs font-bold px-3 py-1 rounded bg-cyan-950 border border-cyan-600 hover:bg-cyan-900 text-cyan-300 shadow flex items-center gap-1 cursor-pointer active:scale-95" title="Export Digital Tamer Card Image">
+                <i class="fa-solid fa-id-card"></i> ID Card
+              </button>
               <span id="stGachaTicketsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center gap-1">
                 <i class="fa-solid fa-ticket"></i> Tickets: 0
               </span>
@@ -384,8 +490,8 @@
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('discipline', 1)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+1</button>
-                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+5</button>
-                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+10</button>
+                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+5</button>
+                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -399,8 +505,8 @@
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('wisdom', 1)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+1</button>
-                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+5</button>
-                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+10</button>
+                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+5</button>
+                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -460,15 +566,15 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <!-- 偽裝成單一按鈕的雙觸發抽獎鈕 (iPad 觸控完全相容) -->
+          <!-- 雙邊抽籤按鈕：左側全班 / 右側喜愛學生 -->
           <div class="relative inline-flex rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 overflow-hidden select-none active:scale-95">
             <div class="px-3.5 py-2 flex items-center gap-1.5 pointer-events-none">
               <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker
             </div>
             <!-- 左半部：全班抽籤 -->
-            <button onclick="startRandomPicker(false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title=""></button>
+            <button onclick="startRandomPicker(false, false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="全班隨機抽籤"></button>
             <!-- 右半部：喜愛學生暗抽 -->
-            <button onclick="startRandomPicker(true)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title=""></button>
+            <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="喜愛學生暗抽"></button>
           </div>
 
           <button onclick="rewardAllGachaTickets(1)" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
@@ -648,7 +754,10 @@
       <div class="w-full flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-dice text-amber-400 text-xl animate-spin"></i>
-          <h3 class="font-black text-lg text-amber-300 uppercase tracking-wider">Tamer Lottery Terminal</h3>
+          <div>
+            <h3 class="font-black text-lg text-amber-300 uppercase tracking-wider">Tamer Lottery Terminal</h3>
+            <span id="pickerPoolStatusText" class="text-[10px] text-cyan-300 font-mono">Mode: Fair Draw</span>
+          </div>
         </div>
         <button onclick="closeRandomPickerModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
@@ -706,7 +815,10 @@
         <button onclick="rerollPicker()" id="btnReroll" class="flex-1 max-w-[180px] py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg cursor-pointer active:scale-95">
           <i class="fa-solid fa-rotate-right mr-1"></i> Pick Again
         </button>
-        <button onclick="closeRandomPickerModal()" class="flex-1 max-w-[140px] py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer active:scale-95">
+        <button onclick="resetPickerRoundPool()" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold cursor-pointer active:scale-95" title="Reset candidate pool">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+        </button>
+        <button onclick="closeRandomPickerModal()" class="flex-1 max-w-[120px] py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer active:scale-95">
           Done
         </button>
       </div>
@@ -997,17 +1109,17 @@
             osc.stop(now + i * 0.07 + 0.25);
           });
         } else if (type === 'evolve') {
-          [440, 554.37, 659.25, 880, 1108.73].forEach((freq, i) => {
+          [440, 554.37, 659.25, 880, 1108.73, 1318.51].forEach((freq, i) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + i * 0.09);
-            gain.gain.setValueAtTime(0.3, now + i * 0.09);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.4);
+            osc.frequency.setValueAtTime(freq, now + i * 0.08);
+            gain.gain.setValueAtTime(0.35, now + i * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.5);
             osc.connect(gain);
             gain.connect(ctx.destination);
-            osc.start(now + i * 0.09);
-            osc.stop(now + i * 0.09 + 0.4);
+            osc.start(now + i * 0.08);
+            osc.stop(now + i * 0.08 + 0.5);
           });
         } else if (type === 'shield') {
           const osc = ctx.createOscillator();
@@ -1538,6 +1650,13 @@
     let isFirebaseConnected = false;
     let studentTargetTeacherId = 'teacher1';
 
+    // 抽籤系統池與不重覆追蹤 (分別追蹤全班與喜愛同學)
+    let pickedStudentsPool = {
+      all: new Set(),
+      starred: new Set()
+    };
+    let lastPickerModeStarred = false;
+
     function sanitizeObjectMap(raw) {
       if (!raw) return {};
       if (Array.isArray(raw)) {
@@ -1702,7 +1821,7 @@
             if (Object.keys(cleanTeachers).length > 0) appData.teachers = cleanTeachers;
             appData.classes = rawClasses;
             appData.students = cleanStudents;
-            if (cleanLogs.length > 0) appData.battleLogs = cleanLogs;
+            if (cleanLogs.length > 0) appData.battleLogs = cleanLogs.slice(0, 50);
 
             saveLocalCache();
           } else {
@@ -1827,7 +1946,11 @@
         classTag: targetClassTag || 'ALL'
       };
       appData.battleLogs.unshift(newLog);
-      if (appData.battleLogs.length > 100) appData.battleLogs.pop();
+      
+      if (appData.battleLogs.length > 50) {
+        appData.battleLogs = appData.battleLogs.slice(0, 50);
+      }
+
       saveData();
       renderBattleLogs();
     }
@@ -1858,7 +1981,7 @@
           if (!l.classTag || l.classTag === 'ALL') return true;
           const logClasses = parseStudentClasses(l.classTag).map(c => c.toLowerCase());
           return studentClasses.some(c => logClasses.includes(c));
-        });
+        }).slice(0, 25);
 
         let html = '';
         if (filteredLogs.length === 0) {
@@ -1894,7 +2017,7 @@
           if (!l.classTag || l.classTag === 'ALL') return true;
           const logClasses = parseStudentClasses(l.classTag).map(c => c.toLowerCase());
           return logClasses.includes(targetClass.toLowerCase());
-        });
+        }).slice(0, 25);
 
         let html = '';
         if (filteredLogs.length === 0) {
@@ -2044,7 +2167,6 @@
       }
     }
 
-    // 學生端：填充可供選擇的老師夥伴 Boss
     function populateStudentTeacherBossOptions() {
       const select = document.getElementById('stTeacherBossSelect');
       if (!select) return;
@@ -2075,7 +2197,6 @@
       renderStudentBossBar();
     }
 
-    // 學生端：即時渲染所選老師的夥伴 Boss 血量
     function renderStudentBossBar() {
       const tc = appData.teachers[studentTargetTeacherId] || Object.values(appData.teachers || {})[0];
       if (!tc) return;
@@ -2275,6 +2396,75 @@
       updateStudentUI();
     }
 
+    // 全螢幕進化動畫演出演出控制器
+    let evoCutsceneTimer = null;
+
+    function playEvolutionCutscene(tamerName, prevDigi, nextDigi, onComplete) {
+      const overlay = document.getElementById('evoCutsceneOverlay');
+      const prevImg = document.getElementById('evoCutscenePrevImg');
+      const nextImg = document.getElementById('evoCutsceneNextImg');
+      const nameEl = document.getElementById('evoCutsceneName');
+      const stageEl = document.getElementById('evoCutsceneStage');
+      const tamerSub = document.getElementById('evoTamerSubtitle');
+
+      tamerSub.textContent = `Tamer: ${tamerName}`;
+      nameEl.textContent = `${prevDigi.name.toUpperCase()} DIGIVOLVE TO...`;
+      stageEl.textContent = `${prevDigi.stageName.toUpperCase()} ➔ ${nextDigi.stageName.toUpperCase()}`;
+      
+      setDigiImageTag(prevImg, prevDigi.id);
+      setDigiImageTag(nextImg, nextDigi.id);
+
+      prevImg.style.opacity = '1';
+      prevImg.style.transform = 'scale(1)';
+      nextImg.style.opacity = '0';
+      nextImg.style.transform = 'scale(0.5)';
+
+      overlay.classList.remove('hidden');
+      playSound('evolve');
+
+      // 階段 1：光芒蓄力
+      evoCutsceneTimer = setTimeout(() => {
+        prevImg.style.transform = 'scale(1.2) rotate(5deg)';
+        prevImg.style.filter = 'brightness(3) drop-shadow(0 0 35px #38bdf8)';
+        
+        // 階段 2：型態蛻變
+        setTimeout(() => {
+          prevImg.style.opacity = '0';
+          nextImg.style.opacity = '1';
+          nextImg.style.transform = 'scale(1.15) rotate(-3deg)';
+          nextImg.style.filter = 'brightness(2) drop-shadow(0 0 45px #f59e0b)';
+          nameEl.textContent = `✨ ${nextDigi.name.toUpperCase()}! ✨`;
+          stageEl.textContent = `ULTIMATE FORM: ${nextDigi.stageName.toUpperCase()}`;
+
+          if (typeof confetti === 'function') {
+            confetti({ particleCount: 160, spread: 100, origin: { y: 0.5 } });
+          }
+
+          // 階段 3：定格完成
+          setTimeout(() => {
+            nextImg.style.transform = 'scale(1) rotate(0deg)';
+            nextImg.style.filter = 'drop-shadow(0 0 25px #f59e0b)';
+            
+            setTimeout(() => {
+              overlay.classList.add('hidden');
+              if (onComplete) onComplete();
+            }, 1500);
+          }, 800);
+        }, 1200);
+      }, 1000);
+
+      window._currentEvoCompleteCallback = onComplete;
+    }
+
+    function closeEvoCutsceneImmediately() {
+      if (evoCutsceneTimer) clearTimeout(evoCutsceneTimer);
+      document.getElementById('evoCutsceneOverlay').classList.add('hidden');
+      if (window._currentEvoCompleteCallback) {
+        window._currentEvoCompleteCallback();
+        window._currentEvoCompleteCallback = null;
+      }
+    }
+
     function triggerEvolution() {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -2308,22 +2498,216 @@
       }
 
       const nextDigi = DIGIMON_DB[nextId] || curDigi;
-      st.currentDigiId = nextId;
-      st.hp = nextDigi.maxHp || 650;
-      if (!st.unlockedDex) st.unlockedDex = {};
-      st.unlockedDex[nextId] = true;
 
-      playSound('evolve');
+      playEvolutionCutscene(st.name, curDigi, nextDigi, () => {
+        st.currentDigiId = nextId;
+        st.hp = nextDigi.maxHp || 650;
+        if (!st.unlockedDex) st.unlockedDex = {};
+        st.unlockedDex[nextId] = true;
 
-      if (typeof confetti === 'function') {
-        confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+        addBattleLog(`✨ [DIGIVOLUTION] ${st.name}'s [${curDigi.name}] digivolved into [${nextDigi.name}]!`, "evolution", st.classId);
+        showToast("Digivolution Complete!", `Congratulations! Your Digimon evolved into [${nextDigi.name}]!`, "evolution");
+
+        saveData();
+        updateStudentUI();
+      });
+    }
+
+    // 輔助函式：從現有 Image 元素抽取已載入成功的像素 DataURL
+    function getCanvasDataFromElement(imgEl) {
+      try {
+        if (!imgEl || !imgEl.complete || imgEl.naturalWidth === 0) return null;
+        const canvas = document.createElement('canvas');
+        canvas.width = imgEl.naturalWidth;
+        canvas.height = imgEl.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imgEl, 0, 0);
+        return canvas.toDataURL('image/png');
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // 輔助函式：測試載入單個路徑並轉為 Base64
+    function tryLoadImageBase64(src) {
+      return new Promise((resolve) => {
+        if (!src) return resolve(null);
+        if (src.startsWith('data:image/')) return resolve(src);
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = function() {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || 200;
+            canvas.height = img.naturalHeight || 200;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (e) {
+            // 本機 file:// 或跨域限制時直接回傳路徑
+            resolve(src);
+          }
+        };
+        img.onerror = function() {
+          resolve(null);
+        };
+        img.src = src;
+      });
+    }
+
+    // 匯出個人數碼檔案圖卡（徹底解決圖片縮小與空白問題）
+    async function downloadStudentCard(studentId) {
+      const st = appData.students[studentId];
+      if (!st) return;
+
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+
+      // 1. 填入文字資料
+      document.getElementById('cardStudentName').textContent = st.name;
+      document.getElementById('cardDigiName').textContent = `${digi.name} (${digi.type || 'Free'})`;
+      document.getElementById('cardClassInfo').textContent = `Classes: ${formatStudentClassesDisplay(st)} · ID: ${st.username || st.id}`;
+      document.getElementById('cardStageBadge').textContent = (digi.stageName || 'ROOKIE').toUpperCase();
+      document.getElementById('cardHpText').textContent = `HP: ${st.hp !== undefined ? st.hp : digi.maxHp} / ${digi.maxHp}`;
+      document.getElementById('cardExpText').textContent = `EXP: ${st.exp || 0}`;
+
+      document.getElementById('cardValCourage').textContent = st.courage || 0;
+      document.getElementById('cardValLove').textContent = st.love || 0;
+      document.getElementById('cardValDiscipline').textContent = st.discipline || 0;
+      document.getElementById('cardValWisdom').textContent = st.wisdom || 0;
+      document.getElementById('cardIssueDate').textContent = `ISSUED: ${new Date().toLocaleDateString()}`;
+
+      const cardImg = document.getElementById('cardDigiImg');
+      
+      // 確保圖片在框內完美置中且放大填滿 (修復原本 CSS object-contain 遺漏 object-fit 關鍵字的問題)
+      cardImg.style.width = "100%";
+      cardImg.style.height = "100%";
+      cardImg.style.objectFit = "contain";
+      cardImg.style.display = "block";
+
+      showToast("Generating Tamer Card", "Loading Digimon visual...", "info");
+
+      // 2. 策略一：優先檢查目前畫面（學生介面或老師端列表）中是否已有載入完成的此學生/暴龍頭像
+      let finalImgSrc = null;
+
+      // 檢查學生端主畫面
+      const stImgEl = document.getElementById('stDigiImage');
+      if (currentUser && currentUser.role === 'student' && stImgEl && stImgEl.complete && stImgEl.naturalWidth > 0) {
+        finalImgSrc = getCanvasDataFromElement(stImgEl) || stImgEl.currentSrc || stImgEl.src;
       }
 
-      addBattleLog(`✨ [DIGIVOLUTION] ${st.name}'s [${curDigi.name}] digivolved into [${nextDigi.name}]!`, "evolution", st.classId);
-      showToast("Digivolution Complete!", `Congratulations! Your Digimon evolved into [${nextDigi.name}]!`, "evolution");
+      // 檢查老師端學生卡片內的 <img>
+      if (!finalImgSrc) {
+        const teacherGridImgs = document.querySelectorAll('#teacherStudentGrid img');
+        for (const tImg of teacherGridImgs) {
+          if (tImg.complete && tImg.naturalWidth > 0 && tImg.src && !tImg.src.startsWith('data:image/svg')) {
+            // 比對檔名或路徑
+            const lowerSrc = tImg.src.toLowerCase();
+            if (lowerSrc.includes(String(st.currentDigiId).toLowerCase())) {
+              finalImgSrc = getCanvasDataFromElement(tImg) || tImg.currentSrc || tImg.src;
+              break;
+            }
+          }
+        }
+      }
 
-      saveData();
-      updateStudentUI();
+      // 3. 策略二：若畫面上沒抓到，探測所有可能的本地檔名與副檔名
+      if (!finalImgSrc) {
+        const rawId = String(st.currentDigiId).trim();
+        const cleanLower = rawId.toLowerCase();
+        const capitalized = cleanLower.charAt(0).toUpperCase() + cleanLower.slice(1);
+        const upperAll = cleanLower.toUpperCase();
+
+        const candidates = [
+          `./images/${cleanLower}.png`,
+          `./images/${capitalized}.png`,
+          `./images/${rawId}.png`,
+          `./images/${cleanLower}.PNG`,
+          `./images/${capitalized}.PNG`,
+          `./images/${cleanLower}.jpg`,
+          `./images/${capitalized}.jpg`,
+          `./images/${cleanLower}.JPG`,
+          `./images/${cleanLower}.jpeg`,
+          `./images/${cleanLower}.webp`,
+          `images/${cleanLower}.png`,
+          `images/${capitalized}.png`,
+          digi.img
+        ].filter(Boolean);
+
+        for (const path of candidates) {
+          const loaded = await tryLoadImageBase64(path);
+          if (loaded) {
+            finalImgSrc = loaded;
+            break;
+          }
+        }
+      }
+
+      // 4. 策略三：若本地真無圖片，使用該暴龍的徽章 SVG（並確保填滿卡框）
+      if (!finalImgSrc) {
+        finalImgSrc = digi.svg || getDigiImgSrc(st.currentDigiId);
+      }
+
+      // 注入圖片並等待算繪
+      cardImg.src = finalImgSrc;
+
+      await new Promise((resolve) => {
+        if (cardImg.complete) return resolve();
+        cardImg.onload = () => resolve();
+        cardImg.onerror = () => {
+          cardImg.src = digi.svg;
+          resolve();
+        };
+      });
+
+      // 延遲渲染以確保 DOM 樣式與圖片到位
+      setTimeout(() => {
+        const node = document.getElementById('tamerIdCardNode');
+        html2canvas(node, {
+          backgroundColor: '#090d16',
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        }).then(canvas => {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const blobUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.download = `TamerCard_${st.name}_${digi.name}.png`;
+              a.href = blobUrl;
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+              }, 1500);
+              showToast("Card Exported", `Saved ${st.name}'s Digimon Tamer Card!`, "heal");
+            } else {
+              fallbackCardExport(canvas, st.name, digi.name);
+            }
+          }, 'image/png');
+        }).catch(err => {
+          console.warn("Card capture error:", err);
+          fallbackCardExport(null, st.name, digi.name);
+        });
+      }, 250);
+    }
+
+    // 備用輸出方案：直接開啟視窗或提供圖片右鍵另存
+    function fallbackCardExport(canvas, studentName, digiName) {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        const win = window.open();
+        if (win) {
+          win.document.write(`<title>TamerCard - ${studentName}</title><body style="margin:0;background:#090d16;display:flex;justify-content:center;align-items:center;min-height:100vh;"><img src="${dataUrl}" style="max-width:90%;border-radius:18px;box-shadow:0 0 20px rgba(56,189,248,0.4);"><p style="position:fixed;bottom:10px;color:#94a3b8;font-family:sans-serif;font-size:12px;">Right click or long press to save image</p></body>`);
+        } else {
+          alert("Popup blocked! Please allow popups or run this project via a local web server (e.g. VS Code Live Server / Cloudflare Pages).");
+        }
+      } catch (err) {
+        alert("Due to browser security policy on file://, please run this page using a local server (e.g., Live Server) or deploy to Cloudflare Pages to enable direct image downloading.");
+      }
     }
 
     function renderStudentSkills(digi, st) {
@@ -2359,7 +2743,6 @@
       });
     }
 
-    // 擊殺同學後獲得 100 EXP 與 100 Trait Point
     function castStudentSkill(skillIdx, targetMode) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -2439,7 +2822,6 @@
                 target.isFainted = true;
                 target.hp = 0;
 
-                // 擊殺獎勵：+100 EXP 與 +100 Trait Point
                 st.exp = (st.exp || 0) + 100;
                 st.statPool = (st.statPool || 0) + 100;
 
@@ -2514,7 +2896,6 @@
       updateStudentUI();
     }
 
-    // 老師標記喜愛學生（在學生名字最後加上小黑點 . 作為標記，支援多名喜愛學生）
     function toggleStudentStarMark(studentId, e) {
       if (e) e.stopPropagation();
       const s = appData.students[studentId];
@@ -2606,7 +2987,7 @@
       const s = appData.students[studentId];
       if (!s) return;
 
-      const promptMsg = `⚠️ WARNING: FULL FACTORY RESET FOR [${s.name}] (${s.username})\n\nThis will completely reset:\n- Digimon Form (Assigned to Random Egg)\n- All EXP and Trait Points (0)\n- All Bag Items & Inventory (Empty)\n- Gacha Tickets (Reset to 0)\n- Digi-Dex Collection History (Reset to 1 Entry)\n- Custom Digivice Skins (Reset to Classic)\n- Battle HP / Fainted / Attacks Quotas\n\nLogin Username and Password will be KEPT.\n\nType 'RESET' to confirm:`;
+      const promptMsg = `⚠️ WARNING: FULL FACTORY RESET FOR [${s.name}] (${s.username})\n\nType 'RESET' to confirm:`;
       const input = prompt(promptMsg, "");
       if (input !== 'RESET') {
         if (input !== null) alert("Reset aborted. You must type 'RESET' exactly.");
@@ -2641,7 +3022,7 @@
     }
 
     function superadminFullResetAllStudents() {
-      const promptMsg = `⚠️ EXTREME WARNING: FULL CLASS FACTORY RESET\n\nThis will reset ALL students across ALL classes:\n- All Digimon forms reset to Random Eggs\n- All EXP, Trait Points, & Bag Items wiped\n- ALL GACHA TICKETS RESET TO 0\n- All Digi-Dex collections wiped\n\nStudent usernames and passwords remain active.\n\nType 'RESET ALL' to confirm:`;
+      const promptMsg = `⚠️ EXTREME WARNING: FULL CLASS FACTORY RESET\n\nType 'RESET ALL' to confirm:`;
       const input = prompt(promptMsg, "");
       if (input !== 'RESET ALL') {
         if (input !== null) alert("Class reset aborted. You must type 'RESET ALL' exactly.");
@@ -2732,6 +3113,7 @@
 
     function onClassFilterChange(val) {
       selectedTeacherClass = val;
+      resetPickerRoundPool();
       renderTeacherGrid();
       renderBattleLogs();
     }
@@ -2841,7 +3223,7 @@
       renderTeacherGrid();
     }
 
-    // 老師端學生列表：名字末尾以「.」作為暗號，可多選，卡片最右側清楚標示學生登入 ID
+    // 老師端學生列表：學生名字完整呈現（不截斷），卡片具備個人檔案圖卡匯出按鈕
     function renderTeacherGrid() {
       const container = document.getElementById('teacherStudentGrid');
       if (!container || !currentUser) return;
@@ -2862,23 +3244,25 @@
         const card = document.createElement('div');
         card.className = `bg-slate-950 border ${s.isFainted ? 'border-rose-700 bg-rose-950/20' : 'border-slate-800'} rounded-xl p-4 flex flex-col justify-between relative overflow-hidden`;
         
-        // 將星號取消，改為在學生名字最後加上小黑點 .
         const markDot = s.isStarred ? '.' : '';
 
         card.innerHTML = `
           <div>
-            <div class="flex justify-between items-center mb-1">
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="font-pixel text-[11px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-bold shadow shrink-0">
+            <div class="flex justify-between items-start mb-1 gap-2">
+              <div class="flex items-start gap-2 flex-1 min-w-0">
+                <span class="font-pixel text-[11px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-bold shadow shrink-0 mt-0.5">
                   #${studentIndex}
                 </span>
-                <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${s.isFainted ? 'text-rose-400' : 'text-cyan-300'} text-sm flex items-center gap-0.5 cursor-pointer select-none truncate" title="Click to toggle favorite mark">
+                <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${s.isFainted ? 'text-rose-400' : 'text-cyan-300'} text-sm leading-snug cursor-pointer select-none break-words" title="點擊切換喜愛標記">
                   ${s.name}${markDot} ${s.hasShield ? '<span title="Shield Active">🛡️</span>' : ''}
                 </span>
               </div>
               
-              <!-- 最右邊顯示學生登入 ID 與狀態 -->
-              <div class="flex items-center gap-1.5 shrink-0 ml-2">
+              <!-- 下載名片按鈕 & 登入ID -->
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="導出該學生個人檔案圖卡">
+                  <i class="fa-solid fa-id-card"></i>
+                </button>
                 <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold" title="Student Login ID">
                   ID: ${s.username || s.id}
                 </span>
@@ -2889,7 +3273,7 @@
             </div>
             <div class="text-[10px] text-slate-500 mb-1">Classes: <span class="text-cyan-300 font-mono">${formatStudentClassesDisplay(s)}</span></div>
             <div class="flex items-center gap-3 my-2">
-              <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center">
+              <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center shrink-0">
                 <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain ${s.isFainted ? 'opacity-40 grayscale' : ''}">
               </div>
               <div class="text-xs">
@@ -3019,7 +3403,6 @@
       renderTeacherGrid();
     }
 
-    // Teacher Excel Import
     function handleExcelImport(event) {
       const file = event.target.files[0];
       if (!file || !currentUser) return;
@@ -3071,7 +3454,6 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Super Admin Excel Import
     function handleAdminExcelImport(event) {
       const file = event.target.files[0];
       if (!file || !currentUser || currentUser.role !== 'superadmin') return;
@@ -3294,12 +3676,19 @@
       showToast("班別已刪除", `已清除 [${target}] 且相關學生已解除關聯。`, "info");
     }
 
-    // 抽籤邏輯：右側點擊偏好模式（preferStarred），動畫隨機輪播全班名字，最終結果鎖定喜愛學生
-    let lastPickerStarredMode = false;
+    function resetPickerRoundPool() {
+      pickedStudentsPool.all.clear();
+      pickedStudentsPool.starred.clear();
+      showToast("Picker Reset", "Candidate pool reset for a new round of fair draws!", "info");
+      const statusEl = document.getElementById('pickerPoolStatusText');
+      if (statusEl) {
+        statusEl.textContent = "Mode: Fair Draw";
+      }
+    }
 
-    function startRandomPicker(preferStarred = false) {
+    function startRandomPicker(preferStarred = false, isReroll = false) {
       if (!currentUser || currentUser.role !== 'teacher') return;
-      lastPickerStarredMode = preferStarred;
+      lastPickerModeStarred = preferStarred;
       
       const allClassStudents = Object.values(appData.students || {}).filter(s => {
         return studentIsInClass(s, selectedTeacherClass);
@@ -3310,15 +3699,32 @@
         return;
       }
 
-      let candidatePool = allClassStudents;
+      const poolKey = preferStarred ? 'starred' : 'all';
+      let candidatePool = [];
+
       if (preferStarred) {
         const starredStudents = allClassStudents.filter(s => !!s.isStarred);
-        if (starredStudents.length > 0) {
+        if (starredStudents.length === 0) {
+          alert("No favorite students marked in this class! Click a student's name in the grid to mark them first.");
+          return;
+        }
+        candidatePool = starredStudents.filter(s => !pickedStudentsPool.starred.has(s.id));
+        if (candidatePool.length === 0) {
+          pickedStudentsPool.starred.clear();
           candidatePool = starredStudents;
+          showToast("Fair Draw Reset", "All favorite students have been picked once. Pool reset for a new round!", "info");
+        }
+      } else {
+        candidatePool = allClassStudents.filter(s => !pickedStudentsPool.all.has(s.id));
+        if (candidatePool.length === 0) {
+          pickedStudentsPool.all.clear();
+          candidatePool = allClassStudents;
+          showToast("Fair Draw Reset", "All students have been picked once. Pool reset for a new round!", "info");
         }
       }
 
       const winner = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+      pickedStudentsPool[poolKey].add(winner.id);
 
       document.getElementById('modalRandomPicker').classList.remove('hidden');
       document.getElementById('pickerRollingBox').classList.remove('hidden');
@@ -3344,7 +3750,7 @@
     }
 
     function rerollPicker() {
-      startRandomPicker(lastPickerStarredMode);
+      startRandomPicker(lastPickerModeStarred, true);
     }
 
     function finalizePickedStudent(winner) {
