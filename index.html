@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
+<!-- PWA Web App Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- 設定主題顏色（可依你的介面色系修改） -->
+<meta name="theme-color" content="#ffffff">
+
+<!-- iOS Safari 專用支援 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DigimonTamer">
+<link rel="apple-touch-icon" href="icon-192.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Digimon Classroom Management System PRO (Atomic Sync Edition)</title>
@@ -4153,8 +4164,16 @@ function getDigiImgSrc(digiId) {
     });
   </script>
 <script>
-  if (typeof navigator.serviceWorker !== 'undefined') {
-    navigator.serviceWorker.register('sw.js')
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./pwabuilder-sw.js')
+        .then((reg) => {
+          console.log('Service Worker 註冊成功，範圍：', reg.scope);
+        })
+        .catch((err) => {
+          console.error('Service Worker 註冊失敗：', err);
+        });
+    });
   }
 </script>
 </body>
