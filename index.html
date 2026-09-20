@@ -4152,5 +4152,10 @@ function getDigiImgSrc(digiId) {
       document.addEventListener('click', unlockAudio, { once: true });
     });
   </script>
+<script>
+  if (typeof navigator.serviceWorker !== 'undefined') {
+    navigator.serviceWorker.register('sw.js')
+  }
+</script>
 </body>
 </html>
