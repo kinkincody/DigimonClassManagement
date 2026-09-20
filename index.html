@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Digimon Classroom Management System PRO</title>
+  <title>Digimon Classroom Management System PRO (Atomic Sync Edition)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome -->
@@ -111,13 +111,8 @@
       box-shadow: 0 0 30px rgba(234, 179, 8, 0.5) !important;
       background: radial-gradient(circle at top, #422006 0%, #170d03 100%) !important;
     }
-    .skin-dark_d_ark {
-      border-color: #a855f7 !important;
-      box-shadow: 0 0 30px rgba(168, 85, 247, 0.5) !important;
-      background: radial-gradient(circle at top, #3b0764 0%, #0d0217 100%) !important;
-    }
   
-    /* iPad / iOS Safari Optimizations */
+    /* Touch / Tablet Optimizations */
     * {
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
@@ -133,7 +128,7 @@
       user-select: auto;
     }
 
-    /* Evolution Stage Cutscene Overlay */
+    /* Evolution Cutscene Animations */
     @keyframes evoRays {
       0% { transform: rotate(0deg) scale(1); opacity: 0.7; }
       50% { transform: rotate(180deg) scale(1.4); opacity: 1; }
@@ -199,7 +194,7 @@
 
       <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 16px;">
         <div style="width: 140px; height: 140px; background: #030712; border: 2px solid rgba(56,189,248,0.5); border-radius: 18px; padding: 8px; display: flex; align-items: center; justify-content: center; shrink-0;">
-          <img id="cardDigiImg" src="" style="max-width: 100%; max-height: 100%; object-contain;">
+          <img id="cardDigiImg" src="" style="width: 100%; height: 100%; object-fit: contain; display: block;">
         </div>
         <div style="flex: 1;">
           <div style="font-size: 20px; font-weight: 900; color: #ffffff;" id="cardStudentName">Alex Chan</div>
@@ -287,7 +282,7 @@
         <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-amber-300">
           TAMER ACCESS GATEWAY
         </h2>
-        <p class="text-xs text-slate-400 mt-1">Shared Multi-Teacher Digital Portal</p>
+        <p class="text-xs text-slate-400 mt-1">Multi-Teacher Atomic Sync Portal</p>
       </div>
 
       <div class="flex rounded-lg bg-slate-950 p-1 mb-5 border border-slate-800">
@@ -319,13 +314,12 @@
 
       <div class="mt-5 text-center flex flex-col items-center gap-1.5">
         <span id="dbSyncStatus" class="text-[11px] text-cyan-300 font-mono">Ready to Sign In</span>
-        <button onclick="retryFirebaseConnection()" class="text-[10px] text-slate-500 hover:text-cyan-300 underline cursor-pointer">Reconnect / Reload</button>
+        <button onclick="retryFirebaseConnection()" class="text-[10px] text-slate-500 hover:text-cyan-300 underline cursor-pointer">Reconnect Database</button>
       </div>
     </div>
 
     <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
-      
       <!-- Target Teacher Boss Bar -->
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-amber-500/40 rounded-2xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3 min-w-[260px]">
@@ -490,8 +484,8 @@
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('discipline', 1)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+1</button>
-                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+5</button>
-                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+10</button>
+                    <button onclick="allocateTrait('discipline', 5)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+5</button>
+                    <button onclick="allocateTrait('discipline', 10)" class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -505,8 +499,8 @@
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('wisdom', 1)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+1</button>
-                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+5</button>
-                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+10</button>
+                    <button onclick="allocateTrait('wisdom', 5)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+5</button>
+                    <button onclick="allocateTrait('wisdom', 10)" class="px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -548,7 +542,7 @@
       </div>
     </div>
 
-    <!-- 2. Teacher Master View (Co-Management Mode) -->
+    <!-- 2. Teacher Master View -->
     <div id="viewTeacher" class="space-y-6 hidden">
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -566,14 +560,12 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <!-- 雙邊抽籤按鈕：左側全班 / 右側喜愛學生 -->
+          <!-- 雙邊抽籤按鈕 -->
           <div class="relative inline-flex rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 overflow-hidden select-none active:scale-95">
             <div class="px-3.5 py-2 flex items-center gap-1.5 pointer-events-none">
               <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker
             </div>
-            <!-- 左半部：全班抽籤 -->
             <button onclick="startRandomPicker(false, false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="全班隨機抽籤"></button>
-            <!-- 右半部：喜愛學生暗抽 -->
             <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="喜愛學生暗抽"></button>
           </div>
 
@@ -695,10 +687,9 @@
             <h2 class="text-base font-bold text-cyan-300 flex items-center gap-2">
               <i class="fa-solid fa-users-gear"></i> Global Students Directory
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Support multi-select batch deletion or account reset. A student can belong to multiple classes (comma-separated).</p>
+            <p class="text-xs text-slate-400 mt-0.5">Support multi-select batch deletion or account reset.</p>
           </div>
           
-          <!-- Batch Selection Controls -->
           <div class="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
             <label class="flex items-center gap-1.5 text-xs text-slate-300 font-bold cursor-pointer select-none">
               <input type="checkbox" id="chkSelectAllStudents" onchange="toggleSelectAllStudents(this.checked)" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
@@ -714,7 +705,6 @@
         <div id="superAdminStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
     </div>
-
   </main>
 
   <!-- MODALS -->
@@ -727,14 +717,14 @@
           <i class="fa-solid fa-user-group text-cyan-400 text-xl"></i>
           <div>
             <h3 class="font-bold text-base text-cyan-300" id="mgrModalClassTitle">Manage Class Students</h3>
-            <p class="text-[11px] text-slate-400">Add or remove any student in the school into this class. Students can belong to multiple classes simultaneously.</p>
+            <p class="text-[11px] text-slate-400">Add or remove students from this class.</p>
           </div>
         </div>
         <button onclick="closeManageClassStudentsModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
       
       <div class="my-3">
-        <input type="text" id="mgrStudentSearch" oninput="filterManagerStudents(this.value)" placeholder="Search any student by name or ID in school..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
+        <input type="text" id="mgrStudentSearch" oninput="filterManagerStudents(this.value)" placeholder="Search student by name or ID..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
       </div>
 
       <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="mgrStudentsList"></div>
@@ -748,7 +738,7 @@
     </div>
   </div>
 
-  <!-- 1. Random Student Picker Modal -->
+  <!-- Random Student Picker Modal -->
   <div id="modalRandomPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-xl w-full p-6 text-slate-200 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
       <div class="w-full flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
@@ -825,7 +815,7 @@
     </div>
   </div>
 
-  <!-- 2. Item Gacha Portal Modal -->
+  <!-- Item Gacha Portal Modal -->
   <div id="modalGacha" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative overflow-hidden">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -884,13 +874,13 @@
     </div>
   </div>
 
-  <!-- 3. Evolution Tree Modal -->
+  <!-- Evolution Tree Modal -->
   <div id="modalEvoTree" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <div>
           <h3 class="font-bold text-lg text-cyan-300"><i class="fa-solid fa-sitemap mr-2"></i>Digimon Evolution Chart & Paths</h3>
-          <p class="text-xs text-slate-400">View evolutionary branches and requirements across all growth stages</p>
+          <p class="text-xs text-slate-400">View evolutionary branches across all growth stages</p>
         </div>
         <button onclick="toggleEvolutionTreeModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
@@ -905,13 +895,13 @@
       <div id="evoTreeContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1"></div>
 
       <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
-        <span>★ Tip: The dominant trait unlocks direct evolutionary branches; balanced traits unlock varied paths!</span>
+        <span>★ Tip: The dominant trait unlocks direct evolutionary branches!</span>
         <button onclick="toggleEvolutionTreeModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- 4. Class Leaderboard Modal -->
+  <!-- Class Leaderboard Modal -->
   <div id="modalLeaderboard" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 text-slate-200 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -921,7 +911,7 @@
         </div>
         <button onclick="toggleLeaderboardModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <p class="text-xs text-slate-400 my-2">Rankings are calculated dynamically based on Stage, Total EXP, and Trait allocations.</p>
+      <p class="text-xs text-slate-400 my-2">Rankings are calculated dynamically based on Stage and Total EXP.</p>
       <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="leaderboardList"></div>
       <div class="pt-3 border-t border-slate-800 flex justify-end">
         <button onclick="toggleLeaderboardModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer active:scale-95">Close</button>
@@ -929,7 +919,7 @@
     </div>
   </div>
 
-  <!-- 5. Digi-Dex Modal -->
+  <!-- Digi-Dex Modal -->
   <div id="modalDigiDex" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-cyan-500/50 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -964,7 +954,7 @@
     </div>
   </div>
 
-  <!-- 6. Create / Edit Teacher Modal -->
+  <!-- Create / Edit Teacher Modal -->
   <div id="modalTeacherEdit" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 text-slate-200">
       <input type="hidden" id="modalTcOriginalId" value="">
@@ -1008,7 +998,7 @@
     </div>
   </div>
 
-  <!-- 7. Global Account Credentials Manager Modal -->
+  <!-- Global Account Credentials Manager Modal -->
   <div id="modalAccountCredentials" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1036,9 +1026,9 @@
     </div>
   </div>
 
-  <!-- JAVASCRIPT SYSTEM ENGINE -->
+  <!-- JAVASCRIPT SYSTEM ENGINE (PART 1: CONSTANTS & DEFINITIONS) -->
   <script>
-    const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V2";
+    const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V3";
 
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyBkP5_NpSfWZubW1z4hdXXWRBuTBijAM9M",
@@ -1078,9 +1068,7 @@
       try {
         const ctx = getAudioContext();
         if (!ctx) return;
-        if (ctx.state === 'suspended') {
-          ctx.resume();
-        }
+        if (ctx.state === 'suspended') ctx.resume();
         const now = ctx.currentTime;
 
         if (type === 'attack') {
@@ -1542,8 +1530,7 @@
       "megaseadramon": { courage: "vikemon", friendship: "metalgarurumon", discipline: "wargreymon", wisdom: "herculeskabuterimon", alt1: "vikemon", alt2: "vikemon" },
       "metaltyrannomon": { courage: "wargreymon", friendship: "metalgarurumon", discipline: "imperialdramon", wisdom: "herculeskabuterimon", alt1: "wargreymon", alt2: "wargreymon" }
     };
-
-    function getDigiImgSrc(digiId) {
+function getDigiImgSrc(digiId) {
       const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
       return d.img || d.svg;
     }
@@ -1551,7 +1538,6 @@
     function setDigiImageTag(imgEl, digiId) {
       if (!imgEl) return;
       const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
-      
       const cleanId = String(digiId).toLowerCase();
       const capitalizedId = cleanId.charAt(0).toUpperCase() + cleanId.slice(1);
       
@@ -1580,10 +1566,7 @@
     function getPreviousDigiId(currentId) {
       const cur = DIGIMON_DB[currentId];
       if (!cur) return getRandomEggId();
-
-      if (cur.prevForm && DIGIMON_DB[cur.prevForm]) {
-        return cur.prevForm;
-      }
+      if (cur.prevForm && DIGIMON_DB[cur.prevForm]) return cur.prevForm;
 
       for (const [sourceId, targetMap] of Object.entries(EVOLUTION_MATRIX)) {
         for (const [branchKey, targetId] of Object.entries(targetMap)) {
@@ -1598,7 +1581,6 @@
       if (cur.stage === "ULTIMATE") return "greymon";
       if (cur.stage === "CHAMPION") return "agumon";
       if (cur.stage === "ROOKIE") return "koromon";
-      if (cur.stage === "IN-TRAINING") return getRandomEggId();
       return getRandomEggId();
     }
 
@@ -1643,14 +1625,13 @@
     let currentUser = null;
     let selectedTeacherClass = "ALL";
     let activeLoginTab = 'student';
-    let dbRef = null;
+    let dbRootRef = null;
     let pickerInterval = null;
     let currentPickedStudent = null;
     let currentDexFilter = 'ALL';
     let isFirebaseConnected = false;
     let studentTargetTeacherId = 'teacher1';
 
-    // 抽籤系統池與不重覆追蹤 (分別追蹤全班與喜愛同學)
     let pickedStudentsPool = {
       all: new Set(),
       starred: new Set()
@@ -1685,9 +1666,7 @@
       if (!id) return null;
 
       let currentDigiId = s.currentDigiId || 'digitama1';
-      if (!DIGIMON_DB[currentDigiId]) {
-        currentDigiId = 'digitama1';
-      }
+      if (!DIGIMON_DB[currentDigiId]) currentDigiId = 'digitama1';
 
       const rawClass = (s.classId !== undefined && s.classId !== null) ? s.classId : (s.classes || '');
       const classesArr = parseStudentClasses(rawClass);
@@ -1764,20 +1743,24 @@
       }
     }
 
+    /* ==========================================================
+       ATOMIC DATABASE SYNCHRONIZATION ENGINE (免全域覆蓋)
+    ========================================================== */
+
     function initFirebase() {
       loadLocalCache();
-      updateSyncStatusUI(false, "Connecting to Firebase Live Database...");
+      updateSyncStatusUI(false, "Connecting to Firebase Database...");
 
       const connectWatchdog = setTimeout(() => {
         if (!isFirebaseConnected) {
-          updateSyncStatusUI(false, "⚠️ Local Cache Mode Active (Ready to Log In)");
+          updateSyncStatusUI(false, "⚠️ Local Cache Mode Active");
         }
-      }, 3000);
+      }, 3500);
 
       try {
         if (typeof firebase === 'undefined') {
           clearTimeout(connectWatchdog);
-          updateSyncStatusUI(false, "⚠️ Firebase SDK unreachable. Running on Local Cache.");
+          updateSyncStatusUI(false, "⚠️ Firebase SDK unreachable. Local cache active.");
           return;
         }
 
@@ -1785,56 +1768,65 @@
           firebase.initializeApp(FIREBASE_CONFIG);
         }
 
-        dbRef = firebase.database().ref('/');
+        dbRootRef = firebase.database().ref();
 
-        dbRef.on('value', (snapshot) => {
+        // 1. 學生資料獨立監聽
+        dbRootRef.child('students').on('value', (snap) => {
           clearTimeout(connectWatchdog);
           isFirebaseConnected = true;
-          const val = snapshot.val();
-
-          if (val && typeof val === 'object') {
-            const rawSuperAdmins = sanitizeObjectMap(val.superAdmins);
-            const rawTeachers = sanitizeObjectMap(val.teachers);
-            const rawClasses = sanitizeObjectMap(val.classes);
-            const rawStudents = sanitizeObjectMap(val.students);
-
-            const cleanStudents = {};
-            Object.keys(rawStudents).forEach(k => {
-              const norm = normalizeStudent(rawStudents[k], k);
-              if (norm) cleanStudents[norm.id] = norm;
-            });
-
-            const cleanTeachers = {};
-            Object.keys(rawTeachers).forEach(k => {
-              const norm = normalizeTeacher(rawTeachers[k], k);
-              if (norm) cleanTeachers[norm.id] = norm;
-            });
-
-            let cleanLogs = [];
-            if (Array.isArray(val.battleLogs)) {
-              cleanLogs = val.battleLogs.filter(Boolean);
-            } else if (val.battleLogs && typeof val.battleLogs === 'object') {
-              cleanLogs = Object.values(val.battleLogs).filter(Boolean);
-            }
-
-            if (Object.keys(rawSuperAdmins).length > 0) appData.superAdmins = rawSuperAdmins;
-            if (Object.keys(cleanTeachers).length > 0) appData.teachers = cleanTeachers;
-            appData.classes = rawClasses;
-            appData.students = cleanStudents;
-            if (cleanLogs.length > 0) appData.battleLogs = cleanLogs.slice(0, 50);
-
-            saveLocalCache();
-          } else {
-            dbRef.set(appData);
-          }
-
           updateSyncStatusUI(true, "● Connected to Firebase Live Database");
+          const val = snap.val() || {};
+          const cleanStudents = {};
+          Object.keys(val).forEach(k => {
+            const norm = normalizeStudent(val[k], k);
+            if (norm) cleanStudents[norm.id] = norm;
+          });
+          appData.students = cleanStudents;
+          saveLocalCache();
           refreshCurrentView();
+        });
+
+        // 2. 教師資料獨立監聽
+        dbRootRef.child('teachers').on('value', (snap) => {
+          const val = snap.val() || {};
+          const cleanTeachers = {};
+          Object.keys(val).forEach(k => {
+            const norm = normalizeTeacher(val[k], k);
+            if (norm) cleanTeachers[norm.id] = norm;
+          });
+          if (Object.keys(cleanTeachers).length > 0) {
+            appData.teachers = cleanTeachers;
+            saveLocalCache();
+            refreshCurrentView();
+          }
+        });
+
+        // 3. 班級資料獨立監聽
+        dbRootRef.child('classes').on('value', (snap) => {
+          appData.classes = snap.val() || {};
+          saveLocalCache();
+          if (currentUser && currentUser.role === 'teacher') populateClassDropdown();
+        });
+
+        // 4. 管理員名單獨立監聽
+        dbRootRef.child('superAdmins').on('value', (snap) => {
+          const val = snap.val();
+          if (val && typeof val === 'object') {
+            appData.superAdmins = val;
+            saveLocalCache();
+          }
+        });
+
+        // 5. 戰鬥與課堂事件佇列監聽（最多載入最近 50 筆）
+        dbRootRef.child('battleLogs').limitToLast(50).on('value', (snap) => {
+          const val = snap.val();
+          let logs = [];
+          if (val) {
+            logs = Object.values(val).filter(Boolean).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          }
+          appData.battleLogs = logs;
+          saveLocalCache();
           renderBattleLogs();
-        }, (error) => {
-          clearTimeout(connectWatchdog);
-          console.warn("Firebase listener warning:", error);
-          updateSyncStatusUI(false, `⚠️ Firebase Sync Offline: ${error.message}`);
         });
 
       } catch (err) {
@@ -1842,6 +1834,89 @@
         console.error("Firebase init failed:", err);
         updateSyncStatusUI(false, `⚠️ Local Mode (${err.message})`);
       }
+    }
+
+    // 單一學生局部原子更新（精確到欄位，杜絕全域覆蓋）
+    function patchStudentAtomic(studentId, partialData) {
+      if (!studentId) return;
+      const s = appData.students[studentId];
+      if (s) {
+        Object.assign(s, partialData);
+        saveLocalCache();
+      }
+      if (dbRootRef) {
+        dbRootRef.child('students/' + studentId).update(partialData).catch(e => {
+          console.warn("Atomic patch student failed:", e);
+        });
+      }
+    }
+
+    // 教師局部原子更新
+    function patchTeacherAtomic(teacherId, partialData) {
+      if (!teacherId) return;
+      const t = appData.teachers[teacherId];
+      if (t) {
+        Object.assign(t, partialData);
+        saveLocalCache();
+      }
+      if (dbRootRef) {
+        dbRootRef.child('teachers/' + teacherId).update(partialData).catch(e => {
+          console.warn("Atomic patch teacher failed:", e);
+        });
+      }
+    }
+
+    // 多路徑原子更新（用於全班獎勵、扣血、班級刪除）
+    function executeAtomicMultiPathUpdate(updates) {
+      saveLocalCache();
+      if (dbRootRef) {
+        return dbRootRef.update(updates).catch(e => {
+          console.warn("Multi-path atomic update error:", e);
+        });
+      }
+      return Promise.resolve();
+    }
+
+    // 戰鬥事件獨立通道 push（徹底與主資料庫狀態解耦）
+    function addBattleLog(text, type = "normal", classTag = null) {
+      let targetClassTag = classTag;
+      if (!targetClassTag && currentUser) {
+        if (currentUser.role === 'student') {
+          const st = appData.students[currentUser.id];
+          targetClassTag = st ? (st.classId || '') : '';
+        } else if (currentUser.role === 'teacher') {
+          targetClassTag = selectedTeacherClass;
+        }
+      }
+
+      const newLog = {
+        timestamp: Date.now(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        text: text,
+        type: type,
+        classTag: targetClassTag || 'ALL'
+      };
+
+      if (!appData.battleLogs) appData.battleLogs = [];
+      appData.battleLogs.unshift(newLog);
+      if (appData.battleLogs.length > 50) appData.battleLogs = appData.battleLogs.slice(0, 50);
+      saveLocalCache();
+      renderBattleLogs();
+
+      if (dbRootRef) {
+        dbRootRef.child('battleLogs').push(newLog).catch(e => console.warn("Log push error:", e));
+      }
+    }
+
+    function clearBattleLogs() {
+      if (!confirm("Are you sure you want to clear classroom events and battle logs?")) return;
+      appData.battleLogs = [];
+      saveLocalCache();
+      renderBattleLogs();
+      if (dbRootRef) {
+        dbRootRef.child('battleLogs').remove();
+      }
+      showToast("Logs Cleared", "Classroom log feed has been reset.", "info");
     }
 
     function updateSyncStatusUI(isLive, msg) {
@@ -1864,30 +1939,6 @@
     function retryFirebaseConnection() {
       updateSyncStatusUI(false, "Reconnecting to Firebase...");
       initFirebase();
-    }
-
-    function saveData() {
-      saveLocalCache();
-      try {
-        if (dbRef) {
-          dbRef.set(appData);
-        }
-      } catch(e) {
-        console.warn("Firebase save failed, cached locally:", e);
-      }
-    }
-
-    function syncSingleStudent(studentId) {
-      const s = appData.students[studentId];
-      if (!s) return;
-      saveLocalCache();
-      try {
-        if (dbRef) {
-          firebase.database().ref('students/' + studentId).set(s);
-        }
-      } catch (e) {
-        console.warn("Direct student sync failed, cached locally:", e);
-      }
     }
 
     function showToast(title, message, type = "info") {
@@ -1925,50 +1976,11 @@
       setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
     }
 
-    function addBattleLog(text, type = "normal", classTag = null) {
-      if (!appData.battleLogs) appData.battleLogs = [];
-      
-      let targetClassTag = classTag;
-      if (!targetClassTag && currentUser) {
-        if (currentUser.role === 'student') {
-          const st = appData.students[currentUser.id];
-          targetClassTag = st ? (st.classId || '') : '';
-        } else if (currentUser.role === 'teacher') {
-          targetClassTag = selectedTeacherClass;
-        }
-      }
-
-      const newLog = {
-        id: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        text: text,
-        type: type,
-        classTag: targetClassTag || 'ALL'
-      };
-      appData.battleLogs.unshift(newLog);
-      
-      if (appData.battleLogs.length > 50) {
-        appData.battleLogs = appData.battleLogs.slice(0, 50);
-      }
-
-      saveData();
-      renderBattleLogs();
-    }
-
-    function clearBattleLogs() {
-      if (!confirm("Are you sure you want to clear classroom events and battle logs?")) return;
-      appData.battleLogs = [];
-      saveData();
-      renderBattleLogs();
-      showToast("Logs Cleared", "Classroom log feed has been reset.", "info");
-    }
-
     function renderBattleLogs() {
       const stLogBox = document.getElementById('studentBattleLogs');
       const tcLogBox = document.getElementById('teacherBattleLogs');
       const allLogs = appData.battleLogs || [];
 
-      // 1. 學生端
       if (stLogBox && currentUser && currentUser.role === 'student') {
         const st = appData.students[currentUser.id];
         const studentClasses = st ? parseStudentClasses(st.classId).map(c => c.toLowerCase()) : [];
@@ -2004,7 +2016,6 @@
         stLogBox.innerHTML = html;
       }
 
-      // 2. 老師端
       if (tcLogBox && currentUser && currentUser.role === 'teacher') {
         const targetClass = selectedTeacherClass || 'ALL';
         const badgeEl = document.getElementById('teacherLogFilterBadge');
@@ -2077,10 +2088,7 @@
       const u = (document.getElementById('loginUsername').value || '').trim().toLowerCase();
       const p = (document.getElementById('loginPassword').value || '').trim();
 
-      if (!u || !p) {
-        alert("Please enter both username and password.");
-        return;
-      }
+      if (!u || !p) return alert("Please enter both username and password.");
 
       if (activeLoginTab === 'superadmin') {
         const sa = Object.values(appData.superAdmins || {}).find(a => a && (a.username || '').toLowerCase() === u && String(a.password) === p);
@@ -2089,7 +2097,7 @@
           enterDashboard();
           return;
         }
-        alert("Super Admin login failed. Invalid username or password.");
+        alert("Super Admin login failed. Invalid credentials.");
       } else if (activeLoginTab === 'teacher') {
         const tc = Object.values(appData.teachers || {}).find(t => t && (t.username || t.id || '').toLowerCase() === u && String(t.password) === p);
         if (tc) {
@@ -2097,7 +2105,7 @@
           enterDashboard();
           return;
         }
-        alert("Teacher login failed. Invalid username or password.");
+        alert("Teacher login failed. Invalid credentials.");
       } else {
         const st = Object.values(appData.students || {}).find(s => s && (s.username || s.id || '').toLowerCase() === u && String(s.password) === p);
         if (st) {
@@ -2105,7 +2113,7 @@
           enterDashboard();
           return;
         }
-        alert("Student login failed. Invalid username or password.");
+        alert("Student login failed. Invalid credentials.");
       }
     }
 
@@ -2229,59 +2237,27 @@
       let requiredTotal = nextExp;
       let requiredMax = 30;
 
-      if (stage === "DIGI-EGG") {
-        requiredMax = 30;
-      } else if (stage === "IN-TRAINING") {
-        requiredMax = 90;
-      } else if (stage === "ROOKIE") {
-        requiredMax = 250;
-      } else if (stage === "CHAMPION") {
-        requiredMax = 600;
-      } else if (stage === "ULTIMATE") {
-        requiredMax = 1200;
-      }
+      if (stage === "DIGI-EGG") requiredMax = 30;
+      else if (stage === "IN-TRAINING") requiredMax = 90;
+      else if (stage === "ROOKIE") requiredMax = 250;
+      else if (stage === "CHAMPION") requiredMax = 600;
+      else if (stage === "ULTIMATE") requiredMax = 1200;
 
       const expMet = (st.exp || 0) >= nextExp;
       const totalMet = totalTraits >= requiredTotal;
       const maxMet = maxTrait >= requiredMax;
 
       if (!expMet) {
-        return {
-          canEvolve: false,
-          isMax: false,
-          expMet, totalMet, maxMet,
-          requiredTotal, requiredMax, totalTraits, maxTrait, nextExp,
-          message: `Need ${nextExp - (st.exp || 0)} more EXP`
-        };
+        return { canEvolve: false, isMax: false, expMet, totalMet, maxMet, message: `Need ${nextExp - (st.exp || 0)} more EXP` };
       }
-
       if (!totalMet) {
-        return {
-          canEvolve: false,
-          isMax: false,
-          expMet, totalMet, maxMet,
-          requiredTotal, requiredMax, totalTraits, maxTrait, nextExp,
-          message: `⚠️ EXP ready! Allocate all trait points (${requiredTotal - totalTraits} left)`
-        };
+        return { canEvolve: false, isMax: false, expMet, totalMet, maxMet, message: `⚠️ Allocate remaining trait points (${requiredTotal - totalTraits} left)` };
       }
-
       if (!maxMet) {
-        return {
-          canEvolve: false,
-          isMax: false,
-          expMet, totalMet, maxMet,
-          requiredTotal, requiredMax, totalTraits, maxTrait, nextExp,
-          message: `⚠️ Need at least one dominant trait >= ${requiredMax} pts (Max: ${maxTrait})`
-        };
+        return { canEvolve: false, isMax: false, expMet, totalMet, maxMet, message: `⚠️ Dominant trait must be >= ${requiredMax} pts (Current Max: ${maxTrait})` };
       }
 
-      return {
-        canEvolve: true,
-        isMax: false,
-        expMet: true, totalMet: true, maxMet: true,
-        requiredTotal, requiredMax, totalTraits, maxTrait, nextExp,
-        message: "✨ Evolution Ready! Click to EVOLVE!"
-      };
+      return { canEvolve: true, isMax: false, expMet: true, totalMet: true, maxMet: true, message: "✨ Evolution Ready! Click to EVOLVE!" };
     }
 
     function updateStudentUI() {
@@ -2317,11 +2293,8 @@
       }
 
       const shieldBanner = document.getElementById('stShieldBanner');
-      if (st.hasShield) {
-        shieldBanner.classList.remove('hidden');
-      } else {
-        shieldBanner.classList.add('hidden');
-      }
+      if (st.hasShield) shieldBanner.classList.remove('hidden');
+      else shieldBanner.classList.add('hidden');
 
       const digiviceCard = document.getElementById('studentDigiviceCard');
       digiviceCard.className = `md:col-span-2 digi-card ${st.skinId || 'skin-classic'} rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500`;
@@ -2337,9 +2310,7 @@
       document.getElementById('stGachaTicketsBadge').innerHTML = `<i class="fa-solid fa-ticket mr-1"></i> Tickets: ${st.gachaTickets || 0}`;
 
       const gachaModalTickets = document.getElementById('gachaAvailableTickets');
-      if (gachaModalTickets) {
-        gachaModalTickets.textContent = st.gachaTickets || 0;
-      }
+      if (gachaModalTickets) gachaModalTickets.textContent = st.gachaTickets || 0;
 
       const hpPct = Math.max(0, Math.min(100, Math.round((st.hp / maxHp) * 100)));
       document.getElementById('stHpText').textContent = `${st.hp} / ${maxHp} HP`;
@@ -2355,17 +2326,12 @@
       const noticeEl = document.getElementById('stNextEvolveNotice');
       if (noticeEl) {
         noticeEl.textContent = req.message;
-        noticeEl.className = req.canEvolve 
-          ? "text-[11px] text-amber-300 font-bold text-right animate-pulse" 
-          : "text-[11px] text-slate-400 text-right";
+        noticeEl.className = req.canEvolve ? "text-[11px] text-amber-300 font-bold text-right animate-pulse" : "text-[11px] text-slate-400 text-right";
       }
 
       const btnEvolve = document.getElementById('btnEvolve');
-      if (req.canEvolve && !st.isFainted) {
-        btnEvolve.classList.remove('hidden');
-      } else {
-        btnEvolve.classList.add('hidden');
-      }
+      if (req.canEvolve && !st.isFainted) btnEvolve.classList.remove('hidden');
+      else btnEvolve.classList.add('hidden');
 
       const maxTrait = Math.max(10, st.courage || 0, st.love || 0, st.discipline || 0, st.wisdom || 0);
       document.getElementById('stValCourage').textContent = st.courage || 0;
@@ -2389,16 +2355,20 @@
         showToast("Trait Allocation", `Not enough points! You have ${st.statPool || 0} pts remaining.`, "info");
         return;
       }
-      st.statPool -= amount;
-      st[trait] = (st[trait] || 0) + amount;
+      
+      const newPool = st.statPool - amount;
+      const newVal = (st[trait] || 0) + amount;
+
+      patchStudentAtomic(currentUser.id, {
+        statPool: newPool,
+        [trait]: newVal
+      });
+
       addBattleLog(`🧬 ${st.name} allocated +${amount} to [${trait.toUpperCase()}].`, "normal", st.classId);
-      saveData();
       updateStudentUI();
     }
 
-    // 全螢幕進化動畫演出演出控制器
     let evoCutsceneTimer = null;
-
     function playEvolutionCutscene(tamerName, prevDigi, nextDigi, onComplete) {
       const overlay = document.getElementById('evoCutsceneOverlay');
       const prevImg = document.getElementById('evoCutscenePrevImg');
@@ -2422,12 +2392,10 @@
       overlay.classList.remove('hidden');
       playSound('evolve');
 
-      // 階段 1：光芒蓄力
       evoCutsceneTimer = setTimeout(() => {
         prevImg.style.transform = 'scale(1.2) rotate(5deg)';
         prevImg.style.filter = 'brightness(3) drop-shadow(0 0 35px #38bdf8)';
         
-        // 階段 2：型態蛻變
         setTimeout(() => {
           prevImg.style.opacity = '0';
           nextImg.style.opacity = '1';
@@ -2440,7 +2408,6 @@
             confetti({ particleCount: 160, spread: 100, origin: { y: 0.5 } });
           }
 
-          // 階段 3：定格完成
           setTimeout(() => {
             nextImg.style.transform = 'scale(1) rotate(0deg)';
             nextImg.style.filter = 'drop-shadow(0 0 25px #f59e0b)';
@@ -2478,7 +2445,7 @@
 
       const branch = curDigi.stage === "DIGI-EGG" ? EVOLUTION_MATRIX["DIGI-EGG"] : (EVOLUTION_MATRIX[curDigi.id] || EVOLUTION_MATRIX["agumon"]);
       if (!branch) {
-        showToast("Evolution", "Max evolution stage already reached!", "info");
+        showToast("Evolution", "Max evolution stage reached!", "info");
         return;
       }
 
@@ -2500,20 +2467,21 @@
       const nextDigi = DIGIMON_DB[nextId] || curDigi;
 
       playEvolutionCutscene(st.name, curDigi, nextDigi, () => {
-        st.currentDigiId = nextId;
-        st.hp = nextDigi.maxHp || 650;
-        if (!st.unlockedDex) st.unlockedDex = {};
-        st.unlockedDex[nextId] = true;
+        const unlocked = Object.assign({}, st.unlockedDex || {});
+        unlocked[nextId] = true;
+
+        patchStudentAtomic(currentUser.id, {
+          currentDigiId: nextId,
+          hp: nextDigi.maxHp || 650,
+          unlockedDex: unlocked
+        });
 
         addBattleLog(`✨ [DIGIVOLUTION] ${st.name}'s [${curDigi.name}] digivolved into [${nextDigi.name}]!`, "evolution", st.classId);
-        showToast("Digivolution Complete!", `Congratulations! Your Digimon evolved into [${nextDigi.name}]!`, "evolution");
-
-        saveData();
+        showToast("Digivolution Complete!", `Your Digimon evolved into [${nextDigi.name}]!`, "evolution");
         updateStudentUI();
       });
     }
 
-    // 輔助函式：從現有 Image 元素抽取已載入成功的像素 DataURL
     function getCanvasDataFromElement(imgEl) {
       try {
         if (!imgEl || !imgEl.complete || imgEl.naturalWidth === 0) return null;
@@ -2528,7 +2496,6 @@
       }
     }
 
-    // 輔助函式：測試載入單個路徑並轉為 Base64
     function tryLoadImageBase64(src) {
       return new Promise((resolve) => {
         if (!src) return resolve(null);
@@ -2545,25 +2512,19 @@
             ctx.drawImage(img, 0, 0);
             resolve(canvas.toDataURL('image/png'));
           } catch (e) {
-            // 本機 file:// 或跨域限制時直接回傳路徑
             resolve(src);
           }
         };
-        img.onerror = function() {
-          resolve(null);
-        };
+        img.onerror = () => resolve(null);
         img.src = src;
       });
     }
 
-    // 匯出個人數碼檔案圖卡（徹底解決圖片縮小與空白問題）
     async function downloadStudentCard(studentId) {
       const st = appData.students[studentId];
       if (!st) return;
-
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
 
-      // 1. 填入文字資料
       document.getElementById('cardStudentName').textContent = st.name;
       document.getElementById('cardDigiName').textContent = `${digi.name} (${digi.type || 'Free'})`;
       document.getElementById('cardClassInfo').textContent = `Classes: ${formatStudentClassesDisplay(st)} · ID: ${st.username || st.id}`;
@@ -2578,8 +2539,6 @@
       document.getElementById('cardIssueDate').textContent = `ISSUED: ${new Date().toLocaleDateString()}`;
 
       const cardImg = document.getElementById('cardDigiImg');
-      
-      // 確保圖片在框內完美置中且放大填滿 (修復原本 CSS object-contain 遺漏 object-fit 關鍵字的問題)
       cardImg.style.width = "100%";
       cardImg.style.height = "100%";
       cardImg.style.objectFit = "contain";
@@ -2587,23 +2546,17 @@
 
       showToast("Generating Tamer Card", "Loading Digimon visual...", "info");
 
-      // 2. 策略一：優先檢查目前畫面（學生介面或老師端列表）中是否已有載入完成的此學生/暴龍頭像
       let finalImgSrc = null;
-
-      // 檢查學生端主畫面
       const stImgEl = document.getElementById('stDigiImage');
       if (currentUser && currentUser.role === 'student' && stImgEl && stImgEl.complete && stImgEl.naturalWidth > 0) {
         finalImgSrc = getCanvasDataFromElement(stImgEl) || stImgEl.currentSrc || stImgEl.src;
       }
 
-      // 檢查老師端學生卡片內的 <img>
       if (!finalImgSrc) {
         const teacherGridImgs = document.querySelectorAll('#teacherStudentGrid img');
         for (const tImg of teacherGridImgs) {
           if (tImg.complete && tImg.naturalWidth > 0 && tImg.src && !tImg.src.startsWith('data:image/svg')) {
-            // 比對檔名或路徑
-            const lowerSrc = tImg.src.toLowerCase();
-            if (lowerSrc.includes(String(st.currentDigiId).toLowerCase())) {
+            if (tImg.src.toLowerCase().includes(String(st.currentDigiId).toLowerCase())) {
               finalImgSrc = getCanvasDataFromElement(tImg) || tImg.currentSrc || tImg.src;
               break;
             }
@@ -2611,26 +2564,16 @@
         }
       }
 
-      // 3. 策略二：若畫面上沒抓到，探測所有可能的本地檔名與副檔名
       if (!finalImgSrc) {
         const rawId = String(st.currentDigiId).trim();
         const cleanLower = rawId.toLowerCase();
         const capitalized = cleanLower.charAt(0).toUpperCase() + cleanLower.slice(1);
-        const upperAll = cleanLower.toUpperCase();
-
         const candidates = [
           `./images/${cleanLower}.png`,
           `./images/${capitalized}.png`,
           `./images/${rawId}.png`,
-          `./images/${cleanLower}.PNG`,
-          `./images/${capitalized}.PNG`,
           `./images/${cleanLower}.jpg`,
-          `./images/${capitalized}.jpg`,
-          `./images/${cleanLower}.JPG`,
-          `./images/${cleanLower}.jpeg`,
-          `./images/${cleanLower}.webp`,
           `images/${cleanLower}.png`,
-          `images/${capitalized}.png`,
           digi.img
         ].filter(Boolean);
 
@@ -2643,24 +2586,15 @@
         }
       }
 
-      // 4. 策略三：若本地真無圖片，使用該暴龍的徽章 SVG（並確保填滿卡框）
-      if (!finalImgSrc) {
-        finalImgSrc = digi.svg || getDigiImgSrc(st.currentDigiId);
-      }
-
-      // 注入圖片並等待算繪
+      if (!finalImgSrc) finalImgSrc = digi.svg || getDigiImgSrc(st.currentDigiId);
       cardImg.src = finalImgSrc;
 
       await new Promise((resolve) => {
         if (cardImg.complete) return resolve();
         cardImg.onload = () => resolve();
-        cardImg.onerror = () => {
-          cardImg.src = digi.svg;
-          resolve();
-        };
+        cardImg.onerror = () => { cardImg.src = digi.svg; resolve(); };
       });
 
-      // 延遲渲染以確保 DOM 樣式與圖片到位
       setTimeout(() => {
         const node = document.getElementById('tamerIdCardNode');
         html2canvas(node, {
@@ -2683,38 +2617,19 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(blobUrl);
               }, 1500);
-              showToast("Card Exported", `Saved ${st.name}'s Digimon Tamer Card!`, "heal");
-            } else {
-              fallbackCardExport(canvas, st.name, digi.name);
+              showToast("Card Exported", `Saved ${st.name}'s Digimon Card!`, "heal");
             }
           }, 'image/png');
         }).catch(err => {
           console.warn("Card capture error:", err);
-          fallbackCardExport(null, st.name, digi.name);
         });
       }, 250);
-    }
-
-    // 備用輸出方案：直接開啟視窗或提供圖片右鍵另存
-    function fallbackCardExport(canvas, studentName, digiName) {
-      try {
-        const dataUrl = canvas.toDataURL('image/png');
-        const win = window.open();
-        if (win) {
-          win.document.write(`<title>TamerCard - ${studentName}</title><body style="margin:0;background:#090d16;display:flex;justify-content:center;align-items:center;min-height:100vh;"><img src="${dataUrl}" style="max-width:90%;border-radius:18px;box-shadow:0 0 20px rgba(56,189,248,0.4);"><p style="position:fixed;bottom:10px;color:#94a3b8;font-family:sans-serif;font-size:12px;">Right click or long press to save image</p></body>`);
-        } else {
-          alert("Popup blocked! Please allow popups or run this project via a local web server (e.g. VS Code Live Server / Cloudflare Pages).");
-        }
-      } catch (err) {
-        alert("Due to browser security policy on file://, please run this page using a local server (e.g., Live Server) or deploy to Cloudflare Pages to enable direct image downloading.");
-      }
     }
 
     function renderStudentSkills(digi, st) {
       const grid = document.getElementById('stSkillsGrid');
       if (!grid) return;
       grid.innerHTML = '';
-
       const skills = digi.skills || [{ name: "Tackle Strike", power: 20, type: "damage", icon: "fa-hand-fist" }];
 
       skills.forEach((sk, idx) => {
@@ -2749,14 +2664,13 @@
       if (!st) return;
 
       if (st.isFainted) {
-        showToast("Action Forbidden", "❌ Your Digimon is fainted! Request a teacher to revive you.", "info");
+        showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
         playSound('faint');
         return;
       }
 
-      const quota = st.attackQuota || 0;
-      if (quota <= 0) {
-        showToast("Action Depleted", "❌ Attacks left: 0! Wait for teacher reward or use Digi-Battery.", "info");
+      if ((st.attackQuota || 0) <= 0) {
+        showToast("Action Depleted", "❌ Attacks left: 0!", "info");
         return;
       }
 
@@ -2765,32 +2679,36 @@
 
       if (targetMode === 'boss') {
         const teachersList = Object.values(appData.teachers || {});
-        let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId];
-        if (!tc && teachersList.length > 0) tc = teachersList[0];
+        let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
         if (!tc) return alert("No active Teacher Boss found.");
 
         const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+        const updates = {};
+        const newQuota = Math.max(0, (st.attackQuota || 0) - 1);
+        updates[`students/${currentUser.id}/attackQuota`] = newQuota;
 
         if (skill.type === 'heal') {
-          st.hp = Math.min(digi.maxHp, (st.hp || 100) + skill.power);
+          const newHp = Math.min(digi.maxHp, (st.hp || 100) + skill.power);
+          updates[`students/${currentUser.id}/hp`] = newHp;
           addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
           showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
           playSound('heal');
         } else {
-          tc.hp = Math.max(0, (tc.hp !== undefined ? tc.hp : tc.maxHp) - skill.power);
-          addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} unleashed [${skill.name}] on ${tc.name}'s ${tcDigi.name} for ${skill.power} DMG!`, "battle", st.classId);
-          showToast("Boss Struck!", `Dealt ${skill.power} DMG to ${tc.name}'s Boss!`, "damage");
+          const bossNewHp = Math.max(0, (tc.hp !== undefined ? tc.hp : tc.maxHp) - skill.power);
+          updates[`teachers/${tc.id}/hp`] = bossNewHp;
+          addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG!`, "battle", st.classId);
+          showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
           playSound('attack');
         }
-        st.attackQuota--;
+        executeAtomicMultiPathUpdate(updates);
       } else {
         const peers = getStudentsSharingClass(st);
-        if (peers.length === 0) return alert("No classmates found in your class(es) to challenge.");
+        if (peers.length === 0) return alert("No classmates found to challenge.");
 
-        let menu = `Choose a classmate from your class for ${digi.name}'s [${skill.name}] (${skill.power} ${skill.type.toUpperCase()}):\n\n`;
+        let menu = `Choose a classmate for ${digi.name}'s [${skill.name}]:\n\n`;
         peers.forEach((p, idx) => {
           const peerDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-          menu += `${idx + 1}. ${p.name} [${formatStudentClassesDisplay(p)}] (${peerDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''} ${p.hasShield ? '🛡️' : ''}\n`;
+          menu += `${idx + 1}. ${p.name} (${peerDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
         });
 
         const choice = prompt(menu, "1");
@@ -2799,46 +2717,41 @@
 
         if (targetIdx >= 0 && targetIdx < peers.length) {
           const target = peers[targetIdx];
-          st.attackQuota--;
+          const updates = {};
+          updates[`students/${currentUser.id}/attackQuota`] = Math.max(0, (st.attackQuota || 0) - 1);
 
           if (skill.type === 'heal') {
-            target.hp = Math.min(DIGIMON_DB[target.currentDigiId]?.maxHp || 100, (target.hp || 100) + skill.power);
+            const healedHp = Math.min(DIGIMON_DB[target.currentDigiId]?.maxHp || 100, (target.hp || 100) + skill.power);
+            updates[`students/${target.id}/hp`] = healedHp;
             addBattleLog(`💚 [FRIENDSHIP] ${st.name} healed classmate [${target.name}] for +${skill.power} HP!`, "heal", st.classId);
             showToast("Classmate Healed", `Healed ${target.name} for +${skill.power} HP!`, "heal");
             playSound('heal');
           } else {
             if (target.hasShield) {
-              target.hasShield = false;
-              addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield neutralized ${st.name}'s [${skill.name}]!`, "battle", st.classId);
+              updates[`students/${target.id}/hasShield`] = false;
+              addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield neutralized ${st.name}'s attack!`, "battle", st.classId);
               showToast("Attack Blocked!", `${target.name}'s shield absorbed the attack!`, "info");
               playSound('shield');
             } else {
-              target.hp = Math.max(0, (target.hp || 100) - skill.power);
-              addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck classmate [${target.name}] with [${skill.name}] for ${skill.power} DMG!`, "battle", st.classId);
+              const targetHp = Math.max(0, (target.hp || 100) - skill.power);
+              updates[`students/${target.id}/hp`] = targetHp;
+              addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck [${target.name}] for ${skill.power} DMG!`, "battle", st.classId);
               showToast("PVP Hit!", `Dealt ${skill.power} DMG to ${target.name}!`, "damage");
               playSound('attack');
 
-              if (target.hp <= 0) {
-                target.isFainted = true;
-                target.hp = 0;
-
-                st.exp = (st.exp || 0) + 100;
-                st.statPool = (st.statPool || 0) + 100;
-
-                addBattleLog(`💀 [FATAL STRIKE] [${target.name}] was defeated by [${st.name}]! ${st.name} gained +100 EXP & +100 Trait Points!`, "battle", st.classId);
-                showToast("Enemy Incapacitated!", `Defeated ${target.name}! Gained +100 EXP & +100 Trait Points!`, "evolution");
+              if (targetHp === 0) {
+                updates[`students/${target.id}/isFainted`] = true;
+                updates[`students/${currentUser.id}/exp`] = (st.exp || 0) + 100;
+                updates[`students/${currentUser.id}/statPool`] = (st.statPool || 0) + 100;
+                addBattleLog(`💀 [FATAL STRIKE] [${target.name}] was defeated by [${st.name}]! ${st.name} gained +100 EXP!`, "battle", st.classId);
+                showToast("Enemy Incapacitated!", `Defeated ${target.name}! +100 EXP!`, "evolution");
                 playSound('evolve');
               }
             }
           }
-          syncSingleStudent(target.id);
-        } else {
-          alert("Invalid classmate selection.");
-          return;
+          executeAtomicMultiPathUpdate(updates);
         }
       }
-
-      saveData();
       updateStudentUI();
     }
 
@@ -2892,7 +2805,18 @@
       addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal", st.classId);
       showToast("Item Consumed!", `${itemInfo.name}: ${resultText}`, "heal");
 
-      saveData();
+      patchStudentAtomic(currentUser.id, {
+        inventory: st.inventory,
+        exp: st.exp,
+        statPool: st.statPool,
+        hp: st.hp,
+        hasShield: st.hasShield,
+        skinId: st.skinId,
+        attackQuota: st.attackQuota,
+        courage: st.courage,
+        love: st.love
+      });
+
       updateStudentUI();
     }
 
@@ -2900,166 +2824,139 @@
       if (e) e.stopPropagation();
       const s = appData.students[studentId];
       if (!s) return;
-
-      s.isStarred = !s.isStarred;
-      syncSingleStudent(studentId);
-      saveLocalCache();
-      renderTeacherGrid();
+      const newState = !s.isStarred;
+      patchStudentAtomic(studentId, { isStarred: newState });
     }
 
     function teacherReviveStudent(studentId) {
       const s = appData.students[studentId];
       if (!s) return;
       const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-      s.isFainted = false;
-      s.hp = Math.round(digi.maxHp * 0.5);
+      const reviveHp = Math.round(digi.maxHp * 0.5);
       playSound('heal');
-      addBattleLog(`✨ [REVIVAL] Teacher revived [${s.name}] back to life with ${s.hp} HP!`, "heal", s.classId);
-      showToast("Student Revived!", `Restored ${s.name} from fainted state!`, "heal");
-      syncSingleStudent(studentId);
-      saveData();
-      renderTeacherGrid();
+      addBattleLog(`✨ [REVIVAL] Teacher revived [${s.name}] with ${reviveHp} HP!`, "heal", s.classId);
+      showToast("Student Revived!", `Restored ${s.name} to life!`, "heal");
+
+      patchStudentAtomic(studentId, {
+        isFainted: false,
+        hp: reviveHp
+      });
     }
 
     function teacherDegradeStudent(studentId) {
       const s = appData.students[studentId];
       if (!s) return;
       const curDigi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-
-      if (curDigi.stage === "DIGI-EGG") {
-        alert("This Digimon is already at the Digi-Egg stage!");
-        return;
-      }
+      if (curDigi.stage === "DIGI-EGG") return alert("Already a Digi-Egg!");
 
       const prevDigiId = getPreviousDigiId(s.currentDigiId);
       const prevDigi = DIGIMON_DB[prevDigiId] || DIGIMON_DB['digitama1'];
 
-      if (!confirm(`Are you sure you want to degrade ${s.name}'s [${curDigi.name}] down to [${prevDigi.name}]?`)) return;
+      if (!confirm(`Degrade ${s.name}'s [${curDigi.name}] to [${prevDigi.name}]?`)) return;
 
-      s.currentDigiId = prevDigiId;
-      s.hp = prevDigi.maxHp || 100;
-      s.isFainted = false;
-      s.exp = 0;
-      s.statPool = 0;
-      s.courage = 0;
-      s.love = 0;
-      s.discipline = 0;
-      s.wisdom = 0;
       playSound('faint');
+      addBattleLog(`🔻 [DE-EVOLVE] Teacher degraded [${s.name}] to [${prevDigi.name}].`, "battle", s.classId);
+      showToast("De-Evolution", `${s.name} degraded to ${prevDigi.name}!`, "damage");
 
-      addBattleLog(`🔻 [DE-EVOLVE] Teacher degraded [${s.name}]'s Digimon back to [${prevDigi.name}].`, "battle", s.classId);
-      showToast("De-Evolution", `${s.name}'s Digimon degraded to ${prevDigi.name}!`, "damage");
-
-      syncSingleStudent(studentId);
-      saveData();
-      renderTeacherGrid();
+      patchStudentAtomic(studentId, {
+        currentDigiId: prevDigiId,
+        hp: prevDigi.maxHp || 100,
+        isFainted: false,
+        exp: 0,
+        statPool: 0,
+        courage: 0,
+        love: 0,
+        discipline: 0,
+        wisdom: 0
+      });
     }
 
     function teacherRebirthStudent(studentId) {
       const s = appData.students[studentId];
       if (!s) return;
-      if (!confirm(`Revert ${s.name}'s Digimon completely back into a random Digi-Egg? All stats and EXP will be reset.`)) return;
+      if (!confirm(`Revert ${s.name} back to a random Digi-Egg? Stats will reset.`)) return;
 
       const randomEgg = getRandomEggId();
       const eggDigi = DIGIMON_DB[randomEgg];
 
-      s.currentDigiId = randomEgg;
-      s.exp = 0;
-      s.statPool = 0;
-      s.hp = 100;
-      s.isFainted = false;
-      s.attackQuota = 0;
-      s.courage = 0;
-      s.love = 0;
-      s.discipline = 0;
-      s.wisdom = 0;
-
       playSound('faint');
-      addBattleLog(`🔄 [REBIRTH] Teacher reverted [${s.name}] back to [${eggDigi.name}].`, "battle", s.classId);
-      showToast("Revert to Digi-Egg", `${s.name}'s Digimon reverted to [${eggDigi.name}]!`, "damage");
+      addBattleLog(`🔄 [REBIRTH] Teacher reverted [${s.name}] to [${eggDigi.name}].`, "battle", s.classId);
+      showToast("Revert to Digi-Egg", `${s.name} reverted to [${eggDigi.name}]!`, "damage");
 
-      syncSingleStudent(studentId);
-      saveData();
-      renderTeacherGrid();
+      patchStudentAtomic(studentId, {
+        currentDigiId: randomEgg,
+        hp: 100,
+        isFainted: false,
+        exp: 0,
+        statPool: 0,
+        attackQuota: 0,
+        courage: 0,
+        love: 0,
+        discipline: 0,
+        wisdom: 0
+      });
     }
 
     function superadminFullResetStudent(studentId) {
       const s = appData.students[studentId];
       if (!s) return;
-
-      const promptMsg = `⚠️ WARNING: FULL FACTORY RESET FOR [${s.name}] (${s.username})\n\nType 'RESET' to confirm:`;
-      const input = prompt(promptMsg, "");
-      if (input !== 'RESET') {
-        if (input !== null) alert("Reset aborted. You must type 'RESET' exactly.");
-        return;
-      }
+      if (prompt(`Type 'RESET' to confirm factory reset for [${s.name}]:`) !== 'RESET') return;
 
       const randomEgg = getRandomEggId();
-      s.currentDigiId = randomEgg;
-      s.exp = 0;
-      s.statPool = 0;
-      s.hp = 100;
-      s.isFainted = false;
-      s.hasShield = false;
-      s.isStarred = false;
-      s.attackQuota = 0;
-      s.gachaTickets = 0;
-      s.skinId = "skin-classic";
-      s.inventory = {};
-      s.unlockedDex = { [randomEgg]: true };
-      s.courage = 0;
-      s.love = 0;
-      s.discipline = 0;
-      s.wisdom = 0;
-
       playSound('faint');
-      addBattleLog(`⚡ [SUPERADMIN RESET] Student account [${s.name}] was completely factory-reset!`, "battle", s.classId);
-      showToast("Student Reset", `${s.name}'s account data, tickets & Dex have been completely wiped!`, "damage");
+      addBattleLog(`⚡ [RESET] Student account [${s.name}] was factory-reset!`, "battle", s.classId);
+      showToast("Student Reset", `${s.name}'s account data wiped!`, "damage");
 
-      syncSingleStudent(studentId);
-      saveData();
-      renderSuperAdminDashboard();
+      patchStudentAtomic(studentId, {
+        currentDigiId: randomEgg,
+        hp: 100,
+        exp: 0,
+        statPool: 0,
+        isFainted: false,
+        hasShield: false,
+        isStarred: false,
+        attackQuota: 0,
+        gachaTickets: 0,
+        skinId: "skin-classic",
+        inventory: {},
+        unlockedDex: { [randomEgg]: true },
+        courage: 0,
+        love: 0,
+        discipline: 0,
+        wisdom: 0
+      });
     }
 
     function superadminFullResetAllStudents() {
-      const promptMsg = `⚠️ EXTREME WARNING: FULL CLASS FACTORY RESET\n\nType 'RESET ALL' to confirm:`;
-      const input = prompt(promptMsg, "");
-      if (input !== 'RESET ALL') {
-        if (input !== null) alert("Class reset aborted. You must type 'RESET ALL' exactly.");
-        return;
-      }
-
-      const students = appData.students || {};
+      if (prompt(`Type 'RESET ALL' to confirm reset for ALL students:`) !== 'RESET ALL') return;
+      const updates = {};
       let count = 0;
 
-      Object.keys(students).forEach(id => {
-        const s = students[id];
+      Object.keys(appData.students || {}).forEach(id => {
         const randomEgg = getRandomEggId();
-        s.currentDigiId = randomEgg;
-        s.exp = 0;
-        s.statPool = 0;
-        s.hp = 100;
-        s.isFainted = false;
-        s.hasShield = false;
-        s.isStarred = false;
-        s.attackQuota = 0;
-        s.gachaTickets = 0;
-        s.skinId = "skin-classic";
-        s.inventory = {};
-        s.unlockedDex = { [randomEgg]: true };
-        s.courage = 0;
-        s.love = 0;
-        s.discipline = 0;
-        s.wisdom = 0;
+        updates[`students/${id}/currentDigiId`] = randomEgg;
+        updates[`students/${id}/hp`] = 100;
+        updates[`students/${id}/exp`] = 0;
+        updates[`students/${id}/statPool`] = 0;
+        updates[`students/${id}/isFainted`] = false;
+        updates[`students/${id}/hasShield`] = false;
+        updates[`students/${id}/isStarred`] = false;
+        updates[`students/${id}/attackQuota`] = 0;
+        updates[`students/${id}/gachaTickets`] = 0;
+        updates[`students/${id}/skinId`] = "skin-classic";
+        updates[`students/${id}/inventory`] = {};
+        updates[`students/${id}/unlockedDex`] = { [randomEgg]: true };
+        updates[`students/${id}/courage`] = 0;
+        updates[`students/${id}/love`] = 0;
+        updates[`students/${id}/discipline`] = 0;
+        updates[`students/${id}/wisdom`] = 0;
         count++;
       });
 
       playSound('faint');
-      addBattleLog(`⚡ [SUPERADMIN FULL CLASS RESET] All ${count} student accounts were fully reset and tickets zeroed!`, "battle", "ALL");
-      showToast("Class Reset Complete", `All ${count} students have been completely reset and tickets zeroed!`, "evolution");
-
-      saveData();
-      renderSuperAdminDashboard();
+      addBattleLog(`⚡ [FULL RESET] All ${count} student accounts were reset!`, "battle", "ALL");
+      showToast("Class Reset Complete", `All ${count} students have been reset!`, "evolution");
+      executeAtomicMultiPathUpdate(updates);
     }
 
     function updateTeacherBossHeader() {
@@ -3076,11 +2973,10 @@
       if (!currentUser || currentUser.role !== 'teacher') return;
       const tc = appData.teachers[currentUser.id];
       if (!tc) return;
-      tc.hp = tc.maxHp || 2000;
+      patchTeacherAtomic(currentUser.id, { hp: tc.maxHp || 2000 });
       playSound('heal');
-      addBattleLog(`💚 [TEACHER RECOVER] ${tc.name} fully restored Mega Partner HP to 100%!`, "heal", selectedTeacherClass);
-      showToast("Boss HP Restored", `Partner HP restored to ${tc.maxHp}/${tc.maxHp}!`, "heal");
-      saveData();
+      addBattleLog(`💚 [TEACHER RECOVER] ${tc.name} restored Mega Partner HP to 100%!`, "heal", selectedTeacherClass);
+      showToast("Boss HP Restored", `HP restored to full capacity!`, "heal");
       updateTeacherBossHeader();
     }
 
@@ -3095,7 +2991,6 @@
       });
 
       const sortedClasses = Array.from(allClassesSet).sort();
-
       sel.innerHTML = '<option value="ALL">All Classes (View All Students)</option>';
       sortedClasses.forEach(c => {
         const displayName = appData.classes[c]?.name || c;
@@ -3121,44 +3016,36 @@
     function grantAttackQuota(studentId, amount) {
       const s = appData.students[studentId];
       if (!s) return;
-      s.attackQuota = (s.attackQuota || 0) + amount;
+      const newQuota = (s.attackQuota || 0) + amount;
+      patchStudentAtomic(studentId, { attackQuota: newQuota });
       playSound('shield');
-      addBattleLog(`⚔️ [ACTION QUOTA] Teacher granted +${amount} Attack Quota(s) to ${s.name}.`, "normal", s.classId);
-      showToast("Quota Granted", `Granted +${amount} attack quota(s) to ${s.name}!`, "info");
-      syncSingleStudent(studentId);
-      saveData();
-      renderTeacherGrid();
+      addBattleLog(`⚔️ [ACTION QUOTA] Granted +${amount} Attack Quota to ${s.name}.`, "normal", s.classId);
+      showToast("Quota Granted", `Granted +${amount} quota to ${s.name}!`, "info");
     }
 
     function grantGachaTicket(studentId, amount) {
       const s = appData.students[studentId];
       if (!s) return;
-      s.gachaTickets = (s.gachaTickets || 0) + amount;
+      const newTix = (s.gachaTickets || 0) + amount;
+      patchStudentAtomic(studentId, { gachaTickets: newTix });
       playSound('gacha');
-      addBattleLog(`🎁 [GACHA TICKET] Teacher rewarded +${amount} Gacha Ticket to ${s.name}.`, "gacha", s.classId);
-      showToast("Gacha Ticket Rewarded", `Awarded +${amount} Gacha Ticket to ${s.name}!`, "gacha");
-      syncSingleStudent(studentId);
-      saveData();
-      renderTeacherGrid();
+      addBattleLog(`🎁 [GACHA TICKET] Rewarded +${amount} Ticket to ${s.name}.`, "gacha", s.classId);
+      showToast("Ticket Rewarded", `Awarded +${amount} Ticket to ${s.name}!`, "gacha");
     }
 
     function rewardAllGachaTickets(amount = 1) {
-      if (!currentUser) return;
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        return studentIsInClass(s, selectedTeacherClass);
-      });
-      if (myStudents.length === 0) {
-        showToast("Class Gacha", "No students found in the current class view.", "info");
-        return;
-      }
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      if (myStudents.length === 0) return showToast("Class Gacha", "No students in this class.", "info");
+
+      const updates = {};
       myStudents.forEach(s => {
-        s.gachaTickets = (s.gachaTickets || 0) + amount;
+        updates[`students/${s.id}/gachaTickets`] = (s.gachaTickets || 0) + amount;
       });
+
+      executeAtomicMultiPathUpdate(updates);
       playSound('gacha');
-      addBattleLog(`🎉 [CLASS GACHA REWARD] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha", selectedTeacherClass);
-      showToast("Class Gacha Tickets", `All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha");
-      saveData();
-      renderTeacherGrid();
+      addBattleLog(`🎉 [CLASS TICKETS] All ${myStudents.length} students received +${amount} Gacha Ticket!`, "gacha", selectedTeacherClass);
+      showToast("Class Tickets", `Awarded +${amount} Ticket to all ${myStudents.length} students!`, "gacha");
     }
 
     function teacherCastSkill(mode) {
@@ -3169,32 +3056,29 @@
       const pwr = isUlt ? (tc.skillPower || 220) : (tc.techPower || 120);
       const moveName = isUlt ? "Special Move" : "Signature Move";
 
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        return studentIsInClass(s, selectedTeacherClass);
-      });
-
-      if (myStudents.length === 0) {
-        alert("No students found in current class view.");
-        return;
-      }
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      if (myStudents.length === 0) return alert("No students in current class view.");
 
       if (mode.startsWith('aoe_')) {
-        if (!confirm(`💥 Unleash AOE [${moveName}] (${pwr} DMG) on ALL ${myStudents.length} students in this class?`)) return;
+        if (!confirm(`💥 Strike entire class with [${moveName}] (${pwr} DMG)?`)) return;
+        const updates = {};
         myStudents.forEach(s => {
           if (s.hasShield) {
-            s.hasShield = false;
+            updates[`students/${s.id}/hasShield`] = false;
           } else {
-            s.hp = Math.max(0, (s.hp || 100) - pwr);
-            if (s.hp === 0) s.isFainted = true;
+            const nextHp = Math.max(0, (s.hp || 100) - pwr);
+            updates[`students/${s.id}/hp`] = nextHp;
+            if (nextHp === 0) updates[`students/${s.id}/isFainted`] = true;
           }
         });
+        executeAtomicMultiPathUpdate(updates);
         playSound('attack');
         addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle", selectedTeacherClass);
-        showToast("Class AOE Strike", `All ${myStudents.length} students took ${pwr} DMG!`, "damage");
+        showToast("Class AOE Strike", `All ${myStudents.length} students struck!`, "damage");
       } else {
-        let menu = `Select target student for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
+        let menu = `Select target for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
         myStudents.forEach((s, idx) => {
-          menu += `${idx + 1}. ${s.name} [${formatStudentClassesDisplay(s)}] - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''}\n`;
+          menu += `${idx + 1}. ${s.name} - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''}\n`;
         });
         const choice = prompt(menu, "1");
         if (choice === null) return;
@@ -3203,38 +3087,33 @@
         if (targetIdx >= 0 && targetIdx < myStudents.length) {
           const target = myStudents[targetIdx];
           if (target.hasShield) {
-            target.hasShield = false;
-            addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield blocked Boss [${moveName}]!`, "battle", target.classId);
-            showToast("Attack Blocked!", `${target.name}'s shield absorbed the boss attack!`, "info");
+            patchStudentAtomic(target.id, { hasShield: false });
+            addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield absorbed Boss [${moveName}]!`, "battle", target.classId);
+            showToast("Blocked!", `${target.name}'s shield absorbed the damage!`, "info");
             playSound('shield');
           } else {
-            target.hp = Math.max(0, (target.hp || 100) - pwr);
-            if (target.hp === 0) target.isFainted = true;
+            const nextHp = Math.max(0, (target.hp || 100) - pwr);
+            patchStudentAtomic(target.id, {
+              hp: nextHp,
+              isFainted: nextHp === 0
+            });
             playSound('attack');
-            addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] with [${moveName}] for ${pwr} DMG!`, "battle", target.classId);
-            showToast("Single Target Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
+            addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] for ${pwr} DMG!`, "battle", target.classId);
+            showToast("Single Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
           }
-        } else {
-          alert("Invalid target selection.");
-          return;
         }
       }
-      saveData();
-      renderTeacherGrid();
     }
 
-    // 老師端學生列表：學生名字完整呈現（不截斷），卡片具備個人檔案圖卡匯出按鈕
     function renderTeacherGrid() {
       const container = document.getElementById('teacherStudentGrid');
       if (!container || !currentUser) return;
       container.innerHTML = '';
 
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        return studentIsInClass(s, selectedTeacherClass);
-      });
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
 
       if (myStudents.length === 0) {
-        container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No students found in this class view. Click "Manage Students in Class" to add existing students, or "Import Students (Excel)".</div>';
+        container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No students in this class. Click "Manage Students in Class" or import an Excel file.</div>';
         return;
       }
 
@@ -3243,7 +3122,6 @@
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         const card = document.createElement('div');
         card.className = `bg-slate-950 border ${s.isFainted ? 'border-rose-700 bg-rose-950/20' : 'border-slate-800'} rounded-xl p-4 flex flex-col justify-between relative overflow-hidden`;
-        
         const markDot = s.isStarred ? '.' : '';
 
         card.innerHTML = `
@@ -3253,17 +3131,16 @@
                 <span class="font-pixel text-[11px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-bold shadow shrink-0 mt-0.5">
                   #${studentIndex}
                 </span>
-                <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${s.isFainted ? 'text-rose-400' : 'text-cyan-300'} text-sm leading-snug cursor-pointer select-none break-words" title="點擊切換喜愛標記">
-                  ${s.name}${markDot} ${s.hasShield ? '<span title="Shield Active">🛡️</span>' : ''}
+                <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${s.isFainted ? 'text-rose-400' : 'text-cyan-300'} text-sm leading-snug cursor-pointer select-none break-words" title="Click to toggle favorite">
+                  ${s.name}${markDot} ${s.hasShield ? '🛡️' : ''}
                 </span>
               </div>
               
-              <!-- 下載名片按鈕 & 登入ID -->
               <div class="flex items-center gap-1.5 shrink-0">
-                <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="導出該學生個人檔案圖卡">
+                <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="Export Card">
                   <i class="fa-solid fa-id-card"></i>
                 </button>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold" title="Student Login ID">
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold">
                   ID: ${s.username || s.id}
                 </span>
                 <span class="text-[10px] px-2 py-0.5 rounded ${s.isFainted ? 'bg-rose-950 text-rose-300 border border-rose-600' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
@@ -3279,7 +3156,7 @@
               <div class="text-xs">
                 <div class="font-bold text-slate-200">${digi.name}</div>
                 <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 0} / ${digi.maxHp}</div>
-                <div class="text-slate-400 font-mono text-[11px]">EXP: ${s.exp || 0} | Quotas: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span></div>
+                <div class="text-slate-400 font-mono text-[11px]">EXP: ${s.exp || 0} | Quota: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span></div>
               </div>
             </div>
           </div>
@@ -3294,7 +3171,6 @@
               <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
               <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-30 HP</button>
             </div>
-            
             <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-900">
               ${s.isFainted ? `
                 <button onclick="teacherReviveStudent('${s.id}')" class="py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
@@ -3321,86 +3197,73 @@
     function rewardStudent(id, exp) {
       const s = appData.students[id];
       if (!s) return;
-      s.exp = (s.exp || 0) + exp;
-      s.statPool = (s.statPool || 0) + exp;
+      patchStudentAtomic(id, {
+        exp: (s.exp || 0) + exp,
+        statPool: (s.statPool || 0) + exp
+      });
       playSound('heal');
       addBattleLog(`⭐ [REWARD] ${s.name} received +${exp} EXP!`, "normal", s.classId);
       showToast("Reward Given", `Awarded +${exp} EXP to ${s.name}!`, "info");
-      syncSingleStudent(id);
-      saveData();
-      renderTeacherGrid();
     }
 
     function rewardAllStudents(exp) {
-      if (!currentUser) return;
       const targetClass = selectedTeacherClass;
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        return studentIsInClass(s, targetClass);
-      });
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
+      if (myStudents.length === 0) return showToast("Class Reward", "No students in this class.", "info");
 
-      if (myStudents.length === 0) {
-        showToast("Class Reward", "No students found in the current class view to reward.", "info");
-        return;
-      }
-
+      const updates = {};
       myStudents.forEach(s => {
-        s.exp = (s.exp || 0) + exp;
-        s.statPool = (s.statPool || 0) + exp;
+        updates[`students/${s.id}/exp`] = (s.exp || 0) + exp;
+        updates[`students/${s.id}/statPool`] = (s.statPool || 0) + exp;
       });
 
+      executeAtomicMultiPathUpdate(updates);
       playSound('evolve');
-      const classNameDisplay = targetClass === 'ALL' ? 'All Classes' : targetClass;
-      addBattleLog(`🎉 [CLASS REWARD] Full class (${classNameDisplay}, ${myStudents.length} students) gained +${exp} EXP!`, "evolution", targetClass);
-      showToast("Class Reward", `All ${myStudents.length} students in [${classNameDisplay}] gained +${exp} EXP & Points!`, "evolution");
-      
-      saveData();
-      renderTeacherGrid();
+      const label = targetClass === 'ALL' ? 'All Classes' : targetClass;
+      addBattleLog(`🎉 [CLASS REWARD] All ${myStudents.length} students in [${label}] gained +${exp} EXP!`, "evolution", targetClass);
+      showToast("Class Reward", `Awarded +${exp} EXP to ${myStudents.length} students!`, "evolution");
     }
 
     function healStudent(id, amount) {
       const s = appData.students[id];
       if (!s) return;
       const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-      s.hp = Math.min(digi.maxHp, (s.hp || 0) + amount);
-      if (s.hp > 0) s.isFainted = false;
+      const nextHp = Math.min(digi.maxHp, (s.hp || 0) + amount);
+      patchStudentAtomic(id, {
+        hp: nextHp,
+        isFainted: false
+      });
       playSound('heal');
       addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal", s.classId);
-      syncSingleStudent(id);
-      saveData();
-      renderTeacherGrid();
     }
 
     function penalizeHp(id, amount) {
       const s = appData.students[id];
       if (!s) return;
-      s.hp = Math.max(0, (s.hp || 100) - amount);
-      if (s.hp === 0) s.isFainted = true;
+      const nextHp = Math.max(0, (s.hp || 100) - amount);
+      patchStudentAtomic(id, {
+        hp: nextHp,
+        isFainted: nextHp === 0
+      });
       playSound('attack');
       addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP.`, "battle", s.classId);
-      syncSingleStudent(id);
-      saveData();
-      renderTeacherGrid();
     }
 
     function teacherHealAll() {
-      if (!currentUser) return;
-      const myStudents = Object.values(appData.students || {}).filter(s => {
-        return studentIsInClass(s, selectedTeacherClass);
-      });
-      if (myStudents.length === 0) {
-        showToast("Full Recovery", "No students found in current class view.", "info");
-        return;
-      }
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      if (myStudents.length === 0) return showToast("Full Recovery", "No students found.", "info");
+
+      const updates = {};
       myStudents.forEach(s => {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-        s.hp = digi.maxHp || 100;
-        s.isFainted = false;
+        updates[`students/${s.id}/hp`] = digi.maxHp || 100;
+        updates[`students/${s.id}/isFainted`] = false;
       });
+
+      executeAtomicMultiPathUpdate(updates);
       playSound('heal');
-      addBattleLog("💚 [FULL HEAL] Teacher restored all students to 100% HP!", "heal", selectedTeacherClass);
-      showToast("Full Recovery", `All ${myStudents.length} students in this class restored to full HP!`, "heal");
-      saveData();
-      renderTeacherGrid();
+      addBattleLog("💚 [FULL HEAL] Teacher restored all students to full HP!", "heal", selectedTeacherClass);
+      showToast("Full Recovery", `Restored all ${myStudents.length} students to 100% HP!`, "heal");
     }
 
     function handleExcelImport(event) {
@@ -3412,6 +3275,7 @@
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
           const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+          const updates = {};
           let count = 0;
 
           for (let i = 1; i < jsonRows.length; i++) {
@@ -3426,16 +3290,15 @@
             const existing = appData.students[id];
             if (existing) {
               const existingClasses = parseStudentClasses(existing.classId);
-              const incomingClasses = parseStudentClasses(classVal);
-              incomingClasses.forEach(c => {
+              parseStudentClasses(classVal).forEach(c => {
                 if (!existingClasses.some(ec => ec.toLowerCase() === c.toLowerCase())) existingClasses.push(c);
               });
-              existing.classId = existingClasses.join(', ');
-              existing.name = name || existing.name;
-              existing.password = p || existing.password;
+              updates[`students/${id}/classId`] = existingClasses.join(', ');
+              updates[`students/${id}/name`] = name || existing.name;
+              updates[`students/${id}/password`] = p || existing.password;
             } else {
               const randomEgg = getRandomEggId();
-              appData.students[id] = {
+              updates[`students/${id}`] = {
                 id: id, username: u, password: p, name: name, classId: parseStudentClasses(classVal).join(', '),
                 teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
@@ -3443,10 +3306,9 @@
             }
             count++;
           }
-          saveData();
-          populateClassDropdown();
-          renderTeacherGrid();
-          alert(`✅ Successfully imported/updated ${count} student account(s)!`);
+
+          executeAtomicMultiPathUpdate(updates);
+          alert(`✅ Imported/updated ${count} student account(s)!`);
         } catch(err) {
           alert("Import error: " + err.message);
         }
@@ -3463,6 +3325,7 @@
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
           const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+          const updates = {};
           let count = 0;
 
           for (let i = 1; i < jsonRows.length; i++) {
@@ -3477,10 +3340,7 @@
 
             const classesArr = parseStudentClasses(classVal);
             classesArr.forEach(c => {
-              const existingKey = Object.keys(appData.classes || {}).find(k => k.toLowerCase() === c.toLowerCase());
-              if (!existingKey) {
-                appData.classes[c] = { id: c, name: c, teacherId: assignedTeacher };
-              }
+              updates[`classes/${c}`] = { id: c, name: c, teacherId: assignedTeacher };
             });
 
             const existing = appData.students[id];
@@ -3489,12 +3349,12 @@
               classesArr.forEach(c => {
                 if (!existingClasses.some(ec => ec.toLowerCase() === c.toLowerCase())) existingClasses.push(c);
               });
-              existing.classId = existingClasses.join(', ');
-              existing.name = name || existing.name;
-              existing.password = p || existing.password;
+              updates[`students/${id}/classId`] = existingClasses.join(', ');
+              updates[`students/${id}/name`] = name || existing.name;
+              updates[`students/${id}/password`] = p || existing.password;
             } else {
               const randomEgg = getRandomEggId();
-              appData.students[id] = {
+              updates[`students/${id}`] = {
                 id: id, username: u, password: p, name: name, classId: classesArr.join(', '),
                 teacherId: assignedTeacher, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
@@ -3502,9 +3362,9 @@
             }
             count++;
           }
-          saveData();
-          renderSuperAdminDashboard();
-          alert(`✅ Superadmin Excel import successful! Added/updated ${count} students with multi-class assignments.`);
+
+          executeAtomicMultiPathUpdate(updates);
+          alert(`✅ Superadmin Excel import successful! Added/updated ${count} students.`);
         } catch(err) {
           alert("Admin import error: " + err.message);
         }
@@ -3515,12 +3375,12 @@
     let mgrSearchQuery = "";
     function openManageClassStudentsModal() {
       if (selectedTeacherClass === 'ALL') {
-        alert("Please select a specific class in the Current Class dropdown before managing class enrollments.");
+        alert("Please select a specific class first.");
         return;
       }
       mgrSearchQuery = "";
       document.getElementById('mgrStudentSearch').value = "";
-      document.getElementById('mgrModalClassTitle').textContent = `Manage Class Enrollment: ${selectedTeacherClass}`;
+      document.getElementById('mgrModalClassTitle').textContent = `Manage Class: ${selectedTeacherClass}`;
       renderManagerStudentsList();
       document.getElementById('modalClassStudentsManager').classList.remove('hidden');
     }
@@ -3548,7 +3408,7 @@
       allStudents.forEach(s => {
         if (studentIsInClass(s, targetClass)) inClassCount++;
       });
-      document.getElementById('mgrSelectedCount').textContent = `Enrolled in [${targetClass}]: ${inClassCount} students`;
+      document.getElementById('mgrSelectedCount').textContent = `Enrolled in [${targetClass}]: ${inClassCount}`;
 
       const filtered = allStudents.filter(s => {
         if (!mgrSearchQuery) return true;
@@ -3556,7 +3416,7 @@
       });
 
       if (filtered.length === 0) {
-        container.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs">No matching students found in school database.</div>';
+        container.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs">No matching students found.</div>';
         return;
       }
 
@@ -3569,7 +3429,7 @@
             <input type="checkbox" ${isIn ? 'checked' : ''} onchange="toggleStudentClassMembership('${s.id}', '${targetClass}', this.checked)" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
             <div>
               <span class="font-bold text-xs ${isIn ? 'text-cyan-300' : 'text-slate-300'}">${s.name} (${s.username})</span>
-              <span class="text-[10px] text-slate-500 block">Current Classes: ${formatStudentClassesDisplay(s)}</span>
+              <span class="text-[10px] text-slate-500 block">Classes: ${formatStudentClassesDisplay(s)}</span>
             </div>
           </div>
           <span class="text-[10px] px-2 py-0.5 rounded font-bold ${isIn ? 'bg-cyan-900 text-cyan-200' : 'bg-slate-900 text-slate-500'}">
@@ -3586,118 +3446,85 @@
 
       let classes = parseStudentClasses(s.classId);
       const targetClass = classId.trim();
+      const updates = {};
 
       if (add) {
         if (!classes.some(c => c.toLowerCase() === targetClass.toLowerCase())) {
           classes.push(targetClass);
         }
-        if (!appData.classes[targetClass]) {
-          appData.classes[targetClass] = { id: targetClass, name: targetClass, teacherId: currentUser.id };
-          if (dbRef) {
-            firebase.database().ref('classes/' + targetClass).set(appData.classes[targetClass]);
-          }
-        }
-        addBattleLog(`➕ 老師將學生 [${s.name}] 加入班級 [${targetClass}]。`, "normal", targetClass);
-        showToast("已加入班級", `已將 ${s.name} 加入 ${targetClass}！`, "info");
+        updates[`classes/${targetClass}`] = { id: targetClass, name: targetClass, teacherId: currentUser.id };
+        addBattleLog(`➕ Student [${s.name}] joined [${targetClass}].`, "normal", targetClass);
+        showToast("Class Enrollment", `Added ${s.name} to ${targetClass}!`, "info");
       } else {
         classes = classes.filter(c => c.toLowerCase() !== targetClass.toLowerCase());
-        addBattleLog(`➖ 老師將學生 [${s.name}] 從 [${targetClass}] 移除。`, "normal", targetClass);
-        showToast("已移出班級", `已將 ${s.name} 從 ${targetClass} 移除！`, "info");
+        addBattleLog(`➖ Student [${s.name}] left [${targetClass}].`, "normal", targetClass);
+        showToast("Class Enrollment", `Removed ${s.name} from ${targetClass}!`, "info");
       }
 
-      s.classId = classes.join(', ');
-      delete s.classes;
-      
-      saveLocalCache();
-      if (dbRef) {
-        firebase.database().ref('students/' + studentId + '/classId').set(s.classId);
-      }
-      renderManagerStudentsList();
+      updates[`students/${studentId}/classId`] = classes.join(', ');
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        renderManagerStudentsList();
+      });
     }
 
     function promptCreateClass() {
-      const code = prompt("Enter Class Name/Code (e.g. Class-3A, Math-Set1):");
-      if (!code) return;
+      const code = prompt("Enter Class Name/Code (e.g. Class-3A):");
+      if (!code || !code.trim()) return;
       const cleanCode = code.trim();
-      if (!cleanCode) return;
-      appData.classes[cleanCode] = { id: cleanCode, name: cleanCode, teacherId: currentUser.id };
+      
+      const updates = {};
+      updates[`classes/${cleanCode}`] = { id: cleanCode, name: cleanCode, teacherId: currentUser.id };
       selectedTeacherClass = cleanCode;
-      saveData();
-      populateClassDropdown();
-      renderTeacherGrid();
-      renderBattleLogs();
-      showToast("Class Created", `Class [${cleanCode}] is ready! You can now manage students in it.`, "info");
+
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        populateClassDropdown();
+        renderTeacherGrid();
+        renderBattleLogs();
+        showToast("Class Created", `Class [${cleanCode}] created!`, "info");
+      });
     }
 
     function promptDeleteCurrentClass() {
-      if (selectedTeacherClass === 'ALL') {
-        alert("請先在下拉選單選擇要刪除的特定班別！");
-        return;
-      }
-      
+      if (selectedTeacherClass === 'ALL') return alert("Select a specific class to delete.");
       const target = selectedTeacherClass;
-      if (!confirm(`確定要刪除班別 [${target}] 嗎？此操作將解除所有學生在該班的登記。`)) return;
-
-      const deletedKeys = [];
-      Object.keys(appData.classes || {}).forEach(cKey => {
-        if (cKey.toLowerCase() === target.toLowerCase()) {
-          deletedKeys.push(cKey);
-          delete appData.classes[cKey];
-        }
-      });
+      if (!confirm(`Delete class [${target}]? Students will be unassigned from this class.`)) return;
 
       const updates = {};
-      deletedKeys.forEach(k => {
-        updates['classes/' + k] = null;
-      });
+      updates[`classes/${target}`] = null;
 
       Object.values(appData.students || {}).forEach(s => {
         let classes = parseStudentClasses(s.classId);
-        const initialLen = classes.length;
+        const prevLen = classes.length;
         classes = classes.filter(c => c.toLowerCase() !== target.toLowerCase());
-        
-        if (classes.length !== initialLen) {
-          s.classId = classes.join(', ');
-          delete s.classes;
-          updates['students/' + s.id + '/classId'] = s.classId;
+        if (classes.length !== prevLen) {
+          updates[`students/${s.id}/classId`] = classes.join(', ');
         }
       });
 
-      if (dbRef) {
-        firebase.database().ref().update(updates);
-      }
-
-      saveLocalCache();
-      selectedTeacherClass = 'ALL';
-      populateClassDropdown();
-      renderTeacherGrid();
-      renderBattleLogs();
-      addBattleLog(`🗑️ [CLASS DELETED] 老師刪除了班別 [${target}]。`, "battle", "ALL");
-      showToast("班別已刪除", `已清除 [${target}] 且相關學生已解除關聯。`, "info");
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        selectedTeacherClass = 'ALL';
+        populateClassDropdown();
+        renderTeacherGrid();
+        renderBattleLogs();
+        addBattleLog(`🗑️ Teacher deleted class [${target}].`, "battle", "ALL");
+        showToast("Class Deleted", `Deleted [${target}].`, "info");
+      });
     }
 
     function resetPickerRoundPool() {
       pickedStudentsPool.all.clear();
       pickedStudentsPool.starred.clear();
-      showToast("Picker Reset", "Candidate pool reset for a new round of fair draws!", "info");
+      showToast("Picker Reset", "Candidate pool reset for a new round of draws!", "info");
       const statusEl = document.getElementById('pickerPoolStatusText');
-      if (statusEl) {
-        statusEl.textContent = "Mode: Fair Draw";
-      }
+      if (statusEl) statusEl.textContent = "Mode: Fair Draw";
     }
 
     function startRandomPicker(preferStarred = false, isReroll = false) {
       if (!currentUser || currentUser.role !== 'teacher') return;
       lastPickerModeStarred = preferStarred;
       
-      const allClassStudents = Object.values(appData.students || {}).filter(s => {
-        return studentIsInClass(s, selectedTeacherClass);
-      });
-
-      if (allClassStudents.length === 0) {
-        alert("No students available in the selected class filter!");
-        return;
-      }
+      const allClassStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      if (allClassStudents.length === 0) return alert("No students in this class!");
 
       const poolKey = preferStarred ? 'starred' : 'all';
       let candidatePool = [];
@@ -3705,21 +3532,21 @@
       if (preferStarred) {
         const starredStudents = allClassStudents.filter(s => !!s.isStarred);
         if (starredStudents.length === 0) {
-          alert("No favorite students marked in this class! Click a student's name in the grid to mark them first.");
+          alert("No favorite students marked in this class!");
           return;
         }
         candidatePool = starredStudents.filter(s => !pickedStudentsPool.starred.has(s.id));
         if (candidatePool.length === 0) {
           pickedStudentsPool.starred.clear();
           candidatePool = starredStudents;
-          showToast("Fair Draw Reset", "All favorite students have been picked once. Pool reset for a new round!", "info");
+          showToast("Fair Draw Reset", "All starred students picked once. Pool reset!", "info");
         }
       } else {
         candidatePool = allClassStudents.filter(s => !pickedStudentsPool.all.has(s.id));
         if (candidatePool.length === 0) {
           pickedStudentsPool.all.clear();
           candidatePool = allClassStudents;
-          showToast("Fair Draw Reset", "All students have been picked once. Pool reset for a new round!", "info");
+          showToast("Fair Draw Reset", "All students picked once. Pool reset!", "info");
         }
       }
 
@@ -3738,8 +3565,7 @@
 
       pickerInterval = setInterval(() => {
         const displaySt = allClassStudents[Math.floor(Math.random() * allClassStudents.length)];
-        const rollingNameEl = document.getElementById('pickerRollingName');
-        rollingNameEl.textContent = `🎲 ${displaySt.name}`;
+        document.getElementById('pickerRollingName').textContent = `🎲 ${displaySt.name}`;
         counter++;
 
         if (counter >= maxTicks) {
@@ -3769,12 +3595,11 @@
       setDigiImageTag(document.getElementById('winnerDigiImg'), winner.currentDigiId);
 
       playSound('evolve');
-
       if (typeof confetti === 'function') {
         confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
       }
 
-      addBattleLog(`🎯 [LOTTERY] Lucky student selected: [${winner.name}]!`, "evolution", winner.classId);
+      addBattleLog(`🎯 [LOTTERY] Lucky student: [${winner.name}]!`, "evolution", winner.classId);
       showToast("Student Picked!", `Lucky Tamer: ${winner.name}!`, "evolution");
     }
 
@@ -3784,23 +3609,25 @@
       if (!st) return;
 
       if (type === 'exp') {
-        st.exp = (st.exp || 0) + amount;
-        st.statPool = (st.statPool || 0) + amount;
-        document.getElementById('winnerExp').textContent = `${st.exp}`;
+        patchStudentAtomic(currentPickedStudent.id, {
+          exp: (st.exp || 0) + amount,
+          statPool: (st.statPool || 0) + amount
+        });
+        document.getElementById('winnerExp').textContent = `${(st.exp || 0) + amount}`;
         showToast("Bonus EXP", `Awarded +${amount} EXP to ${st.name}!`, "info");
       } else if (type === 'ticket') {
-        st.gachaTickets = (st.gachaTickets || 0) + amount;
-        document.getElementById('winnerTickets').textContent = `${st.gachaTickets}`;
-        showToast("Bonus Gacha Ticket", `Awarded +${amount} Gacha Ticket to ${st.name}!`, "gacha");
+        patchStudentAtomic(currentPickedStudent.id, {
+          gachaTickets: (st.gachaTickets || 0) + amount
+        });
+        document.getElementById('winnerTickets').textContent = `${(st.gachaTickets || 0) + amount}`;
+        showToast("Bonus Ticket", `Awarded +${amount} Ticket to ${st.name}!`, "gacha");
       } else if (type === 'quota') {
-        st.attackQuota = (st.attackQuota || 0) + amount;
-        document.getElementById('winnerQuota').textContent = `${st.attackQuota}`;
+        patchStudentAtomic(currentPickedStudent.id, {
+          attackQuota: (st.attackQuota || 0) + amount
+        });
+        document.getElementById('winnerQuota').textContent = `${(st.attackQuota || 0) + amount}`;
         showToast("Bonus Attacks", `Awarded +${amount} Attacks to ${st.name}!`, "damage");
       }
-
-      syncSingleStudent(currentPickedStudent.id);
-      saveData();
-      renderTeacherGrid();
     }
 
     function closeRandomPickerModal() {
@@ -3827,7 +3654,6 @@
       dropBox.innerHTML = '';
 
       const totalWeight = Object.values(ITEMS_DB).reduce((acc, cur) => acc + cur.weight, 0);
-
       Object.values(ITEMS_DB).forEach(item => {
         const pct = ((item.weight / totalWeight) * 100).toFixed(1);
         dropBox.innerHTML += `
@@ -3864,22 +3690,25 @@
       if (!st) return;
 
       if ((st.gachaTickets || 0) < times) {
-        showToast("Not Enough Tickets", `You need ${times} ticket(s) to draw! Ask teacher for rewards.`, "info");
+        showToast("Not Enough Tickets", `You need ${times} ticket(s) to draw!`, "info");
         return;
       }
 
-      st.gachaTickets -= times;
-      if (!st.inventory) st.inventory = {};
-
+      const inv = Object.assign({}, st.inventory || {});
       const pulledItems = [];
       for (let i = 0; i < times; i++) {
         const item = pickRandomGachaItem();
-        st.inventory[item.id] = (st.inventory[item.id] || 0) + 1;
+        inv[item.id] = (inv[item.id] || 0) + 1;
         pulledItems.push(item);
       }
 
+      patchStudentAtomic(currentUser.id, {
+        gachaTickets: st.gachaTickets - times,
+        inventory: inv
+      });
+
       const countEl = document.getElementById('gachaAvailableTickets');
-      if (countEl) countEl.textContent = st.gachaTickets;
+      if (countEl) countEl.textContent = st.gachaTickets - times;
 
       const resContainer = document.getElementById('gachaResultContainer');
       const resGrid = document.getElementById('gachaResultGrid');
@@ -3899,17 +3728,13 @@
       });
 
       playSound('gacha');
-
       const hasRare = pulledItems.some(i => i.rarity === 'Epic' || i.rarity === 'Legendary' || i.rarity === 'Rare');
       if (hasRare && typeof confetti === 'function') {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       }
 
-      addBattleLog(`🎁 [GACHA] ${st.name} performed ${times}x draw and received: ${pulledItems.map(p => p.name).join(', ')}!`, "gacha", st.classId);
-      showToast("Capsule Unboxed!", `Received ${pulledItems.length} item(s)! Check your inventory!`, "gacha");
-
-      syncSingleStudent(currentUser.id);
-      saveData();
+      addBattleLog(`🎁 [GACHA] ${st.name} unboxed: ${pulledItems.map(p => p.name).join(', ')}!`, "gacha", st.classId);
+      showToast("Capsule Unboxed!", `Received ${pulledItems.length} item(s)!`, "gacha");
       updateStudentUI();
     }
 
@@ -3980,7 +3805,6 @@
     }
 
     let selectedStudentIds = new Set();
-
     function toggleSelectAllStudents(checked) {
       selectedStudentIds.clear();
       if (checked) {
@@ -4008,44 +3832,37 @@
     }
 
     function superadminBatchDeleteStudents() {
-      if (selectedStudentIds.size === 0) return alert("Please select at least one student account.");
+      if (selectedStudentIds.size === 0) return alert("Select at least one student.");
       const count = selectedStudentIds.size;
-      if (!confirm(`⚠️ Are you sure you want to permanently delete the selected ${count} student account(s)? This action cannot be undone!`)) return;
+      if (!confirm(`Permanently delete ${count} selected student(s)?`)) return;
 
+      const updates = {};
       selectedStudentIds.forEach(id => {
-        delete appData.students[id];
+        updates[`students/${id}`] = null;
       });
       selectedStudentIds.clear();
 
-      playSound('faint');
-      addBattleLog(`🗑️ [SUPERADMIN BATCH DELETE] Admin deleted ${count} student accounts.`, "battle", "ALL");
-      showToast("Batch Deletion", `Successfully deleted ${count} student accounts!`, "damage");
-
-      saveData();
-      renderSuperAdminDashboard();
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        playSound('faint');
+        addBattleLog(`🗑️ Admin deleted ${count} student accounts.`, "battle", "ALL");
+        showToast("Batch Deletion", `Deleted ${count} student accounts!`, "damage");
+      });
     }
 
     function superadminDeleteAllStudents() {
       const allStudentIds = Object.keys(appData.students || {});
       const totalCount = allStudentIds.length;
-      if (totalCount === 0) return alert("No student accounts in database.");
+      if (totalCount === 0) return alert("No students in database.");
+      if (prompt(`Type 'DELETE ALL' to clear all ${totalCount} students:`) !== 'DELETE ALL') return;
 
-      const promptMsg = `🚨 DANGER: DELETE ALL STUDENT ACCOUNTS\n\nThis will permanently delete all ${totalCount} student accounts, evolutionary records, and bags!\n\nType 'DELETE ALL' to confirm:`;
-      const input = prompt(promptMsg, "");
-      if (input !== 'DELETE ALL') {
-        if (input !== null) alert("Deletion aborted. Input must match 'DELETE ALL'.");
-        return;
-      }
-
-      appData.students = {};
+      const updates = { students: null };
       selectedStudentIds.clear();
 
-      playSound('faint');
-      addBattleLog(`💥 [SUPERADMIN DELETE ALL] All ${totalCount} student accounts were permanently cleared!`, "battle", "ALL");
-      showToast("All Students Cleared", `Deleted all ${totalCount} student accounts!`, "damage");
-
-      saveData();
-      renderSuperAdminDashboard();
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        playSound('faint');
+        addBattleLog(`💥 Admin wiped all ${totalCount} student accounts!`, "battle", "ALL");
+        showToast("All Students Cleared", `Deleted all students!`, "damage");
+      });
     }
 
     function renderSuperAdminDashboard() {
@@ -4071,10 +3888,10 @@
               </div>
             </div>
             <div class="flex items-center gap-1.5">
-              <button onclick="openEditTeacherModal('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-cyan-500/50 text-cyan-300 hover:text-cyan-200 rounded-lg cursor-pointer transition active:scale-95" title="Edit Teacher & Partner Stats">
+              <button onclick="openEditTeacherModal('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-cyan-500/50 text-cyan-300 rounded-lg cursor-pointer transition active:scale-95" title="Edit Teacher">
                 <i class="fa-solid fa-user-pen"></i>
               </button>
-              <button onclick="deleteTeacher('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-rose-700/50 text-rose-400 hover:text-rose-300 rounded-lg cursor-pointer transition active:scale-95" title="Delete Teacher">
+              <button onclick="deleteTeacher('${t.id}')" class="p-2 bg-slate-900 hover:bg-slate-800 border border-rose-700/50 text-rose-400 rounded-lg cursor-pointer transition active:scale-95" title="Delete Teacher">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -4090,7 +3907,7 @@
       updateSelectedStudentCountUI();
 
       if (studentsList.length === 0) {
-        stBox.innerHTML = '<div class="col-span-full py-10 text-center text-slate-500 italic text-xs">No student accounts found. Import or create accounts above.</div>';
+        stBox.innerHTML = '<div class="col-span-full py-10 text-center text-slate-500 italic text-xs">No student accounts found.</div>';
         return;
       }
 
@@ -4103,7 +3920,7 @@
           <div>
             <div class="flex items-center justify-between">
               <label class="flex items-center gap-2.5 cursor-pointer select-none">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleStudentSelection('${s.id}', this.checked)" class="w-4 h-4 rounded text-cyan-600 bg-slate-950 border-slate-700 cursor-pointer accent-cyan-500">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleStudentSelection('${s.id}', this.checked)" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
                 <span class="font-bold ${isChecked ? 'text-cyan-300' : 'text-slate-200'} text-sm">${s.name}</span>
                 <span class="text-[10px] text-slate-500 font-mono">(${s.username})</span>
               </label>
@@ -4124,7 +3941,7 @@
           <div class="pt-2 border-t border-slate-900 flex justify-between items-center pl-6">
             <span class="text-[10px] text-slate-500">Traits: C${s.courage||0} F${s.love||0} D${s.discipline||0} W${s.wisdom||0}</span>
             <button onclick="superadminFullResetStudent('${s.id}')" class="px-2 py-1 bg-amber-950 hover:bg-amber-900 border border-amber-600/70 text-amber-300 font-bold rounded text-[10px] transition flex items-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-arrow-rotate-left"></i> Reset Progression
+              <i class="fa-solid fa-arrow-rotate-left"></i> Reset
             </button>
           </div>
         `;
@@ -4133,22 +3950,18 @@
     }
 
     function deleteTeacher(id) {
-      if (!confirm("Delete this teacher account from database?")) return;
-      delete appData.teachers[id];
-      saveData();
-      renderSuperAdminDashboard();
+      if (!confirm("Delete this teacher account?")) return;
+      if (dbRootRef) dbRootRef.child('teachers/' + id).remove();
     }
 
     function deleteStudent(id) {
-      if (!confirm("Delete this student account from database?")) return;
-      delete appData.students[id];
-      saveData();
-      renderSuperAdminDashboard();
+      if (!confirm("Delete this student account?")) return;
+      if (dbRootRef) dbRootRef.child('students/' + id).remove();
     }
 
     function openCreateTeacherModal() {
       document.getElementById('modalTcOriginalId').value = "";
-      document.getElementById('modalTeacherHeaderTitle').innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i>Add New Teacher Account';
+      document.getElementById('modalTeacherHeaderTitle').innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i>Add Teacher';
       document.getElementById('modalTcUser').value = "";
       document.getElementById('modalTcPass').value = "123";
       document.getElementById('modalTcName').value = "";
@@ -4200,29 +4013,29 @@
       const pwr = parseInt(document.getElementById('modalTcPower').value) || 220;
       const tech = parseInt(document.getElementById('modalTcTechPower').value) || 120;
 
-      if (!u || !p || !name) return alert("Please complete all required fields.");
+      if (!u || !p || !name) return alert("Please fill all fields.");
 
+      const updates = {};
       if (origId && origId !== u) {
-        delete appData.teachers[origId];
+        updates[`teachers/${origId}`] = null;
       }
 
-      const existingTeacher = appData.teachers[origId] || {};
-      appData.teachers[u] = {
+      updates[`teachers/${u}`] = {
         id: u,
         username: u,
         password: p,
         name: name,
         partnerDigiId: partner,
         maxHp: hp,
-        hp: existingTeacher.hp !== undefined ? Math.min(hp, existingTeacher.hp) : hp,
+        hp: hp,
         skillPower: pwr,
         techPower: tech
       };
 
-      saveData();
-      closeTeacherEditModal();
-      renderSuperAdminDashboard();
-      showToast("Teacher Saved", `Teacher [${name}] profile & stats updated!`, "info");
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        closeTeacherEditModal();
+        showToast("Teacher Saved", `Updated teacher [${name}]!`, "info");
+      });
     }
 
     function openCredentialsModal() {
@@ -4244,10 +4057,9 @@
     }
 
     function updateAccountPwd(category, id, newPwd) {
-      if (appData[category] && appData[category][id]) {
-        appData[category][id].password = newPwd;
-        saveData();
-        showToast("Password Updated", "Account credentials updated successfully!", "info");
+      if (dbRootRef) {
+        dbRootRef.child(`${category}/${id}/password`).set(newPwd);
+        showToast("Password Updated", "Credentials updated!", "info");
       }
     }
 
@@ -4297,11 +4109,9 @@
       ['tabEvoRookie', 'tabEvoChampion', 'tabEvoUltimate', 'tabEvoMega'].forEach(tabId => {
         const el = document.getElementById(tabId);
         if (el) {
-          if (tabId.toUpperCase().includes(stage)) {
-            el.className = "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95";
-          } else {
-            el.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
-          }
+          el.className = tabId.toUpperCase().includes(stage)
+            ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95"
+            : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
         }
       });
 
