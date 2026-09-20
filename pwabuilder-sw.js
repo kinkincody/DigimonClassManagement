@@ -1,7 +1,7 @@
 // DigimonClassManagement Service Worker
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js');
 
-const CACHE = "pwabuilder-page-v1";
+const CACHE = "pwabuilder-page-v2";
 const offlineFallbackPage = "./index.html";
 
 self.addEventListener("message", (event) => {

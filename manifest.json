@@ -1,6 +1,6 @@
 {
-  "name": "kinkincody.github",
-  "short_name": "kinkincody.github",
+  "name": "DigimonClass",
+  "short_name": "DigimonClass",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
