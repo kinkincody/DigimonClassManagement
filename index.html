@@ -148,7 +148,7 @@
         <i class="fa-solid fa-bolt text-amber-400 text-xl animate-pulse"></i>
         <h3 class="font-pixel text-sm text-cyan-300">Live Class Speed Quiz Challenge!</h3>
       </div>
-      <p class="text-[10px] text-amber-300 font-bold mb-4">First tamer to answer correctly wins +3 Attack Quotas!</p>
+      <p class="text-[10px] text-amber-300 font-bold mb-4">First tamer to answer correctly wins +1 Attack Quota!</p>
       
       <div id="quizQuestionBox" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm font-bold text-white mb-5 shadow-inner">
         Loading question...
@@ -616,7 +616,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-bolt text-amber-400"></i>
-            <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider">Live Speed Quiz Command Center (+3 Attacks Victor Bonus)</h4>
+            <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider">Live Speed Quiz Command Center (+1 Attack Victor Bonus)</h4>
           </div>
           <div class="flex items-center gap-2">
             <label for="excelQuizFileInput" class="cursor-pointer px-3 py-1 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 active:scale-95">
@@ -637,10 +637,10 @@
 
         <div class="flex flex-wrap gap-2">
           <input type="text" id="teacherQuizQuestionInput" placeholder="Enter Quiz Question (e.g. Which Digimon holds the Crest of Courage?)" class="flex-2 min-w-[240px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
-          <input type="text" id="teacherQuizOpt1" placeholder="Correct Answer (B)" value="Agumon" class="flex-1 min-w-[120px] bg-slate-950 border border-emerald-600/50 rounded-lg px-2.5 py-2 text-xs text-emerald-300 outline-none focus:border-emerald-400">
-          <input type="text" id="teacherQuizOpt2" placeholder="Wrong 1 (C)" value="Gabumon" class="flex-1 min-w-[120px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 outline-none">
-          <input type="text" id="teacherQuizOpt3" placeholder="Wrong 2 (D)" value="Patamon" class="flex-1 min-w-[120px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 outline-none">
-          <input type="text" id="teacherQuizOpt4" placeholder="Wrong 3 (E)" value="Palmon" class="flex-1 min-w-[120px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 outline-none">
+          <input type="text" id="teacherQuizOpt1" placeholder="Correct Answer" value="Agumon" class="flex-1 min-w-[120px] bg-slate-950 border border-emerald-600/50 rounded-lg px-2.5 py-2 text-xs text-emerald-300 outline-none focus:border-emerald-400">
+          <input type="text" id="teacherQuizOpt2" placeholder="Wrong 1" value="Gabumon" class="flex-1 min-w-[120px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 outline-none">
+          <input type="text" id="teacherQuizOpt3" placeholder="Wrong 2" value="Patamon" class="flex-1 min-w-[120px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 outline-none">
+          <input type="text" id="teacherQuizOpt4" placeholder="Wrong 3" value="Palmon" class="flex-1 min-w-[120px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 outline-none">
           <button onclick="teacherLaunchQuiz()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-paper-plane"></i> Launch Live Quiz
           </button>
@@ -700,7 +700,8 @@
         </div>
       </div>
     </div>
-<!-- 3. Super Admin View -->
+
+    <!-- 3. Super Admin View -->
     <div id="viewSuperAdmin" class="space-y-6 hidden">
       <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
         <div>
@@ -1083,682 +1084,7 @@
     </div>
   </div>
 
-  <!-- JAVASCRIPT SYSTEM ENGINE (PART 2: EXCEL QUIZ, ORDERED PVP & TRANSACTION LOGIC) -->
-  <script>
-    // Global Imported Quiz Bank Store
-    let importedQuizBank = [];
-
-    // === 📑 1. Excel Quiz Bank Import (Col A: Q, Col B: Correct, Col C/D/E: Distractors) ===
-    function handleQuizExcelImport(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-          importedQuizBank = [];
-
-          // Row 0 is header: Question, Correct, Option2, Option3, Option4
-          for (let i = 1; i < jsonRows.length; i++) {
-            const row = jsonRows[i];
-            if (!row || !row[0] || !row[1]) continue;
-
-            const questionText = String(row[0]).trim();
-            const correctOpt = String(row[1]).trim();
-            const wrongOpts = [];
-
-            if (row[2] && String(row[2]).trim()) wrongOpts.push(String(row[2]).trim());
-            if (row[3] && String(row[3]).trim()) wrongOpts.push(String(row[3]).trim());
-            if (row[4] && String(row[4]).trim()) wrongOpts.push(String(row[4]).trim());
-
-            if (questionText && correctOpt) {
-              importedQuizBank.push({
-                question: questionText,
-                correct: correctOpt,
-                wrongs: wrongOpts
-              });
-            }
-          }
-
-          if (importedQuizBank.length === 0) {
-            return alert("No valid quiz items parsed. Ensure Column A is Question and Column B is Correct Answer.");
-          }
-
-          populateQuizBankDropdown();
-          showToast("Quiz Bank Loaded", `Successfully imported ${importedQuizBank.length} question(s)!`, "evolution");
-        } catch (err) {
-          alert("Quiz Bank Import Error: " + err.message);
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function populateQuizBankDropdown() {
-      const row = document.getElementById('quizBankSelectorRow');
-      const select = document.getElementById('quizBankSelect');
-      const status = document.getElementById('quizBankStatus');
-
-      if (!row || !select) return;
-
-      row.classList.remove('hidden');
-      status.textContent = `Bank: ${importedQuizBank.length} items`;
-      select.innerHTML = '<option value="">-- Choose a question from imported bank --</option>';
-
-      importedQuizBank.forEach((item, index) => {
-        const opt = document.createElement('option');
-        opt.value = index;
-        opt.textContent = `#${index + 1}: ${item.question.length > 50 ? item.question.substring(0, 50) + '...' : item.question}`;
-        select.appendChild(opt);
-      });
-    }
-
-    function onSelectQuizFromBank(indexStr) {
-      if (indexStr === "") return;
-      const idx = parseInt(indexStr);
-      const item = importedQuizBank[idx];
-      if (!item) return;
-
-      document.getElementById('teacherQuizQuestionInput').value = item.question;
-      document.getElementById('teacherQuizOpt1').value = item.correct;
-      document.getElementById('teacherQuizOpt2').value = item.wrongs[0] || '';
-      document.getElementById('teacherQuizOpt3').value = item.wrongs[1] || '';
-      document.getElementById('teacherQuizOpt4').value = item.wrongs[2] || '';
-    }
-
-    // === ⚡ 2. Teacher Launches Live Quiz (Shuffled with NO ABCD on Student End) ===
-    function teacherLaunchQuiz() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-
-      const q = document.getElementById('teacherQuizQuestionInput').value.trim();
-      const correct = document.getElementById('teacherQuizOpt1').value.trim();
-      const w1 = document.getElementById('teacherQuizOpt2').value.trim();
-      const w2 = document.getElementById('teacherQuizOpt3').value.trim();
-      const w3 = document.getElementById('teacherQuizOpt4').value.trim();
-
-      if (!q || !correct) {
-        return alert("Please provide at least a question and the correct answer (Option 1)!");
-      }
-
-      // Collect all available options
-      const rawOptions = [{ text: correct, isCorrect: true }];
-      if (w1) rawOptions.push({ text: w1, isCorrect: false });
-      if (w2) rawOptions.push({ text: w2, isCorrect: false });
-      if (w3) rawOptions.push({ text: w3, isCorrect: false });
-
-      if (rawOptions.length < 2) {
-        return alert("Please provide at least one wrong distractor option!");
-      }
-
-      // Shuffle options randomly
-      for (let i = rawOptions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [rawOptions[i], rawOptions[j]] = [rawOptions[j], rawOptions[i]];
-      }
-
-      const shuffledTexts = rawOptions.map(o => o.text);
-      const correctIndex = rawOptions.findIndex(o => o.isCorrect);
-      const targetClass = selectedTeacherClass || 'ALL';
-
-      const quizData = {
-        active: true,
-        question: q,
-        options: shuffledTexts,
-        correctIndex: correctIndex,
-        classTag: targetClass,
-        winnerId: null,
-        timestamp: Date.now()
-      };
-
-      if (dbRootRef) {
-        dbRootRef.child('activeQuiz').set(quizData).then(() => {
-          addBattleLog(`⚡ [LIVE QUIZ] Teacher launched quiz: "${q}"! (+3 Attacks reward)`, "evolution", targetClass);
-          showToast("Quiz Launched", "Broadcasted to all student screens!", "evolution");
-        });
-      }
-    }
-
-    function renderQuizModalForStudent() {
-      const modal = document.getElementById('modalQuizOverlay');
-      if (!modal) return;
-
-      if (!activeQuizInstance || !activeQuizInstance.active) {
-        modal.classList.add('hidden');
-        return;
-      }
-
-      if (currentUser && currentUser.role === 'student') {
-        const st = appData.students[currentUser.id];
-        if (!st || st.hp <= 0 || st.isFainted) {
-          modal.classList.add('hidden');
-          return;
-        }
-
-        if (activeQuizInstance.classTag !== 'ALL' && !studentIsInClass(st, activeQuizInstance.classTag)) {
-          modal.classList.add('hidden');
-          return;
-        }
-
-        document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
-        const grid = document.getElementById('quizOptionsGrid');
-        grid.innerHTML = '';
-
-        // Display answers WITHOUT ABCD labels
-        activeQuizInstance.options.forEach((optText, idx) => {
-          const btn = document.createElement('button');
-          btn.className = "py-3 px-4 rounded-xl bg-slate-950 border border-cyan-500/50 hover:bg-cyan-950 text-cyan-200 font-bold text-xs shadow transition active:scale-95 cursor-pointer text-left flex items-center justify-between";
-          btn.innerHTML = `<span>${optText}</span> <i class="fa-solid fa-chevron-right text-[10px] text-cyan-400"></i>`;
-          btn.onclick = () => submitStudentQuizAnswer(idx);
-          grid.appendChild(btn);
-        });
-
-        document.getElementById('quizFeedbackText').textContent = "Pick the correct answer immediately!";
-        modal.classList.remove('hidden');
-      } else {
-        modal.classList.add('hidden');
-      }
-    }
-
-    function submitStudentQuizAnswer(chosenIdx) {
-      const modal = document.getElementById('modalQuizOverlay');
-      modal.classList.add('hidden');
-
-      if (!activeQuizInstance || !activeQuizInstance.active) {
-        return showToast("Quiz Closed", "Quiz has already ended!", "info");
-      }
-
-      if (chosenIdx !== activeQuizInstance.correctIndex) {
-        playSound('faint');
-        return showToast("Incorrect Answer", "Wrong answer selected!", "damage");
-      }
-
-      if (dbRootRef) {
-        dbRootRef.child('activeQuiz').transaction((currentQuiz) => {
-          if (currentQuiz && currentQuiz.active && currentQuiz.winnerId === null) {
-            currentQuiz.winnerId = currentUser.id;
-            currentQuiz.active = false;
-            return currentQuiz;
-          }
-          return;
-        }, (err, committed, snap) => {
-          if (committed && snap.exists() && snap.val().winnerId === currentUser.id) {
-            dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-              return (Number(quota) || 0) + 3;
-            }, (qErr, qCommitted, qSnap) => {
-              if (qCommitted) {
-                playSound('evolve');
-                if (typeof confetti === 'function') {
-                  confetti({ particleCount: 160, spread: 80, origin: { y: 0.5 } });
-                }
-                const st = appData.students[currentUser.id];
-                addBattleLog(`⚡🎉 [QUIZ WINNER] Student [${st.name}] answered fastest and won +3 Attack Quotas!`, "evolution", st.classId);
-                showToast("Quiz Victor!", "Answered correctly! +3 Attacks added!", "evolution");
-              }
-            });
-          } else {
-            showToast("Missed!", "Another classmate answered first!", "info");
-          }
-        });
-      }
-    }
-
-    // === ⚔️ 3. Consistent Class Numbering for PVP Targets (Self Not Selectable, Numbers Never Shift) ===
-    castStudentSkill = function(skillIdx, targetMode) {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      if (!st) return;
-
-      if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
-        showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
-        playSound('faint');
-        return;
-      }
-
-      if ((st.attackQuota || 0) <= 0) {
-        showToast("Action Depleted", "❌ Attacks left: 0!", "info");
-        return;
-      }
-
-      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
-
-      if (dbRootRef) {
-        dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-          if (quota === null || quota <= 0) return 0;
-          return quota - 1;
-        }, (err, committed, snap) => {
-          if (!committed || snap.val() < 0) {
-            return showToast("Action Failed", "Attack quota deduction failed!", "info");
-          }
-
-          if (targetMode === 'boss') {
-            const teachersList = Object.values(appData.teachers || {});
-            let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
-            if (!tc) return alert("No active Teacher Boss found.");
-
-            const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
-
-            if (skill.type === 'heal') {
-              dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
-                return Math.min(digi.maxHp, (hp || 100) + skill.power);
-              }, (hErr, hCommitted, hSnap) => {
-                if (hCommitted) {
-                  playSound('heal');
-                  addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
-                  showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
-                }
-              });
-            } else {
-              dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
-                const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
-                return Math.max(0, currentBossHp - skill.power);
-              }, (bErr, bCommitted, bSnap) => {
-                if (bCommitted) {
-                  playSound('attack');
-                  addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
-                  showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
-                }
-              });
-            }
-          } else {
-            // Find all students enrolled in the user's primary class
-            const stClasses = parseStudentClasses(st.classId);
-            const primaryClass = stClasses[0] || 'ALL';
-            
-            const classRoster = Object.values(appData.students || {})
-              .filter(s => studentIsInClass(s, primaryClass))
-              .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
-
-            if (classRoster.length <= 1) {
-              alert("No other classmates found in this class to challenge.");
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            // Build selection list strictly matching class numbers (#1, #2, #3...)
-            let menu = `=== Class [${primaryClass}] Target Directory ===\n`;
-            menu += `Type the exact class number of your target:\n\n`;
-
-            classRoster.forEach((p, idx) => {
-              const classNum = idx + 1;
-              const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-              if (p.id === st.id) {
-                menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
-              } else {
-                menu += `[#${classNum}] ${p.name} (${pDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
-              }
-            });
-
-            const choice = prompt(menu, "");
-            if (choice === null || choice.trim() === "") {
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            const chosenNum = parseInt(choice.trim());
-            const targetIdx = chosenNum - 1;
-
-            if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
-              alert("Invalid class number selected!");
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            const target = classRoster[targetIdx];
-            if (target.id === st.id) {
-              alert("You cannot target yourself! Action cancelled.");
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            applyAttackDamageWithTransaction(st, target, skill, digi);
-          }
-        });
-      }
-    };
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./pwabuilder-sw.js')
-          .then((reg) => {
-            console.log('Service Worker registered successfully:', reg.scope);
-          })
-          .catch((err) => {
-            console.error('Service Worker registration failed:', err);
-          });
-      });
-    }
-  </script>
-</body>
-</html>
-</main>
-
-  <!-- MODALS -->
-
-  <!-- Manage Class Students Modal -->
-  <div id="modalClassStudentsManager" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 text-slate-200 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-user-group text-cyan-400 text-xl"></i>
-          <div>
-            <h3 class="font-bold text-base text-cyan-300" id="mgrModalClassTitle">Manage Class Students</h3>
-            <p class="text-[11px] text-slate-400">Add or remove students from this class.</p>
-          </div>
-        </div>
-        <button onclick="closeManageClassStudentsModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      
-      <div class="my-3">
-        <input type="text" id="mgrStudentSearch" oninput="filterManagerStudents(this.value)" placeholder="Search student by name or ID..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
-      </div>
-
-      <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="mgrStudentsList"></div>
-
-      <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
-        <span class="text-xs text-slate-400" id="mgrSelectedCount">Class Size: 0</span>
-        <button onclick="closeManageClassStudentsModal()" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs cursor-pointer active:scale-95">
-          Done
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Random Student Picker Modal -->
-  <div id="modalRandomPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-xl w-full p-6 text-slate-200 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
-      <div class="w-full flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-dice text-amber-400 text-xl animate-spin"></i>
-          <div>
-            <h3 class="font-black text-lg text-amber-300 uppercase tracking-wider">Tamer Lottery Terminal</h3>
-            <span id="pickerPoolStatusText" class="text-[10px] text-cyan-300 font-mono">Mode: Fair Draw</span>
-          </div>
-        </div>
-        <button onclick="closeRandomPickerModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div id="pickerRollingBox" class="my-6 py-8 px-6 w-full rounded-2xl bg-slate-950 border border-amber-500/30 flex flex-col items-center justify-center min-h-[160px]">
-        <div class="text-xs font-mono text-cyan-400 mb-2 uppercase tracking-widest" id="pickerStatusText">SELECTING LUCKY TAMER...</div>
-        <div id="pickerRollingName" class="text-3xl font-black text-amber-300 tracking-wider">🎲 Rolling...</div>
-      </div>
-
-      <div id="pickerWinnerCard" class="hidden w-full bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 rounded-2xl p-6 shadow-2xl animate-winner-zoom flex flex-col items-center">
-        <div class="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 font-pixel text-[10px] mb-3">
-          ★ SELECTED TAMER ★
-        </div>
-        
-        <div class="w-28 h-28 bg-slate-900 rounded-2xl p-2 border-2 border-cyan-400 flex items-center justify-center shadow-lg my-2">
-          <img id="winnerDigiImg" src="" class="max-w-full max-h-full object-contain animate-glow">
-        </div>
-
-        <h2 id="winnerStudentName" class="text-2xl font-black text-white mt-2">Alex Chan</h2>
-        <p id="winnerClassAndDigi" class="text-xs text-cyan-300 font-mono mt-0.5">Class 1A · WarGreymon (Mega)</p>
-
-        <div class="grid grid-cols-4 gap-2 w-full mt-4 text-xs">
-          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-            <span class="text-slate-500 block text-[10px]">HP</span>
-            <span id="winnerHp" class="font-bold text-emerald-400">100</span>
-          </div>
-          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-            <span class="text-slate-500 block text-[10px]">EXP</span>
-            <span id="winnerExp" class="font-bold text-cyan-400">0</span>
-          </div>
-          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-            <span class="text-slate-500 block text-[10px]">Quota</span>
-            <span id="winnerQuota" class="font-bold text-amber-400">0</span>
-          </div>
-          <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-            <span class="text-slate-500 block text-[10px]">Tickets</span>
-            <span id="winnerTickets" class="font-bold text-purple-400">0</span>
-          </div>
-        </div>
-
-        <div class="w-full mt-5 grid grid-cols-3 gap-2">
-          <button onclick="rewardWinnerQuick('exp', 50)" class="py-2 px-3 rounded-xl bg-cyan-950 border border-cyan-500 hover:bg-cyan-900 text-cyan-300 font-bold text-xs cursor-pointer active:scale-95">
-            +50 EXP
-          </button>
-          <button onclick="rewardWinnerQuick('ticket', 1)" class="py-2 px-3 rounded-xl bg-amber-950 border border-amber-500 hover:bg-amber-900 text-amber-300 font-bold text-xs cursor-pointer active:scale-95">
-            +1 Gacha Ticket
-          </button>
-          <button onclick="rewardWinnerQuick('quota', 2)" class="py-2 px-3 rounded-xl bg-rose-950 border border-rose-500 hover:bg-rose-900 text-rose-300 font-bold text-xs cursor-pointer active:scale-95">
-            +2 Attacks
-          </button>
-        </div>
-      </div>
-
-      <div class="mt-6 flex gap-3 w-full justify-center">
-        <button onclick="rerollPicker()" id="btnReroll" class="flex-1 max-w-[180px] py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg cursor-pointer active:scale-95">
-          <i class="fa-solid fa-rotate-right mr-1"></i> Pick Again
-        </button>
-        <button onclick="resetPickerRoundPool()" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold cursor-pointer active:scale-95" title="Reset candidate pool">
-          <i class="fa-solid fa-arrow-rotate-left"></i>
-        </button>
-        <button onclick="closeRandomPickerModal()" class="flex-1 max-w-[120px] py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer active:scale-95">
-          Done
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Gacha Capsule Modal -->
-  <div id="modalGacha" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative overflow-hidden">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 text-sm">
-            <i class="fa-solid fa-cube"></i>
-          </div>
-          <div>
-            <h3 class="font-black text-base text-amber-300">DIGITAL CAPSULE GACHA</h3>
-            <p class="text-[11px] text-slate-400">Unlock Digimon meats, protective shields, and exclusive Digivice Skins!</p>
-          </div>
-        </div>
-        <button onclick="closeGachaModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto custom-scrollbar my-4 space-y-4 pr-1">
-        <div class="bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border border-amber-500/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div>
-            <div class="text-xs text-amber-300 font-bold uppercase tracking-wider">Available Item Tickets</div>
-            <div class="text-3xl font-black text-white mt-1 flex items-center justify-center sm:justify-start gap-2">
-              <i class="fa-solid fa-ticket text-amber-400"></i>
-              <span id="gachaAvailableTickets">0</span>
-              <span class="text-xs text-slate-400 font-normal">Tickets Remaining</span>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="drawGacha(1)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 cursor-pointer flex items-center gap-1.5 active:scale-95">
-              <i class="fa-solid fa-gift"></i> Draw 1x
-            </button>
-            <button onclick="drawGacha(5)" class="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-black text-xs shadow-lg shadow-cyan-500/30 cursor-pointer flex items-center gap-1.5 active:scale-95">
-              <i class="fa-solid fa-boxes-stacked"></i> Draw 5x
-            </button>
-          </div>
-        </div>
-
-        <div id="gachaResultContainer" class="hidden">
-          <div class="text-xs font-bold text-cyan-300 mb-2 flex items-center gap-1.5">
-            <i class="fa-solid fa-sparkles"></i> Unboxed Items:
-          </div>
-          <div id="gachaResultGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-        </div>
-
-        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
-          <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center gap-1.5">
-            <i class="fa-solid fa-list-check text-amber-400"></i> Gacha Drop Rates & Items Catalog
-          </h4>
-          <div id="gachaDropTable" class="space-y-2 text-xs"></div>
-        </div>
-      </div>
-
-      <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="closeGachaModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 cursor-pointer active:scale-95">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Evolution Tree Modal -->
-  <div id="modalEvoTree" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <div>
-          <h3 class="font-bold text-lg text-cyan-300"><i class="fa-solid fa-sitemap mr-2"></i>Digimon Evolution Chart & Paths</h3>
-          <p class="text-xs text-slate-400">View evolutionary branches across all growth stages</p>
-        </div>
-        <button onclick="toggleEvolutionTreeModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div class="flex gap-2 my-4 border-b border-slate-800 pb-3 overflow-x-auto text-xs font-bold">
-        <button onclick="renderEvoTreeTab('ROOKIE')" id="tabEvoRookie" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95">Rookie</button>
-        <button onclick="renderEvoTreeTab('CHAMPION')" id="tabEvoChampion" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Champion</button>
-        <button onclick="renderEvoTreeTab('ULTIMATE')" id="tabEvoUltimate" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Ultimate</button>
-        <button onclick="renderEvoTreeTab('MEGA')" id="tabEvoMega" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Mega</button>
-      </div>
-
-      <div id="evoTreeContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1"></div>
-
-      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
-        <span>★ Tip: The dominant trait unlocks direct evolutionary branches!</span>
-        <button onclick="toggleEvolutionTreeModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Class Leaderboard Modal -->
-  <div id="modalLeaderboard" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 text-slate-200 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-trophy text-amber-400 text-xl"></i>
-          <h3 class="font-bold text-lg text-amber-300">Classroom Honor Leaderboard</h3>
-        </div>
-        <button onclick="toggleLeaderboardModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <p class="text-xs text-slate-400 my-2">Rankings are calculated dynamically based on Stage and Total EXP.</p>
-      <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="leaderboardList"></div>
-      <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="toggleLeaderboardModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer active:scale-95">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Digi-Dex Modal -->
-  <div id="modalDigiDex" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border-2 border-cyan-500/50 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-base font-pixel">
-            <i class="fa-solid fa-book-journal-whills"></i>
-          </div>
-          <div>
-            <h3 class="font-black text-lg text-cyan-300">TAMER DIGI-DEX</h3>
-            <p class="text-xs text-slate-400" id="dexProgressInfo">Unlocked: 0 / 49 (0%)</p>
-          </div>
-        </div>
-        <button onclick="toggleDexModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div class="flex gap-2 my-3 border-b border-slate-800 pb-3 text-xs font-bold overflow-x-auto">
-        <button onclick="filterDexStage('ALL')" id="dexTab_ALL" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95">All Forms</button>
-        <button onclick="filterDexStage('DIGI-EGG')" id="dexTab_DIGI-EGG" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Eggs</button>
-        <button onclick="filterDexStage('IN-TRAINING')" id="dexTab_IN-TRAINING" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">In-Training</button>
-        <button onclick="filterDexStage('ROOKIE')" id="dexTab_ROOKIE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Rookie</button>
-        <button onclick="filterDexStage('CHAMPION')" id="dexTab_CHAMPION" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Champion</button>
-        <button onclick="filterDexStage('ULTIMATE')" id="dexTab_ULTIMATE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Ultimate</button>
-        <button onclick="filterDexStage('MEGA')" id="dexTab_MEGA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Mega</button>
-      </div>
-
-      <div id="dexGridContainer" class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-1">
-      </div>
-
-      <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="toggleDexModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer active:scale-95">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Create / Edit Teacher Modal -->
-  <div id="modalTeacherEdit" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 text-slate-200">
-      <input type="hidden" id="modalTcOriginalId" value="">
-      <h3 class="font-bold text-base text-amber-300 mb-2" id="modalTeacherHeaderTitle"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher & Mega Partner Setup</h3>
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block text-slate-400 mb-1">Teacher Username (ID)</label>
-          <input id="modalTcUser" type="text" placeholder="e.g. teacher3" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Password</label>
-          <input id="modalTcPass" type="text" placeholder="Password" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Display Name</label>
-          <input id="modalTcName" type="text" placeholder="e.g. Master Tamer Dragon" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Assigned Mega Partner Digimon</label>
-          <select id="modalTcDigiSelect" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200"></select>
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-slate-400 mb-1">Max HP</label>
-            <input id="modalTcHp" type="number" value="2000" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200">
-          </div>
-          <div>
-            <label class="block text-slate-400 mb-1">Special DMG</label>
-            <input id="modalTcPower" type="number" value="220" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200">
-          </div>
-          <div>
-            <label class="block text-slate-400 mb-1">Signature DMG</label>
-            <input id="modalTcTechPower" type="number" value="120" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-slate-200">
-          </div>
-        </div>
-      </div>
-      <div class="mt-6 flex justify-end gap-2">
-        <button onclick="closeTeacherEditModal()" class="px-3 py-1.5 rounded bg-slate-800 text-xs cursor-pointer active:scale-95">Cancel</button>
-        <button onclick="saveTeacherFromModal()" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer active:scale-95">Save Teacher</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Global Account Credentials Manager Modal -->
-  <div id="modalAccountCredentials" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <h3 class="font-bold text-base text-cyan-300"><i class="fa-solid fa-key mr-2"></i>Account Management (ID & Password Modifier)</h3>
-        <button onclick="closeCredentialsModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <p class="text-xs text-slate-400 my-2">Modify the login Username (ID) or Password for any account directly in Firebase.</p>
-      <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1 my-2">
-        <div>
-          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Super Admin Accounts</h4>
-          <div id="credListSuperAdmins" class="space-y-2"></div>
-        </div>
-        <div>
-          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Teacher Accounts</h4>
-          <div id="credListTeachers" class="space-y-2"></div>
-        </div>
-        <div>
-          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Student Accounts</h4>
-          <div id="credListStudents" class="space-y-2"></div>
-        </div>
-      </div>
-      <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button onclick="closeCredentialsModal()" class="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer active:scale-95">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- JAVASCRIPT SYSTEM ENGINE -->
+  <!-- JAVASCRIPT SYSTEM ENGINE (START) -->
   <script>
     const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V3";
 
@@ -2150,8 +1476,7 @@
         }
       }
     };
-
-    const DIGIMON_DB = {
+const DIGIMON_DB = {
       "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor", power: 10, type: "damage", icon: "fa-shield" }] },
       "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Ember Spark", power: 12, type: "damage", icon: "fa-fire" }] },
       "digitama3": { id: "digitama3", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama III", title: "Serene blue egg", img: "./images/digitama3.png", svg: makeBadgeSvg("Digitama III", "#2563eb", "#60a5fa", "💧", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Bubble Shell", power: 10, type: "damage", icon: "fa-droplet" }] },
@@ -2355,6 +1680,7 @@
     let isFirebaseConnected = false;
     let studentTargetTeacherId = 'teacher1';
     let activeQuizInstance = null;
+    let lastBroadcastedQuizWinner = null;
 
     let pickedStudentsPool = {
       all: new Set(),
@@ -2510,9 +1836,25 @@
           renderBattleLogs();
         });
 
-        // 即時搶答事件頻道
+        // 即時搶答事件頻道：含全域勝利者自動廣播機制
         dbRootRef.child('activeQuiz').on('value', (snap) => {
           activeQuizInstance = snap.val();
+
+          if (activeQuizInstance && activeQuizInstance.winnerId) {
+            const winnerKey = `${activeQuizInstance.timestamp}_${activeQuizInstance.winnerId}`;
+            if (lastBroadcastedQuizWinner !== winnerKey) {
+              lastBroadcastedQuizWinner = winnerKey;
+              const winnerStudent = (appData.students && appData.students[activeQuizInstance.winnerId]) || { name: activeQuizInstance.winnerId };
+              
+              playSound('evolve');
+              if (typeof confetti === 'function') {
+                confetti({ particleCount: 160, spread: 80, origin: { y: 0.5 } });
+              }
+
+              showToast("⚡ 搶答勝利誕生！", `恭喜【${winnerStudent.name}】最快答對！已自動獲得 +1 攻擊次數！`, "evolution");
+            }
+          }
+
           renderQuizModalForStudent();
         });
 
@@ -3635,7 +2977,6 @@
       renderBattleLogs();
     }
 
-    // === 👑 教師增減數值控制 ===
     function rewardAllAttackQuota(amount = 1) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Class Action", "No students in this class.", "info");
@@ -4837,7 +4178,379 @@
       });
     }
 
-    // 視窗載入完成後啟動監聽與 Enter 鍵綁定
+    // === QUIZ ENGINE & PVP LOGIC ===
+    let importedQuizBank = [];
+
+    function handleQuizExcelImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          importedQuizBank = [];
+
+          for (let i = 1; i < jsonRows.length; i++) {
+            const row = jsonRows[i];
+            if (!row || !row[0] || !row[1]) continue;
+
+            const questionText = String(row[0]).trim();
+            const correctOpt = String(row[1]).trim();
+            const wrongOpts = [];
+
+            if (row[2] && String(row[2]).trim()) wrongOpts.push(String(row[2]).trim());
+            if (row[3] && String(row[3]).trim()) wrongOpts.push(String(row[3]).trim());
+            if (row[4] && String(row[4]).trim()) wrongOpts.push(String(row[4]).trim());
+
+            if (questionText && correctOpt) {
+              importedQuizBank.push({
+                question: questionText,
+                correct: correctOpt,
+                wrongs: wrongOpts
+              });
+            }
+          }
+
+          if (importedQuizBank.length === 0) {
+            return alert("No valid quiz items parsed. Ensure Column A is Question and Column B is Correct Answer.");
+          }
+
+          populateQuizBankDropdown();
+          showToast("Quiz Bank Loaded", `Successfully imported ${importedQuizBank.length} question(s)!`, "evolution");
+        } catch (err) {
+          alert("Quiz Bank Import Error: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function populateQuizBankDropdown() {
+      const row = document.getElementById('quizBankSelectorRow');
+      const select = document.getElementById('quizBankSelect');
+      const status = document.getElementById('quizBankStatus');
+
+      if (!row || !select) return;
+
+      row.classList.remove('hidden');
+      status.textContent = `Bank: ${importedQuizBank.length} items`;
+      select.innerHTML = '<option value="">-- Choose a question from imported bank --</option>';
+
+      importedQuizBank.forEach((item, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = `#${index + 1}: ${item.question.length > 50 ? item.question.substring(0, 50) + '...' : item.question}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function onSelectQuizFromBank(indexStr) {
+      if (indexStr === "") return;
+      const idx = parseInt(indexStr);
+      const item = importedQuizBank[idx];
+      if (!item) return;
+
+      document.getElementById('teacherQuizQuestionInput').value = item.question;
+      document.getElementById('teacherQuizOpt1').value = item.correct;
+      document.getElementById('teacherQuizOpt2').value = item.wrongs[0] || '';
+      document.getElementById('teacherQuizOpt3').value = item.wrongs[1] || '';
+      document.getElementById('teacherQuizOpt4').value = item.wrongs[2] || '';
+    }
+
+    function teacherLaunchQuiz() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+
+      const q = document.getElementById('teacherQuizQuestionInput').value.trim();
+      const correct = document.getElementById('teacherQuizOpt1').value.trim();
+      const w1 = document.getElementById('teacherQuizOpt2').value.trim();
+      const w2 = document.getElementById('teacherQuizOpt3').value.trim();
+      const w3 = document.getElementById('teacherQuizOpt4').value.trim();
+
+      if (!q || !correct) {
+        return alert("Please provide at least a question and the correct answer (Option 1)!");
+      }
+
+      const rawOptions = [{ text: correct, isCorrect: true }];
+      if (w1) rawOptions.push({ text: w1, isCorrect: false });
+      if (w2) rawOptions.push({ text: w2, isCorrect: false });
+      if (w3) rawOptions.push({ text: w3, isCorrect: false });
+
+      if (rawOptions.length < 2) {
+        return alert("Please provide at least one wrong distractor option!");
+      }
+
+      for (let i = rawOptions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [rawOptions[i], rawOptions[j]] = [rawOptions[j], rawOptions[i]];
+      }
+
+      const shuffledTexts = rawOptions.map(o => o.text);
+      const correctIndex = rawOptions.findIndex(o => o.isCorrect);
+      const targetClass = selectedTeacherClass || 'ALL';
+
+      const quizData = {
+        active: true,
+        question: q,
+        options: shuffledTexts,
+        correctIndex: correctIndex,
+        classTag: targetClass,
+        winnerId: null,
+        timestamp: Date.now()
+      };
+
+      if (dbRootRef) {
+        dbRootRef.child('activeQuiz').set(quizData).then(() => {
+          addBattleLog(`⚡ [LIVE QUIZ] 老師發起了課堂搶答挑戰：「${q}」！搶答成功者將自動獲得 +1 攻擊次數！`, "evolution", targetClass);
+          showToast("Quiz Launched", "Broadcasted to all student screens!", "evolution");
+        });
+      }
+    }
+
+    function renderQuizModalForStudent() {
+      const modal = document.getElementById('modalQuizOverlay');
+      if (!modal) return;
+
+      if (!activeQuizInstance || !activeQuizInstance.active) {
+        modal.classList.add('hidden');
+        return;
+      }
+
+      if (currentUser && currentUser.role === 'student') {
+        const st = appData.students[currentUser.id];
+        if (!st || st.hp <= 0 || st.isFainted) {
+          modal.classList.add('hidden');
+          return;
+        }
+
+        if (activeQuizInstance.classTag !== 'ALL' && !studentIsInClass(st, activeQuizInstance.classTag)) {
+          modal.classList.add('hidden');
+          return;
+        }
+
+        document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
+        const grid = document.getElementById('quizOptionsGrid');
+        grid.innerHTML = '';
+
+        activeQuizInstance.options.forEach((optText, idx) => {
+          const btn = document.createElement('button');
+          btn.className = "py-3 px-4 rounded-xl bg-slate-950 border border-cyan-500/50 hover:bg-cyan-950 text-cyan-200 font-bold text-xs shadow transition active:scale-95 cursor-pointer text-left flex items-center justify-between";
+          btn.innerHTML = `<span>${optText}</span> <i class="fa-solid fa-chevron-right text-[10px] text-cyan-400"></i>`;
+          btn.onclick = () => submitStudentQuizAnswer(idx);
+          grid.appendChild(btn);
+        });
+
+        document.getElementById('quizFeedbackText').textContent = "Pick the correct answer immediately!";
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // === ⚡ 搶答提交修復核心：原子鎖判定 + 勝利者自動增加次數 + 全域即時 Log 與同步 ===
+    function submitStudentQuizAnswer(chosenIdx) {
+      const modal = document.getElementById('modalQuizOverlay');
+      modal.classList.add('hidden');
+
+      if (!activeQuizInstance || !activeQuizInstance.active) {
+        return showToast("Quiz Closed", "Quiz has already ended!", "info");
+      }
+
+      if (chosenIdx !== activeQuizInstance.correctIndex) {
+        playSound('faint');
+        return showToast("答錯了！", "Wrong answer selected!", "damage");
+      }
+
+      if (!dbRootRef) return;
+
+      // 使用 Firebase 事務鎖保證僅有第一位搶先答對者獲勝
+      dbRootRef.child('activeQuiz').transaction((currentQuiz) => {
+        if (currentQuiz && currentQuiz.active && (!currentQuiz.winnerId || currentQuiz.winnerId === null)) {
+          currentQuiz.winnerId = currentUser.id;
+          currentQuiz.active = false;
+          return currentQuiz;
+        }
+        return; // 中止事務，代表已有其他人獲勝
+      }, (err, committed, snap) => {
+        if (committed && snap.exists() && snap.val().winnerId === currentUser.id) {
+          // 搶答獲勝者確認：原子累加 Attack Quota (+1)
+          dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
+            return (Number(quota) || 0) + 1;
+          }, (qErr, qCommitted, qSnap) => {
+            const finalQuota = qCommitted ? qSnap.val() : ((appData.students[currentUser.id]?.attackQuota || 0) + 1);
+            
+            // 即時同步本地資料
+            if (appData.students[currentUser.id]) {
+              appData.students[currentUser.id].attackQuota = finalQuota;
+            }
+
+            // 發送專屬全螢幕勝利慶祝
+            playSound('evolve');
+            if (typeof confetti === 'function') {
+              confetti({ particleCount: 200, spread: 90, origin: { y: 0.5 } });
+            }
+
+            const currentSt = appData.students[currentUser.id] || { name: currentUser.id, classId: 'ALL' };
+
+            // 推送全域 Battle Log
+            addBattleLog(`⚡🎉 [QUIZ WINNER] 課堂搶答勝利者：【${currentSt.name}】！以最快速度答對，已自動獲得 +1 攻擊次數！(當前剩餘次數: ${finalQuota})`, "evolution", currentSt.classId);
+
+            showToast("搶答奪冠！", `恭喜【${currentSt.name}】！已成功自動增加 1 次攻擊次數！(剩餘: ${finalQuota})`, "evolution");
+
+            updateStudentUI();
+          });
+        } else {
+          showToast("慢了一步！", "其他同學已經搶先答對了！", "info");
+        }
+      });
+    }
+
+    function castStudentSkill(skillIdx, targetMode) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
+        showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
+        playSound('faint');
+        return;
+      }
+
+      if ((st.attackQuota || 0) <= 0) {
+        showToast("Action Depleted", "❌ Attacks left: 0!", "info");
+        return;
+      }
+
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
+
+      if (dbRootRef) {
+        dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
+          if (quota === null || quota <= 0) return 0;
+          return quota - 1;
+        }, (err, committed, snap) => {
+          if (!committed || snap.val() < 0) {
+            return showToast("Action Failed", "Attack quota deduction failed!", "info");
+          }
+
+          if (targetMode === 'boss') {
+            const teachersList = Object.values(appData.teachers || {});
+            let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
+            if (!tc) return alert("No active Teacher Boss found.");
+
+            const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+
+            if (skill.type === 'heal') {
+              dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
+                return Math.min(digi.maxHp, (hp || 100) + skill.power);
+              }, (hErr, hCommitted, hSnap) => {
+                if (hCommitted) {
+                  playSound('heal');
+                  addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
+                  showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
+                }
+              });
+            } else {
+              dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
+                const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
+                return Math.max(0, currentBossHp - skill.power);
+              }, (bErr, bCommitted, bSnap) => {
+                if (bCommitted) {
+                  playSound('attack');
+                  addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
+                  showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
+                }
+              });
+            }
+          } else {
+            const stClasses = parseStudentClasses(st.classId);
+            const primaryClass = stClasses[0] || 'ALL';
+            
+            const classRoster = Object.values(appData.students || {})
+              .filter(s => studentIsInClass(s, primaryClass))
+              .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
+
+            if (classRoster.length <= 1) {
+              alert("No other classmates found in this class to challenge.");
+              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
+              return;
+            }
+
+            let menu = `=== Class [${primaryClass}] Target Directory ===\n`;
+            menu += `Type the exact class number of your target:\n\n`;
+
+            classRoster.forEach((p, idx) => {
+              const classNum = idx + 1;
+              const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
+              if (p.id === st.id) {
+                menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
+              } else {
+                menu += `[#${classNum}] ${p.name} (${pDigi.name}) - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
+              }
+            });
+
+            const choice = prompt(menu, "");
+            if (choice === null || choice.trim() === "") {
+              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
+              return;
+            }
+
+            const chosenNum = parseInt(choice.trim());
+            const targetIdx = chosenNum - 1;
+
+            if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
+              alert("Invalid class number selected!");
+              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
+              return;
+            }
+
+            const target = classRoster[targetIdx];
+            if (target.id === st.id) {
+              alert("You cannot target yourself! Action cancelled.");
+              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
+              return;
+            }
+
+            applyAttackDamageWithTransaction(st, target, skill, digi);
+          }
+        });
+      }
+    }
+
+    function applyAttackDamageWithTransaction(st, target, skill, digi) {
+      if (target.hasShield) {
+        patchStudentAtomic(target.id, { hasShield: false });
+        playSound('shield');
+        addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield completely blocked ${st.name}'s [${skill.name}]!`, "battle", st.classId);
+        showToast("Attack Blocked!", `${target.name}'s shield blocked your attack!`, "info");
+        return;
+      }
+
+      dbRootRef.child(`students/${target.id}`).transaction((current) => {
+        if (!current) return current;
+        const curHp = current.hp !== undefined ? current.hp : 100;
+        const nextHp = Math.max(0, curHp - skill.power);
+        current.hp = nextHp;
+        if (nextHp === 0) current.isFainted = true;
+        return current;
+      }, (err, committed, snap) => {
+        if (committed && snap.exists()) {
+          const val = snap.val();
+          playSound('attack');
+          addBattleLog(`💥 [PVP STRIKE] ${st.name}'s ${digi.name} attacked ${target.name} with [${skill.name}] for ${skill.power} DMG! (Target HP: ${val.hp})`, "battle", st.classId);
+          showToast("Strike Landed!", `Dealt ${skill.power} DMG to ${target.name}!`, "damage");
+
+          if (val.isFainted) {
+            playSound('faint');
+            addBattleLog(`☠️ [FAINTED] ${target.name}'s Digimon fainted in battle!`, "battle", st.classId);
+          }
+        }
+      });
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       initFirebase();
       const pInput = document.getElementById('loginPassword');
