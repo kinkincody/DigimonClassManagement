@@ -70,7 +70,7 @@
     }
     .animate-toast { animation: slideDownToast 4s forwards; }
 
-    /* 懸賞專用霓虹警戒邊框脈衝動畫 */
+    /* 懸賞專用警戒脈衝動畫 */
     @keyframes bounty-pulse {
       0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.3); border-color: #ef4444; }
       50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.8), inset 0 0 20px rgba(245, 158, 11, 0.5); border-color: #f59e0b; }
@@ -346,7 +346,7 @@
     <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
       
-      <!-- 📢 學生專屬置頂公告欄 (獨立於 Log 介面，最多同時顯示三個置頂公告) -->
+      <!-- 📢 學生專屬置頂公告欄 (最多 3 則) -->
       <div id="studentAnnouncementBox" class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/50 rounded-2xl p-4 shadow-xl space-y-2.5">
         <div class="flex items-center justify-between border-b border-amber-500/30 pb-2">
           <div class="flex items-center gap-2">
@@ -663,26 +663,33 @@
             <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Favorite Draw"></button>
           </div>
 
-          <button onclick="rewardAllAttackQuota(1)" class="px-3 py-1.5 rounded bg-red-950 border border-red-600 text-red-300 text-xs font-bold hover:bg-red-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+          <!-- 全班獎勵/懲罰控制區（新增全班減次數、全班減抽獎券；全班回血僅回血） -->
+          <button onclick="rewardAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Add 1 Attack to Active Students">
             <i class="fa-solid fa-bolt"></i> Class +1 Attack
           </button>
-          <button onclick="rewardAllGachaTickets(1)" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+          <button onclick="deductAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Deduct 1 Attack from Active Students">
+            <i class="fa-solid fa-bolt-slash"></i> Class -1 Attack
+          </button>
+          <button onclick="rewardAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Add 1 Ticket to All Students">
             <i class="fa-solid fa-ticket"></i> Class +1 Gacha
           </button>
-          <button onclick="penalizeAllHp(30)" class="px-3 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+          <button onclick="deductAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-slate-900 border border-purple-800 text-purple-300 text-xs font-bold hover:bg-purple-950 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Deduct 1 Ticket from All Students">
+            <i class="fa-solid fa-ticket-simple"></i> Class -1 Gacha
+          </button>
+          <button onclick="penalizeAllHp(30)" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-heart-crack"></i> Class -30 HP
           </button>
+          <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Heal all active students only (No attack quota reset)">
+            <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP Only
+          </button>
           
-          <button onclick="teacherCastSkill('single_ult')" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+          <button onclick="teacherCastSkill('single_ult')" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-crosshairs"></i> Target 1 (Special)
           </button>
-          <button onclick="teacherCastSkill('aoe_ult')" class="px-3 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+          <button onclick="teacherCastSkill('aoe_ult')" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-burst"></i> Full Class (Special)
           </button>
-          <button onclick="teacherHealAll()" class="px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP
-          </button>
-          <button onclick="teacherHealSelf()" class="px-3 py-1.5 rounded bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+          <button onclick="teacherHealSelf()" class="px-2.5 py-1.5 rounded bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-heart-pulse"></i> Restore Boss HP
           </button>
         </div>
@@ -1400,8 +1407,8 @@
       classes: {},
       students: {},
       battleLogs: [],
-      announcements: {}, // 各班獨立公告
-      bounties: {}       // 🎯 各班獨立懸賞對象: { [classTag]: studentId }
+      announcements: {},
+      bounties: {}
     };
 const ITEMS_DB = {
       "item_shield": {
@@ -3488,8 +3495,26 @@ const ITEMS_DB = {
 
       executeAtomicMultiPathUpdate(updates);
       playSound('shield');
-      addBattleLog(`⚔️ [CLASS ATTACKS] Teacher command: All active students granted +${amount} Attack Quota!`, "normal", selectedTeacherClass);
+      addBattleLog(`⚔️ [CLASS ATTACKS] Teacher granted +${amount} Attack Quota to active students!`, "normal", selectedTeacherClass);
       showToast("Class Attacks", `Awarded +${amount} Attacks to all active students!`, "info");
+    }
+
+    // 🛑 新增：全班扣減攻擊次數（已力竭者不扣，不低於0）
+    function deductAllAttackQuota(amount = 1) {
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      if (myStudents.length === 0) return showToast("Class Action", "No students in this class.", "info");
+
+      const updates = {};
+      myStudents.forEach(s => {
+        if (!s.isFainted && (s.hp === undefined || s.hp > 0)) {
+          updates[`students/${s.id}/attackQuota`] = Math.max(0, (s.attackQuota || 0) - amount);
+        }
+      });
+
+      executeAtomicMultiPathUpdate(updates);
+      playSound('attack');
+      addBattleLog(`🛑 [CLASS PENALTY] Teacher deducted ${amount} Attack Quota from all active students!`, "battle", selectedTeacherClass);
+      showToast("Deducted Attacks", `Deducted ${amount} Attacks from active students!`, "damage");
     }
 
     function rewardAllGachaTickets(amount = 1) {
@@ -3507,28 +3532,48 @@ const ITEMS_DB = {
       showToast("Class Tickets", `Awarded +${amount} Ticket to all students!`, "gacha");
     }
 
+    // 🛑 新增：全班扣減抽獎券（最低為0）
+    function deductAllGachaTickets(amount = 1) {
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      if (myStudents.length === 0) return showToast("Class Gacha", "No students in this class.", "info");
+
+      const updates = {};
+      myStudents.forEach(s => {
+        updates[`students/${s.id}/gachaTickets`] = Math.max(0, (s.gachaTickets || 0) - amount);
+      });
+
+      executeAtomicMultiPathUpdate(updates);
+      playSound('attack');
+      addBattleLog(`🛑 [CLASS PENALTY] Teacher deducted ${amount} Gacha Ticket from all students!`, "battle", selectedTeacherClass);
+      showToast("Deducted Tickets", `Deducted ${amount} Ticket from all students!`, "damage");
+    }
+
+    // 🛑 更新：全班扣血只對「未力竭陣亡」之學生有效，已死亡者不減血亦不復活
     function penalizeAllHp(amount = 30) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Class Damage", "No students in this class.", "info");
 
-      if (!confirm(`Are you sure to inflict -${amount} HP to all students in [${selectedTeacherClass}]?`)) return;
+      const activeStudents = myStudents.filter(s => !s.isFainted && (s.hp !== undefined && s.hp > 0));
+      if (activeStudents.length === 0) {
+        return alert("All students in this class are already FAINTED! Please revive them first.");
+      }
+
+      if (!confirm(`Inflict -${amount} HP to all active students in [${selectedTeacherClass}]? (Fainted tamers will be skipped)`)) return;
 
       const updates = {};
-      myStudents.forEach(s => {
-        if (!s.isFainted && (s.hp === undefined || s.hp > 0)) {
-          const cur = (s.hp !== undefined) ? s.hp : 100;
-          const nextHp = Math.max(0, cur - amount);
-          updates[`students/${s.id}/hp`] = nextHp;
-          if (nextHp <= 0) {
-            updates[`students/${s.id}/isFainted`] = true;
-          }
+      activeStudents.forEach(s => {
+        const cur = (s.hp !== undefined) ? s.hp : 100;
+        const nextHp = Math.max(0, cur - amount);
+        updates[`students/${s.id}/hp`] = nextHp;
+        if (nextHp <= 0) {
+          updates[`students/${s.id}/isFainted`] = true;
         }
       });
 
       executeAtomicMultiPathUpdate(updates);
       playSound('attack');
-      addBattleLog(`💥⚠️ [CLASS PENALTY] Teacher inflicted -${amount} HP to all students!`, "battle", selectedTeacherClass);
-      showToast("Class Penalty", `Inflicted -${amount} HP to all active students!`, "damage");
+      addBattleLog(`💥⚠️ [CLASS PENALTY] Teacher inflicted -${amount} HP to active students!`, "battle", selectedTeacherClass);
+      showToast("Class Penalty", `Inflicted -${amount} HP to ${activeStudents.length} active students!`, "damage");
     }
 
     function deductStudentQuota(studentId, amount = 1) {
@@ -3572,6 +3617,7 @@ const ITEMS_DB = {
         if (!confirm(`💥 Strike entire class with [${moveName}] (${pwr} DMG)?`)) return;
         const updates = {};
         myStudents.forEach(s => {
+          if (s.isFainted || (s.hp !== undefined && s.hp <= 0)) return; // 略過已力竭者
           if (s.hasShield) {
             updates[`students/${s.id}/hasShield`] = false;
           } else {
@@ -3582,12 +3628,12 @@ const ITEMS_DB = {
         });
         executeAtomicMultiPathUpdate(updates);
         playSound('attack');
-        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck entire class with [${moveName}] for ${pwr} DMG!`, "battle", selectedTeacherClass);
-        showToast("Class AOE Strike", `All ${myStudents.length} students struck!`, "damage");
+        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck class with [${moveName}] for ${pwr} DMG!`, "battle", selectedTeacherClass);
+        showToast("Class AOE Strike", `Active students struck!`, "damage");
       } else {
         let menu = `Select target for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
         myStudents.forEach((s, idx) => {
-          menu += `${idx + 1}. ${s.name} - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''}\n`;
+          menu += `${idx + 1}. ${s.name} - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''} ${s.isFainted ? '[FAINTED]' : ''}\n`;
         });
         const choice = prompt(menu, "1");
         if (choice === null) return;
@@ -3595,6 +3641,10 @@ const ITEMS_DB = {
 
         if (targetIdx >= 0 && targetIdx < myStudents.length) {
           const target = myStudents[targetIdx];
+          if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
+            return alert(`Student [${target.name}] is already FAINTED! Please revive first.`);
+          }
+
           if (target.hasShield) {
             patchStudentAtomic(target.id, { hasShield: false });
             addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield absorbed Boss [${moveName}]!`, "battle", target.classId);
@@ -3754,18 +3804,36 @@ const ITEMS_DB = {
       addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal", s.classId);
     }
 
+    // 🛑 核心更新：學生死亡後未復活前，再按 -30HP 不得扣血亦不復發，提示已陣亡
     function penalizeHp(id, amount) {
       const s = appData.students[id];
       if (!s) return;
+
+      if (s.isFainted || (s.hp !== undefined && s.hp <= 0)) {
+        playSound('faint');
+        showToast("Already Fainted", `Student [${s.name}] has fainted and cannot take damage. Please revive first!`, "damage");
+        return;
+      }
+
       const nextHp = Math.max(0, (s.hp || 100) - amount);
+      const isDead = nextHp === 0;
+
       patchStudentAtomic(id, {
         hp: nextHp,
-        isFainted: nextHp === 0
+        isFainted: isDead
       });
+
       playSound('attack');
-      addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP.`, "battle", s.classId);
+      if (isDead) {
+        playSound('faint');
+        addBattleLog(`☠️ [DEFEATED] ${s.name}'s Digimon HP reached 0 and FAINTED!`, "battle", s.classId);
+        showToast("Digimon Fainted!", `${s.name}'s Digimon HP dropped to 0!`, "damage");
+      } else {
+        addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP. (Remaining: ${nextHp})`, "battle", s.classId);
+      }
     }
 
+    // 🛑 核心更新：全班回血只回血，不重設亦不增加攻擊次數
     function teacherHealAll() {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Full Recovery", "No students found.", "info");
@@ -3775,13 +3843,13 @@ const ITEMS_DB = {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         updates[`students/${s.id}/hp`] = digi.maxHp || 100;
         updates[`students/${s.id}/isFainted`] = false;
-        updates[`students/${s.id}/attackQuota`] = 3;
+        // 注意：不再更動 attackQuota
       });
 
       executeAtomicMultiPathUpdate(updates);
       playSound('heal');
-      addBattleLog("💚 [FULL HEAL] Teacher restored all students to full HP and reset 3 attacks!", "heal", selectedTeacherClass);
-      showToast("Full Recovery", `Restored all ${myStudents.length} students to 100% HP!`, "heal");
+      addBattleLog("💚 [CLASS HP RESTORE] Teacher restored all students to 100% full HP!", "heal", selectedTeacherClass);
+      showToast("Full HP Recovery", `Restored all students to 100% HP (Attack quotas unchanged)!`, "heal");
     }
 
     function grantAttackQuota(studentId, amount) {
@@ -5065,7 +5133,6 @@ const ITEMS_DB = {
             const activeBountyTargetId = appData.bounties ? appData.bounties[tagKey] : null;
 
             if (activeBountyTargetId && activeBountyTargetId === target.id) {
-              // 擊殺懸賞對象：執行原子獎勵 (+300 EXP, +300 Stat Pool, +1 Gacha Ticket)
               const updates = {};
               updates[`bounties/${tagKey}`] = null; // 自動完成並撤銷該班懸賞
 
