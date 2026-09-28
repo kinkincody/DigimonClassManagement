@@ -160,7 +160,7 @@
     <div class="font-pixel text-xl sm:text-2xl text-center px-4 tracking-widest text-rose-500">DIGIMON FAINTED</div>
     <p class="text-xs text-rose-300 font-pixel mt-4 tracking-widest text-center px-4">HP Reduced to Zero. In Stasis Mode.</p>
     <div class="text-slate-400 text-xs mt-3 max-w-md text-center leading-relaxed px-6">
-      All battle actions, gacha draws, traits allocation, and evolutions are locked!<br>Please stay focused in class and await teacher's revival...
+      All battle actions, gacha draws, traits allocation, and evolutions are locked!<br>Please stay focused in class and await teacher's revival or de-evolution...
     </div>
   </div>
 
@@ -496,7 +496,7 @@
               <div id="stFaintOverlay" class="hidden absolute inset-0 bg-rose-950/70 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center text-rose-300">
                 <i class="fa-solid fa-skull-crossbones text-4xl animate-bounce mb-2"></i>
                 <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE</span>
-                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher's Revival</span>
+                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher's Revival or De-evolution</span>
               </div>
             </div>
             <h2 id="stDigiName" class="text-2xl font-black tracking-wider text-cyan-200 mt-3 drop-shadow flex items-center gap-2">
@@ -2043,7 +2043,6 @@ const ITEMS_DB = {
           renderBountyUI();
         });
 
-        // 🔒 監聽全班只讀鎖定（Ban）設置
         dbRootRef.child('systemSettings/bannedClasses').on('value', (snap) => {
           if (!appData.systemSettings) appData.systemSettings = {};
           appData.systemSettings.bannedClasses = snap.val() || {};
@@ -2111,9 +2110,6 @@ const ITEMS_DB = {
       return String(cls).replace(/[.#$\[\]\/]/g, '_');
     }
 
-    // ==========================================
-    // 🔒 封鎖按鈕邏輯（單人 Ban 及全班暫時 Ban）
-    // ==========================================
     function isStudentBanned(student) {
       if (!student) return false;
       if (student.isBanned) return true;
@@ -3427,6 +3423,7 @@ const ITEMS_DB = {
       });
     }
 
+    // 🛑 核心更新：退化時經驗值僅損失一半（保留 50%），屬性點數同比例保留
     function teacherDegradeStudent(studentId) {
       const s = appData.students[studentId];
       if (!s) return;
@@ -3436,22 +3433,29 @@ const ITEMS_DB = {
       const prevDigiId = getPreviousDigiId(s.currentDigiId);
       const prevDigi = DIGIMON_DB[prevDigiId] || DIGIMON_DB['digitama1'];
 
-      if (!confirm(`Degrade ${s.name}'s [${curDigi.name}] to [${prevDigi.name}]?`)) return;
+      const preservedExp = Math.floor((s.exp || 0) / 2);
+      const preservedPool = Math.floor((s.statPool || 0) / 2);
+      const preservedCourage = Math.floor((s.courage || 0) / 2);
+      const preservedLove = Math.floor((s.love || 0) / 2);
+      const preservedDiscipline = Math.floor((s.discipline || 0) / 2);
+      const preservedWisdom = Math.floor((s.wisdom || 0) / 2);
+
+      if (!confirm(`Degrade ${s.name}'s [${curDigi.name}] to [${prevDigi.name}]?\nEXP will be halved from ${s.exp || 0} to ${preservedExp} (retaining 50%).`)) return;
 
       playSound('faint');
-      addBattleLog(`🔻 [DE-EVOLVE] Teacher degraded [${s.name}] to [${prevDigi.name}].`, "battle", s.classId);
-      showToast("De-Evolution", `${s.name} degraded to ${prevDigi.name}!`, "damage");
+      addBattleLog(`🔻 [DE-EVOLVE] Teacher degraded [${s.name}] to [${prevDigi.name}]. EXP was halved to ${preservedExp}!`, "battle", s.classId);
+      showToast("De-Evolution", `${s.name} degraded to ${prevDigi.name}! Retained 50% EXP (${preservedExp}).`, "damage");
 
       patchStudentAtomic(studentId, {
         currentDigiId: prevDigiId,
         hp: prevDigi.maxHp || 100,
         isFainted: false,
-        exp: 0,
-        statPool: 0,
-        courage: 0,
-        love: 0,
-        discipline: 0,
-        wisdom: 0
+        exp: preservedExp,
+        statPool: preservedPool,
+        courage: preservedCourage,
+        love: preservedLove,
+        discipline: preservedDiscipline,
+        wisdom: preservedWisdom
       });
     }
 
@@ -3821,7 +3825,6 @@ const ITEMS_DB = {
               </div>
               
               <div class="flex items-center gap-1.5 shrink-0">
-                <!-- 🔒 單人 Ban / 解除按鈕 -->
                 <button onclick="toggleStudentBan('${s.id}', event)" class="p-1.5 rounded ${isIndividualBanned ? 'bg-amber-600 text-slate-950 font-black' : 'bg-slate-900 text-rose-400 hover:bg-rose-950 border border-rose-600/50'} text-xs transition cursor-pointer active:scale-90" title="${isIndividualBanned ? 'Unlock Student' : 'Ban Student (Read-Only)'}">
                   <i class="fa-solid ${isIndividualBanned ? 'fa-lock-open' : 'fa-ban'}"></i>
                 </button>
@@ -3868,11 +3871,11 @@ const ITEMS_DB = {
                   <i class="fa-solid fa-heart-pulse"></i> Revive
                 </button>
                 <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-                  <i class="fa-solid fa-arrow-down"></i> De-Evolve
+                  <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
                 </button>
               ` : `
                 <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-                  <i class="fa-solid fa-arrow-down"></i> De-Evolve
+                  <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
                 </button>
                 <button onclick="teacherRebirthStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
                   <i class="fa-solid fa-rotate-left"></i> Random Egg
