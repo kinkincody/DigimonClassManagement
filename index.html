@@ -134,6 +134,20 @@
       display: flex !important;
       pointer-events: all !important;
     }
+
+    /* 🔒 全班或單獨學生凍結（只讀模式）頂部橫幅 */
+    #studentBanNoticeOverlay {
+      display: none;
+    }
+    #studentBanNoticeOverlay.active {
+      display: flex !important;
+    }
+    .view-disabled-overlay {
+      pointer-events: none !important;
+      filter: grayscale(40%) contrast(90%);
+      opacity: 0.75;
+      user-select: none;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen scanlines relative overflow-x-hidden">
@@ -148,6 +162,13 @@
     <div class="text-slate-400 text-xs mt-3 max-w-md text-center leading-relaxed px-6">
       All battle actions, gacha draws, traits allocation, and evolutions are locked!<br>Please stay focused in class and await teacher's revival...
     </div>
+  </div>
+
+  <!-- 🔒 Student Ban / Read-Only Mode Banner -->
+  <div id="studentBanNoticeOverlay" class="fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-red-950 via-rose-900 to-red-950 border-b-2 border-red-500 text-rose-100 py-2.5 px-4 shadow-2xl items-center justify-center gap-3">
+    <i class="fa-solid fa-lock text-rose-400 text-base animate-pulse"></i>
+    <span class="font-pixel text-xs tracking-wider text-amber-300">SYSTEM LOCKED: READ-ONLY OBSERVATION MODE</span>
+    <span class="text-xs text-rose-200 hidden sm:inline">(You can watch the screen live, but all interactions are temporarily locked by Teacher)</span>
   </div>
 
   <!-- ⚡ Live Class Quiz Overlay -->
@@ -346,7 +367,7 @@
     <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
       
-      <!-- 📢 學生專屬置頂公告欄 (最多 3 則) -->
+      <!-- 📢 學生專屬置頂公告欄 -->
       <div id="studentAnnouncementBox" class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/50 rounded-2xl p-4 shadow-xl space-y-2.5">
         <div class="flex items-center justify-between border-b border-amber-500/30 pb-2">
           <div class="flex items-center gap-2">
@@ -408,7 +429,7 @@
                 <i class="fa-solid fa-ticket text-purple-400"></i> +1 Ticket
               </span>
             </div>
-            <p class="text-[10px] text-slate-400 mt-1">Target this student in PvP battle to claim the bounty!</p>
+            <p class="text-[10px] text-cyan-300 font-bold mt-1">★ Every strike on target grants an instant +30 EXP!</p>
           </div>
         </div>
       </div>
@@ -441,7 +462,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="studentMainInteractContainer">
         <div id="studentDigiviceCard" class="md:col-span-2 digi-card skin-classic rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500">
           <div id="stShieldBanner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-cyan-500/20 border border-cyan-400 rounded-full text-[11px] text-cyan-300 font-bold flex items-center gap-1.5 backdrop-blur shadow-lg animate-pulse">
             <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active (1 Attack Immunized)
@@ -624,7 +645,7 @@
         </div>
       </div>
 
-      <!-- Class Battle Log Feed (50 Records Max) -->
+      <!-- Class Battle Log Feed -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
         <h4 class="text-xs font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
           <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Class Events & Battle Logs (Max 50)</span>
@@ -663,7 +684,12 @@
             <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Favorite Draw"></button>
           </div>
 
-          <!-- 全班獎勵/懲罰控制區（新增全班減次數、全班減抽獎券；全班回血僅回血） -->
+          <!-- 🔒 全班唯讀鎖定 / 解鎖按鈕 -->
+          <button id="btnToggleClassBan" onclick="toggleCurrentClassBan()" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95" title="Lock whole class into Read-Only observation mode">
+            <i class="fa-solid fa-lock"></i> <span id="lblToggleClassBan">Ban Entire Class (Lock)</span>
+          </button>
+
+          <!-- 全班獎勵/懲罰控制區 -->
           <button onclick="rewardAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Add 1 Attack to Active Students">
             <i class="fa-solid fa-bolt"></i> Class +1 Attack
           </button>
@@ -679,7 +705,7 @@
           <button onclick="penalizeAllHp(30)" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-heart-crack"></i> Class -30 HP
           </button>
-          <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Heal all active students only (No attack quota reset)">
+          <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Heal all active students only">
             <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP Only
           </button>
           
@@ -694,14 +720,13 @@
           </button>
         </div>
       </div>
-
-      <!-- 🎯 老師專屬：Class Bounty 班級懸賞對象管理中心 -->
+<!-- 🎯 老師專屬：Class Bounty 班級懸賞對象管理中心 -->
       <div class="bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 border-2 border-rose-500/60 rounded-xl p-4 shadow-xl space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-crosshairs text-rose-400 text-base animate-pulse"></i>
             <h4 class="text-xs font-black text-rose-300 uppercase tracking-wider font-pixel">Class Bounty Target Setup</h4>
-            <span class="text-[10px] text-amber-300 font-bold">(Target will be highlighted to class · Rewards: +300 EXP & +1 Ticket on Kill)</span>
+            <span class="text-[10px] text-amber-300 font-bold">(Target: +30 EXP per hit & +300 EXP + 1 Ticket on Kill)</span>
           </div>
           <span class="text-xs text-rose-400 font-mono font-bold" id="teacherBountyClassTag">Class: All</span>
         </div>
@@ -735,8 +760,8 @@
             </div>
           </div>
           <div class="text-right">
-            <span class="text-[10px] text-amber-300 block font-pixel">REWARD: +300 EXP & +1 TICKET</span>
-            <span class="text-[9px] text-slate-400">Awarded automatically upon kill in PvP</span>
+            <span class="text-[10px] text-amber-300 block font-pixel">PER HIT: +30 EXP | KILL: +300 EXP & +1 TICKET</span>
+            <span class="text-[9px] text-slate-400">Awarded automatically in PvP</span>
           </div>
         </div>
       </div>
@@ -758,7 +783,7 @@
         </div>
 
         <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-          <input type="text" id="teacherAnnouncementInput" placeholder="Enter class notice or message for students... (e.g. Please bring workbook Chapter 5 tomorrow!)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+          <input type="text" id="teacherAnnouncementInput" placeholder="Enter class notice or message for students..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
           <button onclick="publishTeacherAnnouncement()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
             <i class="fa-solid fa-bullhorn"></i> Post Announcement
           </button>
@@ -1408,7 +1433,8 @@
       students: {},
       battleLogs: [],
       announcements: {},
-      bounties: {}
+      bounties: {},
+      systemSettings: { bannedClasses: {} }
     };
 const ITEMS_DB = {
       "item_shield": {
@@ -1879,6 +1905,7 @@ const ITEMS_DB = {
         isFainted: !!s.isFainted,
         hasShield: !!s.hasShield,
         isStarred: !!s.isStarred,
+        isBanned: !!s.isBanned,
         skinId: s.skinId || 'skin-classic',
         attackQuota: Number(s.attackQuota) || 0,
         gachaTickets: (s.gachaTickets !== undefined && s.gachaTickets !== null) ? Number(s.gachaTickets) : 0,
@@ -1924,6 +1951,7 @@ const ITEMS_DB = {
             if (Array.isArray(parsed.battleLogs)) appData.battleLogs = parsed.battleLogs;
             if (parsed.announcements && typeof parsed.announcements === 'object') appData.announcements = parsed.announcements;
             if (parsed.bounties && typeof parsed.bounties === 'object') appData.bounties = parsed.bounties;
+            if (parsed.systemSettings && typeof parsed.systemSettings === 'object') appData.systemSettings = parsed.systemSettings;
           }
         }
       } catch (e) {
@@ -1992,7 +2020,6 @@ const ITEMS_DB = {
           }
         });
 
-        // 班級事件日誌監聽
         dbRootRef.child('battleLogs').limitToLast(50).on('value', (snap) => {
           const val = snap.val();
           let logs = [];
@@ -2004,21 +2031,26 @@ const ITEMS_DB = {
           renderBattleLogs();
         });
 
-        // 📢 Announcement 獨立監聽
         dbRootRef.child('announcements').on('value', (snap) => {
           appData.announcements = snap.val() || {};
           saveLocalCache();
           renderAnnouncementsUI();
         });
 
-        // 🎯 Bounty 懸賞系統實時監聽
         dbRootRef.child('bounties').on('value', (snap) => {
           appData.bounties = snap.val() || {};
           saveLocalCache();
           renderBountyUI();
         });
 
-        // 即時搶答事件頻道
+        // 🔒 監聽全班只讀鎖定（Ban）設置
+        dbRootRef.child('systemSettings/bannedClasses').on('value', (snap) => {
+          if (!appData.systemSettings) appData.systemSettings = {};
+          appData.systemSettings.bannedClasses = snap.val() || {};
+          saveLocalCache();
+          refreshCurrentView();
+        });
+
         dbRootRef.child('activeQuiz').on('value', (snap) => {
           activeQuizInstance = snap.val();
 
@@ -2074,12 +2106,84 @@ const ITEMS_DB = {
       }
     }
 
-    // ==========================================
-    // 🎯 懸賞系統核心邏輯 (BOUNTY SYSTEM)
-    // ==========================================
     function sanitizeClassKey(cls) {
       if (!cls) return 'ALL';
       return String(cls).replace(/[.#$\[\]\/]/g, '_');
+    }
+
+    // ==========================================
+    // 🔒 封鎖按鈕邏輯（單人 Ban 及全班暫時 Ban）
+    // ==========================================
+    function isStudentBanned(student) {
+      if (!student) return false;
+      if (student.isBanned) return true;
+      const bannedClasses = (appData.systemSettings && appData.systemSettings.bannedClasses) || {};
+      if (bannedClasses['ALL']) return true;
+      const classes = parseStudentClasses(student.classId);
+      return classes.some(cls => bannedClasses[sanitizeClassKey(cls)]);
+    }
+
+    function toggleStudentBan(studentId, e) {
+      if (e) e.stopPropagation();
+      const s = appData.students[studentId];
+      if (!s) return;
+      const newBannedState = !s.isBanned;
+
+      patchStudentAtomic(studentId, { isBanned: newBannedState });
+      if (newBannedState) {
+        playSound('faint');
+        addBattleLog(`🔒 [STUDENT LOCKED] Teacher locked student [${s.name}] into READ-ONLY mode.`, "battle", s.classId);
+        showToast("Student Locked", `Locked ${s.name} into observation mode!`, "damage");
+      } else {
+        playSound('heal');
+        addBattleLog(`🔓 [STUDENT UNLOCKED] Teacher unlocked student [${s.name}].`, "heal", s.classId);
+        showToast("Student Unlocked", `Restored interaction for ${s.name}!`, "heal");
+      }
+    }
+
+    function toggleCurrentClassBan() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const targetClass = selectedTeacherClass || 'ALL';
+      const tagKey = sanitizeClassKey(targetClass);
+      const bannedClasses = (appData.systemSettings && appData.systemSettings.bannedClasses) || {};
+      const currentlyBanned = !!bannedClasses[tagKey];
+      const nextState = !currentlyBanned;
+
+      if (dbRootRef) {
+        dbRootRef.child(`systemSettings/bannedClasses/${tagKey}`).set(nextState ? true : null).then(() => {
+          if (nextState) {
+            playSound('attack');
+            addBattleLog(`🔒🚫 [CLASS BAN] Teacher LOCKED [${targetClass === 'ALL' ? 'All Classes' : targetClass}] into READ-ONLY mode! Students can only observe.`, "battle", targetClass);
+            showToast("Class Locked", `Class [${targetClass}] is now locked to Read-Only mode!`, "damage");
+          } else {
+            playSound('heal');
+            addBattleLog(`🔓✨ [CLASS UNBAN] Teacher UNLOCKED [${targetClass === 'ALL' ? 'All Classes' : targetClass}]. Interaction restored.`, "heal", targetClass);
+            showToast("Class Unlocked", `Class [${targetClass}] interaction restored!`, "heal");
+          }
+          updateClassBanButtonUI();
+        });
+      }
+    }
+
+    function updateClassBanButtonUI() {
+      const btn = document.getElementById('btnToggleClassBan');
+      const lbl = document.getElementById('lblToggleClassBan');
+      if (!btn || !lbl) return;
+
+      const targetClass = selectedTeacherClass || 'ALL';
+      const tagKey = sanitizeClassKey(targetClass);
+      const bannedClasses = (appData.systemSettings && appData.systemSettings.bannedClasses) || {};
+      const isBanned = !!bannedClasses[tagKey];
+
+      if (isBanned) {
+        btn.className = "px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95 animate-pulse";
+        lbl.textContent = `Unlock Class (${targetClass})`;
+        btn.querySelector('i').className = "fa-solid fa-lock-open";
+      } else {
+        btn.className = "px-3 py-1.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95";
+        lbl.textContent = `Ban Entire Class (Lock)`;
+        btn.querySelector('i').className = "fa-solid fa-lock";
+      }
     }
 
     function populateTeacherBountySelect() {
@@ -2115,7 +2219,7 @@ const ITEMS_DB = {
       if (dbRootRef) {
         dbRootRef.child(`bounties/${tagKey}`).set(studentId).then(() => {
           playSound('attack');
-          addBattleLog(`🎯🔥 [BOUNTY POSTED] Teacher placed a BOUNTY on [${targetStudent.name}] in [${targetClass}]! Kill reward: +300 EXP & +1 Gacha Ticket!`, "battle", targetClass);
+          addBattleLog(`🎯🔥 [BOUNTY POSTED] Teacher placed a BOUNTY on [${targetStudent.name}] in [${targetClass}]! Rewards: +30 EXP per hit & +300 EXP + 1 Ticket on kill!`, "battle", targetClass);
           showToast("Bounty Assigned!", `Wanted target: ${targetStudent.name}!`, "damage");
         });
       }
@@ -2142,7 +2246,6 @@ const ITEMS_DB = {
     }
 
     function renderBountyUI() {
-      // 1. 學生端懸賞海報渲染
       const stBountyCard = document.getElementById('studentBountyBanner');
       if (stBountyCard && currentUser && currentUser.role === 'student') {
         const st = appData.students[currentUser.id];
@@ -2186,7 +2289,6 @@ const ITEMS_DB = {
         }
       }
 
-      // 2. 老師端懸賞卡片渲染
       const tcDisplay = document.getElementById('teacherCurrentBountyDisplay');
       const tcClassTag = document.getElementById('teacherBountyClassTag');
       if (tcDisplay && currentUser && currentUser.role === 'teacher') {
@@ -2222,9 +2324,6 @@ const ITEMS_DB = {
       }
     }
 
-    // ==========================================
-    // 📢 ANNOUNCEMENT 系統邏輯
-    // ==========================================
     function getTargetClassAnnouncements(classTag) {
       const tagKey = sanitizeClassKey(classTag || 'ALL');
       const announcementsObj = appData.announcements && appData.announcements[tagKey];
@@ -2723,6 +2822,7 @@ const ITEMS_DB = {
         updateTeacherBossHeader();
         populateClassDropdown();
         populateTeacherBountySelect();
+        updateClassBanButtonUI();
         renderTeacherGrid();
       } else {
         const st = appData.students[currentUser.id] || currentUser.data;
@@ -2745,6 +2845,7 @@ const ITEMS_DB = {
       document.getElementById('viewTeacher').classList.add('hidden');
       document.getElementById('viewSuperAdmin').classList.add('hidden');
       document.getElementById('deathScreenOverlay').classList.remove('active');
+      document.getElementById('studentBanNoticeOverlay').classList.remove('active');
       document.getElementById('viewLogin').classList.remove('hidden');
       document.getElementById('loginUsername').value = "";
       document.getElementById('loginPassword').value = "";
@@ -2759,6 +2860,7 @@ const ITEMS_DB = {
         updateTeacherBossHeader();
         populateClassDropdown();
         populateTeacherBountySelect();
+        updateClassBanButtonUI();
         renderTeacherGrid();
       } else if (currentUser.role === 'superadmin') {
         renderSuperAdminDashboard();
@@ -2868,9 +2970,21 @@ const ITEMS_DB = {
       st.unlockedDex[digi.id] = true;
 
       const isDead = (st.hp <= 0) || !!st.isFainted;
+      const banned = isStudentBanned(st);
+
       const deathOverlay = document.getElementById('deathScreenOverlay');
+      const banBanner = document.getElementById('studentBanNoticeOverlay');
       const rightPanel = document.getElementById('stRightControlPanel');
       const digiviceCardElem = document.getElementById('studentDigiviceCard');
+      const mainInteract = document.getElementById('studentMainInteractContainer');
+
+      if (banned) {
+        banBanner.classList.add('active');
+        if (mainInteract) mainInteract.classList.add('view-disabled-overlay');
+      } else {
+        banBanner.classList.remove('active');
+        if (mainInteract) mainInteract.classList.remove('view-disabled-overlay');
+      }
 
       if (isDead) {
         deathOverlay.classList.add('active');
@@ -2878,8 +2992,10 @@ const ITEMS_DB = {
         if (digiviceCardElem) digiviceCardElem.style.pointerEvents = 'none';
       } else {
         deathOverlay.classList.remove('active');
-        if (rightPanel) rightPanel.style.pointerEvents = 'auto';
-        if (digiviceCardElem) digiviceCardElem.style.pointerEvents = 'auto';
+        if (!banned) {
+          if (rightPanel) rightPanel.style.pointerEvents = 'auto';
+          if (digiviceCardElem) digiviceCardElem.style.pointerEvents = 'auto';
+        }
       }
 
       document.getElementById('stOwnerName').textContent = `Student: ${st.name}`;
@@ -2937,7 +3053,7 @@ const ITEMS_DB = {
       }
 
       const btnEvolve = document.getElementById('btnEvolve');
-      if (req.canEvolve && !isDead) btnEvolve.classList.remove('hidden');
+      if (req.canEvolve && !isDead && !banned) btnEvolve.classList.remove('hidden');
       else btnEvolve.classList.add('hidden');
 
       const maxTrait = Math.max(10, st.courage || 0, st.love || 0, st.discipline || 0, st.wisdom || 0);
@@ -2957,7 +3073,7 @@ const ITEMS_DB = {
     function allocateTrait(trait, amount) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
-      if (!st || st.hp <= 0 || st.isFainted) return;
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
       if ((st.statPool || 0) < amount) {
         showToast("Trait Allocation", `Not enough points! You have ${st.statPool || 0} pts remaining.`, "info");
         return;
@@ -3042,7 +3158,7 @@ const ITEMS_DB = {
     function triggerEvolution() {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
-      if (!st || st.hp <= 0 || st.isFainted) return;
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
       const curDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const req = getEvolutionRequirements(curDigi, st);
 
@@ -3193,11 +3309,12 @@ const ITEMS_DB = {
       if (!grid) return;
       grid.innerHTML = '';
       const skills = digi.skills || [{ name: "Tackle Strike", power: 20, type: "damage", icon: "fa-hand-fist" }];
+      const banned = isStudentBanned(st);
 
       skills.forEach((sk, idx) => {
         const isHeal = sk.type === "heal";
         const btnColor = isHeal ? "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500" : "from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500";
-        const disabledAttr = (st.hp <= 0 || st.isFainted) ? 'disabled' : '';
+        const disabledAttr = (st.hp <= 0 || st.isFainted || banned) ? 'disabled' : '';
 
         grid.innerHTML += `
           <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
@@ -3226,6 +3343,7 @@ const ITEMS_DB = {
       const invList = document.getElementById('stInventoryList');
       if (!invList || !st) return;
       invList.innerHTML = '';
+      const banned = isStudentBanned(st);
 
       const items = Object.entries(st.inventory || {}).filter(([k, count]) => count > 0);
       if (items.length === 0) {
@@ -3246,7 +3364,7 @@ const ITEMS_DB = {
               <div class="text-[9px] text-slate-400">Qty: <span class="font-bold text-amber-300">x${qty}</span></div>
             </div>
           </div>
-          <button onclick="useItem('${itemId}')" class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer shrink-0 active:scale-95">
+          <button onclick="useItem('${itemId}')" ${banned ? 'disabled' : ''} class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 active:scale-95">
             Use
           </button>
         `;
@@ -3257,7 +3375,7 @@ const ITEMS_DB = {
     function useItem(itemId) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
-      if (!st || st.hp <= 0 || st.isFainted || !st.inventory || !st.inventory[itemId] || st.inventory[itemId] <= 0) {
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st) || !st.inventory || !st.inventory[itemId] || st.inventory[itemId] <= 0) {
         showToast("Use Item", "Action unavailable!", "info");
         return;
       }
@@ -3381,6 +3499,7 @@ const ITEMS_DB = {
         isFainted: false,
         hasShield: false,
         isStarred: false,
+        isBanned: false,
         attackQuota: 0,
         gachaTickets: 0,
         skinId: "skin-classic",
@@ -3407,6 +3526,7 @@ const ITEMS_DB = {
         updates[`students/${id}/isFainted`] = false;
         updates[`students/${id}/hasShield`] = false;
         updates[`students/${id}/isStarred`] = false;
+        updates[`students/${id}/isBanned`] = false;
         updates[`students/${id}/attackQuota`] = 0;
         updates[`students/${id}/gachaTickets`] = 0;
         updates[`students/${id}/skinId`] = "skin-classic";
@@ -3470,12 +3590,14 @@ const ITEMS_DB = {
         selectedTeacherClass = 'ALL';
         sel.value = 'ALL';
       }
+      updateClassBanButtonUI();
     }
 
     function onClassFilterChange(val) {
       selectedTeacherClass = val;
       resetPickerRoundPool();
       populateTeacherBountySelect();
+      updateClassBanButtonUI();
       renderTeacherGrid();
       renderBattleLogs();
       renderAnnouncementsUI();
@@ -3499,7 +3621,6 @@ const ITEMS_DB = {
       showToast("Class Attacks", `Awarded +${amount} Attacks to all active students!`, "info");
     }
 
-    // 🛑 新增：全班扣減攻擊次數（已力竭者不扣，不低於0）
     function deductAllAttackQuota(amount = 1) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Class Action", "No students in this class.", "info");
@@ -3532,7 +3653,6 @@ const ITEMS_DB = {
       showToast("Class Tickets", `Awarded +${amount} Ticket to all students!`, "gacha");
     }
 
-    // 🛑 新增：全班扣減抽獎券（最低為0）
     function deductAllGachaTickets(amount = 1) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Class Gacha", "No students in this class.", "info");
@@ -3548,7 +3668,6 @@ const ITEMS_DB = {
       showToast("Deducted Tickets", `Deducted ${amount} Ticket from all students!`, "damage");
     }
 
-    // 🛑 更新：全班扣血只對「未力竭陣亡」之學生有效，已死亡者不減血亦不復活
     function penalizeAllHp(amount = 30) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Class Damage", "No students in this class.", "info");
@@ -3617,7 +3736,7 @@ const ITEMS_DB = {
         if (!confirm(`💥 Strike entire class with [${moveName}] (${pwr} DMG)?`)) return;
         const updates = {};
         myStudents.forEach(s => {
-          if (s.isFainted || (s.hp !== undefined && s.hp <= 0)) return; // 略過已力竭者
+          if (s.isFainted || (s.hp !== undefined && s.hp <= 0)) return;
           if (s.hasShield) {
             updates[`students/${s.id}/hasShield`] = false;
           } else {
@@ -3684,6 +3803,7 @@ const ITEMS_DB = {
         const card = document.createElement('div');
         const isDead = s.isFainted || (s.hp !== undefined && s.hp <= 0);
         const isBountyTarget = currentBountyId === s.id;
+        const isIndividualBanned = !!s.isBanned;
 
         card.className = `bg-slate-950 border-2 ${isBountyTarget ? 'border-rose-500 shadow-lg shadow-rose-900/40 bg-rose-950/20' : (isDead ? 'border-rose-900 bg-rose-950/10' : 'border-slate-800')} rounded-xl p-4 flex flex-col justify-between relative overflow-hidden`;
         const markDot = s.isStarred ? '.' : '';
@@ -3696,11 +3816,15 @@ const ITEMS_DB = {
                   #${studentIndex}
                 </span>
                 <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${isBountyTarget ? 'text-rose-400 font-black' : (isDead ? 'text-rose-400' : 'text-cyan-300')} text-sm leading-snug cursor-pointer select-none break-words" title="Click to toggle favorite">
-                  ${s.name}${markDot} ${s.hasShield ? '🛡️' : ''} ${isBountyTarget ? '🎯' : ''}
+                  ${s.name}${markDot} ${s.hasShield ? '🛡️' : ''} ${isBountyTarget ? '🎯' : ''} ${isIndividualBanned ? '🔒[BANNED]' : ''}
                 </span>
               </div>
               
               <div class="flex items-center gap-1.5 shrink-0">
+                <!-- 🔒 單人 Ban / 解除按鈕 -->
+                <button onclick="toggleStudentBan('${s.id}', event)" class="p-1.5 rounded ${isIndividualBanned ? 'bg-amber-600 text-slate-950 font-black' : 'bg-slate-900 text-rose-400 hover:bg-rose-950 border border-rose-600/50'} text-xs transition cursor-pointer active:scale-90" title="${isIndividualBanned ? 'Unlock Student' : 'Ban Student (Read-Only)'}">
+                  <i class="fa-solid ${isIndividualBanned ? 'fa-lock-open' : 'fa-ban'}"></i>
+                </button>
                 <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="Export Card">
                   <i class="fa-solid fa-id-card"></i>
                 </button>
@@ -3804,7 +3928,6 @@ const ITEMS_DB = {
       addBattleLog(`💚 Teacher healed ${s.name} for +${amount} HP.`, "heal", s.classId);
     }
 
-    // 🛑 核心更新：學生死亡後未復活前，再按 -30HP 不得扣血亦不復發，提示已陣亡
     function penalizeHp(id, amount) {
       const s = appData.students[id];
       if (!s) return;
@@ -3833,7 +3956,6 @@ const ITEMS_DB = {
       }
     }
 
-    // 🛑 核心更新：全班回血只回血，不重設亦不增加攻擊次數
     function teacherHealAll() {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Full Recovery", "No students found.", "info");
@@ -3843,7 +3965,6 @@ const ITEMS_DB = {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         updates[`students/${s.id}/hp`] = digi.maxHp || 100;
         updates[`students/${s.id}/isFainted`] = false;
-        // 注意：不再更動 attackQuota
       });
 
       executeAtomicMultiPathUpdate(updates);
@@ -3906,7 +4027,7 @@ const ITEMS_DB = {
               const randomEgg = getRandomEggId();
               updates[`students/${id}`] = {
                 id: id, username: u, password: p, name: name, classId: parseStudentClasses(classVal).join(', '),
-                teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
+                teacherId: currentUser.id, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, isBanned: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
               };
             }
@@ -3962,7 +4083,7 @@ const ITEMS_DB = {
               const randomEgg = getRandomEggId();
               updates[`students/${id}`] = {
                 id: id, username: u, password: p, name: name, classId: classesArr.join(', '),
-                teacherId: assignedTeacher, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
+                teacherId: assignedTeacher, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, isBanned: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
                 unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
               };
             }
@@ -4253,7 +4374,7 @@ const ITEMS_DB = {
     function openGachaModal() {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
-      if (st.hp <= 0 || st.isFainted) return alert("Your Digimon is fainted!");
+      if (st.hp <= 0 || st.isFainted || isStudentBanned(st)) return alert("Action unavailable in current state!");
       document.getElementById('gachaAvailableTickets').textContent = st.gachaTickets || 0;
       document.getElementById('gachaResultContainer').classList.add('hidden');
       renderGachaDropTable();
@@ -4303,7 +4424,7 @@ const ITEMS_DB = {
     function drawGacha(times = 1) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
-      if (!st || st.hp <= 0 || st.isFainted) return alert("Your Digimon is fainted!");
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return alert("Action unavailable in current state!");
 
       if ((st.gachaTickets || 0) < times) {
         showToast("Not Enough Tickets", `You need ${times} ticket(s) to draw!`, "info");
@@ -4757,7 +4878,6 @@ const ITEMS_DB = {
       });
     }
 
-    // === QUIZ ENGINE & PVP LOGIC ===
     let importedQuizBank = [];
 
     function handleQuizExcelImport(event) {
@@ -4900,7 +5020,7 @@ const ITEMS_DB = {
 
       if (currentUser && currentUser.role === 'student') {
         const st = appData.students[currentUser.id];
-        if (!st || st.hp <= 0 || st.isFainted) {
+        if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
           modal.classList.add('hidden');
           return;
         }
@@ -4986,6 +5106,11 @@ const ITEMS_DB = {
       const st = appData.students[currentUser.id];
       if (!st) return;
 
+      if (isStudentBanned(st)) {
+        showToast("System Locked", "Your interactions are currently locked by the teacher!", "info");
+        return;
+      }
+
       if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
         showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
         playSound('faint');
@@ -5057,7 +5182,7 @@ const ITEMS_DB = {
             let menu = `=== Class [${primaryClass}] Target Directory ===\n`;
             if (currentBountyTargetId) {
               const bTarget = appData.students[currentBountyTargetId];
-              menu += `🎯 BOUNTY ACTIVE: [${bTarget ? bTarget.name : currentBountyTargetId}] (+300 EXP & +1 Ticket)\n`;
+              menu += `🎯 BOUNTY TARGET: [${bTarget ? bTarget.name : currentBountyTargetId}]\n(Attacking grants +30 EXP per hit! Elimination awards +300 EXP & +1 Ticket!)\n`;
             }
             menu += `Type the exact class number of your target:\n\n`;
 
@@ -5100,8 +5225,29 @@ const ITEMS_DB = {
       }
     }
 
-    // === 🎯 PvP 傷害判定 + 懸賞擊殺檢測及獎勵發放 (+300 EXP & +1 Gacha Ticket) ===
+    // === 🎯 PvP 傷害判定 + 攻擊懸賞目標即獲 +30 EXP + 擊殺獎勵 ===
     function applyAttackDamageWithTransaction(st, target, skill, digi, classContext) {
+      const tagKey = sanitizeClassKey(classContext || st.classId || 'ALL');
+      const activeBountyTargetId = appData.bounties ? appData.bounties[tagKey] : null;
+      const isTargetingBounty = (activeBountyTargetId && activeBountyTargetId === target.id);
+
+      // 🎯 核心功能：只要攻擊懸賞目標，即刻自動獲得 30 EXP 與 30 屬性點
+      if (isTargetingBounty) {
+        dbRootRef.child(`students/${st.id}`).transaction((attackerData) => {
+          if (!attackerData) return attackerData;
+          attackerData.exp = (attackerData.exp || 0) + 30;
+          attackerData.statPool = (attackerData.statPool || 0) + 30;
+          return attackerData;
+        }, (bErr, bCommitted, bSnap) => {
+          if (bCommitted) {
+            playSound('heal');
+            showToast("Bounty Hunter Bonus!", `Hit Bounty Target [${target.name}]! Gained +30 EXP!`, "heal");
+            addBattleLog(`🎯⚡ [BOUNTY HIT BONUS] ${st.name} attacked Bounty Target [${target.name}] and received +30 EXP!`, "evolution", classContext);
+            updateStudentUI();
+          }
+        });
+      }
+
       if (target.hasShield) {
         patchStudentAtomic(target.id, { hasShield: false });
         playSound('shield');
@@ -5128,15 +5274,11 @@ const ITEMS_DB = {
             playSound('faint');
             addBattleLog(`☠️ [FAINTED] ${target.name}'s Digimon fainted in battle!`, "battle", st.classId);
 
-            // 🎯 檢測被擊殺者是否為該班懸賞對象
-            const tagKey = sanitizeClassKey(classContext || st.classId || 'ALL');
-            const activeBountyTargetId = appData.bounties ? appData.bounties[tagKey] : null;
-
-            if (activeBountyTargetId && activeBountyTargetId === target.id) {
+            // 🎯 懸賞最後擊殺大獎：撤銷懸賞 + 額外獎勵 300 EXP 與 1 張抽獎券
+            if (isTargetingBounty) {
               const updates = {};
-              updates[`bounties/${tagKey}`] = null; // 自動完成並撤銷該班懸賞
+              updates[`bounties/${tagKey}`] = null;
 
-              // 更新擊殺者的資料
               dbRootRef.child(`students/${st.id}`).transaction((killerData) => {
                 if (!killerData) return killerData;
                 killerData.exp = (killerData.exp || 0) + 300;
