@@ -187,26 +187,41 @@
     <span class="text-xs text-rose-200 hidden sm:inline">(You can watch the screen live, but all interactions are temporarily locked by Teacher)</span>
   </div>
 
-  <!-- ⚡ Live Class Quiz Overlay (學生搶答視窗：顯示前三名階梯式獎勵提示與即時名次反饋) -->
+  <!-- ⚡ Live Class Quiz Overlay (學生搶答視窗：動態倒數計時、前三名階梯式與答對保底獎勵規則) -->
   <div id="modalQuizOverlay" class="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-lg w-full p-6 text-center shadow-2xl relative quiz-active-glow">
-      <div class="flex items-center justify-center gap-2 mb-2">
-        <i class="fa-solid fa-bolt text-amber-400 text-2xl animate-bounce"></i>
-        <h3 class="font-pixel text-sm sm:text-base text-amber-300">Live Speed Quiz Challenge!</h3>
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-bolt text-amber-400 text-2xl animate-bounce"></i>
+          <h3 class="font-pixel text-sm sm:text-base text-amber-300">Live Speed Quiz Challenge!</h3>
+        </div>
+        <!-- 學生端倒數計時顯示 -->
+        <div id="quizTimerStudentBadge" class="hidden font-mono text-xs px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-bold flex items-center gap-1.5 animate-pulse">
+          <i class="fa-solid fa-stopwatch"></i> <span id="quizTimeRemainingSec">30s</span>
+        </div>
       </div>
       
-      <!-- 搶答名次獎勵規則橫幅 -->
-      <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl py-2 px-3 mb-4 text-[10px] sm:text-xs flex items-center justify-around gap-1 font-mono">
+      <!-- 搶答倒數進度條 -->
+      <div id="quizTimerBarWrapper" class="w-full bg-slate-950 rounded-full h-1.5 mb-3.5 border border-slate-800 hidden overflow-hidden">
+        <div id="quizTimerBarFill" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all duration-300 ease-linear" style="width: 100%;"></div>
+      </div>
+
+      <!-- 搶答名次獎勵規則橫幅 (已更新第3名+30 EXP與其餘答對+10 EXP) -->
+      <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl py-2 px-2.5 mb-4 text-[10px] sm:text-xs flex items-center justify-between gap-1 font-mono">
         <span class="text-amber-400 font-bold flex items-center gap-1">
           <i class="fa-solid fa-crown text-amber-300"></i> 1st: +2 Attacks
         </span>
-        <span class="text-slate-500">|</span>
+        <span class="text-slate-600">|</span>
         <span class="text-slate-300 font-bold flex items-center gap-1">
           <i class="fa-solid fa-medal text-slate-300"></i> 2nd: +1 Attack
         </span>
-        <span class="text-slate-500">|</span>
-        <span class="text-amber-600 font-bold flex items-center gap-1">
-          <i class="fa-solid fa-award text-amber-600"></i> 3rd: +10 EXP
+        <span class="text-slate-600">|</span>
+        <span class="text-amber-500 font-bold flex items-center gap-1">
+          <i class="fa-solid fa-award text-amber-500"></i> 3rd: +30 EXP
+        </span>
+        <span class="text-slate-600">|</span>
+        <span class="text-emerald-400 font-bold flex items-center gap-1">
+          <i class="fa-solid fa-check"></i> 答對: +10 EXP
         </span>
       </div>
       
@@ -216,7 +231,7 @@
 
       <div id="quizOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
       
-      <!-- 學生答題後即時反饋 -->
+      <!-- 學生答題後或超時之即時反饋 -->
       <div id="quizFeedbackBox" class="mt-4 hidden p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
         <div id="quizFeedbackText" class="font-bold text-cyan-300">Waiting for result...</div>
         <div id="quizPodiumSnippet" class="mt-2 text-[11px] text-slate-400 flex flex-col gap-1"></div>
@@ -617,7 +632,7 @@
                   <div class="flex items-center gap-1">
                     <span id="stValLove" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('love', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+1</button>
-                    <button onclick="allocateTrait('love', 5)" class="btn-trait px-1.5 py-0.5 rounded bg-emerald-950 border border-rose-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+5</button>
+                    <button onclick="allocateTrait('love', 5)" class="btn-trait px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+5</button>
                     <button onclick="allocateTrait('love', 10)" class="btn-trait px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+10</button>
                   </div>
                 </div>
@@ -903,10 +918,10 @@
         </div>
       </div>
 
-      <!-- === 分頁 B：全新新增 POP-UP QUIZ 專用獨立分頁 (LIVE QUIZ MONITORING TAB) === -->
+      <!-- === 分頁 B：POP-UP QUIZ 專用獨立分頁 (LIVE QUIZ MONITORING TAB) === -->
       <div id="teacherSubViewQuiz" class="space-y-6 hidden">
         
-        <!-- 頂部搶答規則與題目發布控制台 -->
+        <!-- 頂部搶答規則與題目發布控制台 (含限時自訂選單) -->
         <div class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border-2 border-amber-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
             <div class="flex items-center gap-3">
@@ -916,11 +931,15 @@
               <div>
                 <h3 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider font-pixel">Pop-up Quiz 搶答即時管理中心</h3>
                 <div class="text-xs text-slate-300 flex flex-wrap items-center gap-2 mt-0.5">
-                  <span class="text-amber-400 font-bold">🥇 第1名答對：+2次攻擊</span>
+                  <span class="text-amber-400 font-bold">🥇 第1名：+2次攻擊</span>
                   <span class="text-slate-500">|</span>
-                  <span class="text-slate-300 font-bold">🥈 第2名答對：+1次攻擊</span>
+                  <span class="text-slate-300 font-bold">🥈 第2名：+1次攻擊</span>
                   <span class="text-slate-500">|</span>
-                  <span class="text-amber-600 font-bold">🥉 第3名答對：+10 EXP</span>
+                  <span class="text-amber-500 font-bold">🥉 第3名：+30 EXP</span>
+                  <span class="text-slate-500">|</span>
+                  <span class="text-emerald-400 font-bold">✨ 其餘答對：+10 EXP</span>
+                  <span class="text-slate-500">|</span>
+                  <span class="text-rose-400 font-bold">❌ 答錯/逾時：無獎勵</span>
                 </div>
               </div>
             </div>
@@ -971,13 +990,31 @@
               </div>
             </div>
 
+            <!-- 發布設定列：班級、自訂限時、發布按鈕 -->
             <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400 font-bold">發布目標班級：</span>
-                <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">
-                  Class: All Classes
-                </span>
-                <span class="text-[11px] text-slate-500">(會跟隨上方主控台所選班級)</span>
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs text-slate-400 font-bold">目標班級：</span>
+                  <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">
+                    Class: All Classes
+                  </span>
+                </div>
+
+                <!-- ⏱️ 限時自訂選單（預設 30 秒，未答列為錯誤） -->
+                <div class="flex items-center gap-1.5">
+                  <label class="text-xs font-bold text-amber-300 flex items-center gap-1">
+                    <i class="fa-solid fa-stopwatch"></i> 作答限時:
+                  </label>
+                  <select id="teacherQuizTimeLimitSelect" class="bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
+                    <option value="15">15 秒 (極速搶答)</option>
+                    <option value="20">20 秒</option>
+                    <option value="30" selected>30 秒 (預設標準)</option>
+                    <option value="45">45 秒</option>
+                    <option value="60">60 秒 (1 分鐘)</option>
+                    <option value="90">90 秒</option>
+                    <option value="0">無限制 (手動結束)</option>
+                  </select>
+                </div>
               </div>
 
               <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs shadow-lg shadow-amber-500/30 transition active:scale-95 flex items-center gap-2 cursor-pointer">
@@ -998,9 +1035,14 @@
                   <i class="fa-solid fa-trophy text-amber-400 text-lg animate-pulse"></i>
                   <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider font-pixel">搶答榮譽前三名</h4>
                 </div>
-                <span id="quizStatusIndicator" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">
-                  IDLE
-                </span>
+                <div class="flex items-center gap-1.5">
+                  <span id="quizLiveCountdownBadge" class="hidden text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold animate-pulse">
+                    <i class="fa-solid fa-stopwatch mr-1"></i><span id="tcCountdownSec">30s</span>
+                  </span>
+                  <span id="quizStatusIndicator" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">
+                    IDLE
+                  </span>
+                </div>
               </div>
 
               <!-- 冠軍 🥇 -->
@@ -1027,13 +1069,13 @@
                 <span class="text-[10px] font-mono text-slate-400" id="quizWinnerTime2">--:--:--</span>
               </div>
 
-              <!-- 季軍 🥉 -->
+              <!-- 季軍 🥉 (已更新為 +30 EXP) -->
               <div id="quizWinnerSlot3" class="p-3 rounded-xl bg-gradient-to-r from-orange-950/40 via-slate-950 to-slate-950 border border-amber-700/60 flex items-center justify-between shadow">
                 <div class="flex items-center gap-3">
                   <span class="w-8 h-8 rounded-full bg-amber-700/20 border border-amber-700 flex items-center justify-center text-amber-500 font-pixel text-xs">3</span>
                   <div>
                     <div class="text-xs font-black text-white" id="quizWinnerName3">等待答對者...</div>
-                    <div class="text-[10px] text-amber-600 font-mono" id="quizWinnerReward3">+10 EXP</div>
+                    <div class="text-[10px] text-amber-500 font-mono font-bold" id="quizWinnerReward3">+30 EXP</div>
                   </div>
                 </div>
                 <span class="text-[10px] font-mono text-slate-400" id="quizWinnerTime3">--:--:--</span>
@@ -1098,7 +1140,7 @@
             </div>
 
             <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
-              <span>★ 系統會於學生點擊答案的毫秒瞬間即時同步紀錄，完全無須手動重整。</span>
+              <span>★ 系統會於學生點擊答案或倒數歸零時即時同步紀錄，完全無須手動重整。</span>
               <span id="quizActiveQuestionSnippet" class="truncate max-w-xs font-mono text-slate-400">目前問題: 無</span>
             </div>
           </div>
@@ -2089,6 +2131,10 @@ const DIGIMON_DB = {
     let activeQuizInstance = null;
     let activeTeacherSubTab = 'main';
 
+    // 搶答動態倒數計時器變數
+    let quizStudentCountdownTimer = null;
+    let quizTeacherCountdownTimer = null;
+
     let pickedStudentsPool = {
       all: new Set(),
       starred: new Set()
@@ -2287,7 +2333,7 @@ const DIGIMON_DB = {
           refreshCurrentView();
         });
 
-        // ⚡ 即時搶答核心監聽：支援多階梯前三名與即時全班答案追蹤
+        // ⚡ 即時搶答核心監聽：支援多階梯前三名、自訂限時倒數與即時全班答案追蹤
         dbRootRef.child('activeQuiz').on('value', (snap) => {
           activeQuizInstance = snap.val();
           renderQuizModalForStudent();
@@ -3619,7 +3665,6 @@ function sanitizeClassKey(cls) {
       });
     }
 
-    // 🛑 退化時保留 50% 經驗與屬性值
     function teacherDegradeStudent(studentId) {
       const s = appData.students[studentId];
       if (!s) return;
@@ -5172,6 +5217,7 @@ function sanitizeClassKey(cls) {
       document.getElementById('teacherQuizOpt4').value = item.wrongs[2] || '';
     }
 
+    // ⚡ 老師發布搶答題目（支援自訂限時：預設 30 秒，未答列為錯誤）
     function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
 
@@ -5180,6 +5226,9 @@ function sanitizeClassKey(cls) {
       const w1 = document.getElementById('teacherQuizOpt2').value.trim();
       const w2 = document.getElementById('teacherQuizOpt3').value.trim();
       const w3 = document.getElementById('teacherQuizOpt4').value.trim();
+      
+      const timeLimitSelect = document.getElementById('teacherQuizTimeLimitSelect');
+      const timeLimitSec = timeLimitSelect ? parseInt(timeLimitSelect.value) || 30 : 30;
 
       if (!q || !correct) {
         return alert("Please provide at least a question and the correct answer (Option 1)!");
@@ -5209,15 +5258,17 @@ function sanitizeClassKey(cls) {
         options: shuffledTexts,
         correctIndex: correctIndex,
         classTag: targetClass,
-        winners: {}, // 紀錄階梯名次: { rank1: {...}, rank2: {...}, rank3: {...} }
-        submissions: {}, // 紀錄該班所有學生答案: { [studentId]: { answerIdx, answerText, isCorrect, timestamp, rank } }
+        timeLimit: timeLimitSec, // 0 代表不限時
+        winners: {}, // 階梯名次: { rank1: {...}, rank2: {...}, rank3: {...} }
+        submissions: {}, // 全班作答紀錄: { [studentId]: { answerIdx, answerText, isCorrect, timestamp, rank, isTimeout } }
         timestamp: Date.now()
       };
 
       if (dbRootRef) {
         dbRootRef.child('activeQuiz').set(quizData).then(() => {
-          addBattleLog(`⚡ [LIVE QUIZ] Teacher launched quiz: "${q}"! 1st: +2 Attacks, 2nd: +1 Attack, 3rd: +10 EXP!`, "evolution", targetClass);
-          showToast("Quiz Launched", "Broadcasted to students in class!", "evolution");
+          const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒` : '無作答限時';
+          addBattleLog(`⚡ [LIVE QUIZ] 老師發布搶答 (${limitMsg}): "${q}"! 1st: +2 次攻擊, 2nd: +1 次攻擊, 3rd: +30 EXP, 其餘答對: +10 EXP!`, "evolution", targetClass);
+          showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！`, "evolution");
           renderTeacherQuizLiveDashboard();
         });
       }
@@ -5241,6 +5292,9 @@ function sanitizeClassKey(cls) {
     function renderTeacherQuizLiveDashboard() {
       const statusBadge = document.getElementById('quizStatusIndicator');
       const qSnippet = document.getElementById('quizActiveQuestionSnippet');
+      const countdownBadge = document.getElementById('quizLiveCountdownBadge');
+      const tcCountdownSec = document.getElementById('tcCountdownSec');
+
       const w1Name = document.getElementById('quizWinnerName1');
       const w1Time = document.getElementById('quizWinnerTime1');
       const w2Name = document.getElementById('quizWinnerName2');
@@ -5259,9 +5313,15 @@ function sanitizeClassKey(cls) {
       const currentClass = selectedTeacherClass || 'ALL';
       const classStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, currentClass));
 
+      if (quizTeacherCountdownTimer) {
+        clearInterval(quizTeacherCountdownTimer);
+        quizTeacherCountdownTimer = null;
+      }
+
       if (!activeQuizInstance) {
         statusBadge.textContent = "IDLE";
         statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400";
+        if (countdownBadge) countdownBadge.classList.add('hidden');
         if (qSnippet) qSnippet.textContent = "目前問題: 尚未發布";
         w1Name.textContent = "等待答對者..."; w1Time.textContent = "--:--:--";
         w2Name.textContent = "等待答對者..."; w2Time.textContent = "--:--:--";
@@ -5275,6 +5335,33 @@ function sanitizeClassKey(cls) {
       }
 
       const isActive = !!activeQuizInstance.active;
+      const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
+
+      // 老師端限時倒數監聽
+      if (isActive && timeLimitSec > 0) {
+        if (countdownBadge) countdownBadge.classList.remove('hidden');
+        
+        const updateTcTimer = () => {
+          const elapsedSec = Math.floor((Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000);
+          const remaining = Math.max(0, timeLimitSec - elapsedSec);
+          if (tcCountdownSec) tcCountdownSec.textContent = `${remaining}s`;
+
+          if (remaining <= 0) {
+            clearInterval(quizTeacherCountdownTimer);
+            quizTeacherCountdownTimer = null;
+            if (statusBadge) {
+              statusBadge.textContent = "TIME OVER";
+              statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold";
+            }
+          }
+        };
+
+        updateTcTimer();
+        quizTeacherCountdownTimer = setInterval(updateTcTimer, 500);
+      } else {
+        if (countdownBadge) countdownBadge.classList.add('hidden');
+      }
+
       statusBadge.textContent = isActive ? "● LIVE ACTIVE" : "CLOSED";
       statusBadge.className = isActive 
         ? "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold animate-pulse" 
@@ -5284,7 +5371,7 @@ function sanitizeClassKey(cls) {
         qSnippet.textContent = `目前問題: ${activeQuizInstance.question || ''}`;
       }
 
-      // 榮譽前三名渲染
+      // 榮譽前三名渲染 (第 3 名為 +30 EXP)
       const winners = activeQuizInstance.winners || {};
       if (winners.rank1) {
         w1Name.innerHTML = `<span class="text-amber-300 font-black">${winners.rank1.studentName}</span> (#1)`;
@@ -5339,22 +5426,27 @@ function sanitizeClassKey(cls) {
 
             ansDisplay = `<span class="text-slate-200 font-bold">${sub.answerText || '--'}</span>`;
 
-            if (sub.isCorrect) {
+            if (sub.isTimeout) {
+              resultBadge = `<span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold text-[10px]"><i class="fa-solid fa-clock mr-1"></i>逾時未答 (錯誤)</span>`;
+              rankRewardBadge = `<span class="text-rose-400 text-[10px]">無獎勵</span>`;
+            } else if (sub.isCorrect) {
               resultBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold text-[10px]"><i class="fa-solid fa-check mr-1"></i>答對</span>`;
             } else {
               resultBadge = `<span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold text-[10px]"><i class="fa-solid fa-xmark mr-1"></i>答錯</span>`;
             }
 
-            if (sub.rank === 1) {
-              rankRewardBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold text-[10px]">🥇 冠軍 (+2 攻擊)</span>`;
-            } else if (sub.rank === 2) {
-              rankRewardBadge = `<span class="px-2 py-0.5 rounded bg-slate-500/20 border border-slate-300 text-slate-200 font-bold text-[10px]">🥈 亞軍 (+1 攻擊)</span>`;
-            } else if (sub.rank === 3) {
-              rankRewardBadge = `<span class="px-2 py-0.5 rounded bg-orange-950/40 border border-amber-700 text-amber-500 font-bold text-[10px]">🥉 季軍 (+10 EXP)</span>`;
-            } else if (sub.isCorrect) {
-              rankRewardBadge = `<span class="text-emerald-400 text-[10px]">答對無名次</span>`;
-            } else {
-              rankRewardBadge = `<span class="text-slate-500 text-[10px]">無獎勵</span>`;
+            if (!sub.isTimeout) {
+              if (sub.rank === 1) {
+                rankRewardBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold text-[10px]">🥇 冠軍 (+2 攻擊)</span>`;
+              } else if (sub.rank === 2) {
+                rankRewardBadge = `<span class="px-2 py-0.5 rounded bg-slate-500/20 border border-slate-300 text-slate-200 font-bold text-[10px]">🥈 亞軍 (+1 攻擊)</span>`;
+              } else if (sub.rank === 3) {
+                rankRewardBadge = `<span class="px-2 py-0.5 rounded bg-orange-950/40 border border-amber-700 text-amber-500 font-bold text-[10px]">🥉 季軍 (+30 EXP)</span>`;
+              } else if (sub.isCorrect) {
+                rankRewardBadge = `<span class="px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-600/50 text-emerald-400 text-[10px] font-bold">✨ 答對 (+10 EXP)</span>`;
+              } else {
+                rankRewardBadge = `<span class="text-slate-500 text-[10px]">無獎勵</span>`;
+              }
             }
           }
 
@@ -5376,13 +5468,17 @@ function sanitizeClassKey(cls) {
       avgTimeEl.textContent = answeredCount > 0 ? `${(totalElapsed / answeredCount).toFixed(1)}s` : `--s`;
     }
 
-    // ⚡ 學生端搶答視窗渲染
+    // ⚡ 學生端搶答視窗渲染（支援動態倒數、進度條與自動逾時結算）
     function renderQuizModalForStudent() {
       const modal = document.getElementById('modalQuizOverlay');
       if (!modal) return;
 
       if (!activeQuizInstance || !activeQuizInstance.active) {
         modal.classList.add('hidden');
+        if (quizStudentCountdownTimer) {
+          clearInterval(quizStudentCountdownTimer);
+          quizStudentCountdownTimer = null;
+        }
         return;
       }
 
@@ -5403,26 +5499,43 @@ function sanitizeClassKey(cls) {
         const feedbackBox = document.getElementById('quizFeedbackBox');
         const feedbackText = document.getElementById('quizFeedbackText');
         const podiumBox = document.getElementById('quizPodiumSnippet');
+        const timerBadge = document.getElementById('quizTimerStudentBadge');
+        const timerSecText = document.getElementById('quizTimeRemainingSec');
+        const barWrapper = document.getElementById('quizTimerBarWrapper');
+        const barFill = document.getElementById('quizTimerBarFill');
 
         document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
 
+        const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
+
+        // 清除舊的計時器
+        if (quizStudentCountdownTimer) {
+          clearInterval(quizStudentCountdownTimer);
+          quizStudentCountdownTimer = null;
+        }
+
         if (mySub) {
-          // 學生已提交答案，顯示結果與名次
+          // 學生已提交答案或已逾時，停止計時並顯示結果
+          if (timerBadge) timerBadge.classList.add('hidden');
+          if (barWrapper) barWrapper.classList.add('hidden');
+
           grid.innerHTML = '';
           feedbackBox.classList.remove('hidden');
 
-          if (mySub.isCorrect) {
+          if (mySub.isTimeout) {
+            feedbackText.innerHTML = `⏰ <b class="text-rose-400">已逾時未作答！</b> 本題自動判定為錯誤，無任何獎勵！`;
+          } else if (mySub.isCorrect) {
             if (mySub.rank === 1) {
               feedbackText.innerHTML = `🎉 恭喜你獲得 <b class="text-amber-300">第一名 (冠軍)</b>！自動增加 <b class="text-amber-400">+2 次攻擊次數</b>！`;
             } else if (mySub.rank === 2) {
               feedbackText.innerHTML = `🥈 恭喜你獲得 <b class="text-slate-200">第二名 (亞軍)</b>！自動增加 <b class="text-cyan-300">+1 次攻擊次數</b>！`;
             } else if (mySub.rank === 3) {
-              feedbackText.innerHTML = `🥉 恭喜你獲得 <b class="text-amber-500">第三名 (季軍)</b>！自動獲得 <b class="text-emerald-400">+10 EXP</b>！`;
+              feedbackText.innerHTML = `🥉 恭喜你獲得 <b class="text-amber-500">第三名 (季軍)</b>！自動獲得 <b class="text-emerald-400">+30 EXP</b>！`;
             } else {
-              feedbackText.innerHTML = `✅ 答案正確！前三名名額已滿，下次動作要更快喔！`;
+              feedbackText.innerHTML = `✅ 答案正確！自動獲得 <b class="text-emerald-400">+10 EXP</b>！`;
             }
           } else {
-            feedbackText.innerHTML = `❌ 答案不正確！請再接再厲！`;
+            feedbackText.innerHTML = `❌ 答案不正確！沒有獲得獎勵，下次請再接再厲！`;
           }
 
           // 顯示目前前三名名單
@@ -5430,11 +5543,11 @@ function sanitizeClassKey(cls) {
           let snippet = '';
           if (winners.rank1) snippet += `<div>🥇 第1名: ${winners.rank1.studentName} (+2 攻擊)</div>`;
           if (winners.rank2) snippet += `<div>🥈 第2名: ${winners.rank2.studentName} (+1 攻擊)</div>`;
-          if (winners.rank3) snippet += `<div>🥉 第3名: ${winners.rank3.studentName} (+10 EXP)</div>`;
+          if (winners.rank3) snippet += `<div>🥉 第3名: ${winners.rank3.studentName} (+30 EXP)</div>`;
           podiumBox.innerHTML = snippet;
 
         } else {
-          // 尚未作答，渲染可選選項
+          // 尚未作答，啟動倒數計時與渲染選項
           feedbackBox.classList.add('hidden');
           grid.innerHTML = '';
 
@@ -5445,6 +5558,33 @@ function sanitizeClassKey(cls) {
             btn.onclick = () => submitStudentQuizAnswer(idx);
             grid.appendChild(btn);
           });
+
+          if (timeLimitSec > 0) {
+            if (timerBadge) timerBadge.classList.remove('hidden');
+            if (barWrapper) barWrapper.classList.remove('hidden');
+
+            const handleCountdownTick = () => {
+              const elapsedSec = (Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000;
+              const remaining = Math.max(0, timeLimitSec - elapsedSec);
+              const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
+
+              if (timerSecText) timerSecText.textContent = `${Math.ceil(remaining)}s`;
+              if (barFill) barFill.style.width = `${pct}%`;
+
+              if (remaining <= 0) {
+                clearInterval(quizStudentCountdownTimer);
+                quizStudentCountdownTimer = null;
+                // ⏱️ 限時到未有回答者自動列為錯誤
+                autoSubmitTimeoutForStudent();
+              }
+            };
+
+            handleCountdownTick();
+            quizStudentCountdownTimer = setInterval(handleCountdownTick, 250);
+          } else {
+            if (timerBadge) timerBadge.classList.add('hidden');
+            if (barWrapper) barWrapper.classList.add('hidden');
+          }
         }
 
         modal.classList.remove('hidden');
@@ -5453,10 +5593,47 @@ function sanitizeClassKey(cls) {
       }
     }
 
-    // ⚡ 學生提交答案 + 搶答階梯式獎勵原子結算 (1st: +2 Attacks, 2nd: +1 Attack, 3rd: +10 EXP)
+    // ⏱️ 限時到未回答者自動提交逾時（列為錯誤、無獎勵）
+    function autoSubmitTimeoutForStudent() {
+      if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
+      if (!dbRootRef) return;
+
+      const st = appData.students[currentUser.id] || { name: currentUser.id };
+      const now = Date.now();
+
+      dbRootRef.child('activeQuiz').transaction((quiz) => {
+        if (!quiz || !quiz.active) return quiz;
+        if (!quiz.submissions) quiz.submissions = {};
+        if (quiz.submissions[currentUser.id]) return quiz; // 已有紀錄不重複寫入
+
+        quiz.submissions[currentUser.id] = {
+          answerIdx: -1,
+          answerText: "【逾時未作答】",
+          isCorrect: false,
+          isTimeout: true,
+          timestamp: now,
+          rank: null
+        };
+        return quiz;
+      }, (err, committed, snap) => {
+        if (committed) {
+          playSound('faint');
+          showToast("Time's Up!", "作答時間截止！列為未作答錯誤。", "damage");
+          addBattleLog(`⏰ [QUIZ TIMEOUT] ${st.name} 未在限時內回答問題，列為錯誤！`, "battle", st.classId);
+          renderQuizModalForStudent();
+        }
+      });
+    }
+
+    // ⚡ 學生提交答案 + 搶答階梯式與答對保底原子結算 (1st: +2 Attacks, 2nd: +1 Attack, 3rd: +30 EXP, 其餘答對: +10 EXP, 答錯: 0)
     function submitStudentQuizAnswer(chosenIdx) {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
       if (!dbRootRef) return;
+
+      if (quizStudentCountdownTimer) {
+        clearInterval(quizStudentCountdownTimer);
+        quizStudentCountdownTimer = null;
+      }
 
       const chosenText = activeQuizInstance.options[chosenIdx] || '';
       const isCorrect = (chosenIdx === activeQuizInstance.correctIndex);
@@ -5488,6 +5665,7 @@ function sanitizeClassKey(cls) {
           answerIdx: chosenIdx,
           answerText: chosenText,
           isCorrect: isCorrect,
+          isTimeout: false,
           timestamp: now,
           rank: assignedRank
         };
@@ -5509,29 +5687,39 @@ function sanitizeClassKey(cls) {
             if (myResult.rank === 1) {
               // 🥇 第一名獎勵：自動增加 2 次攻擊次數
               dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 2);
-              addBattleLog(`⚡🥇 [QUIZ 1ST] ${st.name} won 1st Place in Speed Quiz! Automatically granted +2 Attack Quotas!`, "evolution", st.classId);
-              showToast("1st Place Victor!", `You answered first! +2 Attack Quotas granted!`, "evolution");
+              addBattleLog(`⚡🥇 [QUIZ 1ST] ${st.name} 搶得第 1 名！自動增加 +2 次攻擊次數！`, "evolution", st.classId);
+              showToast("1st Place Victor!", `搶得第 1 名！獲得 +2 次攻擊次數！`, "evolution");
             } else if (myResult.rank === 2) {
               // 🥈 第二名獎勵：自動增加 1 次攻擊次數
               dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              addBattleLog(`⚡🥈 [QUIZ 2ND] ${st.name} won 2nd Place in Speed Quiz! Automatically granted +1 Attack Quota!`, "evolution", st.classId);
-              showToast("2nd Place Victor!", `You answered second! +1 Attack Quota granted!`, "evolution");
+              addBattleLog(`⚡🥈 [QUIZ 2ND] ${st.name} 搶得第 2 名！自動增加 +1 次攻擊次數！`, "evolution", st.classId);
+              showToast("2nd Place Victor!", `搶得第 2 名！獲得 +1 次攻擊次數！`, "evolution");
             } else if (myResult.rank === 3) {
-              // 🥉 第三名獎勵：自動增加 10 EXP (及 10 點可分配屬性)
+              // 🥉 第三名獎勵：自動增加 30 EXP (及 30 點可分配屬性點)
+              dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
+                if (!currentSt) return currentSt;
+                currentSt.exp = (currentSt.exp || 0) + 30;
+                currentSt.statPool = (currentSt.statPool || 0) + 30;
+                return currentSt;
+              });
+              addBattleLog(`⚡🥉 [QUIZ 3RD] ${st.name} 獲得第 3 名！自動獲得 +30 EXP！`, "evolution", st.classId);
+              showToast("3rd Place Victor!", `獲得第 3 名！獲得 +30 EXP！`, "evolution");
+            } else {
+              // ✨ 其餘答對者：均自動加 10 EXP (及 10 點可分配屬性點)
               dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
                 if (!currentSt) return currentSt;
                 currentSt.exp = (currentSt.exp || 0) + 10;
                 currentSt.statPool = (currentSt.statPool || 0) + 10;
                 return currentSt;
               });
-              addBattleLog(`⚡🥉 [QUIZ 3RD] ${st.name} won 3rd Place in Speed Quiz! Automatically granted +10 EXP!`, "evolution", st.classId);
-              showToast("3rd Place Victor!", `You answered third! +10 EXP granted!`, "evolution");
-            } else {
-              showToast("Correct Answer!", `Well done! Correct answer submitted!`, "heal");
+              addBattleLog(`⚡✅ [QUIZ CORRECT] ${st.name} 答案正確！自動獲得 +10 EXP！`, "heal", st.classId);
+              showToast("Correct Answer!", `答案正確！獲得 +10 EXP！`, "heal");
             }
           } else {
+            // ❌ 答錯者：沒有獎勵
             playSound('faint');
-            showToast("Incorrect!", "Wrong answer selected!", "damage");
+            showToast("Incorrect!", "答案不正確！沒有獲得獎勵。", "damage");
+            addBattleLog(`⚡❌ [QUIZ INCORRECT] ${st.name} 答案錯誤，無獲得獎勵。`, "battle", st.classId);
           }
 
           renderQuizModalForStudent();
@@ -5669,7 +5857,7 @@ function sanitizeClassKey(cls) {
       const activeBountyTargetId = appData.bounties ? appData.bounties[tagKey] : null;
       const isTargetingBounty = (activeBountyTargetId && activeBountyTargetId === target.id);
 
-      // 🎯 核心功能：只要攻擊懸賞目標，即刻自動獲得 30 EXP 與 30 屬性點
+      // 🎯 只要攻擊懸賞目標，即刻自動獲得 30 EXP 與 30 屬性點
       if (isTargetingBounty) {
         dbRootRef.child(`students/${st.id}`).transaction((attackerData) => {
           if (!attackerData) return attackerData;
