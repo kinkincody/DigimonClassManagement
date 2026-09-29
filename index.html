@@ -187,7 +187,7 @@
     <span class="text-xs text-rose-200 hidden sm:inline">(You can watch the screen live, but all interactions are temporarily locked by Teacher)</span>
   </div>
 
-  <!-- ⚡ Live Class Quiz Overlay (學生搶答視窗：動態倒數計時、前三名階梯式與答對保底獎勵規則) -->
+  <!-- ⚡ Live Class Quiz Overlay (學生搶答視窗) -->
   <div id="modalQuizOverlay" class="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-lg w-full p-6 text-center shadow-2xl relative quiz-active-glow">
       <div class="flex items-center justify-between mb-2">
@@ -206,7 +206,7 @@
         <div id="quizTimerBarFill" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all duration-300 ease-linear" style="width: 100%;"></div>
       </div>
 
-      <!-- 搶答名次獎勵規則橫幅 (第3名改為+30 EXP，其餘答對+10 EXP) -->
+      <!-- 搶答名次獎勵規則橫幅 -->
       <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl py-2 px-2.5 mb-4 text-[10px] sm:text-xs flex items-center justify-between gap-1 font-mono">
         <span class="text-amber-400 font-bold flex items-center gap-1">
           <i class="fa-solid fa-crown text-amber-300"></i> 1st: +2 Attacks
@@ -550,7 +550,7 @@
             </div>
             <h2 id="stDigiName" class="text-2xl font-black tracking-wider text-cyan-200 mt-3 drop-shadow flex items-center gap-2">
               <span>Digitama</span>
-              <span id="stTypeTag" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Free</span>
+              <span id="stTypeTag" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">${digi.type || 'Free'}</span>
             </h2>
             <p id="stDigiTitle" class="text-xs text-slate-400 mt-1">A mysterious egg full of potential</p>
           </div>
@@ -646,9 +646,9 @@
                   <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
-                    <button onclick="allocateTrait('discipline', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+1</button>
-                    <button onclick="allocateTrait('discipline', 5)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+5</button>
-                    <button onclick="allocateTrait('discipline', 10)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-90">+10</button>
+                    <button onclick="allocateTrait('discipline', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+1</button>
+                    <button onclick="allocateTrait('discipline', 5)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+5</button>
+                    <button onclick="allocateTrait('discipline', 10)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -661,9 +661,9 @@
                   <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
-                    <button onclick="allocateTrait('wisdom', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+1</button>
-                    <button onclick="allocateTrait('wisdom', 5)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+5</button>
-                    <button onclick="allocateTrait('wisdom', 10)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-90">+10</button>
+                    <button onclick="allocateTrait('wisdom', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+1</button>
+                    <button onclick="allocateTrait('wisdom', 5)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+5</button>
+                    <button onclick="allocateTrait('wisdom', 10)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+10</button>
                   </div>
                 </div>
                 <div class="w-full bg-slate-950 rounded-full h-1.5">
@@ -2316,7 +2316,6 @@ const DIGIMON_DB = {
           const val = snap.val();
           let logs = [];
           if (val) {
-            // 保留 Firebase key 供班級精確刪除使用
             logs = Object.entries(val).map(([k, item]) => Object.assign({ _key: k }, item))
               .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
           }
@@ -2344,7 +2343,7 @@ const DIGIMON_DB = {
           refreshCurrentView();
         });
 
-        // ⚡ 即時搶答核心監聽：支援多階梯前三名、自訂限時倒數與即時全班答案追蹤
+        // ⚡ 即時搶答核心監聽
         dbRootRef.child('activeQuiz').on('value', (snap) => {
           activeQuizInstance = snap.val();
           renderQuizModalForStudent();
@@ -2792,7 +2791,6 @@ function sanitizeClassKey(cls) {
     // 🥷 核心更新：加入老師隱藏模式檢查，若開啟則直接攔截不記錄任何 Log
     function addBattleLog(text, type = "normal", classTag = null) {
       if (currentUser && currentUser.role === 'teacher' && isTeacherStealthMode) {
-        // 隱藏模式啟用：直接攔截不儲存亦不廣播
         return;
       }
 
@@ -5298,7 +5296,6 @@ function sanitizeClassKey(cls) {
       document.getElementById('teacherQuizOpt4').value = item.wrongs[2] || '';
     }
 
-    // ⚡ 老師發布搶答題目（支援自訂限時：預設 30 秒，未答列為錯誤）
     function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
 
@@ -5339,9 +5336,9 @@ function sanitizeClassKey(cls) {
         options: shuffledTexts,
         correctIndex: correctIndex,
         classTag: targetClass,
-        timeLimit: timeLimitSec, // 0 代表不限時
-        winners: {}, // 階梯名次: { rank1: {...}, rank2: {...}, rank3: {...} }
-        submissions: {}, // 全班作答紀錄: { [studentId]: { answerIdx, answerText, isCorrect, timestamp, rank, isTimeout } }
+        timeLimit: timeLimitSec,
+        winners: {},
+        submissions: {},
         timestamp: Date.now()
       };
 
@@ -5369,7 +5366,6 @@ function sanitizeClassKey(cls) {
       renderTeacherQuizLiveDashboard();
     }
 
-    // ⚡ 老師端 Pop-up Quiz 獨立分頁之即時成績與全班作答監控渲染
     function renderTeacherQuizLiveDashboard() {
       const statusBadge = document.getElementById('quizStatusIndicator');
       const qSnippet = document.getElementById('quizActiveQuestionSnippet');
@@ -5418,7 +5414,6 @@ function sanitizeClassKey(cls) {
       const isActive = !!activeQuizInstance.active;
       const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
 
-      // 老師端限時倒數監聽
       if (isActive && timeLimitSec > 0) {
         if (countdownBadge) countdownBadge.classList.remove('hidden');
         
@@ -5452,7 +5447,6 @@ function sanitizeClassKey(cls) {
         qSnippet.textContent = `目前問題: ${activeQuizInstance.question || ''}`;
       }
 
-      // 榮譽前三名渲染 (第 3 名為 +30 EXP)
       const winners = activeQuizInstance.winners || {};
       if (winners.rank1) {
         w1Name.innerHTML = `<span class="text-amber-300 font-black">${winners.rank1.studentName}</span> (#1)`;
@@ -5475,7 +5469,6 @@ function sanitizeClassKey(cls) {
         w3Name.textContent = "等待答對者..."; w3Time.textContent = "--:--:--";
       }
 
-      // 該班每個人的答案即時監控列表
       const submissions = activeQuizInstance.submissions || {};
       let answeredCount = 0;
       let correctCount = 0;
@@ -5549,7 +5542,6 @@ function sanitizeClassKey(cls) {
       avgTimeEl.textContent = answeredCount > 0 ? `${(totalElapsed / answeredCount).toFixed(1)}s` : `--s`;
     }
 
-    // ⚡ 學生端搶答視窗渲染（支援動態倒數、進度條與自動逾時結算）
     function renderQuizModalForStudent() {
       const modal = document.getElementById('modalQuizOverlay');
       if (!modal) return;
@@ -5589,14 +5581,12 @@ function sanitizeClassKey(cls) {
 
         const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
 
-        // 清除舊的計時器
         if (quizStudentCountdownTimer) {
           clearInterval(quizStudentCountdownTimer);
           quizStudentCountdownTimer = null;
         }
 
         if (mySub) {
-          // 學生已提交答案或已逾時，停止計時並顯示結果
           if (timerBadge) timerBadge.classList.add('hidden');
           if (barWrapper) barWrapper.classList.add('hidden');
 
@@ -5619,7 +5609,6 @@ function sanitizeClassKey(cls) {
             feedbackText.innerHTML = `❌ 答案不正確！沒有獲得獎勵，下次請再接再厲！`;
           }
 
-          // 顯示目前前三名名單
           const winners = activeQuizInstance.winners || {};
           let snippet = '';
           if (winners.rank1) snippet += `<div>🥇 第1名: ${winners.rank1.studentName} (+2 攻擊)</div>`;
@@ -5628,7 +5617,6 @@ function sanitizeClassKey(cls) {
           podiumBox.innerHTML = snippet;
 
         } else {
-          // 尚未作答，啟動倒數計時與渲染選項
           feedbackBox.classList.add('hidden');
           grid.innerHTML = '';
 
@@ -5655,7 +5643,6 @@ function sanitizeClassKey(cls) {
               if (remaining <= 0) {
                 clearInterval(quizStudentCountdownTimer);
                 quizStudentCountdownTimer = null;
-                // ⏱️ 限時到未有回答者自動列為錯誤
                 autoSubmitTimeoutForStudent();
               }
             };
@@ -5674,7 +5661,6 @@ function sanitizeClassKey(cls) {
       }
     }
 
-    // ⏱️ 限時到未回答者自動提交逾時（列為錯誤、無獎勵）
     function autoSubmitTimeoutForStudent() {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
       if (!dbRootRef) return;
@@ -5685,7 +5671,7 @@ function sanitizeClassKey(cls) {
       dbRootRef.child('activeQuiz').transaction((quiz) => {
         if (!quiz || !quiz.active) return quiz;
         if (!quiz.submissions) quiz.submissions = {};
-        if (quiz.submissions[currentUser.id]) return quiz; // 已有紀錄不重複寫入
+        if (quiz.submissions[currentUser.id]) return quiz;
 
         quiz.submissions[currentUser.id] = {
           answerIdx: -1,
@@ -5706,7 +5692,6 @@ function sanitizeClassKey(cls) {
       });
     }
 
-    // ⚡ 學生提交答案 + 搶答階梯式與答對保底原子結算 (1st: +2 Attacks, 2nd: +1 Attack, 3rd: +30 EXP, 其餘答對: +10 EXP, 答錯: 0)
     function submitStudentQuizAnswer(chosenIdx) {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
       if (!dbRootRef) return;
@@ -5724,7 +5709,7 @@ function sanitizeClassKey(cls) {
       dbRootRef.child('activeQuiz').transaction((quiz) => {
         if (!quiz || !quiz.active) return quiz;
         if (!quiz.submissions) quiz.submissions = {};
-        if (quiz.submissions[currentUser.id]) return quiz; // 已提交過不可重複作答
+        if (quiz.submissions[currentUser.id]) return quiz;
 
         if (!quiz.winners) quiz.winners = {};
 
@@ -5766,17 +5751,14 @@ function sanitizeClassKey(cls) {
             }
 
             if (myResult.rank === 1) {
-              // 🥇 第一名獎勵：自動增加 2 次攻擊次數
               dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 2);
               addBattleLog(`⚡🥇 [QUIZ 1ST] ${st.name} 搶得第 1 名！自動增加 +2 次攻擊次數！`, "evolution", st.classId);
               showToast("1st Place Victor!", `搶得第 1 名！獲得 +2 次攻擊次數！`, "evolution");
             } else if (myResult.rank === 2) {
-              // 🥈 第二名獎勵：自動增加 1 次攻擊次數
               dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
               addBattleLog(`⚡🥈 [QUIZ 2ND] ${st.name} 搶得第 2 名！自動增加 +1 次攻擊次數！`, "evolution", st.classId);
               showToast("2nd Place Victor!", `搶得第 2 名！獲得 +1 次攻擊次數！`, "evolution");
             } else if (myResult.rank === 3) {
-              // 🥉 第三名獎勵：自動增加 30 EXP (及 30 點可分配屬性點)
               dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
                 if (!currentSt) return currentSt;
                 currentSt.exp = (currentSt.exp || 0) + 30;
@@ -5786,7 +5768,6 @@ function sanitizeClassKey(cls) {
               addBattleLog(`⚡🥉 [QUIZ 3RD] ${st.name} 獲得第 3 名！自動獲得 +30 EXP！`, "evolution", st.classId);
               showToast("3rd Place Victor!", `獲得第 3 名！獲得 +30 EXP！`, "evolution");
             } else {
-              // ✨ 其餘答對者：均自動加 10 EXP (及 10 點可分配屬性點)
               dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
                 if (!currentSt) return currentSt;
                 currentSt.exp = (currentSt.exp || 0) + 10;
@@ -5797,7 +5778,6 @@ function sanitizeClassKey(cls) {
               showToast("Correct Answer!", `答案正確！獲得 +10 EXP！`, "heal");
             }
           } else {
-            // ❌ 答錯者：沒有獎勵
             playSound('faint');
             showToast("Incorrect!", "答案不正確！沒有獲得獎勵。", "damage");
             addBattleLog(`⚡❌ [QUIZ INCORRECT] ${st.name} 答案錯誤，無獲得獎勵。`, "battle", st.classId);
@@ -5808,6 +5788,7 @@ function sanitizeClassKey(cls) {
       });
     }
 
+    // ⚔️ 學生發動技能核心（支援跨多所屬班級選單選擇）
     function castStudentSkill(skillIdx, targetMode) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -5832,7 +5813,7 @@ function sanitizeClassKey(cls) {
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
 
-      if (dbRootRef) {
+      if (targetMode === 'boss') {
         dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
           if (quota === null || quota <= 0) return 0;
           return quota - 1;
@@ -5841,104 +5822,131 @@ function sanitizeClassKey(cls) {
             return showToast("Action Failed", "Attack quota deduction failed!", "info");
           }
 
-          if (targetMode === 'boss') {
-            const teachersList = Object.values(appData.teachers || {});
-            let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
-            if (!tc) return alert("No active Teacher Boss found.");
+          const teachersList = Object.values(appData.teachers || {});
+          let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
+          if (!tc) return alert("No active Teacher Boss found.");
 
-            const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+          const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
 
-            if (skill.type === 'heal') {
-              dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
-                return Math.min(digi.maxHp, (hp || 100) + skill.power);
-              }, (hErr, hCommitted, hSnap) => {
-                if (hCommitted) {
-                  playSound('heal');
-                  addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
-                  showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
-                }
-              });
-            } else {
-              dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
-                const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
-                return Math.max(0, currentBossHp - skill.power);
-              }, (bErr, bCommitted, bSnap) => {
-                if (bCommitted) {
-                  playSound('attack');
-                  addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
-                  showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
-                }
-              });
-            }
-          } else {
-            const stClasses = parseStudentClasses(st.classId);
-            const primaryClass = stClasses[0] || 'ALL';
-            
-            const classRoster = Object.values(appData.students || {})
-              .filter(s => studentIsInClass(s, primaryClass))
-              .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
-
-            if (classRoster.length <= 1) {
-              alert("No other classmates found in this class to challenge.");
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            const currentBountyTargetId = appData.bounties ? appData.bounties[sanitizeClassKey(primaryClass)] : null;
-
-            let menu = `=== Class [${primaryClass}] Target Directory ===\n`;
-            if (currentBountyTargetId) {
-              const bTarget = appData.students[currentBountyTargetId];
-              menu += `🎯 BOUNTY TARGET: [${bTarget ? bTarget.name : currentBountyTargetId}]\n(Attacking grants +30 EXP per hit! Elimination awards +300 EXP & +1 Ticket!)\n`;
-            }
-            menu += `Type the exact class number of your target:\n\n`;
-
-            classRoster.forEach((p, idx) => {
-              const classNum = idx + 1;
-              const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-              const bountyMark = (currentBountyTargetId === p.id) ? ' [🎯 WANTED BOUNTY]' : '';
-              if (p.id === st.id) {
-                menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
-              } else {
-                menu += `[#${classNum}] ${p.name} (${pDigi.name})${bountyMark} - HP: ${p.hp || 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
+          if (skill.type === 'heal') {
+            dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
+              return Math.min(digi.maxHp, (hp || 100) + skill.power);
+            }, (hErr, hCommitted, hSnap) => {
+              if (hCommitted) {
+                playSound('heal');
+                addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
+                showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
               }
             });
-
-            const choice = prompt(menu, "");
-            if (choice === null || choice.trim() === "") {
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            const chosenNum = parseInt(choice.trim());
-            const targetIdx = chosenNum - 1;
-
-            if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
-              alert("Invalid class number selected!");
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            const target = classRoster[targetIdx];
-            if (target.id === st.id) {
-              alert("You cannot target yourself! Action cancelled.");
-              dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction(q => (q || 0) + 1);
-              return;
-            }
-
-            applyAttackDamageWithTransaction(st, target, skill, digi, primaryClass);
+          } else {
+            dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
+              const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
+              return Math.max(0, currentBossHp - skill.power);
+            }, (bErr, bCommitted, bSnap) => {
+              if (bCommitted) {
+                playSound('attack');
+                addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
+                showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
+              }
+            });
           }
+        });
+      } else {
+        // 🎯 核心更新：如果學生有多於一個班別，讓學生先選擇要攻擊那一班的同學
+        const stClasses = parseStudentClasses(st.classId);
+        if (stClasses.length === 0) {
+          return alert("You are not currently enrolled in any class!");
+        }
+
+        let selectedAttackClass = stClasses[0];
+
+        if (stClasses.length > 1) {
+          let classPrompt = "⚔️ You are enrolled in multiple classes. Choose which class to battle:\n\n";
+          stClasses.forEach((c, idx) => {
+            classPrompt += `${idx + 1}. [Class ${c}]\n`;
+          });
+          const classChoice = prompt(classPrompt, "1");
+          if (classChoice === null || classChoice.trim() === "") return;
+          const chosenClassIdx = parseInt(classChoice.trim()) - 1;
+          if (isNaN(chosenClassIdx) || chosenClassIdx < 0 || chosenClassIdx >= stClasses.length) {
+            return alert("Invalid class selection!");
+          }
+          selectedAttackClass = stClasses[chosenClassIdx];
+        }
+
+        const classRoster = Object.values(appData.students || {})
+          .filter(s => studentIsInClass(s, selectedAttackClass))
+          .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
+
+        if (classRoster.length <= 1) {
+          return alert(`No other classmates found in [Class ${selectedAttackClass}] to challenge.`);
+        }
+
+        const currentBountyTargetId = getEffectiveBountyIdForClass(selectedAttackClass);
+
+        let menu = `=== Battle Directory [Class ${selectedAttackClass}] ===\n`;
+        if (currentBountyTargetId) {
+          const bTarget = appData.students[currentBountyTargetId];
+          menu += `🎯 BOUNTY TARGET: [${bTarget ? bTarget.name : currentBountyTargetId}]\n(★ Strike grants +30 EXP! Elimination grants +300 EXP & +1 Ticket!)\n`;
+        }
+        menu += `Type the exact class number of your target:\n\n`;
+
+        classRoster.forEach((p, idx) => {
+          const classNum = idx + 1;
+          const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
+          const bountyMark = (currentBountyTargetId === p.id) ? ' [🎯 WANTED BOUNTY]' : '';
+          if (p.id === st.id) {
+            menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
+          } else {
+            menu += `[#${classNum}] ${p.name} (${pDigi.name})${bountyMark} - HP: ${p.hp !== undefined ? p.hp : 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
+          }
+        });
+
+        const choice = prompt(menu, "");
+        if (choice === null || choice.trim() === "") return;
+
+        const chosenNum = parseInt(choice.trim());
+        const targetIdx = chosenNum - 1;
+
+        if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
+          return alert("Invalid number selected!");
+        }
+
+        const target = classRoster[targetIdx];
+        if (target.id === st.id) {
+          return alert("You cannot target yourself! Action cancelled.");
+        }
+
+        if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
+          return alert(`Classmate [${target.name}] is already FAINTED! Choose an active target.`);
+        }
+
+        // 扣除攻擊次數並發動對決
+        dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
+          if (quota === null || quota <= 0) return 0;
+          return quota - 1;
+        }, (err, committed, snap) => {
+          if (!committed || snap.val() < 0) {
+            return showToast("Action Failed", "Attack quota deduction failed!", "info");
+          }
+          applyAttackDamageWithTransaction(st, target, skill, digi, selectedAttackClass);
         });
       }
     }
 
-    // === 🎯 PvP 傷害判定 + 攻擊懸賞目標即獲 +30 EXP + 擊殺獎勵 ===
+    // 取得指定班級中當前有效的 Bounty ID
+    function getEffectiveBountyIdForClass(className) {
+      if (!appData.bounties) return null;
+      const key = sanitizeClassKey(className);
+      return appData.bounties[key] || appData.bounties['ALL'] || null;
+    }
+
+    // === 🎯 修復版 PvP 傷害判定 + 攻擊懸賞目標即獲 +30 EXP + 擊殺同學必定 +100 EXP + 擊殺 Bounty 疊加大獎 ===
     function applyAttackDamageWithTransaction(st, target, skill, digi, classContext) {
-      const tagKey = sanitizeClassKey(classContext || st.classId || 'ALL');
-      const activeBountyTargetId = appData.bounties ? appData.bounties[tagKey] : null;
+      const activeBountyTargetId = getEffectiveBountyIdForClass(classContext);
       const isTargetingBounty = (activeBountyTargetId && activeBountyTargetId === target.id);
 
-      // 🎯 只要攻擊懸賞目標，即刻自動獲得 30 EXP 與 30 屬性點
+      // 🎯 核心修復 1：只要攻擊 Bounty 目標，攻擊者必定立即獲得 +30 EXP 與 +30 屬性點
       if (isTargetingBounty) {
         dbRootRef.child(`students/${st.id}`).transaction((attackerData) => {
           if (!attackerData) return attackerData;
@@ -5948,21 +5956,23 @@ function sanitizeClassKey(cls) {
         }, (bErr, bCommitted, bSnap) => {
           if (bCommitted) {
             playSound('heal');
-            showToast("Bounty Hunter Bonus!", `Hit Bounty Target [${target.name}]! Gained +30 EXP!`, "heal");
-            addBattleLog(`🎯⚡ [BOUNTY HIT BONUS] ${st.name} attacked Bounty Target [${target.name}] and received +30 EXP!`, "evolution", classContext);
+            showToast("Bounty Hunter Bonus!", `攻擊懸賞目標 [${target.name}]！獲得 +30 EXP！`, "heal");
+            addBattleLog(`🎯⚡ [BOUNTY HIT BONUS] ${st.name} 攻擊懸賞目標 [${target.name}]，獲得 +30 EXP！`, "evolution", classContext);
             updateStudentUI();
           }
         });
       }
 
+      // Aegis Shield 護盾防禦檢查
       if (target.hasShield) {
         patchStudentAtomic(target.id, { hasShield: false });
         playSound('shield');
-        addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield completely blocked ${st.name}'s [${skill.name}]!`, "battle", st.classId);
+        addBattleLog(`🛡️ [BLOCKED] ${target.name}'s Aegis Shield completely blocked ${st.name}'s [${skill.name}]!`, "battle", classContext);
         showToast("Attack Blocked!", `${target.name}'s shield blocked your attack!`, "info");
         return;
       }
 
+      // 扣除目標 HP 之核心原子交易
       dbRootRef.child(`students/${target.id}`).transaction((current) => {
         if (!current) return current;
         const curHp = current.hp !== undefined ? current.hp : 100;
@@ -5974,39 +5984,62 @@ function sanitizeClassKey(cls) {
         if (committed && snap.exists()) {
           const val = snap.val();
           playSound('attack');
-          addBattleLog(`💥 [PVP STRIKE] ${st.name}'s ${digi.name} attacked ${target.name} with [${skill.name}] for ${skill.power} DMG! (Target HP: ${val.hp})`, "battle", st.classId);
+          addBattleLog(`💥 [PVP STRIKE] ${st.name}'s ${digi.name} attacked ${target.name} with [${skill.name}] for ${skill.power} DMG! (Target HP: ${val.hp})`, "battle", classContext);
           showToast("Strike Landed!", `Dealt ${skill.power} DMG to ${target.name}!`, "damage");
 
+          // ☠️ 擊殺結算邏輯
           if (val.isFainted) {
             playSound('faint');
-            addBattleLog(`☠️ [FAINTED] ${target.name}'s Digimon fainted in battle!`, "battle", st.classId);
+            addBattleLog(`☠️ [FAINTED] ${target.name}'s Digimon was defeated by ${st.name}!`, "battle", classContext);
 
-            // 🎯 懸賞最後擊殺大獎：撤銷懸賞 + 額外獎勵 300 EXP 與 1 張抽獎券
+            // 🎯 核心修復 2：擊殺任何同學，攻擊者必定獲得 +100 EXP 與 +100 屬性點
+            let killExpBonus = 100;
+            let killTicketBonus = 0;
+            let isBountyKill = false;
+
+            // 🎯 核心修復 3：若同時為 Bounty Target，額外疊加獲得 +300 EXP 與 +1 抽獎券
             if (isTargetingBounty) {
-              const updates = {};
-              updates[`bounties/${tagKey}`] = null;
+              isBountyKill = true;
+              killExpBonus += 300;
+              killTicketBonus += 1;
 
-              dbRootRef.child(`students/${st.id}`).transaction((killerData) => {
-                if (!killerData) return killerData;
-                killerData.exp = (killerData.exp || 0) + 300;
-                killerData.statPool = (killerData.statPool || 0) + 300;
-                killerData.gachaTickets = (killerData.gachaTickets || 0) + 1;
-                return killerData;
-              }, (kErr, kCommitted, kSnap) => {
-                if (kCommitted) {
-                  playSound('evolve');
-                  if (typeof confetti === 'function') {
-                    confetti({ particleCount: 220, spread: 100, origin: { y: 0.5 } });
-                  }
-
-                  addBattleLog(`🎯🏆 [BOUNTY CLAIMED] ${st.name} ELIMINATED BOUNTY TARGET [${target.name}]! Automatically rewarded +300 EXP & +1 Gacha Ticket!`, "evolution", classContext);
-                  showToast("Bounty Claimed!", `You defeated Bounty Target ${target.name}! Won +300 EXP & +1 Ticket!`, "evolution");
-
-                  executeAtomicMultiPathUpdate(updates);
-                  updateStudentUI();
-                }
-              });
+              // 自動撤銷該班級或全局懸賞
+              const tagKey = sanitizeClassKey(classContext);
+              const bountyUpdates = {};
+              bountyUpdates[`bounties/${tagKey}`] = null;
+              if (appData.bounties && appData.bounties['ALL'] === target.id) {
+                bountyUpdates[`bounties/ALL`] = null;
+              }
+              executeAtomicMultiPathUpdate(bountyUpdates);
             }
+
+            // 原子結算攻擊者的擊殺獎勵
+            dbRootRef.child(`students/${st.id}`).transaction((killerData) => {
+              if (!killerData) return killerData;
+              killerData.exp = (killerData.exp || 0) + killExpBonus;
+              killerData.statPool = (killerData.statPool || 0) + killExpBonus;
+              if (killTicketBonus > 0) {
+                killerData.gachaTickets = (killerData.gachaTickets || 0) + killTicketBonus;
+              }
+              return killerData;
+            }, (kErr, kCommitted, kSnap) => {
+              if (kCommitted) {
+                playSound('evolve');
+                if (typeof confetti === 'function') {
+                  confetti({ particleCount: isBountyKill ? 220 : 130, spread: 90, origin: { y: 0.5 } });
+                }
+
+                if (isBountyKill) {
+                  addBattleLog(`🎯🏆 [BOUNTY ELIMINATED] ${st.name} 擊殺懸賞目標 [${target.name}]！獲得總計 +${killExpBonus} EXP 及 +1 抽獎券！`, "evolution", classContext);
+                  showToast("Bounty Claimed!", `成功擊殺懸賞目標！獲得 +${killExpBonus} EXP 及 +1 抽獎券！`, "evolution");
+                } else {
+                  addBattleLog(`⚔️🎖️ [PVP KILL] ${st.name} 擊殺同學 [${target.name}]！自動獲得 +100 EXP 獎勵！`, "evolution", classContext);
+                  showToast("Defeated Opponent!", `成功擊敗對手！獲得 +100 EXP！`, "evolution");
+                }
+
+                updateStudentUI();
+              }
+            });
           }
         }
       });
