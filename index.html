@@ -415,7 +415,30 @@
     </div>
 <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
-      
+      <!-- 🛡️ Student Faction Info & Transfer Request Card -->
+<div id="studentFactionCard" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+  <div class="flex items-center gap-3">
+    <div class="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-xl font-bold">
+      <i class="fa-solid fa-flag"></i>
+    </div>
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-400 font-pixel uppercase">Current Faction:</span>
+        <span id="stFactionBadge" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 font-pixel">NO FACTION</span>
+      </div>
+      <p id="stFactionStatusText" class="text-[11px] text-slate-400 mt-1">Classmates in the same faction are allies and cannot be attacked.</p>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <select id="stFactionSelect" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-3 py-2 text-cyan-200 outline-none">
+      <option value="">-- Request Faction Transfer --</option>
+    </select>
+    <button onclick="requestStudentFactionTransfer()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md transition active:scale-95 cursor-pointer">
+      <i class="fa-solid fa-paper-plane mr-1"></i> Apply
+    </button>
+  </div>
+</div>
       <!-- 📢 學生專屬置頂公告欄 -->
       <div id="studentAnnouncementBox" class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/50 rounded-2xl p-4 shadow-xl space-y-2.5">
         <div class="flex items-center justify-between border-b border-amber-500/30 pb-2">
@@ -787,7 +810,43 @@
             </button>
           </div>
         </div>
+<!-- 🛡️ Teacher Faction War & Transfer Approvals Management -->
+<div class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/60 rounded-xl p-4 shadow-xl space-y-4">
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-flag text-indigo-400 text-base animate-pulse"></i>
+      <h4 class="text-xs font-black text-indigo-300 uppercase tracking-wider font-pixel">Faction War & Transfer Hub</h4>
+      <span class="text-[10px] text-slate-400 font-normal">(Allies within the same faction cannot attack each other)</span>
+    </div>
+    <span class="text-xs text-indigo-300 font-mono font-bold" id="teacherFactionClassTag">Class: All</span>
+  </div>
 
+  <!-- Create New Faction Row -->
+  <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+    <input type="text" id="teacherNewFactionName" placeholder="New faction name (e.g. Red Dragon, Blue Wolf)..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-400">
+    <button onclick="createNewFaction()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
+      <i class="fa-solid fa-plus"></i> Add Faction to Class
+    </button>
+  </div>
+
+  <!-- Active Factions List -->
+  <div class="space-y-1.5">
+    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Factions in this Class:</div>
+    <div id="teacherFactionList" class="flex flex-wrap gap-2">
+      <span class="text-xs text-slate-500 italic">No custom factions yet. Students default to 'No Faction'.</span>
+    </div>
+  </div>
+
+  <!-- Pending Student Transfer Applications -->
+  <div class="border-t border-slate-800 pt-3">
+    <div class="text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+      <i class="fa-solid fa-envelope-open-text text-amber-400"></i> Pending Transfer Applications (<span id="teacherFactionPendingCount">0</span>)
+    </div>
+    <div id="teacherFactionPendingList" class="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+      <div class="text-slate-500 text-xs italic">No pending transfer requests for this class.</div>
+    </div>
+  </div>
+</div>
         <!-- 🎯 老師專屬：Class Bounty 班級懸賞對象管理中心 -->
         <div class="bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 border-2 border-rose-500/60 rounded-xl p-4 shadow-xl space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
@@ -1690,15 +1749,17 @@
     }
 
     let appData = {
-      superAdmins: { "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master" } },
-      teachers: { "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "wargreymon", maxHp: 2000, hp: 2000, skillPower: 220, techPower: 120 } },
-      classes: {},
-      students: {},
-      battleLogs: [],
-      announcements: {},
-      bounties: {},
-      systemSettings: { bannedClasses: {} }
-    };
+  superAdmins: { "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master" } },
+  teachers: { "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "wargreymon", maxHp: 2000, hp: 2000, skillPower: 220, techPower: 120 } },
+  classes: {},
+  students: {},
+  battleLogs: [],
+  announcements: {},
+  bounties: {},
+  factions: {},          // 陣營資料：{ [classKey]: { [factionId]: { id, name } } }
+  factionRequests: {},   // 學生轉陣營申請：{ [studentId]: { studentId, studentName, classId, requestedFactionId, requestedFactionName, timestamp } }
+  systemSettings: { bannedClasses: {} }
+};
 
     const ITEMS_DB = {
       "item_shield": {
@@ -2151,43 +2212,45 @@ const DIGIMON_DB = {
     let lastPickerModeStarred = false;
 
     function normalizeStudent(s, keyId) {
-      if (!s || typeof s !== 'object') return null;
-      const id = String(s.id || s.username || keyId || '').toLowerCase();
-      if (!id) return null;
+  if (!s || typeof s !== 'object') return null;
+  const id = String(s.id || s.username || keyId || '').toLowerCase();
+  if (!id) return null;
 
-      let currentDigiId = s.currentDigiId || 'digitama1';
-      if (!DIGIMON_DB[currentDigiId]) currentDigiId = 'digitama1';
+  let currentDigiId = s.currentDigiId || 'digitama1';
+  if (!DIGIMON_DB[currentDigiId]) currentDigiId = 'digitama1';
 
-      const rawClass = (s.classId !== undefined && s.classId !== null) ? s.classId : (s.classes || '');
-      const classesArr = parseStudentClasses(rawClass);
-      const cleanClassStr = classesArr.join(', ');
+  const rawClass = (s.classId !== undefined && s.classId !== null) ? s.classId : (s.classes || '');
+  const classesArr = parseStudentClasses(rawClass);
+  const cleanClassStr = classesArr.join(', ');
 
-      return {
-        id: id,
-        username: String(s.username || id),
-        password: String(s.password || '123'),
-        name: String(s.name || s.username || id),
-        classId: cleanClassStr,
-        teacherId: String(s.teacherId || 'teacher1'),
-        exp: Number(s.exp) || 0,
-        statPool: Number(s.statPool) || 0,
-        hp: (s.hp !== undefined && s.hp !== null) ? Number(s.hp) : (DIGIMON_DB[currentDigiId]?.maxHp || 100),
-        isFainted: !!s.isFainted,
-        hasShield: !!s.hasShield,
-        isStarred: !!s.isStarred,
-        isBanned: !!s.isBanned,
-        skinId: s.skinId || 'skin-classic',
-        attackQuota: Number(s.attackQuota) || 0,
-        gachaTickets: (s.gachaTickets !== undefined && s.gachaTickets !== null) ? Number(s.gachaTickets) : 0,
-        inventory: (s.inventory && typeof s.inventory === 'object') ? s.inventory : {},
-        unlockedDex: (s.unlockedDex && typeof s.unlockedDex === 'object') ? s.unlockedDex : { [currentDigiId]: true },
-        currentDigiId: currentDigiId,
-        courage: Number(s.courage) || 0,
-        love: Number(s.love) || 0,
-        discipline: Number(s.discipline) || 0,
-        wisdom: Number(s.wisdom) || 0
-      };
-    }
+  return {
+    id: id,
+    username: String(s.username || id),
+    password: String(s.password || '123'),
+    name: String(s.name || s.username || id),
+    classId: cleanClassStr,
+    teacherId: String(s.teacherId || 'teacher1'),
+    factionId: s.factionId || null,
+    factionName: s.factionName || null,
+    exp: Number(s.exp) || 0,
+    statPool: Number(s.statPool) || 0,
+    hp: (s.hp !== undefined && s.hp !== null) ? Number(s.hp) : (DIGIMON_DB[currentDigiId]?.maxHp || 100),
+    isFainted: !!s.isFainted,
+    hasShield: !!s.hasShield,
+    isStarred: !!s.isStarred,
+    isBanned: !!s.isBanned,
+    skinId: s.skinId || 'skin-classic',
+    attackQuota: Number(s.attackQuota) || 0,
+    gachaTickets: (s.gachaTickets !== undefined && s.gachaTickets !== null) ? Number(s.gachaTickets) : 0,
+    inventory: (s.inventory && typeof s.inventory === 'object') ? s.inventory : {},
+    unlockedDex: (s.unlockedDex && typeof s.unlockedDex === 'object') ? s.unlockedDex : { [currentDigiId]: true },
+    currentDigiId: currentDigiId,
+    courage: Number(s.courage) || 0,
+    love: Number(s.love) || 0,
+    discipline: Number(s.discipline) || 0,
+    wisdom: Number(s.wisdom) || 0
+  };
+}
 
     function normalizeTeacher(t, keyId) {
       if (!t || typeof t !== 'object') return null;
@@ -2284,6 +2347,28 @@ const DIGIMON_DB = {
           if (activeTeacherSubTab === 'quiz') renderTeacherQuizLiveDashboard();
         });
 
+        dbRootRef.child('factions').on('value', (snap) => {
+          appData.factions = snap.val() || {};
+          saveLocalCache();
+          if (currentUser) {
+            if (currentUser.role === 'teacher') renderTeacherFactionPanel();
+            if (currentUser.role === 'student') updateStudentFactionUI();
+          }
+        });
+        dbRootRef.child('factions').on('value', (snap) => {
+          appData.factions = snap.val() || {};
+          saveLocalCache();
+          refreshCurrentView();
+        });
+
+dbRootRef.child('factionRequests').on('value', (snap) => {
+  appData.factionRequests = snap.val() || {};
+  saveLocalCache();
+  if (currentUser) {
+    if (currentUser.role === 'teacher') renderTeacherFactionPanel();
+    if (currentUser.role === 'student') updateStudentFactionUI();
+  }
+});
         dbRootRef.child('teachers').on('value', (snap) => {
           const val = snap.val() || {};
           const cleanTeachers = {};
@@ -2453,7 +2538,277 @@ function sanitizeClassKey(cls) {
         btn.querySelector('i').className = "fa-solid fa-lock";
       }
     }
+// === FACTION WAR SYSTEM LOGIC ===
 
+function getFactionsForClass(className) {
+  if (!className || className === 'ALL') {
+    let combined = {};
+    Object.values(appData.factions || {}).forEach(cObj => {
+      if (cObj && typeof cObj === 'object') Object.assign(combined, cObj);
+    });
+    return Object.values(combined);
+  }
+  const tagKey = sanitizeClassKey(className);
+  return Object.values((appData.factions && appData.factions[tagKey]) || {});
+}
+
+function createNewFaction() {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const input = document.getElementById('teacherNewFactionName');
+  const name = (input.value || '').trim();
+  if (!name) return alert("Please enter a faction name!");
+
+  const targetClass = selectedTeacherClass || 'ALL';
+  if (targetClass === 'ALL') {
+    return alert("Please select a specific class from the Class Dropdown first before adding factions!");
+  }
+
+  const tagKey = sanitizeClassKey(targetClass);
+  const factionId = 'fac_' + Date.now();
+
+  if (dbRootRef) {
+    dbRootRef.child(`factions/${tagKey}/${factionId}`).set({
+      id: factionId,
+      name: name,
+      className: targetClass
+    }).then(() => {
+      input.value = '';
+      addBattleLog(`🚩 [FACTION CREATED] Teacher established faction [${name}] in [Class ${targetClass}].`, "normal", targetClass);
+      showToast("Faction Created", `Faction [${name}] created for class ${targetClass}!`, "info");
+    });
+  }
+}
+
+function deleteFaction(factionId, factionName) {
+  if (!confirm(`Are you sure you want to delete faction [${factionName}]? Students in this faction will become unaffiliated.`)) return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  const tagKey = sanitizeClassKey(targetClass);
+
+  const updates = {};
+  updates[`factions/${tagKey}/${factionId}`] = null;
+
+  Object.values(appData.students || {}).forEach(s => {
+    if (s.factionId === factionId) {
+      updates[`students/${s.id}/factionId`] = null;
+      updates[`students/${s.id}/factionName`] = null;
+    }
+  });
+
+  executeAtomicMultiPathUpdate(updates).then(() => {
+    addBattleLog(`🚩 [FACTION DISBANDED] Teacher deleted faction [${factionName}].`, "battle", targetClass);
+    showToast("Faction Deleted", `Faction [${factionName}] has been disbanded.`, "damage");
+  });
+}
+
+function teacherAssignStudentFaction(studentId, newFactionId) {
+  const s = appData.students[studentId];
+  if (!s) return;
+
+  const targetClass = selectedTeacherClass || 'ALL';
+  const factions = getFactionsForClass(targetClass);
+  const found = factions.find(f => f.id === newFactionId);
+
+  const updates = {};
+  if (!newFactionId) {
+    updates[`students/${studentId}/factionId`] = null;
+    updates[`students/${studentId}/factionName`] = null;
+    addBattleLog(`🚩 [FACTION TRANSFER] Teacher removed ${s.name} from their faction.`, "normal", s.classId);
+    showToast("Faction Updated", `${s.name} is now unaffiliated.`, "info");
+  } else if (found) {
+    updates[`students/${studentId}/factionId`] = found.id;
+    updates[`students/${studentId}/factionName`] = found.name;
+    addBattleLog(`🚩 [FACTION TRANSFER] Teacher assigned ${s.name} to faction [${found.name}]!`, "evolution", s.classId);
+    showToast("Faction Assigned", `${s.name} assigned to [${found.name}]!`, "heal");
+  }
+
+  // 自動清除該學生的待核准申請
+  if (appData.factionRequests && appData.factionRequests[studentId]) {
+    updates[`factionRequests/${studentId}`] = null;
+  }
+
+  executeAtomicMultiPathUpdate(updates);
+}
+
+function requestStudentFactionTransfer() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st || isStudentBanned(st)) return alert("Action locked by teacher!");
+
+  const select = document.getElementById('stFactionSelect');
+  const targetFactionId = select.value;
+  if (!targetFactionId) return alert("Please select a target faction to apply for!");
+
+  const stClasses = parseStudentClasses(st.classId);
+  let availableFactions = [];
+  stClasses.forEach(c => {
+    availableFactions = availableFactions.concat(getFactionsForClass(c));
+  });
+
+  const selectedFaction = availableFactions.find(f => f.id === targetFactionId);
+  if (!selectedFaction) return alert("Invalid faction selected!");
+
+  if (st.factionId === targetFactionId) {
+    return alert(`You are already in faction [${selectedFaction.name}]!`);
+  }
+
+  const reqData = {
+    studentId: st.id,
+    studentName: st.name,
+    classId: st.classId,
+    requestedFactionId: selectedFaction.id,
+    requestedFactionName: selectedFaction.name,
+    timestamp: Date.now()
+  };
+
+  if (dbRootRef) {
+    dbRootRef.child(`factionRequests/${st.id}`).set(reqData).then(() => {
+      playSound('shield');
+      showToast("Transfer Applied", `Applied to join [${selectedFaction.name}]. Awaiting teacher's approval!`, "info");
+      addBattleLog(`📨 [TRANSFER APPLICATION] ${st.name} applied to join faction [${selectedFaction.name}].`, "normal", st.classId);
+    });
+  }
+}
+
+function approveFactionRequest(studentId) {
+  const req = appData.factionRequests && appData.factionRequests[studentId];
+  if (!req) return;
+
+  const updates = {};
+  updates[`students/${studentId}/factionId`] = req.requestedFactionId;
+  updates[`students/${studentId}/factionName`] = req.requestedFactionName;
+  updates[`factionRequests/${studentId}`] = null;
+
+  executeAtomicMultiPathUpdate(updates).then(() => {
+    playSound('heal');
+    addBattleLog(`✅ [FACTION APPROVED] Teacher APPROVED ${req.studentName}'s transfer to faction [${req.requestedFactionName}]!`, "evolution", req.classId);
+    showToast("Application Approved", `${req.studentName} is now in [${req.requestedFactionName}]!`, "heal");
+  });
+}
+
+function rejectFactionRequest(studentId) {
+  const req = appData.factionRequests && appData.factionRequests[studentId];
+  if (!req) return;
+
+  if (dbRootRef) {
+    dbRootRef.child(`factionRequests/${studentId}`).remove().then(() => {
+      playSound('attack');
+      addBattleLog(`❌ [FACTION REJECTED] Teacher DECLINED ${req.studentName}'s transfer to faction [${req.requestedFactionName}].`, "battle", req.classId);
+      showToast("Application Rejected", `Declined ${req.studentName}'s transfer request.`, "damage");
+    });
+  }
+}
+
+function updateStudentFactionUI() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st) return;
+
+  const badge = document.getElementById('stFactionBadge');
+  const statusText = document.getElementById('stFactionStatusText');
+  const select = document.getElementById('stFactionSelect');
+
+  if (badge) {
+    if (st.factionName) {
+      badge.textContent = st.factionName.toUpperCase();
+      badge.className = "text-xs font-black px-2.5 py-0.5 rounded-full bg-indigo-950 border border-indigo-400 text-indigo-300 font-pixel";
+    } else {
+      badge.textContent = "NO FACTION";
+      badge.className = "text-xs font-black px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-pixel";
+    }
+  }
+
+  const myReq = appData.factionRequests && appData.factionRequests[currentUser.id];
+  if (statusText) {
+    if (myReq) {
+      statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>Pending Transfer: [${myReq.requestedFactionName}] (Awaiting teacher's approval)</span>`;
+    } else {
+      statusText.textContent = "Classmates in the same faction are allies and cannot be attacked in PvP.";
+    }
+  }
+
+  if (select) {
+    const stClasses = parseStudentClasses(st.classId);
+    let factions = [];
+    stClasses.forEach(c => {
+      factions = factions.concat(getFactionsForClass(c));
+    });
+
+    select.innerHTML = '<option value="">-- Request Faction Transfer --</option>';
+    factions.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = `${f.name} (${f.className || 'Class'})`;
+      if (st.factionId === f.id) opt.textContent += " [Current]";
+      select.appendChild(opt);
+    });
+  }
+}
+
+function renderTeacherFactionPanel() {
+  const classTag = document.getElementById('teacherFactionClassTag');
+  const listContainer = document.getElementById('teacherFactionList');
+  const pendingContainer = document.getElementById('teacherFactionPendingList');
+  const pendingCountEl = document.getElementById('teacherFactionPendingCount');
+
+  if (!listContainer || !pendingContainer) return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  if (classTag) classTag.textContent = `Class: ${targetClass === 'ALL' ? 'All Classes' : targetClass}`;
+
+  const factions = getFactionsForClass(targetClass);
+
+  // 1. 渲染現有陣營標籤
+  if (factions.length === 0) {
+    listContainer.innerHTML = '<span class="text-xs text-slate-500 italic">No custom factions yet. Students default to \'No Faction\'.</span>';
+  } else {
+    let fHtml = '';
+    factions.forEach(f => {
+      let memberCount = Object.values(appData.students || {}).filter(s => s.factionId === f.id).length;
+      fHtml += `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/80 border border-indigo-500 text-indigo-200 text-xs font-bold">
+          <i class="fa-solid fa-shield text-indigo-400"></i> ${f.name} (${memberCount} Tamers)
+          <button onclick="deleteFaction('${f.id}', '${f.name}')" class="text-rose-400 hover:text-rose-200 ml-1 cursor-pointer active:scale-90" title="Delete Faction">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </span>
+      `;
+    });
+    listContainer.innerHTML = fHtml;
+  }
+
+  // 2. 渲染待核准的學生轉陣營申請
+  const requests = Object.values(appData.factionRequests || {}).filter(r => {
+    if (targetClass === 'ALL') return true;
+    return studentIsInClass({ classId: r.classId }, targetClass);
+  });
+
+  if (pendingCountEl) pendingCountEl.textContent = requests.length;
+
+  if (requests.length === 0) {
+    pendingContainer.innerHTML = '<div class="text-slate-500 text-xs italic">No pending transfer requests for this class.</div>';
+  } else {
+    let reqHtml = '';
+    requests.forEach(r => {
+      reqHtml += `
+        <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-2.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-xs text-white">${r.studentName}</span>
+            <span class="text-[10px] text-slate-400">wants to join</span>
+            <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-bold text-xs">${r.requestedFactionName}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="approveFactionRequest('${r.studentId}')" class="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-bold rounded text-xs transition active:scale-95 cursor-pointer">
+              <i class="fa-solid fa-check mr-1"></i> Approve
+            </button>
+            <button onclick="rejectFactionRequest('${r.studentId}')" class="px-2 py-1 bg-rose-950 hover:bg-rose-900 border border-rose-600 text-rose-300 font-bold rounded text-xs transition active:scale-95 cursor-pointer">
+              <i class="fa-solid fa-xmark mr-1"></i> Decline
+            </button>
+          </div>
+        </div>
+      `;
+    });
+    pendingContainer.innerHTML = reqHtml;
+  }
+}
     function populateTeacherBountySelect() {
       const select = document.getElementById('teacherBountyStudentSelect');
       if (!select) return;
@@ -3169,22 +3524,24 @@ function sanitizeClassKey(cls) {
     }
 
     function refreshCurrentView() {
-      if (!currentUser) return;
-      if (currentUser.role === 'student') {
-        populateStudentTeacherBossOptions();
-        updateStudentUI();
-      } else if (currentUser.role === 'teacher') {
-        updateTeacherBossHeader();
-        populateClassDropdown();
-        populateTeacherBountySelect();
-        updateClassBanButtonUI();
-        renderTeacherGrid();
-      } else if (currentUser.role === 'superadmin') {
-        renderSuperAdminDashboard();
-      }
-      renderAnnouncementsUI();
-      renderBountyUI();
-    }
+  if (!currentUser) return;
+  if (currentUser.role === 'student') {
+    populateStudentTeacherBossOptions();
+    updateStudentUI();
+    updateStudentFactionUI();
+  } else if (currentUser.role === 'teacher') {
+    updateTeacherBossHeader();
+    populateClassDropdown();
+    populateTeacherBountySelect();
+    updateClassBanButtonUI();
+    renderTeacherFactionPanel();
+    renderTeacherGrid();
+  } else if (currentUser.role === 'superadmin') {
+    renderSuperAdminDashboard();
+  }
+  renderAnnouncementsUI();
+  renderBountyUI();
+}
 
     function populateStudentTeacherBossOptions() {
       const select = document.getElementById('stTeacherBossSelect');
@@ -3922,6 +4279,7 @@ function sanitizeClassKey(cls) {
       }
     }
 
+    
     function onClassFilterChange(val) {
       selectedTeacherClass = val;
       resetPickerRoundPool();
@@ -3940,6 +4298,27 @@ function sanitizeClassKey(cls) {
         renderTeacherQuizLiveDashboard();
       }
     }
+
+    function onClassFilterChange(val) {
+      selectedTeacherClass = val;
+      resetPickerRoundPool();
+      populateTeacherBountySelect();
+      updateClassBanButtonUI();
+      renderTeacherFactionPanel(); // 👈 補上這一行，讓切換班別時即時更新陣營面板
+      renderTeacherGrid();
+      renderBattleLogs();
+      renderAnnouncementsUI();
+      renderBountyUI();
+
+      const quizClassBadge = document.getElementById('teacherQuizTargetClassBadge');
+      if (quizClassBadge) {
+        quizClassBadge.textContent = `Class: ${selectedTeacherClass === 'ALL' ? 'All Classes' : selectedTeacherClass}`;
+      }
+      if (activeTeacherSubTab === 'quiz') {
+        renderTeacherQuizLiveDashboard();
+      }
+    }
+
 
     function rewardAllAttackQuota(amount = 1) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
@@ -4121,105 +4500,123 @@ function sanitizeClassKey(cls) {
     }
 
     function renderTeacherGrid() {
-      const container = document.getElementById('teacherStudentGrid');
-      if (!container || !currentUser) return;
-      container.innerHTML = '';
+  const container = document.getElementById('teacherStudentGrid');
+  if (!container || !currentUser) return;
+  container.innerHTML = '';
 
-      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+  const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
 
-      if (myStudents.length === 0) {
-        container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No students in this class. Click "Manage Students in Class" or import an Excel file.</div>';
-        return;
-      }
+  if (myStudents.length === 0) {
+    container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No students in this class. Click "Manage Students in Class" or import an Excel file.</div>';
+    return;
+  }
 
-      const currentBountyId = appData.bounties ? appData.bounties[sanitizeClassKey(selectedTeacherClass)] : null;
+  const currentBountyId = appData.bounties ? appData.bounties[sanitizeClassKey(selectedTeacherClass)] : null;
+  const currentFactions = getFactionsForClass(selectedTeacherClass);
 
-      myStudents.forEach((s, index) => {
-        const studentIndex = index + 1;
-        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
-        const card = document.createElement('div');
-        const isDead = s.isFainted || (s.hp !== undefined && s.hp <= 0);
-        const isBountyTarget = currentBountyId === s.id;
-        const isIndividualBanned = !!s.isBanned;
+  myStudents.forEach((s, index) => {
+    const studentIndex = index + 1;
+    const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+    const card = document.createElement('div');
+    const isDead = s.isFainted || (s.hp !== undefined && s.hp <= 0);
+    const isBountyTarget = currentBountyId === s.id;
+    const isIndividualBanned = !!s.isBanned;
 
-        card.className = `bg-slate-950 border-2 ${isBountyTarget ? 'border-rose-500 shadow-lg shadow-rose-900/40 bg-rose-950/20' : (isDead ? 'border-rose-900 bg-rose-950/10' : 'border-slate-800')} rounded-xl p-4 flex flex-col justify-between relative overflow-hidden`;
-        const markDot = s.isStarred ? '.' : '';
+    card.className = `bg-slate-950 border-2 ${isBountyTarget ? 'border-rose-500 shadow-lg shadow-rose-900/40 bg-rose-950/20' : (isDead ? 'border-rose-900 bg-rose-950/10' : 'border-slate-800')} rounded-xl p-4 flex flex-col justify-between relative overflow-hidden`;
+    const markDot = s.isStarred ? '.' : '';
 
-        card.innerHTML = `
-          <div>
-            <div class="flex justify-between items-start mb-1 gap-2">
-              <div class="flex items-start gap-2 flex-1 min-w-0">
-                <span class="font-pixel text-[11px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-bold shadow shrink-0 mt-0.5">
-                  #${studentIndex}
-                </span>
-                <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${isBountyTarget ? 'text-rose-400 font-black' : (isDead ? 'text-rose-400' : 'text-cyan-300')} text-sm leading-snug cursor-pointer select-none break-words" title="Click to toggle favorite">
-                  ${s.name}${markDot} ${s.hasShield ? '🛡️' : ''} ${isBountyTarget ? '🎯' : ''} ${isIndividualBanned ? '🔒[BANNED]' : ''}
-                </span>
-              </div>
-              
-              <div class="flex items-center gap-1.5 shrink-0">
-                <button onclick="toggleStudentBan('${s.id}', event)" class="p-1.5 rounded ${isIndividualBanned ? 'bg-amber-600 text-slate-950 font-black' : 'bg-slate-900 text-rose-400 hover:bg-rose-950 border border-rose-600/50'} text-xs transition cursor-pointer active:scale-90" title="${isIndividualBanned ? 'Unlock Student' : 'Ban Student (Read-Only)'}">
-                  <i class="fa-solid ${isIndividualBanned ? 'fa-lock-open' : 'fa-ban'}"></i>
-                </button>
-                <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="Export Card">
-                  <i class="fa-solid fa-id-card"></i>
-                </button>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold">
-                  ID: ${s.username || s.id}
-                </span>
-                <span class="text-[10px] px-2 py-0.5 rounded ${isDead ? 'bg-rose-950 text-rose-300 border border-rose-600 font-bold' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
-                  ${isDead ? 'FAINTED' : digi.stageName}
-                </span>
-              </div>
-            </div>
-            <div class="text-[10px] text-slate-500 mb-1">Classes: <span class="text-cyan-300 font-mono">${formatStudentClassesDisplay(s)}</span></div>
-            <div class="flex items-center gap-3 my-2">
-              <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center shrink-0">
-                <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain ${isDead ? 'opacity-40 grayscale' : ''}">
-              </div>
-              <div class="text-xs">
-                <div class="font-bold text-slate-200">${digi.name}</div>
-                <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 0} / ${digi.maxHp}</div>
-                <div class="text-slate-400 font-mono text-[11px]">
-                  EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span>
-                </div>
-              </div>
+    // 生成該學生的陣營切換選項
+    let factionOptionsHtml = '<option value="">No Faction</option>';
+    currentFactions.forEach(f => {
+      factionOptionsHtml += `<option value="${f.id}" ${s.factionId === f.id ? 'selected' : ''}>${f.name}</option>`;
+    });
+
+    card.innerHTML = `
+      <div>
+        <div class="flex justify-between items-start mb-1 gap-2">
+          <div class="flex items-start gap-2 flex-1 min-w-0">
+            <span class="font-pixel text-[11px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-bold shadow shrink-0 mt-0.5">
+              #${studentIndex}
+            </span>
+            <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${isBountyTarget ? 'text-rose-400 font-black' : (isDead ? 'text-rose-400' : 'text-cyan-300')} text-sm leading-snug cursor-pointer select-none break-words" title="Click to toggle favorite">
+              ${s.name}${markDot} ${s.hasShield ? '🛡️' : ''} ${isBountyTarget ? '🎯' : ''} ${isIndividualBanned ? '🔒[BANNED]' : ''}
+            </span>
+          </div>
+          
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="toggleStudentBan('${s.id}', event)" class="p-1.5 rounded ${isIndividualBanned ? 'bg-amber-600 text-slate-950 font-black' : 'bg-slate-900 text-rose-400 hover:bg-rose-950 border border-rose-600/50'} text-xs transition cursor-pointer active:scale-90" title="${isIndividualBanned ? 'Unlock Student' : 'Ban Student (Read-Only)'}">
+              <i class="fa-solid ${isIndividualBanned ? 'fa-lock-open' : 'fa-ban'}"></i>
+            </button>
+            <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="Export Card">
+              <i class="fa-solid fa-id-card"></i>
+            </button>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold">
+              ID: ${s.username || s.id}
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded ${isDead ? 'bg-rose-950 text-rose-300 border border-rose-600 font-bold' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
+              ${isDead ? 'FAINTED' : digi.stageName}
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-[10px] text-slate-500 mb-1.5">
+          <span>Classes: <span class="text-cyan-300 font-mono">${formatStudentClassesDisplay(s)}</span></span>
+          <div class="flex items-center gap-1">
+            <span class="text-indigo-400 font-bold">Faction:</span>
+            <select onchange="teacherAssignStudentFaction('${s.id}', this.value)" class="bg-slate-900 border border-indigo-500/50 text-[10px] rounded px-1.5 py-0.5 text-indigo-200 outline-none">
+              ${factionOptionsHtml}
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 my-2">
+          <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center shrink-0">
+            <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain ${isDead ? 'opacity-40 grayscale' : ''}">
+          </div>
+          <div class="text-xs">
+            <div class="font-bold text-slate-200">${digi.name}</div>
+            <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 0} / ${digi.maxHp}</div>
+            <div class="text-slate-400 font-mono text-[11px]">
+              EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span>
             </div>
           </div>
-          <div class="space-y-1.5 mt-2">
-            <div class="grid grid-cols-3 gap-1">
-              <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+10 EXP</button>
-              <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 Ticket</button>
-              <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 Attack</button>
-            </div>
-            <div class="grid grid-cols-4 gap-1">
-              <button onclick="deductStudentTicket('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Ticket">-1 Ticket</button>
-              <button onclick="deductStudentQuota('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Attack Quota">-1 Attack</button>
-              <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
-              <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-30 HP</button>
-            </div>
-            <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-900">
-              ${isDead ? `
-                <button onclick="teacherReviveStudent('${s.id}')" class="py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
-                  <i class="fa-solid fa-heart-pulse"></i> Revive
-                </button>
-                <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-                  <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
-                </button>
-              ` : `
-                <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-                  <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
-                </button>
-                <button onclick="teacherRebirthStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-                  <i class="fa-solid fa-rotate-left"></i> Random Egg
-                </button>
-              `}
-            </div>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
+        </div>
+      </div>
+
+      <div class="space-y-1.5 mt-2">
+        <div class="grid grid-cols-3 gap-1">
+          <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+10 EXP</button>
+          <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 Ticket</button>
+          <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 Attack</button>
+        </div>
+        <div class="grid grid-cols-4 gap-1">
+          <button onclick="deductStudentTicket('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Ticket">-1 Ticket</button>
+          <button onclick="deductStudentQuota('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Attack Quota">-1 Attack</button>
+          <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
+          <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-30 HP</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-900">
+          ${isDead ? `
+            <button onclick="teacherReviveStudent('${s.id}')" class="py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
+              <i class="fa-solid fa-heart-pulse"></i> Revive
+            </button>
+            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
+            </button>
+          ` : `
+            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
+            </button>
+            <button onclick="teacherRebirthStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-rotate-left"></i> Random Egg
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
 
     function rewardStudent(id, exp) {
       const s = appData.students[id];
@@ -5790,149 +6187,161 @@ function sanitizeClassKey(cls) {
 
     // ⚔️ 學生發動技能核心（支援跨多所屬班級選單選擇）
     function castStudentSkill(skillIdx, targetMode) {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      if (!st) return;
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st) return;
 
-      if (isStudentBanned(st)) {
-        showToast("System Locked", "Your interactions are currently locked by the teacher!", "info");
-        return;
+  if (isStudentBanned(st)) {
+    showToast("System Locked", "Your interactions are currently locked by the teacher!", "info");
+    return;
+  }
+
+  if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
+    showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
+    playSound('faint');
+    return;
+  }
+
+  if ((st.attackQuota || 0) <= 0) {
+    showToast("Action Depleted", "❌ Attacks left: 0!", "info");
+    return;
+  }
+
+  const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+  const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
+
+  if (targetMode === 'boss') {
+    dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
+      if (quota === null || quota <= 0) return 0;
+      return quota - 1;
+    }, (err, committed, snap) => {
+      if (!committed || snap.val() < 0) {
+        return showToast("Action Failed", "Attack quota deduction failed!", "info");
       }
 
-      if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
-        showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
-        playSound('faint');
-        return;
-      }
+      const teachersList = Object.values(appData.teachers || {});
+      let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
+      if (!tc) return alert("No active Teacher Boss found.");
 
-      if ((st.attackQuota || 0) <= 0) {
-        showToast("Action Depleted", "❌ Attacks left: 0!", "info");
-        return;
-      }
+      const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
 
-      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
-
-      if (targetMode === 'boss') {
-        dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-          if (quota === null || quota <= 0) return 0;
-          return quota - 1;
-        }, (err, committed, snap) => {
-          if (!committed || snap.val() < 0) {
-            return showToast("Action Failed", "Attack quota deduction failed!", "info");
-          }
-
-          const teachersList = Object.values(appData.teachers || {});
-          let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
-          if (!tc) return alert("No active Teacher Boss found.");
-
-          const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
-
-          if (skill.type === 'heal') {
-            dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
-              return Math.min(digi.maxHp, (hp || 100) + skill.power);
-            }, (hErr, hCommitted, hSnap) => {
-              if (hCommitted) {
-                playSound('heal');
-                addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
-                showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
-              }
-            });
-          } else {
-            dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
-              const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
-              return Math.max(0, currentBossHp - skill.power);
-            }, (bErr, bCommitted, bSnap) => {
-              if (bCommitted) {
-                playSound('attack');
-                addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
-                showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
-              }
-            });
+      if (skill.type === 'heal') {
+        dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
+          return Math.min(digi.maxHp, (hp || 100) + skill.power);
+        }, (hErr, hCommitted, hSnap) => {
+          if (hCommitted) {
+            playSound('heal');
+            addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${skill.power} HP!`, "heal", st.classId);
+            showToast("Healed!", `Restored +${skill.power} HP!`, "heal");
           }
         });
       } else {
-        // 🎯 核心更新：如果學生有多於一個班別，讓學生先選擇要攻擊那一班的同學
-        const stClasses = parseStudentClasses(st.classId);
-        if (stClasses.length === 0) {
-          return alert("You are not currently enrolled in any class!");
-        }
-
-        let selectedAttackClass = stClasses[0];
-
-        if (stClasses.length > 1) {
-          let classPrompt = "⚔️ You are enrolled in multiple classes. Choose which class to battle:\n\n";
-          stClasses.forEach((c, idx) => {
-            classPrompt += `${idx + 1}. [Class ${c}]\n`;
-          });
-          const classChoice = prompt(classPrompt, "1");
-          if (classChoice === null || classChoice.trim() === "") return;
-          const chosenClassIdx = parseInt(classChoice.trim()) - 1;
-          if (isNaN(chosenClassIdx) || chosenClassIdx < 0 || chosenClassIdx >= stClasses.length) {
-            return alert("Invalid class selection!");
+        dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
+          const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
+          return Math.max(0, currentBossHp - skill.power);
+        }, (bErr, bCommitted, bSnap) => {
+          if (bCommitted) {
+            playSound('attack');
+            addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
+            showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
           }
-          selectedAttackClass = stClasses[chosenClassIdx];
-        }
-
-        const classRoster = Object.values(appData.students || {})
-          .filter(s => studentIsInClass(s, selectedAttackClass))
-          .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
-
-        if (classRoster.length <= 1) {
-          return alert(`No other classmates found in [Class ${selectedAttackClass}] to challenge.`);
-        }
-
-        const currentBountyTargetId = getEffectiveBountyIdForClass(selectedAttackClass);
-
-        let menu = `=== Battle Directory [Class ${selectedAttackClass}] ===\n`;
-        if (currentBountyTargetId) {
-          const bTarget = appData.students[currentBountyTargetId];
-          menu += `🎯 BOUNTY TARGET: [${bTarget ? bTarget.name : currentBountyTargetId}]\n(★ Strike grants +30 EXP! Elimination grants +300 EXP & +1 Ticket!)\n`;
-        }
-        menu += `Type the exact class number of your target:\n\n`;
-
-        classRoster.forEach((p, idx) => {
-          const classNum = idx + 1;
-          const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-          const bountyMark = (currentBountyTargetId === p.id) ? ' [🎯 WANTED BOUNTY]' : '';
-          if (p.id === st.id) {
-            menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
-          } else {
-            menu += `[#${classNum}] ${p.name} (${pDigi.name})${bountyMark} - HP: ${p.hp !== undefined ? p.hp : 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
-          }
-        });
-
-        const choice = prompt(menu, "");
-        if (choice === null || choice.trim() === "") return;
-
-        const chosenNum = parseInt(choice.trim());
-        const targetIdx = chosenNum - 1;
-
-        if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
-          return alert("Invalid number selected!");
-        }
-
-        const target = classRoster[targetIdx];
-        if (target.id === st.id) {
-          return alert("You cannot target yourself! Action cancelled.");
-        }
-
-        if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
-          return alert(`Classmate [${target.name}] is already FAINTED! Choose an active target.`);
-        }
-
-        // 扣除攻擊次數並發動對決
-        dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-          if (quota === null || quota <= 0) return 0;
-          return quota - 1;
-        }, (err, committed, snap) => {
-          if (!committed || snap.val() < 0) {
-            return showToast("Action Failed", "Attack quota deduction failed!", "info");
-          }
-          applyAttackDamageWithTransaction(st, target, skill, digi, selectedAttackClass);
         });
       }
+    });
+  } else {
+    // PvP 模式
+    const stClasses = parseStudentClasses(st.classId);
+    if (stClasses.length === 0) {
+      return alert("You are not currently enrolled in any class!");
     }
+
+    let selectedAttackClass = stClasses[0];
+
+    if (stClasses.length > 1) {
+      let classPrompt = "⚔️ You are enrolled in multiple classes. Choose which class to battle:\n\n";
+      stClasses.forEach((c, idx) => {
+        classPrompt += `${idx + 1}. [Class ${c}]\n`;
+      });
+      const classChoice = prompt(classPrompt, "1");
+      if (classChoice === null || classChoice.trim() === "") return;
+      const chosenClassIdx = parseInt(classChoice.trim()) - 1;
+      if (isNaN(chosenClassIdx) || chosenClassIdx < 0 || chosenClassIdx >= stClasses.length) {
+        return alert("Invalid class selection!");
+      }
+      selectedAttackClass = stClasses[chosenClassIdx];
+    }
+
+    const classRoster = Object.values(appData.students || {})
+      .filter(s => studentIsInClass(s, selectedAttackClass))
+      .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
+
+    if (classRoster.length <= 1) {
+      return alert(`No other classmates found in [Class ${selectedAttackClass}] to challenge.`);
+    }
+
+    const currentBountyTargetId = getEffectiveBountyIdForClass(selectedAttackClass);
+
+    let menu = `=== Battle Directory [Class ${selectedAttackClass}] ===\n`;
+    if (st.factionName) {
+      menu += `🛡️ YOUR FACTION: [${st.factionName}] (Allies are protected from attacks)\n`;
+    }
+    if (currentBountyTargetId) {
+      const bTarget = appData.students[currentBountyTargetId];
+      menu += `🎯 BOUNTY TARGET: [${bTarget ? bTarget.name : currentBountyTargetId}]\n`;
+    }
+    menu += `Type the exact class number of your target:\n\n`;
+
+    classRoster.forEach((p, idx) => {
+      const classNum = idx + 1;
+      const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
+      const bountyMark = (currentBountyTargetId === p.id) ? ' [🎯 BOUNTY]' : '';
+      const isAlly = (st.factionId && p.factionId && st.factionId === p.factionId && st.id !== p.id);
+      const allyMark = isAlly ? ` [🛡️ ALLY: ${p.factionName}]` : (p.factionName ? ` [${p.factionName}]` : ' [No Faction]');
+
+      if (p.id === st.id) {
+        menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
+      } else {
+        menu += `[#${classNum}] ${p.name} (${pDigi.name})${allyMark}${bountyMark} - HP: ${p.hp !== undefined ? p.hp : 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
+      }
+    });
+
+    const choice = prompt(menu, "");
+    if (choice === null || choice.trim() === "") return;
+
+    const chosenNum = parseInt(choice.trim());
+    const targetIdx = chosenNum - 1;
+
+    if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
+      return alert("Invalid number selected!");
+    }
+
+    const target = classRoster[targetIdx];
+    if (target.id === st.id) {
+      return alert("You cannot target yourself! Action cancelled.");
+    }
+
+    // 🛡️ 核心判定：同陣營禁止攻擊
+    if (st.factionId && target.factionId && st.factionId === target.factionId) {
+      playSound('shield');
+      return alert(`❌ Cannot attack [${target.name}]! Both of you belong to the same faction: [${st.factionName}]. Allies cannot harm each other!`);
+    }
+
+    if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
+      return alert(`Classmate [${target.name}] is already FAINTED! Choose an active target.`);
+    }
+
+    // 扣除攻擊次數並發動對決
+    dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
+      if (quota === null || quota <= 0) return 0;
+      return quota - 1;
+    }, (err, committed, snap) => {
+      if (!committed || snap.val() < 0) {
+        return showToast("Action Failed", "Attack quota deduction failed!", "info");
+      }
+      applyAttackDamageWithTransaction(st, target, skill, digi, selectedAttackClass);
+    });
+  }
+}
 
     // 取得指定班級中當前有效的 Bounty ID
     function getEffectiveBountyIdForClass(className) {
