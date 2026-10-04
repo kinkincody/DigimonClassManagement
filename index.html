@@ -2421,6 +2421,7 @@ const DIGIMON_DB = {
     let studentTargetTeacherId = 'teacher1';
     let activeQuizInstance = null;
     let activeTeacherSubTab = 'main';
+    let isQuizTimeoutSubmitting = false; // 防止重複觸發逾時
 
     // 🥷 老師隱藏模式狀態（true = 不記錄任何 Log）
     let isTeacherStealthMode = false;
@@ -6677,6 +6678,7 @@ function toggleFactionBuffModal() {
           clearInterval(quizStudentCountdownTimer);
           quizStudentCountdownTimer = null;
         }
+        isQuizTimeoutSubmitting = false;
         return;
       }
 
@@ -6706,12 +6708,14 @@ function toggleFactionBuffModal() {
 
         const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
 
+        // 每次重新渲染前，先徹底清理舊定時器
         if (quizStudentCountdownTimer) {
           clearInterval(quizStudentCountdownTimer);
           quizStudentCountdownTimer = null;
         }
 
         if (mySub) {
+          isQuizTimeoutSubmitting = false; // 已提交或已逾時，解除旗標
           if (timerBadge) timerBadge.classList.add('hidden');
           if (barWrapper) barWrapper.classList.add('hidden');
 
@@ -6757,17 +6761,23 @@ function toggleFactionBuffModal() {
             if (timerBadge) timerBadge.classList.remove('hidden');
             if (barWrapper) barWrapper.classList.remove('hidden');
 
+            const quizStartMs = activeQuizInstance.timestamp || Date.now();
+
             const handleCountdownTick = () => {
-              const elapsedSec = (Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000;
+              // 取得經過秒數，加入防止負數計算保護
+              const elapsedSec = Math.max(0, (Date.now() - quizStartMs) / 1000);
               const remaining = Math.max(0, timeLimitSec - elapsedSec);
               const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
 
               if (timerSecText) timerSecText.textContent = `${Math.ceil(remaining)}s`;
               if (barFill) barFill.style.width = `${pct}%`;
 
+              // 倒數歸零且尚未在提交逾時狀態中
               if (remaining <= 0) {
-                clearInterval(quizStudentCountdownTimer);
-                quizStudentCountdownTimer = null;
+                if (quizStudentCountdownTimer) {
+                  clearInterval(quizStudentCountdownTimer);
+                  quizStudentCountdownTimer = null;
+                }
                 autoSubmitTimeoutForStudent();
               }
             };
@@ -6790,13 +6800,25 @@ function toggleFactionBuffModal() {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
       if (!dbRootRef) return;
 
+      // 防抖鎖：若已在處理逾時或已提交過答案，直接終止
+      if (isQuizTimeoutSubmitting) return;
+      if (activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id]) return;
+
+      isQuizTimeoutSubmitting = true;
+
+      // 確保定時器停止
+      if (quizStudentCountdownTimer) {
+        clearInterval(quizStudentCountdownTimer);
+        quizStudentCountdownTimer = null;
+      }
+
       const st = appData.students[currentUser.id] || { name: currentUser.id };
       const now = Date.now();
 
       dbRootRef.child('activeQuiz').transaction((quiz) => {
         if (!quiz || !quiz.active) return quiz;
         if (!quiz.submissions) quiz.submissions = {};
-        if (quiz.submissions[currentUser.id]) return quiz;
+        if (quiz.submissions[currentUser.id]) return quiz; // 已有提交則跳過
 
         quiz.submissions[currentUser.id] = {
           answerIdx: -1,
@@ -6808,11 +6830,13 @@ function toggleFactionBuffModal() {
         };
         return quiz;
       }, (err, committed, snap) => {
-        if (committed) {
+        if (committed && snap && snap.exists()) {
           playSound('faint');
           showToast("Time's Up!", "作答時間截止！列為未作答錯誤。", "damage");
           addBattleLog(`⏰ [QUIZ TIMEOUT] ${st.name} 未在限時內回答問題，列為錯誤！`, "battle", st.classId);
           renderQuizModalForStudent();
+        } else {
+          isQuizTimeoutSubmitting = false;
         }
       });
     }
