@@ -7074,117 +7074,119 @@ function toggleFactionBuffModal() {
       const attackerFac = currentClassFactions.find(f => f.id === st.factionId);
       const targetFac = currentClassFactions.find(f => f.id === target.factionId);
 
-      // 1. 攻擊增幅 Buff (+20%)
-      let attackDamage = skill.power;
+      let calcDmg = skill.power || 20;
+
+      // 1. 攻擊者陣營增幅 (atk_boost: +20% 傷害)
       if (attackerFac && attackerFac.buffType === 'atk_boost') {
-        attackDamage = Math.round(attackDamage * 1.2);
+        calcDmg = Math.round(calcDmg * 1.2);
       }
 
-      // 2. 防禦減傷 Buff (-20%)
-      if (targetFac && targetFac.buffType === 'def_boost') {
-        attackDamage = Math.max(1, Math.round(attackDamage * 0.8));
+      // 2. 防守者減傷或易傷判定 (def_boost: -20% 傷害, vulnerable_debuff: 2.0x 雙倍傷害)
+      if (targetFac) {
+        if (targetFac.buffType === 'vulnerable_debuff') {
+          calcDmg = Math.round(calcDmg * 2.0);
+        } else if (targetFac.buffType === 'def_boost') {
+          calcDmg = Math.max(1, Math.round(calcDmg * 0.8));
+        }
       }
 
-      // 2.1 陣營 Debuff: 受到傷害 Double (x2)
-      if (targetFac && targetFac.buffType === 'vulnerable_debuff') {
-        attackDamage = Math.round(attackDamage * 2.0);
-      }
-
-      // 3. 經驗增幅倍率 (+25%)
-      const expMultiplier = (attackerFac && attackerFac.buffType === 'exp_boost') ? 1.25 : 1.0;
-
-      // 懸賞目標命中加成 (+30 EXP)
-      if (isTargetingBounty) {
-        const bonusExp = Math.round(30 * expMultiplier);
-        dbRootRef.child(`students/${st.id}`).transaction((attackerData) => {
-          if (!attackerData) return attackerData;
-          attackerData.exp = (attackerData.exp || 0) + bonusExp;
-          attackerData.statPool = (attackerData.statPool || 0) + bonusExp;
-          return attackerData;
-        });
-      }
-
-      // 對目標造成傷害並判斷擊殺
       dbRootRef.child(`students/${target.id}`).transaction((targetData) => {
         if (!targetData) return targetData;
-
-        // 護盾阻擋
+        
+        // 若防守者有護盾，優先消耗護盾抵擋傷害
         if (targetData.hasShield) {
           targetData.hasShield = false;
+          targetData._shieldBlocked = true;
           return targetData;
         }
 
-        const targetDigi = DIGIMON_DB[targetData.currentDigiId] || DIGIMON_DB['digitama1'];
-        const currentHp = (targetData.hp !== undefined) ? targetData.hp : targetDigi.maxHp;
-        const nextHp = Math.max(0, currentHp - attackDamage);
-
+        const curHp = (targetData.hp !== undefined) ? targetData.hp : 100;
+        const nextHp = Math.max(0, curHp - calcDmg);
         targetData.hp = nextHp;
+        targetData._shieldBlocked = false;
+        targetData._tookDamage = calcDmg;
+
         if (nextHp === 0) {
           targetData.isFainted = true;
+          targetData._wasKilled = true;
         }
         return targetData;
       }, (err, committed, snap) => {
         if (!committed || !snap.exists()) return;
 
         const updatedTarget = snap.val();
-        const tgtDigi = DIGIMON_DB[updatedTarget.currentDigiId] || DIGIMON_DB['digitama1'];
+        const tDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
 
-        // 判定防守方護盾是否阻擋了傷害
-        if (target.hasShield && !updatedTarget.hasShield && updatedTarget.hp === target.hp) {
+        // 護盾格擋處理
+        if (updatedTarget._shieldBlocked) {
           playSound('shield');
-          addBattleLog(`🛡️ [SHIELD BLOCKED] ${target.name}'s Aegis Shield blocked ${st.name}'s [${skill.name}]!`, "battle", classContext);
-          showToast("Blocked!", `${target.name}'s shield absorbed the attack!`, "info");
+          addBattleLog(`🛡️ [PVP BLOCKED] ${target.name}'s Aegis Shield blocked ${st.name}'s attack completely!`, "battle", classContext);
+          showToast("Attack Blocked!", `${target.name}'s shield blocked your attack!`, "info");
           return;
         }
 
         playSound('attack');
 
-        // 判定是否達成擊殺 (HP 歸零)
-        if (updatedTarget.hp === 0 && updatedTarget.isFainted) {
+        // 擊中懸賞對象的即時命中獎勵 (+30 EXP)
+        if (isTargetingBounty) {
+          dbRootRef.child(`students/${st.id}`).transaction((atkSt) => {
+            if (!atkSt) return atkSt;
+            atkSt.exp = (atkSt.exp || 0) + 30;
+            atkSt.statPool = (atkSt.statPool || 0) + 30;
+            return atkSt;
+          });
+          showToast("Bounty Strike!", "🎯 Hit bounty target! Instant +30 EXP granted!", "heal");
+        }
+
+        // 判定是否成功擊殺
+        if (updatedTarget._wasKilled) {
           playSound('faint');
 
-          // 計算階級差距經驗 (平級 100, 越一級 150, 越兩級+ 200, 弱一級 50, 弱兩級+ 0)
-          const baseKillExp = calculatePvPBaseKillExp(st.currentDigiId, target.currentDigiId);
-          let totalKillExp = Math.round(baseKillExp * expMultiplier);
-          let extraTicket = 0;
-
-          // 若擊殺者為懸賞目標，額外享有懸賞首殺賞金 (+300 EXP, +1 抽獎券)
+          // ⭐ 核心更改位置：
+          // 若是懸賞對象，固定 300 EXP，不受階級等級差距影響（越級不增、殺弱不減）
+          let baseKillExp = 0;
           if (isTargetingBounty) {
-            totalKillExp += Math.round(300 * expMultiplier);
-            extraTicket += 1;
-            // 清除該班級當前懸賞
-            dbRootRef.child(`bounties/${sanitizeClassKey(classContext)}`).remove();
+            baseKillExp = 300; // 固定 300 EXP
+          } else {
+            baseKillExp = calculatePvPBaseKillExp(st.currentDigiId, target.currentDigiId);
+          }
+
+          let finalExp = baseKillExp;
+
+          // 陣營經驗狂熱加乘 (exp_boost: +25% EXP)
+          if (attackerFac && attackerFac.buffType === 'exp_boost' && baseKillExp > 0) {
+            finalExp = Math.round(finalExp * 1.25);
           }
 
           // 發放擊殺獎勵給攻擊者
-          if (totalKillExp > 0 || extraTicket > 0) {
-            dbRootRef.child(`students/${st.id}`).transaction((atkData) => {
-              if (!atkData) return atkData;
-              atkData.exp = (atkData.exp || 0) + totalKillExp;
-              atkData.statPool = (atkData.statPool || 0) + totalKillExp;
-              if (extraTicket > 0) {
-                atkData.gachaTickets = (atkData.gachaTickets || 0) + extraTicket;
-              }
-              return atkData;
-            });
-          }
+          dbRootRef.child(`students/${st.id}`).transaction((atkSt) => {
+            if (!atkSt) return atkSt;
+            atkSt.exp = (atkSt.exp || 0) + finalExp;
+            atkSt.statPool = (atkSt.statPool || 0) + finalExp;
+            if (isTargetingBounty) {
+              atkSt.gachaTickets = (atkSt.gachaTickets || 0) + 1; // 額外獲得 1 張抽獎券
+            }
+            return atkSt;
+          });
 
-          const bountyMsg = isTargetingBounty ? ` 🎯 [BOUNTY CLAIMED! +300 EXP & +1 Ticket!]` : '';
-          const expLogMsg = totalKillExp > 0 ? `+${totalKillExp} EXP` : `+0 EXP (對手過弱)`;
-          
-          addBattleLog(
-            `☠️💥 [PVP ELIMINATION] ${st.name} (${digi.name} [${digi.stageName}]) 擊殺了 ${target.name} (${tgtDigi.name} [${tgtDigi.stageName}])！獲得 ${expLogMsg}！${bountyMsg}`,
-            "battle",
-            classContext
-          );
-          showToast("Opponent Eliminated!", `擊殺 ${target.name}！獲得 ${expLogMsg}！`, "evolution");
+          // 戰報紀錄與懸賞清理
+          if (isTargetingBounty) {
+            addBattleLog(`🎯🏆 [BOUNTY ELIMINATED] ${st.name}'s ${digi.name} defeated Bounty Target [${target.name}]! Fixed Bounty Claimed: +${finalExp} EXP & +1 Gacha Ticket!`, "evolution", classContext);
+            showToast("Bounty Claimed!", `Defeated Bounty Target! Claimed +${finalExp} EXP & +1 Ticket!`, "evolution");
+
+            // 擊殺後自動撤除該班懸賞
+            const tagKey = sanitizeClassKey(classContext);
+            dbRootRef.child(`bounties/${tagKey}`).remove();
+            if (appData.bounties) delete appData.bounties[tagKey];
+          } else {
+            addBattleLog(`☠️ [PVP KILL] ${st.name}'s ${digi.name} defeated [${target.name}]'s ${tDigi.name}! Earned +${finalExp} EXP!`, "evolution", classContext);
+            showToast("Victory!", `Defeated ${target.name}! Earned +${finalExp} EXP!`, "evolution");
+          }
         } else {
-          addBattleLog(
-            `⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck ${target.name}'s ${tgtDigi.name} with [${skill.name}] for ${attackDamage} DMG! (Target HP: ${updatedTarget.hp})`,
-            "battle",
-            classContext
-          );
-          showToast("Strike Landed!", `Dealt ${attackDamage} DMG to ${target.name}!`, "damage");
+          // 一般擊中戰報
+          const leftHp = updatedTarget.hp !== undefined ? updatedTarget.hp : 0;
+          addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck [${target.name}] for ${calcDmg} DMG! (HP left: ${leftHp})`, "battle", classContext);
+          showToast("Strike Hit!", `Dealt ${calcDmg} DMG to ${target.name}!`, "damage");
         }
       });
     }
