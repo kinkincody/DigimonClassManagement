@@ -6668,16 +6668,19 @@ function toggleFactionBuffModal() {
       avgTimeEl.textContent = answeredCount > 0 ? `${(totalElapsed / answeredCount).toFixed(1)}s` : `--s`;
     }
 
+    // === 🛠️ 修復版：防止搶答秒逾時與死循環發送通知 ===
     function renderQuizModalForStudent() {
       const modal = document.getElementById('modalQuizOverlay');
       if (!modal) return;
 
+      // 每次進入前，先徹底清理既有學生倒數計時器
+      if (quizStudentCountdownTimer) {
+        clearInterval(quizStudentCountdownTimer);
+        quizStudentCountdownTimer = null;
+      }
+
       if (!activeQuizInstance || !activeQuizInstance.active) {
         modal.classList.add('hidden');
-        if (quizStudentCountdownTimer) {
-          clearInterval(quizStudentCountdownTimer);
-          quizStudentCountdownTimer = null;
-        }
         isQuizTimeoutSubmitting = false;
         return;
       }
@@ -6706,16 +6709,11 @@ function toggleFactionBuffModal() {
 
         document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
 
-        const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
+        const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? Number(activeQuizInstance.timeLimit) : 30;
 
-        // 每次重新渲染前，先徹底清理舊定時器
-        if (quizStudentCountdownTimer) {
-          clearInterval(quizStudentCountdownTimer);
-          quizStudentCountdownTimer = null;
-        }
-
+        // 狀況 A：該學生已經提交過答案，或者已經被判定逾時
         if (mySub) {
-          isQuizTimeoutSubmitting = false; // 已提交或已逾時，解除旗標
+          isQuizTimeoutSubmitting = false; // 已有確定結果，關閉防重送鎖
           if (timerBadge) timerBadge.classList.add('hidden');
           if (barWrapper) barWrapper.classList.add('hidden');
 
@@ -6746,6 +6744,7 @@ function toggleFactionBuffModal() {
           podiumBox.innerHTML = snippet;
 
         } else {
+          // 狀況 B：學生尚未作答，正常渲染題目與選項
           feedbackBox.classList.add('hidden');
           grid.innerHTML = '';
 
@@ -6757,6 +6756,7 @@ function toggleFactionBuffModal() {
             grid.appendChild(btn);
           });
 
+          // 啟動限時倒數機制
           if (timeLimitSec > 0) {
             if (timerBadge) timerBadge.classList.remove('hidden');
             if (barWrapper) barWrapper.classList.remove('hidden');
@@ -6764,15 +6764,16 @@ function toggleFactionBuffModal() {
             const quizStartMs = activeQuizInstance.timestamp || Date.now();
 
             const handleCountdownTick = () => {
-              // 取得經過秒數，加入防止負數計算保護
-              const elapsedSec = Math.max(0, (Date.now() - quizStartMs) / 1000);
+              // 取得經過秒數，若本地時鐘超前出現負數則強制作為 0
+              const diffMs = Date.now() - quizStartMs;
+              const elapsedSec = diffMs > 0 ? (diffMs / 1000) : 0;
               const remaining = Math.max(0, timeLimitSec - elapsedSec);
               const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
 
               if (timerSecText) timerSecText.textContent = `${Math.ceil(remaining)}s`;
               if (barFill) barFill.style.width = `${pct}%`;
 
-              // 倒數歸零且尚未在提交逾時狀態中
+              // 倒數歸零時觸發逾時，且必須確認尚未在提交逾時狀態
               if (remaining <= 0) {
                 if (quizStudentCountdownTimer) {
                   clearInterval(quizStudentCountdownTimer);
@@ -6800,13 +6801,13 @@ function toggleFactionBuffModal() {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
       if (!dbRootRef) return;
 
-      // 防抖鎖：若已在處理逾時或已提交過答案，直接終止
+      // 嚴格雙重防抖防護：如果已經在送出逾時、或者資料庫快照中已存在自己的提交，立刻退出
       if (isQuizTimeoutSubmitting) return;
       if (activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id]) return;
 
       isQuizTimeoutSubmitting = true;
 
-      // 確保定時器停止
+      // 停止計時器以杜絕後續重複 tick
       if (quizStudentCountdownTimer) {
         clearInterval(quizStudentCountdownTimer);
         quizStudentCountdownTimer = null;
@@ -6818,7 +6819,8 @@ function toggleFactionBuffModal() {
       dbRootRef.child('activeQuiz').transaction((quiz) => {
         if (!quiz || !quiz.active) return quiz;
         if (!quiz.submissions) quiz.submissions = {};
-        if (quiz.submissions[currentUser.id]) return quiz; // 已有提交則跳過
+        // 若伺服器端已有本學生的提交紀錄（例如已手動作答或已標記逾時），則保持原樣不重複改寫
+        if (quiz.submissions[currentUser.id]) return quiz;
 
         quiz.submissions[currentUser.id] = {
           answerIdx: -1,
@@ -6831,9 +6833,13 @@ function toggleFactionBuffModal() {
         return quiz;
       }, (err, committed, snap) => {
         if (committed && snap && snap.exists()) {
-          playSound('faint');
-          showToast("Time's Up!", "作答時間截止！列為未作答錯誤。", "damage");
-          addBattleLog(`⏰ [QUIZ TIMEOUT] ${st.name} 未在限時內回答問題，列為錯誤！`, "battle", st.classId);
+          const finalSub = snap.val()?.submissions?.[currentUser.id];
+          // 只有在本次 transaction 確實是由當前逾時操作寫入時才發送通知，避免伺服器重疊觸發
+          if (finalSub && finalSub.isTimeout && finalSub.timestamp === now) {
+            playSound('faint');
+            showToast("Time's Up!", "作答時間截止！列為未作答錯誤。", "damage");
+            addBattleLog(`⏰ [QUIZ TIMEOUT] ${st.name} 未在限時內回答問題，列為錯誤！`, "battle", st.classId);
+          }
           renderQuizModalForStudent();
         } else {
           isQuizTimeoutSubmitting = false;
