@@ -6516,14 +6516,13 @@ function toggleFactionBuffModal() {
       }
 
       const isActive = !!activeQuizInstance.active;
-      const timeLimitSec = (activeQuizInstance.timeLimit !== undefined) ? parseInt(activeQuizInstance.timeLimit) : 30;
+      const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
 
       if (isActive && timeLimitSec > 0) {
         if (countdownBadge) countdownBadge.classList.remove('hidden');
         
         const updateTcTimer = () => {
-          const quizStartTs = activeQuizInstance.timestamp || Date.now();
-          const elapsedSec = Math.floor((Date.now() - quizStartTs) / 1000);
+          const elapsedSec = Math.floor((Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000);
           const remaining = Math.max(0, timeLimitSec - elapsedSec);
           if (tcCountdownSec) tcCountdownSec.textContent = `${remaining}s`;
 
@@ -6577,7 +6576,6 @@ function toggleFactionBuffModal() {
       const submissions = activeQuizInstance.submissions || {};
       let answeredCount = 0;
       let correctCount = 0;
-      let validElapsedCount = 0;
       let totalElapsed = 0;
 
       tbody.innerHTML = '';
@@ -6598,16 +6596,10 @@ function toggleFactionBuffModal() {
           if (sub) {
             answeredCount++;
             if (sub.isCorrect) correctCount++;
-
-            // 【修復 38.4 秒問題】：只對非逾時作答的學生計算耗時，且限制在有效作答限時以內
-            if (!sub.isTimeout && sub.timestamp && activeQuizInstance.timestamp) {
-              const diff = Math.max(0, (sub.timestamp - activeQuizInstance.timestamp) / 1000);
-              const cappedDiff = (timeLimitSec > 0) ? Math.min(diff, timeLimitSec) : diff;
-              timeText = `${cappedDiff.toFixed(1)}s`;
-              totalElapsed += cappedDiff;
-              validElapsedCount++;
-            } else if (sub.isTimeout) {
-              timeText = `逾時`;
+            if (sub.timestamp && activeQuizInstance.timestamp) {
+              const diffSec = ((sub.timestamp - activeQuizInstance.timestamp) / 1000).toFixed(1);
+              totalElapsed += Math.max(0, parseFloat(diffSec));
+              timeText = `${diffSec}s`;
             }
 
             ansDisplay = `<span class="text-slate-200 font-bold">${sub.answerText || '--'}</span>`;
@@ -6651,22 +6643,131 @@ function toggleFactionBuffModal() {
       progressEl.textContent = `作答進度: ${answeredCount} / ${classStudents.length}`;
       countEl.textContent = `${answeredCount}`;
       accEl.textContent = answeredCount > 0 ? `${Math.round((correctCount / answeredCount) * 100)}%` : `0%`;
-      avgTimeEl.textContent = validElapsedCount > 0 ? `${(totalElapsed / validElapsedCount).toFixed(1)}s` : `--s`;
+      avgTimeEl.textContent = answeredCount > 0 ? `${(totalElapsed / answeredCount).toFixed(1)}s` : `--s`;
+    }
+
+    function renderQuizModalForStudent() {
+      const modal = document.getElementById('modalQuizOverlay');
+      if (!modal) return;
+
+      if (!activeQuizInstance || !activeQuizInstance.active) {
+        modal.classList.add('hidden');
+        if (quizStudentCountdownTimer) {
+          clearInterval(quizStudentCountdownTimer);
+          quizStudentCountdownTimer = null;
+        }
+        return;
+      }
+
+      if (currentUser && currentUser.role === 'student') {
+        const st = appData.students[currentUser.id];
+        if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
+          modal.classList.add('hidden');
+          return;
+        }
+
+        if (activeQuizInstance.classTag !== 'ALL' && !studentIsInClass(st, activeQuizInstance.classTag)) {
+          modal.classList.add('hidden');
+          return;
+        }
+
+        const mySub = activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id];
+        const grid = document.getElementById('quizOptionsGrid');
+        const feedbackBox = document.getElementById('quizFeedbackBox');
+        const feedbackText = document.getElementById('quizFeedbackText');
+        const podiumBox = document.getElementById('quizPodiumSnippet');
+        const timerBadge = document.getElementById('quizTimerStudentBadge');
+        const timerSecText = document.getElementById('quizTimeRemainingSec');
+        const barWrapper = document.getElementById('quizTimerBarWrapper');
+        const barFill = document.getElementById('quizTimerBarFill');
+
+        document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
+
+        const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
+
+        if (quizStudentCountdownTimer) {
+          clearInterval(quizStudentCountdownTimer);
+          quizStudentCountdownTimer = null;
+        }
+
+        if (mySub) {
+          if (timerBadge) timerBadge.classList.add('hidden');
+          if (barWrapper) barWrapper.classList.add('hidden');
+
+          grid.innerHTML = '';
+          feedbackBox.classList.remove('hidden');
+
+          if (mySub.isTimeout) {
+            feedbackText.innerHTML = `⏰ <b class="text-rose-400">已逾時未作答！</b> 本題自動判定為錯誤，無任何獎勵！`;
+          } else if (mySub.isCorrect) {
+            if (mySub.rank === 1) {
+              feedbackText.innerHTML = `🎉 恭喜你獲得 <b class="text-amber-300">第一名 (冠軍)</b>！自動增加 <b class="text-amber-400">+2 次攻擊次數</b>！`;
+            } else if (mySub.rank === 2) {
+              feedbackText.innerHTML = `🥈 恭喜你獲得 <b class="text-slate-200">第二名 (亞軍)</b>！自動增加 <b class="text-cyan-300">+1 次攻擊次數</b>！`;
+            } else if (mySub.rank === 3) {
+              feedbackText.innerHTML = `🥉 恭喜你獲得 <b class="text-amber-500">第三名 (季軍)</b>！自動獲得 <b class="text-emerald-400">+30 EXP</b>！`;
+            } else {
+              feedbackText.innerHTML = `✅ 答案正確！自動獲得 <b class="text-emerald-400">+10 EXP</b>！`;
+            }
+          } else {
+            feedbackText.innerHTML = `❌ 答案不正確！沒有獲得獎勵，下次請再接再厲！`;
+          }
+
+          const winners = activeQuizInstance.winners || {};
+          let snippet = '';
+          if (winners.rank1) snippet += `<div>🥇 第1名: ${winners.rank1.studentName} (+2 攻擊)</div>`;
+          if (winners.rank2) snippet += `<div>🥈 第2名: ${winners.rank2.studentName} (+1 攻擊)</div>`;
+          if (winners.rank3) snippet += `<div>🥉 第3名: ${winners.rank3.studentName} (+30 EXP)</div>`;
+          podiumBox.innerHTML = snippet;
+
+        } else {
+          feedbackBox.classList.add('hidden');
+          grid.innerHTML = '';
+
+          activeQuizInstance.options.forEach((optText, idx) => {
+            const btn = document.createElement('button');
+            btn.className = "py-3 px-4 rounded-xl bg-slate-950 border border-cyan-500/50 hover:bg-cyan-950 text-cyan-200 font-bold text-xs shadow transition active:scale-95 cursor-pointer text-left flex items-center justify-between";
+            btn.innerHTML = `<span>${optText}</span> <i class="fa-solid fa-chevron-right text-[10px] text-cyan-400"></i>`;
+            btn.onclick = () => submitStudentQuizAnswer(idx);
+            grid.appendChild(btn);
+          });
+
+          if (timeLimitSec > 0) {
+            if (timerBadge) timerBadge.classList.remove('hidden');
+            if (barWrapper) barWrapper.classList.remove('hidden');
+
+            const handleCountdownTick = () => {
+              const elapsedSec = (Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000;
+              const remaining = Math.max(0, timeLimitSec - elapsedSec);
+              const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
+
+              if (timerSecText) timerSecText.textContent = `${Math.ceil(remaining)}s`;
+              if (barFill) barFill.style.width = `${pct}%`;
+
+              if (remaining <= 0) {
+                clearInterval(quizStudentCountdownTimer);
+                quizStudentCountdownTimer = null;
+                autoSubmitTimeoutForStudent();
+              }
+            };
+
+            handleCountdownTick();
+            quizStudentCountdownTimer = setInterval(handleCountdownTick, 250);
+          } else {
+            if (timerBadge) timerBadge.classList.add('hidden');
+            if (barWrapper) barWrapper.classList.add('hidden');
+          }
+        }
+
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
     }
 
     function autoSubmitTimeoutForStudent() {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
       if (!dbRootRef) return;
-
-      // 【防重複鎖定】：如果本地已經知道提交過，絕不再送出
-      if (activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id]) {
-        return;
-      }
-
-      if (quizStudentCountdownTimer) {
-        clearInterval(quizStudentCountdownTimer);
-        quizStudentCountdownTimer = null;
-      }
 
       const st = appData.students[currentUser.id] || { name: currentUser.id };
       const now = Date.now();
@@ -6674,7 +6775,6 @@ function toggleFactionBuffModal() {
       dbRootRef.child('activeQuiz').transaction((quiz) => {
         if (!quiz || !quiz.active) return quiz;
         if (!quiz.submissions) quiz.submissions = {};
-        // 資料庫內已存在提交紀錄，直接返回
         if (quiz.submissions[currentUser.id]) return quiz;
 
         quiz.submissions[currentUser.id] = {
@@ -6687,10 +6787,11 @@ function toggleFactionBuffModal() {
         };
         return quiz;
       }, (err, committed, snap) => {
-        if (committed && snap && snap.exists()) {
+        if (committed) {
           playSound('faint');
           showToast("Time's Up!", "作答時間截止！列為未作答錯誤。", "damage");
           addBattleLog(`⏰ [QUIZ TIMEOUT] ${st.name} 未在限時內回答問題，列為錯誤！`, "battle", st.classId);
+          renderQuizModalForStudent();
         }
       });
     }
