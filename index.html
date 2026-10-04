@@ -1029,28 +1029,18 @@
 
         <!-- Classroom Battle Log Feed (專屬班級 Clear Log 模式) -->
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+          <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 mb-3 gap-2">
             <h4 class="text-xs font-bold text-cyan-300 flex items-center">
               <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Activity & Battle Log (50 Records Max)
             </h4>
             
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] text-slate-400 font-mono" id="teacherLogFilterBadge">Viewing: All Classes</span>
-              <!-- 🗑️️ 更新：只會清除目前所選班級的 Log -->
-              <button onclick="clearBattleLogs()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95" title="Clear logs for current class only">
-                <i class="fa-solid fa-trash-can"></i> <span id="lblClearLogBtn">Clear Current Class Logs</span>
-              </button>
-            </div>
             <div class="flex items-center gap-2">
               <select id="teacherLogFactionFilter" onchange="renderBattleLogs()" class="bg-slate-950 border border-cyan-500/40 text-[10px] rounded px-2 py-1 text-cyan-200 outline-none">
                 <option value="ALL">全部日誌</option>
                 <option value="FACTION_ONLY">⚔️ 陣營戰火過濾</option>
               </select>
               <span class="text-[10px] text-slate-400 font-mono" id="teacherLogFilterBadge">Viewing: All Classes</span>
-              <button onclick="clearBattleLogs()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95" title="Clear logs for current class only">
-                <i class="fa-solid fa-trash-can"></i> <span id="lblClearLogBtn">Clear Current Class Logs</span>
-              </button>
-            </div>
+              <!-- 🗑️ 只清除目前所選班級的 Log 按鈕 -->
               <button onclick="clearBattleLogs()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95" title="Clear logs for current class only">
                 <i class="fa-solid fa-trash-can"></i> <span id="lblClearLogBtn">Clear Current Class Logs</span>
               </button>
@@ -3757,54 +3747,85 @@ function rejectFactionRequest(studentId) {
       }
     }
 
-    // 🗑️ 核心更新：只會清除「該班」的 Log，不影響其他班級日誌
+    // 🗑️ 核心修復：徹底清除目前所選班級的 Log，保證 Firebase 與本地即時同步
     function clearBattleLogs() {
-      const currentClass = selectedTeacherClass || 'ALL';
+      const currentClass = (selectedTeacherClass || 'ALL').trim();
       const isAll = (currentClass === 'ALL');
 
       const confirmMsg = isAll
         ? "確定要清空【所有班級】的活動日誌紀錄嗎？"
-        : `確定只清除【班級 ${currentClass}】的活動日誌嗎？\n(其他班級與未相關日誌將完整保留)`;
+        : `確定只清除【班級 ${currentClass}】的活動日誌嗎？\n(其他班級與通用日誌將完整保留)`;
 
       if (!confirm(confirmMsg)) return;
 
-      const currentLogs = appData.battleLogs || [];
-      const logsToKeep = [];
-      const updates = {};
-
-      currentLogs.forEach(l => {
-        let isMatch = false;
+      if (!dbRootRef) {
+        // 離線本地快取處理
         if (isAll) {
-          isMatch = true;
+          appData.battleLogs = [];
         } else {
-          if (l.classTag) {
-            const classesArr = parseStudentClasses(l.classTag).map(c => c.toLowerCase());
-            isMatch = classesArr.includes(currentClass.toLowerCase());
-          }
+          appData.battleLogs = (appData.battleLogs || []).filter(l => {
+            const tag = (l.classTag || 'ALL').trim().toLowerCase();
+            return tag !== currentClass.toLowerCase();
+          });
         }
-
-        if (isMatch) {
-          if (l._key) updates[`battleLogs/${l._key}`] = null;
-        } else {
-          logsToKeep.push(l);
-        }
-      });
-
-      appData.battleLogs = logsToKeep;
-      saveLocalCache();
-      renderBattleLogs();
-
-      if (dbRootRef) {
-        if (isAll) {
-          dbRootRef.child('battleLogs').remove();
-        } else {
-          if (Object.keys(updates).length > 0) {
-            dbRootRef.update(updates);
-          }
-        }
+        saveLocalCache();
+        renderBattleLogs();
+        showToast("Logs Cleared", `已清理本地日誌！`, "info");
+        return;
       }
 
-      showToast("Logs Cleared", isAll ? "已清空所有日誌！" : `已成功清除【班級 ${currentClass}】的日誌紀錄！`, "info");
+      // 線上 Firebase 模式：直接從資料庫抓取最新快照比對後移除
+      dbRootRef.child('battleLogs').once('value').then(snap => {
+        const val = snap.val();
+        if (!val) {
+          appData.battleLogs = [];
+          saveLocalCache();
+          renderBattleLogs();
+          return showToast("No Logs", "目前沒有任何日誌可供清除。", "info");
+        }
+
+        if (isAll) {
+          dbRootRef.child('battleLogs').remove().then(() => {
+            appData.battleLogs = [];
+            saveLocalCache();
+            renderBattleLogs();
+            showToast("Logs Cleared", "已清空所有班級日誌！", "info");
+          });
+        } else {
+          const updates = {};
+          let deletedCount = 0;
+
+          Object.entries(val).forEach(([key, logItem]) => {
+            if (!logItem) return;
+            const logClass = String(logItem.classTag || 'ALL').trim().toLowerCase();
+            const targetClassLower = currentClass.toLowerCase();
+
+            // 支援逗號多班級格式或完全匹配
+            const classesList = parseStudentClasses(logItem.classTag).map(c => c.toLowerCase());
+            if (logClass === targetClassLower || classesList.includes(targetClassLower)) {
+              updates[`battleLogs/${key}`] = null;
+              deletedCount++;
+            }
+          });
+
+          if (deletedCount === 0) {
+            return showToast("No Logs", `班級 [${currentClass}] 目前沒有專屬日誌。`, "info");
+          }
+
+          dbRootRef.update(updates).then(() => {
+            // 本地快取立即過濾同步
+            appData.battleLogs = (appData.battleLogs || []).filter(l => {
+              const classesList = parseStudentClasses(l.classTag).map(c => c.toLowerCase());
+              return !classesList.includes(currentClass.toLowerCase()) && (l.classTag || '').toLowerCase() !== currentClass.toLowerCase();
+            });
+            saveLocalCache();
+            renderBattleLogs();
+            showToast("Logs Cleared", `已成功清理【${currentClass}】共 ${deletedCount} 條日誌！`, "info");
+          }).catch(err => {
+            alert("清理日誌失敗: " + err.message);
+          });
+        }
+      });
     }
 
     function updateSyncStatusUI(isLive, msg) {
