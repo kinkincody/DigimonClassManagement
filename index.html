@@ -4457,11 +4457,10 @@ function toggleFactionBuffModal() {
         [trait]: newVal
       });
 
-      addBattleLog(`🧬 ${st.name} allocated +${amount} to [${trait.toUpperCase()}].`, "normal", st.classId);
+      // 已移除 addBattleLog，分配能力值不再寫入 log sheet
       updateStudentUI();
     }
 
-    let evoCutsceneTimer = null;
     function playEvolutionCutscene(tamerName, prevDigi, nextDigi, onComplete) {
       const overlay = document.getElementById('evoCutsceneOverlay');
       const prevImg = document.getElementById('evoCutscenePrevImg');
