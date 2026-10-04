@@ -1242,14 +1242,26 @@
                 <div class="flex items-center gap-2">
                   <i class="fa-solid fa-users-viewfinder text-cyan-400 text-base"></i>
                   <h4 class="text-xs font-black text-cyan-300 uppercase tracking-wider font-pixel">全班學生作答即時監控列表</h4>
+                  <!-- 答案隱藏切換按鈕 -->
+                  <button id="btnToggleQuizAnswerPrivacy" onclick="toggleQuizAnswerPrivacy()" class="ml-2 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition active:scale-95" title="切換是否向投影幕隱藏同學答案">
+                    <i id="quizPrivacyIcon" class="fa-solid fa-eye-slash text-amber-400"></i>
+                    <span id="quizPrivacyText">答案顯示: 隱藏中</span>
+                  </button>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-slate-400" id="quizClassStudentProgress">作答進度: 0 / 0</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <!-- 即時統計徽章：答對、答錯、逾時 -->
+                  <div class="flex items-center gap-1.5 text-[11px] font-mono">
+                    <span class="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 font-bold" id="quizStatsCorrectBadge">✔ 0 答對</span>
+                    <span class="px-2 py-0.5 rounded bg-rose-950/80 border border-rose-600/60 text-rose-300 font-bold" id="quizStatsWrongBadge">✖ 0 答錯</span>
+                    <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 font-bold" id="quizStatsTimeoutBadge">⏰ 0 逾時</span>
+                  </div>
+                  <span class="text-xs text-slate-400 font-mono" id="quizClassStudentProgress">作答進度: 0 / 0</span>
                   <button onclick="refreshQuizLiveRoster()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold cursor-pointer active:scale-95" title="即時重整">
                     <i class="fa-solid fa-rotate-right"></i>
                   </button>
                 </div>
               </div>
+
 
               <!-- 學生作答情況即時表格 -->
               <div class="overflow-x-auto">
@@ -2429,6 +2441,29 @@ const DIGIMON_DB = {
     // 搶答動態倒數計時器變數
     let quizStudentCountdownTimer = null;
     let quizTeacherCountdownTimer = null;
+    // 老師端答案隱藏/顯示控制旗標（true = 遮蔽答案以防課堂抄襲，false = 顯示）
+    let isQuizAnswerHiddenByTeacher = true;
+
+    function toggleQuizAnswerPrivacy() {
+      isQuizAnswerHiddenByTeacher = !isQuizAnswerHiddenByTeacher;
+      const icon = document.getElementById('quizPrivacyIcon');
+      const text = document.getElementById('quizPrivacyText');
+      const btn = document.getElementById('btnToggleQuizAnswerPrivacy');
+      if (icon && text && btn) {
+        if (isQuizAnswerHiddenByTeacher) {
+          icon.className = "fa-solid fa-eye-slash text-amber-400";
+          text.textContent = "答案顯示: 隱藏中";
+          btn.className = "ml-2 px-2.5 py-1 rounded-lg bg-amber-950/60 border border-amber-500/80 text-amber-300 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition active:scale-95";
+          showToast("隱私模式", "已隱藏全班答案，防範投影偷看！", "info");
+        } else {
+          icon.className = "fa-solid fa-eye text-emerald-400";
+          text.textContent = "答案顯示: 已公開";
+          btn.className = "ml-2 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition active:scale-95";
+          showToast("公開模式", "已恢復顯示全班同學作答答案。", "heal");
+        }
+      }
+      renderTeacherQuizLiveDashboard();
+    }
 
     let pickedStudentsPool = {
       all: new Set(),
@@ -6511,6 +6546,10 @@ function toggleFactionBuffModal() {
       const progressEl = document.getElementById('quizClassStudentProgress');
       const tbody = document.getElementById('quizStudentAnswersTbody');
 
+      const badgeCorrect = document.getElementById('quizStatsCorrectBadge');
+      const badgeWrong = document.getElementById('quizStatsWrongBadge');
+      const badgeTimeout = document.getElementById('quizStatsTimeoutBadge');
+
       if (!statusBadge || !tbody) return;
 
       const currentClass = selectedTeacherClass || 'ALL';
@@ -6532,6 +6571,9 @@ function toggleFactionBuffModal() {
         countEl.textContent = "0";
         accEl.textContent = "0%";
         avgTimeEl.textContent = "--s";
+        if (badgeCorrect) badgeCorrect.textContent = "✔ 0 答對";
+        if (badgeWrong) badgeWrong.textContent = "✖ 0 答錯";
+        if (badgeTimeout) badgeTimeout.textContent = "⏰ 0 逾時";
         progressEl.textContent = `作答進度: 0 / ${classStudents.length}`;
         tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500 italic">尚未發布搶答題目。請於上方輸入題目並點擊發布。</td></tr>`;
         return;
@@ -6598,6 +6640,8 @@ function toggleFactionBuffModal() {
       const submissions = activeQuizInstance.submissions || {};
       let answeredCount = 0;
       let correctCount = 0;
+      let wrongCount = 0;
+      let timeoutCount = 0;
       let totalElapsed = 0;
 
       tbody.innerHTML = '';
@@ -6617,22 +6661,34 @@ function toggleFactionBuffModal() {
 
           if (sub) {
             answeredCount++;
-            if (sub.isCorrect) correctCount++;
+            if (sub.isTimeout) {
+              timeoutCount++;
+            } else if (sub.isCorrect) {
+              correctCount++;
+            } else {
+              wrongCount++;
+            }
+
             if (sub.timestamp && activeQuizInstance.timestamp) {
               const diffSec = ((sub.timestamp - activeQuizInstance.timestamp) / 1000).toFixed(1);
               totalElapsed += Math.max(0, parseFloat(diffSec));
               timeText = `${diffSec}s`;
             }
 
-            ansDisplay = `<span class="text-slate-200 font-bold">${sub.answerText || '--'}</span>`;
-
-            if (sub.isTimeout) {
-              resultBadge = `<span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold text-[10px]"><i class="fa-solid fa-clock mr-1"></i>逾時未答 (錯誤)</span>`;
-              rankRewardBadge = `<span class="text-rose-400 text-[10px]">無獎勵</span>`;
-            } else if (sub.isCorrect) {
-              resultBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold text-[10px]"><i class="fa-solid fa-check mr-1"></i>答對</span>`;
+            // 判斷是否開啟「隱藏學生答案模式」
+            if (isQuizAnswerHiddenByTeacher && !sub.isTimeout) {
+              ansDisplay = `<span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono text-[10px] select-none"><i class="fa-solid fa-lock mr-1 text-amber-400"></i>已作答保密</span>`;
+              resultBadge = `<span class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold text-[10px]"><i class="fa-solid fa-check-double mr-1"></i>已提交</span>`;
             } else {
-              resultBadge = `<span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold text-[10px]"><i class="fa-solid fa-xmark mr-1"></i>答錯</span>`;
+              ansDisplay = `<span class="text-slate-200 font-bold">${sub.answerText || '--'}</span>`;
+
+              if (sub.isTimeout) {
+                resultBadge = `<span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold text-[10px]"><i class="fa-solid fa-clock mr-1"></i>逾時未答 (錯誤)</span>`;
+              } else if (sub.isCorrect) {
+                resultBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold text-[10px]"><i class="fa-solid fa-check mr-1"></i>答對</span>`;
+              } else {
+                resultBadge = `<span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold text-[10px]"><i class="fa-solid fa-xmark mr-1"></i>答錯</span>`;
+              }
             }
 
             if (!sub.isTimeout) {
@@ -6647,6 +6703,8 @@ function toggleFactionBuffModal() {
               } else {
                 rankRewardBadge = `<span class="text-slate-500 text-[10px]">無獎勵</span>`;
               }
+            } else {
+              rankRewardBadge = `<span class="text-rose-400 text-[10px]">無獎勵</span>`;
             }
           }
 
@@ -6662,10 +6720,16 @@ function toggleFactionBuffModal() {
         });
       }
 
+      // 更新進度與統計數字（答對率、平均耗時、各分類人數）
       progressEl.textContent = `作答進度: ${answeredCount} / ${classStudents.length}`;
       countEl.textContent = `${answeredCount}`;
-      accEl.textContent = answeredCount > 0 ? `${Math.round((correctCount / answeredCount) * 100)}%` : `0%`;
+      const accuracyPct = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+      accEl.textContent = `${accuracyPct}%`;
       avgTimeEl.textContent = answeredCount > 0 ? `${(totalElapsed / answeredCount).toFixed(1)}s` : `--s`;
+
+      if (badgeCorrect) badgeCorrect.textContent = `✔ ${correctCount} 答對`;
+      if (badgeWrong) badgeWrong.textContent = `✖ ${wrongCount} 答錯`;
+      if (badgeTimeout) badgeTimeout.textContent = `⏰ ${timeoutCount} 逾時`;
     }
 
     // === 🛠️ 修復版：防止搶答秒逾時與死循環發送通知 ===
