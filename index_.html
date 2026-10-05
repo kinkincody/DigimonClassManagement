@@ -5406,63 +5406,152 @@ function logout() {
       reader.readAsArrayBuffer(file);
     }
 
-    function handleAdminExcelImport(event) {
-      const file = event.target.files[0];
+    async function handleAdminExcelImport(event) {
+      const file = event.target.files && event.target.files[0];
       if (!file || !currentUser || currentUser.role !== 'superadmin') return;
+
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-          const updates = {};
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          if (!jsonRows || jsonRows.length <= 1) {
+            alert("Excel 檔案為空或無有效學生資料列！");
+            event.target.value = '';
+            return;
+          }
+
+          const studentUpdates = {};
+          const classUpdates = {};
           let count = 0;
 
+          // 逐列解析 Excel（第 0 列為標題欄，從第 1 列開始）
           for (let i = 1; i < jsonRows.length; i++) {
             const row = jsonRows[i];
-            if (!row || !row[0]) continue;
+            if (!row || row[0] === undefined || row[0] === null || String(row[0]).trim() === '') continue;
+
             const u = String(row[0]).trim();
-            const p = String(row[1] || '123').trim();
-            const name = String(row[2] || u).trim();
-            const classVal = String(row[3] || 'Class-1A').trim();
-            const assignedTeacher = String(row[4] || 'teacher1').trim();
+            const p = (row[1] !== undefined && row[1] !== null && String(row[1]).trim() !== '') ? String(row[1]).trim() : '123';
+            const name = (row[2] !== undefined && row[2] !== null && String(row[2]).trim() !== '') ? String(row[2]).trim() : u;
+            const classVal = (row[3] !== undefined && row[3] !== null && String(row[3]).trim() !== '') ? String(row[3]).trim() : 'Class-1A';
+            const assignedTeacher = (row[4] !== undefined && row[4] !== null && String(row[4]).trim() !== '') ? String(row[4]).trim() : 'teacher1';
             const id = u.toLowerCase();
 
             const classesArr = parseStudentClasses(classVal);
+            if (classesArr.length === 0) classesArr.push('Class-1A');
+
+            // 分離班級資料（先預備在本地物件中）
             classesArr.forEach(c => {
-              updates[`classes/${c}`] = { id: c, name: c, teacherId: assignedTeacher };
+              classUpdates[`classes/${c}`] = { id: c, name: c, teacherId: assignedTeacher };
+              if (!appData.classes) appData.classes = {};
+              appData.classes[c] = { id: c, name: c, teacherId: assignedTeacher };
             });
 
-            const existing = appData.students[id];
+            const existing = (appData.students && appData.students[id]) || null;
             if (existing) {
               const existingClasses = parseStudentClasses(existing.classId);
               classesArr.forEach(c => {
                 if (!existingClasses.some(ec => ec.toLowerCase() === c.toLowerCase())) existingClasses.push(c);
               });
-              updates[`students/${id}/classId`] = existingClasses.join(', ');
-              updates[`students/${id}/name`] = name || existing.name;
-              updates[`students/${id}/password`] = p || existing.password;
+              const mergedClassesStr = existingClasses.join(', ');
+
+              studentUpdates[`students/${id}/classId`] = mergedClassesStr;
+              studentUpdates[`students/${id}/name`] = name;
+              studentUpdates[`students/${id}/password`] = p;
+
+              // 同步本地快取
+              existing.classId = mergedClassesStr;
+              existing.name = name;
+              existing.password = p;
             } else {
               const randomEgg = getRandomEggId();
-              updates[`students/${id}`] = {
-                id: id, username: u, password: p, name: name, classId: classesArr.join(', '),
-                teacherId: assignedTeacher, exp: 0, statPool: 0, hp: 100, isFainted: false, hasShield: false, isStarred: false, isBanned: false, skinId: "skin-classic", attackQuota: 0, gachaTickets: 0, inventory: {},
-                unlockedDex: { [randomEgg]: true }, currentDigiId: randomEgg, courage: 0, love: 0, discipline: 0, wisdom: 0
+              const newStudentObj = {
+                id: id,
+                username: u,
+                password: p,
+                name: name,
+                classId: classesArr.join(', '),
+                teacherId: assignedTeacher,
+                exp: 0,
+                statPool: 0,
+                hp: 100,
+                isFainted: false,
+                hasShield: false,
+                isStarred: false,
+                isBanned: false,
+                skinId: "skin-classic",
+                attackQuota: 0,
+                gachaTickets: 0,
+                inventory: {},
+                unlockedDex: { [randomEgg]: true },
+                currentDigiId: randomEgg,
+                courage: 0,
+                love: 0,
+                discipline: 0,
+                wisdom: 0
               };
+
+              // 嚴格符合 Firebase 數值 Rules (所有初始值需符合 .validate 規則)
+              studentUpdates[`students/${id}`] = newStudentObj;
+
+              if (!appData.students) appData.students = {};
+              appData.students[id] = normalizeStudent(newStudentObj, id);
             }
             count++;
           }
 
-          executeAtomicMultiPathUpdate(updates);
-          alert(`✅ Superadmin Excel import successful! Added/updated ${count} students.`);
-        } catch(err) {
-          alert("Admin import error: " + err.message);
+          if (count === 0) {
+            alert("未找到可匯入的學生帳號！請確認第 1 欄是否有填寫學號。");
+            event.target.value = '';
+            return;
+          }
+
+          // 本地快取立即存檔並刷新介面
+          saveLocalCache();
+          renderSuperAdminDashboard();
+
+          // 核心修復：先寫入 students 節點（符合現行 Rules）
+          if (dbRootRef) {
+            try {
+              await dbRootRef.update(studentUpdates);
+            } catch (studentErr) {
+              console.error("Students 寫入失敗:", studentErr);
+              throw new Error("學生資料庫寫入被拒絕: " + studentErr.message);
+            }
+
+            // 班級節點獨立嘗試寫入（即使 Firebase Rules 未開 classes 寫入，也不會拖累學生匯入）
+            try {
+              if (Object.keys(classUpdates).length > 0) {
+                await dbRootRef.update(classUpdates);
+              }
+            } catch (classErr) {
+              console.warn("Classes 寫入被拒絕 (可忽略或請在 Rules 開啟 classes 權限):", classErr.message);
+            }
+          }
+
+          playSound('evolve');
+          addBattleLog(`📥 [ADMIN IMPORT] 最高管理員成功匯入/更新了 ${count} 位學生帳號！`, "evolution", "ALL");
+          showToast("Excel Import Success", `成功匯入/更新 ${count} 位學生帳號！`, "heal");
+          alert(`✅ Superadmin Excel 匯入成功！共新增/更新了 ${count} 位學生。`);
+        } catch (err) {
+          console.error("Super Admin Excel Import Error:", err);
+          alert("Excel 匯入失敗，錯誤詳情：" + err.message);
+        } finally {
+          event.target.value = '';
         }
       };
+
+      reader.onerror = function() {
+        alert("讀取檔案失敗，請重新嘗試！");
+        event.target.value = '';
+      };
+
       reader.readAsArrayBuffer(file);
     }
 
-    let mgrSearchQuery = "";
     function openManageClassStudentsModal() {
       if (selectedTeacherClass === 'ALL') {
         alert("Please select a specific class first.");
