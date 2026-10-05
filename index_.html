@@ -754,612 +754,11 @@
       </div>
     </div>
 
-    <!-- 2. Teacher Master View -->
-    <div id="viewTeacher" class="space-y-6 hidden">
-      
-      <!-- 老師端頂部導航分頁列：總控制台 vs Pop-up Quiz 獨立分頁 -->
-      <div class="flex rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
-        <button id="btnTeacherTabMain" onclick="switchTeacherSubTab('main')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-chalkboard"></i> 課堂主控台 (Classroom Dashboard)
-        </button>
-        <button id="btnTeacherTabQuiz" onclick="switchTeacherSubTab('quiz')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> 搶答即時監控中心 (Pop-up Quiz Live)
-        </button>
-      </div>
+    <!-- 2. Teacher Master View (動態渲染容器) -->
+    <div id="viewTeacher" class="space-y-6 hidden"></div>
 
-      <!-- === 分頁 A：課堂主控台 (MAIN DASHBOARD CONTAINER) === -->
-      <div id="teacherSubViewMain" class="space-y-6">
-        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
-              <img id="tcBossImg" src="" class="max-w-full max-h-full object-contain">
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-amber-300 font-pixel uppercase">Teacher Mega Partner</span>
-                <span id="tcBossStage" class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold">MEGA</span>
-              </div>
-              <h3 id="tcBossName" class="text-lg font-black text-white mt-0.5">WarGreymon (Partner)</h3>
-              <div class="text-xs text-emerald-400 font-mono font-bold mt-0.5" id="tcBossHp">HP: 2000 / 2000 | Special: 220 DMG | Signature: 120 DMG</div>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- 🥷 老師隱藏模式 (Stealth Mode) 開關按鈕 -->
-            <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="啟用後老師所有操作均不記錄 Log">
-              <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
-            </button>
-
-            <!-- Picker Button -->
-            <div class="relative inline-flex rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 overflow-hidden select-none active:scale-95">
-              <div class="px-3.5 py-2 flex items-center gap-1.5 pointer-events-none">
-                <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker
-              </div>
-              <button onclick="startRandomPicker(false, false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Fair Draw"></button>
-              <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Favorite Draw"></button>
-            </div>
-
-            <!-- 🔒 全班唯讀鎖定 / 解鎖按鈕 -->
-            <button id="btnToggleClassBan" onclick="toggleCurrentClassBan()" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95" title="Lock whole class into Read-Only observation mode">
-              <i class="fa-solid fa-lock"></i> <span id="lblToggleClassBan">Ban Entire Class (Lock)</span>
-            </button>
-
-            <!-- 全班獎勵/懲罰控制區 -->
-            <button onclick="rewardAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Add 1 Attack to Active Students">
-              <i class="fa-solid fa-bolt"></i> Class +1 Attack
-            </button>
-            <button onclick="deductAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Deduct 1 Attack from Active Students">
-              <i class="fa-solid fa-bolt-slash"></i> Class -1 Attack
-            </button>
-            <button onclick="rewardAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Add 1 Ticket to All Students">
-              <i class="fa-solid fa-ticket"></i> Class +1 Gacha
-            </button>
-            <button onclick="deductAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-slate-900 border border-purple-800 text-purple-300 text-xs font-bold hover:bg-purple-950 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Deduct 1 Ticket from All Students">
-              <i class="fa-solid fa-ticket-simple"></i> Class -1 Gacha
-            </button>
-            <button onclick="penalizeAllHp(30)" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-heart-crack"></i> Class -30 HP
-            </button>
-            <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95" title="Heal all active students only">
-              <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP Only
-            </button>
-            
-            <button onclick="teacherCastSkill('single_ult')" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-crosshairs"></i> Target 1 (Special)
-            </button>
-            <button onclick="teacherCastSkill('aoe_ult')" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-burst"></i> Full Class (Special)
-            </button>
-            <button onclick="teacherHealSelf()" class="px-2.5 py-1.5 rounded bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-heart-pulse"></i> Restore Boss HP
-            </button>
-          </div>
-        </div>
-<!-- 🛡️ Teacher Faction War & Transfer Approvals Management -->
-<div class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/60 rounded-xl p-4 shadow-xl space-y-4">
-  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-    <div class="flex items-center gap-2">
-      <i class="fa-solid fa-flag text-indigo-400 text-base animate-pulse"></i>
-      <h4 class="text-xs font-black text-indigo-300 uppercase tracking-wider font-pixel">Faction War & Transfer Hub</h4>
-      <span class="text-[10px] text-slate-400 font-normal">(Allies within the same faction cannot attack each other)</span>
-    </div>
-    <span class="text-xs text-indigo-300 font-mono font-bold" id="teacherFactionClassTag">Class: All</span>
-  </div>
-
-  <!-- Create New Faction Row -->
-  <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-    <input type="text" id="teacherNewFactionName" placeholder="New faction name (e.g. Red Dragon, Blue Wolf)..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-400">
-    <button onclick="createNewFaction()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
-      <i class="fa-solid fa-plus"></i> Add Faction to Class
-    </button>
-  </div>
-
-  <!-- Active Factions List -->
-<!-- ⚔️ 老師專屬：陣營批量獎勵與攻擊控制台 -->
-  <div class="border-t border-indigo-900/50 pt-3 bg-slate-950/60 p-3 rounded-xl border border-indigo-500/30">
-    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-      <div class="flex items-center gap-1.5">
-        <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-xs"></i>
-        <span class="text-xs font-black text-indigo-200 uppercase font-pixel">陣營指定操控 (Faction Commander)</span>
-      </div>
-      <button onclick="toggleFactionBuffModal()" class="text-[10px] text-amber-300 hover:underline flex items-center gap-1 cursor-pointer">
-        <i class="fa-solid fa-book-open"></i> 查看 Buff/Debuff 完整數值說明
-      </button>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
-      <!-- 目標陣營選擇器 -->
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-bold text-slate-300 shrink-0">選擇目標陣營：</label>
-        <select id="teacherTargetFactionSelect" class="flex-1 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-xs text-indigo-200 outline-none">
-          <option value="">-- 請選擇陣營 --</option>
-        </select>
-      </div>
-
-      <!-- 操作按鈕群 -->
-      <div class="flex flex-wrap items-center gap-1.5 justify-start md:justify-end">
-        <!-- 陣營獎勵按鈕 -->
-        <button onclick="teacherRewardFactionPrompt('exp')" class="px-2 py-1 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-500 text-cyan-300 text-[11px] font-bold transition active:scale-95 cursor-pointer">
-          <i class="fa-solid fa-bolt mr-1"></i>+EXP
-        </button>
-        <button onclick="teacherRewardFactionPrompt('ticket')" class="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-500 text-purple-300 text-[11px] font-bold transition active:scale-95 cursor-pointer">
-          <i class="fa-solid fa-ticket mr-1"></i>+抽獎券
-        </button>
-        <button onclick="teacherRewardFactionPrompt('quota')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 border border-amber-500 text-amber-300 text-[11px] font-bold transition active:scale-95 cursor-pointer">
-          <i class="fa-solid fa-hand-fist mr-1"></i>+攻擊次數
-        </button>
-
-        <span class="text-slate-600">|</span>
-
-        <!-- 陣營打擊按鈕 -->
-        <button onclick="teacherAttackFactionPrompt()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-500 text-rose-300 text-[11px] font-black transition active:scale-95 cursor-pointer shadow-md shadow-rose-950/50">
-          <i class="fa-solid fa-crosshairs mr-1"></i>攻擊此陣營
-        </button>
-      </div>
-    </div>
-  </div>
-  <div class="space-y-1.5">
-    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Factions in this Class:</div>
-    <div id="teacherFactionList" class="flex flex-wrap gap-2">
-      <span class="text-xs text-slate-500 italic">No custom factions yet. Students default to 'No Faction'.</span>
-    </div>
-  </div>
-
-  <!-- Pending Student Transfer Applications -->
-  <div class="border-t border-slate-800 pt-3">
-    <div class="text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-      <i class="fa-solid fa-envelope-open-text text-amber-400"></i> Pending Transfer Applications (<span id="teacherFactionPendingCount">0</span>)
-    </div>
-    <div id="teacherFactionPendingList" class="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
-      <div class="text-slate-500 text-xs italic">No pending transfer requests for this class.</div>
-    </div>
-  </div>
-</div>
-        <!-- 🎯 老師專屬：Class Bounty 班級懸賞對象管理中心 -->
-        <div class="bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 border-2 border-rose-500/60 rounded-xl p-4 shadow-xl space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-crosshairs text-rose-400 text-base animate-pulse"></i>
-              <h4 class="text-xs font-black text-rose-300 uppercase tracking-wider font-pixel">Class Bounty Target Setup</h4>
-              <span class="text-[10px] text-amber-300 font-bold">(Target: +30 EXP per hit & +300 EXP + 1 Ticket on Kill)</span>
-            </div>
-            <span class="text-xs text-rose-400 font-mono font-bold" id="teacherBountyClassTag">Class: All</span>
-          </div>
-
-          <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-            <label class="text-xs text-slate-300 font-bold shrink-0">Select Target Student:</label>
-            <select id="teacherBountyStudentSelect" class="flex-1 bg-slate-950 border border-rose-500/50 rounded-lg px-3 py-2 text-xs text-rose-200 outline-none">
-              <option value="">-- Choose a student to place bounty on --</option>
-            </select>
-            <button onclick="assignCurrentClassBounty()" class="px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
-              <i class="fa-solid fa-skull"></i> Set as Bounty Target
-            </button>
-            <button onclick="clearCurrentClassBounty()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold rounded-lg text-xs transition active:scale-95 flex items-center gap-1 cursor-pointer shrink-0">
-              <i class="fa-solid fa-ban"></i> Cancel Bounty
-            </button>
-          </div>
-
-          <!-- 老師端顯示的目前該班懸賞對象即時卡片 -->
-          <div id="teacherCurrentBountyDisplay" class="hidden bg-slate-950 border border-rose-500/40 rounded-xl p-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-rose-500/60 flex items-center justify-center shrink-0">
-                <img id="tcBountyDisplayImg" src="" class="max-w-full max-h-full object-contain">
-              </div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-rose-400 font-pixel" id="tcBountyDisplayName">Student Name</span>
-                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold uppercase" id="tcBountyDisplayStatus">ACTIVE BOUNTY</span>
-                </div>
-                <div class="text-[11px] text-slate-300 font-mono mt-0.5" id="tcBountyDisplayDigi">WarGreymon (Mega)</div>
-                <div class="text-[10px] text-emerald-400 font-mono font-bold" id="tcBountyDisplayHp">HP: 100/100</div>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] text-amber-300 block font-pixel">PER HIT: +30 EXP | KILL: +300 EXP & +1 TICKET</span>
-              <span class="text-[9px] text-slate-400">Awarded automatically in PvP</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 📢 老師專屬：Class Announcement 發布與置頂管理系統 -->
-        <div class="bg-slate-900 border border-amber-500/50 rounded-xl p-4 shadow-xl space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-bullhorn text-amber-400"></i>
-              <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider font-pixel">Class Announcement Center</h4>
-              <span class="text-[10px] text-slate-400 font-normal">(Pinned Max: 3 per class)</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-amber-300 font-mono font-bold" id="teacherAnnouncementTargetTag">Target: All Classes</span>
-              <button onclick="clearCurrentClassAnnouncements()" class="px-2.5 py-1 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-                <i class="fa-solid fa-trash-can"></i> Clear All Announcements
-              </button>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-            <input type="text" id="teacherAnnouncementInput" placeholder="Enter class notice or message for students..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
-            <button onclick="publishTeacherAnnouncement()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
-              <i class="fa-solid fa-bullhorn"></i> Post Announcement
-            </button>
-          </div>
-
-          <div class="mt-3">
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <i class="fa-solid fa-thumbtack text-amber-400"></i> Active Announcements (<span id="teacherAnnouncementCount">0</span>/3)
-            </div>
-            <div id="teacherAnnouncementList" class="space-y-1.5">
-              <div class="text-slate-500 text-xs italic">No active announcements for this class.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 班級名單與學生網格控制面板 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-            <div class="flex items-center gap-3">
-              <label class="text-xs font-bold text-cyan-400"><i class="fa-solid fa-school mr-1"></i> Current Class:</label>
-              <select id="teacherClassFilter" onchange="onClassFilterChange(this.value)" class="bg-slate-950 border border-cyan-500/50 text-xs font-bold rounded-lg px-3 py-1.5 text-cyan-200 outline-none">
-              </select>
-              <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 font-bold cursor-pointer active:scale-95">
-                <i class="fa-solid fa-plus mr-1"></i> Add Class
-              </button>
-              <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-xs text-rose-300 font-bold cursor-pointer active:scale-95">
-                <i class="fa-solid fa-trash mr-1"></i> Delete Class
-              </button>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <button onclick="openManageClassStudentsModal()" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
-                <i class="fa-solid fa-user-gear"></i> Manage Students in Class
-              </button>
-              <label for="excelFileInput" class="cursor-pointer px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
-                <i class="fa-solid fa-file-excel"></i> Import Students (Excel)
-              </label>
-              <input id="excelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(event)" class="hidden">
-              
-              <button onclick="rewardAllStudents(20)" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 cursor-pointer active:scale-95">
-                Class +20 EXP
-              </button>
-              <button onclick="rewardAllStudents(50)" class="px-3 py-1.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-xs font-bold hover:bg-blue-900 cursor-pointer active:scale-95">
-                Class +50 EXP
-              </button>
-            </div>
-          </div>
-
-          <div id="teacherStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
-          </div>
-        </div>
-
-        <!-- Classroom Battle Log Feed (專屬班級 Clear Log 模式) -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 mb-3 gap-2">
-            <h4 class="text-xs font-bold text-cyan-300 flex items-center">
-              <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Activity & Battle Log (50 Records Max)
-            </h4>
-            
-            <div class="flex items-center gap-2">
-              <select id="teacherLogFactionFilter" onchange="renderBattleLogs()" class="bg-slate-950 border border-cyan-500/40 text-[10px] rounded px-2 py-1 text-cyan-200 outline-none">
-                <option value="ALL">全部日誌</option>
-                <option value="FACTION_ONLY">⚔️ 陣營戰火過濾</option>
-              </select>
-              <span class="text-[10px] text-slate-400 font-mono" id="teacherLogFilterBadge">Viewing: All Classes</span>
-              <!-- 🗑️ 只清除目前所選班級的 Log 按鈕 -->
-              <button onclick="clearBattleLogs()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95" title="Clear logs for current class only">
-                <i class="fa-solid fa-trash-can"></i> <span id="lblClearLogBtn">Clear Current Class Logs</span>
-              </button>
-            </div>
-          </div>
-          <div id="teacherBattleLogs" class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar text-xs font-mono">
-            <div class="text-slate-500 italic">No events recorded yet.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- === 分頁 B：POP-UP QUIZ 專用獨立分頁 (LIVE QUIZ MONITORING TAB) === -->
-      <div id="teacherSubViewQuiz" class="space-y-6 hidden">
-        
-        <!-- 頂部搶答規則與題目發布控制台 (含限時自訂選單) -->
-        <div class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border-2 border-amber-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 text-lg">
-                <i class="fa-solid fa-bolt animate-bounce"></i>
-              </div>
-              <div>
-                <h3 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider font-pixel">Pop-up Quiz 搶答即時管理中心</h3>
-                <div class="text-xs text-slate-300 flex flex-wrap items-center gap-2 mt-0.5">
-                  <span class="text-amber-400 font-bold">🥇 第1名：+2次攻擊</span>
-                  <span class="text-slate-500">|</span>
-                  <span class="text-slate-300 font-bold">🥈 第2名：+1次攻擊</span>
-                  <span class="text-slate-500">|</span>
-                  <span class="text-amber-500 font-bold">🥉 第3名：+30 EXP</span>
-                  <span class="text-slate-500">|</span>
-                  <span class="text-emerald-400 font-bold">✨ 其餘答對：+10 EXP</span>
-                  <span class="text-slate-500">|</span>
-                  <span class="text-rose-400 font-bold">❌ 答錯/逾時：無獎勵</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <label for="excelQuizFileInput" class="cursor-pointer px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95 shadow">
-                <i class="fa-solid fa-file-excel"></i> 匯入 Excel 題庫
-              </label>
-              <input id="excelQuizFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleQuizExcelImport(event)" class="hidden">
-              <span id="quizBankStatus" class="text-xs text-slate-400 font-mono bg-slate-950 px-2.5 py-1 rounded border border-slate-800">題庫: 0 題</span>
-              <button onclick="teacherCloseLiveQuiz()" class="px-3 py-1.5 rounded-xl bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-                <i class="fa-solid fa-circle-stop"></i> 結束目前搶答
-              </button>
-            </div>
-          </div>
-
-          <!-- 題庫下拉式選擇器 -->
-          <div id="quizBankSelectorRow" class="hidden flex items-center gap-2">
-            <label class="text-xs text-cyan-300 font-bold shrink-0"><i class="fa-solid fa-list-check mr-1"></i>從匯入題庫中載入題目：</label>
-            <select id="quizBankSelect" onchange="onSelectQuizFromBank(this.value)" class="flex-1 bg-slate-950 border border-cyan-500/50 text-xs rounded-xl px-3 py-2 text-cyan-200 outline-none">
-              <option value="">-- 請選擇題庫中的題目 --</option>
-            </select>
-          </div>
-
-          <!-- 題目與四個選項編輯輸入區 -->
-          <div class="space-y-3 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-            <div>
-              <label class="block text-xs font-bold text-slate-300 mb-1">搶答問題 (Question Prompt)：</label>
-              <input type="text" id="teacherQuizQuestionInput" placeholder="輸入搶答題目 (例如: 哪一隻數碼獸擁有勇氣徽章？)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-              <div>
-                <label class="block text-[11px] font-bold text-emerald-400 mb-0.5"><i class="fa-solid fa-check-circle mr-1"></i>正確答案 (Option 1 - 正解)：</label>
-                <input type="text" id="teacherQuizOpt1" placeholder="正確答案" value="Agumon (亞古獸)" class="w-full bg-slate-900 border border-emerald-500/60 rounded-lg px-2.5 py-1.5 text-xs text-emerald-300 outline-none focus:border-emerald-400">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">錯誤選項 1 (Distractor 1)：</label>
-                <input type="text" id="teacherQuizOpt2" placeholder="錯誤選項 1" value="Gabumon (加魯魯獸)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-slate-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">錯誤選項 2 (Distractor 2)：</label>
-                <input type="text" id="teacherQuizOpt3" placeholder="錯誤選項 2" value="Patamon (巴達獸)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-slate-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">錯誤選項 3 (Distractor 3)：</label>
-                <input type="text" id="teacherQuizOpt4" placeholder="錯誤選項 3" value="Palmon (巴魯獸)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-slate-500">
-              </div>
-            </div>
-
-            <!-- 發布設定列：班級、自訂限時、發布按鈕 -->
-            <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <div class="flex flex-wrap items-center gap-3">
-                <div class="flex items-center gap-1.5">
-                  <span class="text-xs text-slate-400 font-bold">目標班級：</span>
-                  <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">
-                    Class: All Classes
-                  </span>
-                </div>
-
-                <!-- ⏱️ 限時自訂選單（預設 30 秒，未答列為錯誤） -->
-                <div class="flex items-center gap-1.5">
-                  <label class="text-xs font-bold text-amber-300 flex items-center gap-1">
-                    <i class="fa-solid fa-stopwatch"></i> 作答限時:
-                  </label>
-                  <select id="teacherQuizTimeLimitSelect" class="bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
-                    <option value="15">15 秒 (極速搶答)</option>
-                    <option value="20">20 秒</option>
-                    <option value="30" selected>30 秒 (預設標準)</option>
-                    <option value="45">45 秒</option>
-                    <option value="60">60 秒 (1 分鐘)</option>
-                    <option value="90">90 秒</option>
-                    <option value="0">無限制 (手動結束)</option>
-                  </select>
-                </div>
-              </div>
-
-              <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs shadow-lg shadow-amber-500/30 transition active:scale-95 flex items-center gap-2 cursor-pointer">
-                <i class="fa-solid fa-paper-plane"></i> 即刻發布搶答問題 (Launch Live Quiz)
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 搶答成績與作答即時監控儀表板 (LIVE RESULTS DASHBOARD) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          <!-- 左側：搶答前三名得獎排行榜 (PODIUM / TOP 3 WINNERS) -->
-          <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-                <div class="flex items-center gap-2">
-                  <i class="fa-solid fa-trophy text-amber-400 text-lg animate-pulse"></i>
-                  <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider font-pixel">搶答榮譽前三名</h4>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <span id="quizLiveCountdownBadge" class="hidden text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold animate-pulse">
-                    <i class="fa-solid fa-stopwatch mr-1"></i><span id="tcCountdownSec">30s</span>
-                  </span>
-                  <span id="quizStatusIndicator" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">
-                    IDLE
-                  </span>
-                </div>
-              </div>
-
-              <!-- 冠軍 🥇 -->
-              <div id="quizWinnerSlot1" class="p-3.5 mb-2.5 rounded-xl bg-gradient-to-r from-amber-950/70 via-slate-950 to-slate-950 border-2 border-amber-400/80 flex items-center justify-between shadow-lg">
-                <div class="flex items-center gap-3">
-                  <span class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 font-pixel text-xs">1</span>
-                  <div>
-                    <div class="text-xs font-black text-white" id="quizWinnerName1">等待答對者...</div>
-                    <div class="text-[10px] text-amber-400 font-mono" id="quizWinnerReward1">+2 次攻擊次數</div>
-                  </div>
-                </div>
-                <span class="text-[10px] font-mono text-slate-400" id="quizWinnerTime1">--:--:--</span>
-              </div>
-
-              <!-- 亞軍 🥈 -->
-              <div id="quizWinnerSlot2" class="p-3 mb-2.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-950 to-slate-950 border border-slate-400/60 flex items-center justify-between shadow">
-                <div class="flex items-center gap-3">
-                  <span class="w-8 h-8 rounded-full bg-slate-500/20 border border-slate-400 flex items-center justify-center text-slate-300 font-pixel text-xs">2</span>
-                  <div>
-                    <div class="text-xs font-black text-white" id="quizWinnerName2">等待答對者...</div>
-                    <div class="text-[10px] text-slate-300 font-mono" id="quizWinnerReward2">+1 次攻擊次數</div>
-                  </div>
-                </div>
-                <span class="text-[10px] font-mono text-slate-400" id="quizWinnerTime2">--:--:--</span>
-              </div>
-
-              <!-- 季軍 🥉 (更新為 +30 EXP) -->
-              <div id="quizWinnerSlot3" class="p-3 rounded-xl bg-gradient-to-r from-orange-950/40 via-slate-950 to-slate-950 border border-amber-700/60 flex items-center justify-between shadow">
-                <div class="flex items-center gap-3">
-                  <span class="w-8 h-8 rounded-full bg-amber-700/20 border border-amber-700 flex items-center justify-center text-amber-500 font-pixel text-xs">3</span>
-                  <div>
-                    <div class="text-xs font-black text-white" id="quizWinnerName3">等待答對者...</div>
-                    <div class="text-[10px] text-amber-500 font-mono font-bold" id="quizWinnerReward3">+30 EXP</div>
-                  </div>
-                </div>
-                <span class="text-[10px] font-mono text-slate-400" id="quizWinnerTime3">--:--:--</span>
-              </div>
-            </div>
-
-            <!-- 目前搶答題目的統計數據摘要 -->
-            <div class="mt-4 pt-3 border-t border-slate-800 text-xs flex justify-around text-center">
-              <div>
-                <span class="text-slate-400 text-[10px] block">已作答人數</span>
-                <span id="quizTotalAnsweredCount" class="font-bold text-cyan-300 font-mono text-sm">0</span>
-              </div>
-              <div class="w-px bg-slate-800 h-8"></div>
-              <div>
-                <span class="text-slate-400 text-[10px] block">答對率</span>
-                <span id="quizAccuracyRate" class="font-bold text-emerald-400 font-mono text-sm">0%</span>
-              </div>
-              <div class="w-px bg-slate-800 h-8"></div>
-              <div>
-                <span class="text-slate-400 text-[10px] block">平均耗時</span>
-                <span id="quizAverageTime" class="font-bold text-amber-300 font-mono text-sm">--s</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 右側 2/3：該班中每個人的答案與即時狀態監控表 (CLASS STUDENT SUBMISSIONS TABLE) -->
-          <div class="lg:col-span-2 bg-slate-900 border border-cyan-500/40 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-            <div>
-              <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 mb-3 gap-2">
-                <div class="flex items-center gap-2">
-                  <i class="fa-solid fa-users-viewfinder text-cyan-400 text-base"></i>
-                  <h4 class="text-xs font-black text-cyan-300 uppercase tracking-wider font-pixel">全班學生作答即時監控列表</h4>
-                  <!-- 答案隱藏切換按鈕 -->
-                  <button id="btnToggleQuizAnswerPrivacy" onclick="toggleQuizAnswerPrivacy()" class="ml-2 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition active:scale-95" title="切換是否向投影幕隱藏同學答案">
-                    <i id="quizPrivacyIcon" class="fa-solid fa-eye-slash text-amber-400"></i>
-                    <span id="quizPrivacyText">答案顯示: 隱藏中</span>
-                  </button>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <!-- 即時統計徽章：答對、答錯、逾時 -->
-                  <div class="flex items-center gap-1.5 text-[11px] font-mono">
-                    <span class="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 font-bold" id="quizStatsCorrectBadge">✔ 0 答對</span>
-                    <span class="px-2 py-0.5 rounded bg-rose-950/80 border border-rose-600/60 text-rose-300 font-bold" id="quizStatsWrongBadge">✖ 0 答錯</span>
-                    <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 font-bold" id="quizStatsTimeoutBadge">⏰ 0 逾時</span>
-                  </div>
-                  <span class="text-xs text-slate-400 font-mono" id="quizClassStudentProgress">作答進度: 0 / 0</span>
-                  <button onclick="refreshQuizLiveRoster()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold cursor-pointer active:scale-95" title="即時重整">
-                    <i class="fa-solid fa-rotate-right"></i>
-                  </button>
-                </div>
-              </div>
-
-
-              <!-- 學生作答情況即時表格 -->
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr class="border-b border-slate-800 text-[11px] text-slate-400 font-mono uppercase bg-slate-950/60">
-                      <th class="p-2.5 text-center w-12">#</th>
-                      <th class="p-2.5">學生姓名 (學號)</th>
-                      <th class="p-2.5">所選答案</th>
-                      <th class="p-2.5 text-center">結果判定</th>
-                      <th class="p-2.5 text-center">搶答名次 / 獎勵</th>
-                      <th class="p-2.5 text-right">提交時間</th>
-                    </tr>
-                  </thead>
-                  <tbody id="quizStudentAnswersTbody" class="divide-y divide-slate-800/60 font-mono text-[11px]">
-                    <tr>
-                      <td colspan="6" class="p-6 text-center text-slate-500 italic">尚未發布搶答題目或該班目前沒有學生。</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
-              <span>★ 系統會於學生點擊答案或倒數歸零時即時同步紀錄，完全無須手動重整。</span>
-              <span id="quizActiveQuestionSnippet" class="truncate max-w-xs font-mono text-slate-400">目前問題: 無</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-<!-- 3. Super Admin View -->
-    <div id="viewSuperAdmin" class="space-y-6 hidden">
-      <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
-        <div>
-          <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-key mr-2"></i>Global Superadmin Operations</h2>
-          <p class="text-xs text-slate-400">Manage all accounts, batch import with multi-class assignments, delete, or reset classroom progression.</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <label for="adminExcelFileInput" class="cursor-pointer px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow-md flex items-center gap-1.5 transition active:scale-95">
-            <i class="fa-solid fa-file-excel"></i> Admin Excel Import
-          </label>
-          <input id="adminExcelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleAdminExcelImport(event)" class="hidden">
-
-          <button onclick="superadminDeleteAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer flex items-center gap-1.5 transition active:scale-95">
-            <i class="fa-solid fa-trash-can"></i> Delete All Students
-          </button>
-          <button onclick="superadminFullResetAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-slate-950 font-black rounded-lg text-xs shadow-md cursor-pointer flex items-center gap-1.5 transition active:scale-95">
-            <i class="fa-solid fa-triangle-exclamation"></i> Reset Class Progression
-          </button>
-          <button onclick="openCredentialsModal()" class="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer transition active:scale-95">
-            <i class="fa-solid fa-user-pen mr-1.5"></i> Manage Credentials
-          </button>
-        </div>
-      </div>
-
-      <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-5">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
-          <div>
-            <h2 class="text-base font-bold text-amber-300"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher Accounts & Mega Partners</h2>
-            <p class="text-xs text-slate-400">Modify teacher IDs, passwords, Mega partner Digimon, HP and battle power.</p>
-          </div>
-          <button onclick="openCreateTeacherModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs cursor-pointer transition flex items-center gap-1 active:scale-95">
-            <i class="fa-solid fa-user-plus"></i> Add Teacher Account
-          </button>
-        </div>
-        <div id="superAdminTeacherGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-      </div>
-
-      <div class="bg-slate-900 border border-cyan-500/30 rounded-xl p-5 shadow-lg">
-        <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-4 mb-4 gap-3">
-          <div>
-            <h2 class="text-base font-bold text-cyan-300 flex items-center gap-2">
-              <i class="fa-solid fa-users-gear"></i> Global Students Directory
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Support multi-select batch deletion or account reset.</p>
-          </div>
-          
-          <div class="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
-            <label class="flex items-center gap-1.5 text-xs text-slate-300 font-bold cursor-pointer select-none">
-              <input type="checkbox" id="chkSelectAllStudents" onchange="toggleSelectAllStudents(this.checked)" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
-              <span>Select All</span>
-            </label>
-            <span class="text-slate-600">|</span>
-            <span class="text-xs text-slate-400">Selected: <b id="selectedStudentsCount" class="text-cyan-300 font-mono">0</b></span>
-            <button onclick="superadminBatchDeleteStudents()" id="btnBatchDeleteStudents" disabled class="px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed transition flex items-center gap-1 active:scale-95">
-              <i class="fa-solid fa-trash-can"></i> Batch Delete Selected
-            </button>
-          </div>
-        </div>
-        <div id="superAdminStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      </div>
-    </div>
-  </main>
+    <!-- 3. Super Admin View (動態渲染容器) -->
+    <div id="viewSuperAdmin" class="space-y-6 hidden"></div>
 
   <!-- MODALS -->
 
@@ -1799,7 +1198,7 @@
 
   <!-- JAVASCRIPT SYSTEM ENGINE (START) -->
   <script>
-    const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V3";
+    const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V4";
 // 陣營專屬 Buff 字典（包含：攻擊、防禦、經驗、生命回復）
     // Faction Buff & Debuff Dictionary with detailed descriptions
     const FACTION_BUFFS = {
@@ -1961,15 +1360,15 @@
     }
 
     let appData = {
-  superAdmins: { "superadmin": { username: "superadmin", password: "superpassword", name: "Grand Master" } },
-  teachers: { "teacher1": { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "wargreymon", maxHp: 2000, hp: 2000, skillPower: 220, techPower: 120 } },
+  superAdmins: {},
+  teachers: {},
   classes: {},
   students: {},
   battleLogs: [],
   announcements: {},
   bounties: {},
-  factions: {},          // 陣營資料：{ [classKey]: { [factionId]: { id, name } } }
-  factionRequests: {},   // 學生轉陣營申請：{ [studentId]: { studentId, studentName, classId, requestedFactionId, requestedFactionName, timestamp } }
+  factions: {},
+  factionRequests: {},
   systemSettings: { bannedClasses: {} }
 };
 
@@ -2711,13 +2110,7 @@ function normalizeStudent(s, keyId) {
           if (currentUser && currentUser.role === 'teacher') populateClassDropdown();
         });
 
-        dbRootRef.child('superAdmins').on('value', (snap) => {
-          const val = snap.val();
-          if (val && typeof val === 'object') {
-            appData.superAdmins = val;
-            saveLocalCache();
-          }
-        });
+        
 
         dbRootRef.child('battleLogs').limitToLast(50).on('value', (snap) => {
           const val = snap.val();
@@ -4191,183 +3584,578 @@ function toggleFactionBuffModal() {
     }
 
    async function handleLogin() {
-      const uRaw = (document.getElementById('loginUsername').value || '').trim();
-      const p = (document.getElementById('loginPassword').value || '').trim();
-      const btn = document.getElementById('btnLoginSubmit');
-      const btnText = document.getElementById('loginBtnText');
+  const uRaw = (document.getElementById('loginUsername').value || '').trim();
+  const pRaw = (document.getElementById('loginPassword').value || '').trim();
+  const btn = document.getElementById('btnLoginSubmit');
+  const btnText = document.getElementById('loginBtnText');
 
-      if (!uRaw || !p) {
-        alert("請輸入帳號 (ID) 與密碼！");
+  if (!uRaw || !pRaw) {
+    alert("請輸入帳號 (ID) 與密碼！");
+    return;
+  }
+
+  const u = uRaw.toLowerCase();
+  const p = pRaw.trim();
+  btn.disabled = true;
+  btnText.textContent = "驗證中 (Authenticating)...";
+
+  try {
+    if (activeLoginTab === 'superadmin') {
+      let sa = null;
+
+      if (!dbRootRef) {
+        alert("資料庫連線尚未就緒，請稍後重試！");
         return;
       }
 
-      const u = uRaw.toLowerCase();
-      btn.disabled = true;
-      btnText.textContent = "驗證中 (Authenticating)...";
-
+      // 🛡️ 單一帳號驗證核心：
+      // 絕不抓取整個 superAdmins 目錄，只直接查詢使用者輸入的這一個帳號路徑！
       try {
-        if (activeLoginTab === 'superadmin') {
-          let sa = Object.values(appData.superAdmins || {}).find(a => a && (a.username || '').toLowerCase() === u && String(a.password) === p);
-          if (!sa && dbRootRef) {
-            try {
-              const snap = await Promise.race([
-                dbRootRef.child('superAdmins').once('value'),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500))
-              ]);
-              const cloudAdmins = snap.val() || {};
-              sa = Object.values(cloudAdmins).find(a => a && (a.username || '').toLowerCase() === u && String(a.password) === p);
-            } catch(e) {}
-          }
-          if (!sa && (u === 'superadmin') && (p === 'superpassword' || p === '123')) {
-            sa = { username: "superadmin", password: p, name: "Grand Master" };
-          }
-          if (sa) {
-            currentUser = { role: 'superadmin', id: sa.username, data: sa };
-            enterDashboard();
-            return;
-          }
-          alert("最高管理員登入失敗，請確認帳號與密碼。");
+        // 先嘗試以小寫或使用者輸入之 key 進行單點讀取
+        let snap = await dbRootRef.child(`superAdmins/${u}`).once('value');
+        let adminData = snap.val();
 
-        } else if (activeLoginTab === 'teacher') {
-          let tc = Object.values(appData.teachers || {}).find(t => t && (t.username || t.id || '').toLowerCase() === u && String(t.password) === p);
-          if (!tc && dbRootRef) {
-            try {
-              const snap = await Promise.race([
-                dbRootRef.child('teachers').once('value'),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500))
-              ]);
-              const cloudTeachers = snap.val() || {};
-              tc = Object.values(cloudTeachers).find(t => t && (t.username || t.id || '').toLowerCase() === u && String(t.password) === p);
-            } catch(e) {}
-          }
-          // 預設教師離線/連線容錯
-          if (!tc && (u === 'teacher1' || u === 'teacher') && p === '123') {
-            tc = { id: "teacher1", username: "teacher1", password: "123", name: "Master Tamer A", partnerDigiId: "wargreymon", maxHp: 2000, hp: 2000, skillPower: 220, techPower: 120 };
-          }
-          if (tc) {
-            currentUser = { role: 'teacher', id: tc.id || tc.username, data: tc };
-            enterDashboard();
-            return;
-          }
-          alert("教師登入失敗，請確認教師 ID 與密碼 (預設: teacher1 / 123)。");
+        // 容錯支援：如果找不到，嘗試大寫節點名稱 (例如 MrFu)
+        if (!adminData && uRaw !== u) {
+          snap = await dbRootRef.child(`superAdmins/${uRaw}`).once('value');
+          adminData = snap.val();
+        }
 
-        } else {
-          // 學生登入
-          let st = Object.values(appData.students || {}).find(s => s && (s.username || s.id || '').toLowerCase() === u && String(s.password) === p);
-          
-          if (!st && dbRootRef) {
-            try {
-              const snap = await Promise.race([
-                dbRootRef.child('students').once('value'),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2500))
-              ]);
-              const cloudStudents = snap.val() || {};
-              st = Object.values(cloudStudents).find(s => s && (s.username || s.id || '').toLowerCase() === u && String(s.password) === p);
-              if (st) {
-                st = normalizeStudent(st, st.id || u);
-                appData.students[st.id] = st;
-              }
-            } catch(e) {}
-          }
-
-          // 若雲端或本地均為空，提供快速初始化學生機制（密碼為 123 即可進入）
-          if (!st && p === '123') {
-            const randomEgg = getRandomEggId();
-            st = {
-              id: u,
-              username: uRaw,
-              password: '123',
-              name: uRaw,
-              classId: 'Class-1A',
-              teacherId: 'teacher1',
-              exp: 0,
-              statPool: 0,
-              hp: 100,
-              isFainted: false,
-              hasShield: false,
-              isStarred: false,
-              isBanned: false,
-              skinId: 'skin-classic',
-              attackQuota: 3,
-              gachaTickets: 1,
-              inventory: {},
-              unlockedDex: { [randomEgg]: true },
-              currentDigiId: randomEgg,
-              courage: 0,
-              love: 0,
-              discipline: 0,
-              wisdom: 0
+        if (adminData) {
+          const dbPass = String(adminData.password !== undefined ? adminData.password : '').trim();
+          if (dbPass === p) {
+            sa = {
+              role: 'superadmin',
+              id: uRaw,
+              username: adminData.username || uRaw,
+              name: adminData.name || adminData.Name || uRaw,
+              authToken: dbPass // 儲存安全憑證供 enterDashboard 再次校驗
             };
-            appData.students[u] = st;
-            if (dbRootRef) {
-              dbRootRef.child(`students/${u}`).set(st).catch(() => {});
-            }
           }
-
-          if (st) {
-            currentUser = { role: 'student', id: st.id, data: st };
-            enterDashboard();
-            return;
-          }
-          alert("學生登入失敗！請檢查學號與密碼 (預設密碼為 123)。");
         }
       } catch (err) {
-        alert("登入過程發生異常: " + err.message);
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = "Sign In to Digital World";
+        console.warn("驗證查詢受阻:", err);
       }
-    }
 
-    function enterDashboard() {
-      if (!currentUser) return;
-      document.getElementById('viewLogin').classList.add('hidden');
-      document.getElementById('mainHeader').classList.remove('hidden');
-
-      if (currentUser.role === 'superadmin') {
-        const sa = appData.superAdmins[currentUser.id] || currentUser.data;
-        document.getElementById('headerUserInfo').textContent = `Super Admin: ${sa.name}`;
-        document.getElementById('viewStudent').classList.add('hidden');
-        document.getElementById('viewTeacher').classList.add('hidden');
-        document.getElementById('viewSuperAdmin').classList.remove('hidden');
-        renderSuperAdminDashboard();
-      } else if (currentUser.role === 'teacher') {
-        const tc = appData.teachers[currentUser.id] || currentUser.data;
-        document.getElementById('headerUserInfo').textContent = `Teacher: ${tc.name}`;
-        document.getElementById('viewStudent').classList.add('hidden');
-        document.getElementById('viewSuperAdmin').classList.add('hidden');
-        document.getElementById('viewTeacher').classList.remove('hidden');
-        updateTeacherBossHeader();
-        populateClassDropdown();
-        populateTeacherBountySelect();
-        updateClassBanButtonUI();
-        renderTeacherGrid();
-      } else {
-        const st = appData.students[currentUser.id] || currentUser.data;
-        document.getElementById('headerUserInfo').textContent = `Tamer: ${st.name} (${formatStudentClassesDisplay(st)})`;
-        document.getElementById('viewTeacher').classList.add('hidden');
-        document.getElementById('viewSuperAdmin').classList.add('hidden');
-        document.getElementById('viewStudent').classList.remove('hidden');
-        populateStudentTeacherBossOptions();
-        updateStudentUI();
+      if (sa) {
+        currentUser = sa;
+        await enterDashboard();
+        return;
       }
-      renderBattleLogs();
-      renderAnnouncementsUI();
-      renderBountyUI();
+      alert("最高管理員登入失敗：帳號或密碼錯誤！");
+
+    } else if (activeLoginTab === 'teacher') {
+      let tc = null;
+      if (dbRootRef) {
+        try {
+          // 教師帳號同樣採用單點查詢
+          let snap = await dbRootRef.child(`teachers/${uRaw}`).once('value');
+          let tData = snap.val();
+          if (!tData && uRaw !== u) {
+            snap = await dbRootRef.child(`teachers/${u}`).once('value');
+            tData = snap.val();
+          }
+
+          if (tData) {
+            const dbPass = String(tData.password !== undefined ? tData.password : '').trim();
+            if (dbPass === p) {
+              tc = normalizeTeacher(tData, uRaw);
+              tc.authToken = dbPass; // 儲存教師安全憑證
+            }
+          }
+        } catch(e) {}
+      }
+
+      if (tc) {
+        currentUser = { role: 'teacher', id: tc.id || tc.username, data: tc, authToken: tc.authToken };
+        await enterDashboard();
+        return;
+      }
+      alert("教師登入失敗，請確認教師 ID 與密碼。");
+
+    } else {
+      let st = null;
+      if (dbRootRef) {
+        try {
+          // 學生端單點查詢
+          const snap = await dbRootRef.child(`students/${u}`).once('value');
+          const sData = snap.val();
+          if (sData) {
+            const dbPass = String(sData.password !== undefined ? sData.password : '').trim();
+            if (dbPass === p) {
+              st = normalizeStudent(sData, u);
+            }
+          }
+        } catch(e) {}
+      }
+
+      if (st) {
+        currentUser = { role: 'student', id: st.id, data: st };
+        await enterDashboard();
+        return;
+      }
+      alert("學生登入失敗！請檢查學號與密碼。");
+    }
+  } catch (err) {
+    alert("登入過程發生異常: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = "Sign In to Digital World";
+  }
+}
+
+
+function getTeacherTemplate() {
+  return `
+    <div class="flex rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
+      <button id="btnTeacherTabMain" onclick="switchTeacherSubTab('main')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-chalkboard"></i> 課堂主控台 (Classroom Dashboard)
+      </button>
+      <button id="btnTeacherTabQuiz" onclick="switchTeacherSubTab('quiz')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> 搶答即時監控中心 (Pop-up Quiz Live)
+      </button>
+    </div>
+
+    <div id="teacherSubViewMain" class="space-y-6">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
+            <img id="tcBossImg" src="" class="max-w-full max-h-full object-contain">
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-amber-300 font-pixel uppercase">Teacher Mega Partner</span>
+              <span id="tcBossStage" class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold">MEGA</span>
+            </div>
+            <h3 id="tcBossName" class="text-lg font-black text-white mt-0.5">WarGreymon (Partner)</h3>
+            <div class="text-xs text-emerald-400 font-mono font-bold mt-0.5" id="tcBossHp">HP: 2000 / 2000</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
+            <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
+          </button>
+          <div class="relative inline-flex rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 overflow-hidden select-none active:scale-95">
+            <div class="px-3.5 py-2 flex items-center gap-1.5 pointer-events-none">
+              <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker
+            </div>
+            <button onclick="startRandomPicker(false, false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Fair Draw"></button>
+            <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Favorite Draw"></button>
+          </div>
+          <button id="btnToggleClassBan" onclick="toggleCurrentClassBan()" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95">
+            <i class="fa-solid fa-lock"></i> <span id="lblToggleClassBan">Ban Entire Class (Lock)</span>
+          </button>
+          <button onclick="rewardAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-bolt"></i> Class +1 Attack
+          </button>
+          <button onclick="deductAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-bolt-slash"></i> Class -1 Attack
+          </button>
+          <button onclick="rewardAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-ticket"></i> Class +1 Gacha
+          </button>
+          <button onclick="deductAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-slate-900 border border-purple-800 text-purple-300 text-xs font-bold hover:bg-purple-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-ticket-simple"></i> Class -1 Gacha
+          </button>
+          <button onclick="penalizeAllHp(30)" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-heart-crack"></i> Class -30 HP
+          </button>
+          <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP Only
+          </button>
+          <button onclick="teacherCastSkill('single_ult')" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-crosshairs"></i> Target 1 (Special)
+          </button>
+          <button onclick="teacherCastSkill('aoe_ult')" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-burst"></i> Full Class (Special)
+          </button>
+          <button onclick="teacherHealSelf()" class="px-2.5 py-1.5 rounded bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-heart-pulse"></i> Restore Boss HP
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/60 rounded-xl p-4 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-flag text-indigo-400 text-base animate-pulse"></i>
+            <h4 class="text-xs font-black text-indigo-300 uppercase tracking-wider font-pixel">Faction War & Transfer Hub</h4>
+          </div>
+          <span class="text-xs text-indigo-300 font-mono font-bold" id="teacherFactionClassTag">Class: All</span>
+        </div>
+        <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <input type="text" id="teacherNewFactionName" placeholder="New faction name..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-400">
+          <button onclick="createNewFaction()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
+            <i class="fa-solid fa-plus"></i> Add Faction to Class
+          </button>
+        </div>
+        <div class="border-t border-indigo-900/50 pt-3 bg-slate-950/60 p-3 rounded-xl border border-indigo-500/30">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-xs"></i>
+              <span class="text-xs font-black text-indigo-200 uppercase font-pixel">陣營指定操控 (Faction Commander)</span>
+            </div>
+            <button onclick="toggleFactionBuffModal()" class="text-[10px] text-amber-300 hover:underline flex items-center gap-1 cursor-pointer">
+              <i class="fa-solid fa-book-open"></i> 查看 Buff/Debuff 完整數值說明
+            </button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+            <div class="flex items-center gap-2">
+              <label class="text-xs font-bold text-slate-300 shrink-0">選擇目標陣營：</label>
+              <select id="teacherTargetFactionSelect" class="flex-1 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-xs text-indigo-200 outline-none">
+                <option value="">-- 請選擇陣營 --</option>
+              </select>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 justify-start md:justify-end">
+              <button onclick="teacherRewardFactionPrompt('exp')" class="px-2 py-1 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-500 text-cyan-300 text-[11px] font-bold transition active:scale-95 cursor-pointer">+EXP</button>
+              <button onclick="teacherRewardFactionPrompt('ticket')" class="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-500 text-purple-300 text-[11px] font-bold transition active:scale-95 cursor-pointer">+抽獎券</button>
+              <button onclick="teacherRewardFactionPrompt('quota')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 border border-amber-500 text-amber-300 text-[11px] font-bold transition active:scale-95 cursor-pointer">+攻擊次數</button>
+              <span class="text-slate-600">|</span>
+              <button onclick="teacherAttackFactionPrompt()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-500 text-rose-300 text-[11px] font-black transition active:scale-95 cursor-pointer">攻擊此陣營</button>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Factions in this Class:</div>
+          <div id="teacherFactionList" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="border-t border-slate-800 pt-3">
+          <div class="text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-envelope-open-text text-amber-400"></i> Pending Transfer Applications (<span id="teacherFactionPendingCount">0</span>)
+          </div>
+          <div id="teacherFactionPendingList" class="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar"></div>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 border-2 border-rose-500/60 rounded-xl p-4 shadow-xl space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-crosshairs text-rose-400 text-base animate-pulse"></i>
+            <h4 class="text-xs font-black text-rose-300 uppercase tracking-wider font-pixel">Class Bounty Target Setup</h4>
+          </div>
+          <span class="text-xs text-rose-400 font-mono font-bold" id="teacherBountyClassTag">Class: All</span>
+        </div>
+        <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <label class="text-xs text-slate-300 font-bold shrink-0">Select Target Student:</label>
+          <select id="teacherBountyStudentSelect" class="flex-1 bg-slate-950 border border-rose-500/50 rounded-lg px-3 py-2 text-xs text-rose-200 outline-none"></select>
+          <button onclick="assignCurrentClassBounty()" class="px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 text-white font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
+            <i class="fa-solid fa-skull"></i> Set as Bounty Target
+          </button>
+          <button onclick="clearCurrentClassBounty()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs transition active:scale-95 flex items-center gap-1 cursor-pointer shrink-0">
+            <i class="fa-solid fa-ban"></i> Cancel Bounty
+          </button>
+        </div>
+        <div id="teacherCurrentBountyDisplay" class="hidden bg-slate-950 border border-rose-500/40 rounded-xl p-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-rose-500/60 flex items-center justify-center shrink-0">
+              <img id="tcBountyDisplayImg" src="" class="max-w-full max-h-full object-contain">
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-rose-400 font-pixel" id="tcBountyDisplayName"></span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold uppercase" id="tcBountyDisplayStatus"></span>
+              </div>
+              <div class="text-[11px] text-slate-300 font-mono mt-0.5" id="tcBountyDisplayDigi"></div>
+              <div class="text-[10px] text-emerald-400 font-mono font-bold" id="tcBountyDisplayHp"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-amber-500/50 rounded-xl p-4 shadow-xl space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-bullhorn text-amber-400"></i>
+            <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider font-pixel">Class Announcement Center</h4>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-amber-300 font-mono font-bold" id="teacherAnnouncementTargetTag">Target: All Classes</span>
+            <button onclick="clearCurrentClassAnnouncements()" class="px-2.5 py-1 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-trash-can"></i> Clear All
+            </button>
+          </div>
+        </div>
+        <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <input type="text" id="teacherAnnouncementInput" placeholder="Enter notice..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+          <button onclick="publishTeacherAnnouncement()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
+            <i class="fa-solid fa-bullhorn"></i> Post
+          </button>
+        </div>
+        <div class="mt-3">
+          <div id="teacherAnnouncementList" class="space-y-1.5"></div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div class="flex items-center gap-3">
+            <label class="text-xs font-bold text-cyan-400"><i class="fa-solid fa-school mr-1"></i> Current Class:</label>
+            <select id="teacherClassFilter" onchange="onClassFilterChange(this.value)" class="bg-slate-950 border border-cyan-500/50 text-xs font-bold rounded-lg px-3 py-1.5 text-cyan-200 outline-none"></select>
+            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-plus mr-1"></i> Add Class</button>
+            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-xs text-rose-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-trash mr-1"></i> Delete Class</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openManageClassStudentsModal()" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer active:scale-95">Manage Students</button>
+            <label for="excelFileInput" class="cursor-pointer px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
+              <i class="fa-solid fa-file-excel"></i> Import (Excel)
+            </label>
+            <input id="excelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(event)" class="hidden">
+            <button onclick="rewardAllStudents(20)" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold cursor-pointer active:scale-95">Class +20 EXP</button>
+            <button onclick="rewardAllStudents(50)" class="px-3 py-1.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-xs font-bold cursor-pointer active:scale-95">Class +50 EXP</button>
+          </div>
+        </div>
+        <div id="teacherStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5"></div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 mb-3 gap-2">
+          <h4 class="text-xs font-bold text-cyan-300 flex items-center"><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Activity Log</h4>
+          <div class="flex items-center gap-2">
+            <select id="teacherLogFactionFilter" onchange="renderBattleLogs()" class="bg-slate-950 border border-cyan-500/40 text-[10px] rounded px-2 py-1 text-cyan-200 outline-none">
+              <option value="ALL">全部日誌</option>
+              <option value="FACTION_ONLY">⚔️ 陣營戰火過濾</option>
+            </select>
+            <span class="text-[10px] text-slate-400 font-mono" id="teacherLogFilterBadge"></span>
+            <button onclick="clearBattleLogs()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-trash-can"></i> <span id="lblClearLogBtn">Clear Logs</span>
+            </button>
+          </div>
+        </div>
+        <div id="teacherBattleLogs" class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar text-xs font-mono"></div>
+      </div>
+    </div>
+
+    <div id="teacherSubViewQuiz" class="space-y-6 hidden">
+      <div class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border-2 border-amber-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 text-lg">
+              <i class="fa-solid fa-bolt animate-bounce"></i>
+            </div>
+            <h3 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider font-pixel">Pop-up Quiz 搶答管理中心</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="excelQuizFileInput" class="cursor-pointer px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95 shadow">
+              <i class="fa-solid fa-file-excel"></i> 匯入 Excel 題庫
+            </label>
+            <input id="excelQuizFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleQuizExcelImport(event)" class="hidden">
+            <span id="quizBankStatus" class="text-xs text-slate-400 font-mono bg-slate-950 px-2.5 py-1 rounded border border-slate-800">題庫: 0 題</span>
+            <button onclick="teacherCloseLiveQuiz()" class="px-3 py-1.5 rounded-xl bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">結束目前搶答</button>
+          </div>
+        </div>
+        <div id="quizBankSelectorRow" class="hidden flex items-center gap-2">
+          <label class="text-xs text-cyan-300 font-bold shrink-0">從題庫載入：</label>
+          <select id="quizBankSelect" onchange="onSelectQuizFromBank(this.value)" class="flex-1 bg-slate-950 border border-cyan-500/50 text-xs rounded-xl px-3 py-2 text-cyan-200 outline-none"></select>
+        </div>
+        <div class="space-y-3 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">搶答問題：</label>
+            <input type="text" id="teacherQuizQuestionInput" placeholder="輸入題目..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+            <div><input type="text" id="teacherQuizOpt1" placeholder="正確答案" value="Agumon" class="w-full bg-slate-900 border border-emerald-500/60 rounded-lg px-2.5 py-1.5 text-xs text-emerald-300 outline-none"></div>
+            <div><input type="text" id="teacherQuizOpt2" placeholder="錯誤選項 1" value="Gabumon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
+            <div><input type="text" id="teacherQuizOpt3" placeholder="錯誤選項 2" value="Patamon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
+            <div><input type="text" id="teacherQuizOpt4" placeholder="錯誤選項 3" value="Palmon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div class="flex items-center gap-3">
+              <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">Class: All</span>
+              <select id="teacherQuizTimeLimitSelect" class="bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
+                <option value="15">15 秒</option>
+                <option value="30" selected>30 秒</option>
+                <option value="60">60 秒</option>
+              </select>
+            </div>
+            <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer">即刻發布搶答</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider font-pixel">搶答榮譽前三名</h4>
+              <span id="quizStatusIndicator" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">IDLE</span>
+            </div>
+            <div id="quizWinnerSlot1" class="p-3 mb-2 rounded-xl bg-amber-950/70 border border-amber-400/80 flex items-center justify-between text-xs">
+              <div><span class="text-white font-bold" id="quizWinnerName1">等待中...</span></div>
+              <span class="text-slate-400 font-mono" id="quizWinnerTime1">--:--:--</span>
+            </div>
+            <div id="quizWinnerSlot2" class="p-3 mb-2 rounded-xl bg-slate-900 border border-slate-400/60 flex items-center justify-between text-xs">
+              <div><span class="text-white font-bold" id="quizWinnerName2">等待中...</span></div>
+              <span class="text-slate-400 font-mono" id="quizWinnerTime2">--:--:--</span>
+            </div>
+            <div id="quizWinnerSlot3" class="p-3 rounded-xl bg-orange-950/40 border border-amber-700/60 flex items-center justify-between text-xs">
+              <div><span class="text-white font-bold" id="quizWinnerName3">等待中...</span></div>
+              <span class="text-slate-400 font-mono" id="quizWinnerTime3">--:--:--</span>
+            </div>
+          </div>
+        </div>
+        <div class="lg:col-span-2 bg-slate-900 border border-cyan-500/40 rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <h4 class="text-xs font-black text-cyan-300 uppercase font-pixel">學生作答即時列表</h4>
+            <span class="text-xs text-slate-400 font-mono" id="quizClassStudentProgress">0 / 0</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <tbody id="quizStudentAnswersTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getSuperAdminTemplate() {
+  return `
+    <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
+      <div>
+        <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-key mr-2"></i>Global Superadmin Operations</h2>
+        <p class="text-xs text-slate-400">Manage all accounts and class progression.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <label for="adminExcelFileInput" class="cursor-pointer px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow-md flex items-center gap-1.5 transition active:scale-95">
+          <i class="fa-solid fa-file-excel"></i> Admin Excel Import
+        </label>
+        <input id="adminExcelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleAdminExcelImport(event)" class="hidden">
+        <button onclick="superadminDeleteAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-red-700 to-rose-700 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer transition active:scale-95">Delete All Students</button>
+        <button onclick="superadminFullResetAllStudents()" class="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-slate-950 font-black rounded-lg text-xs shadow-md cursor-pointer transition active:scale-95">Reset Class Progression</button>
+        <button onclick="openCredentialsModal()" class="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-lg text-xs shadow-md cursor-pointer transition active:scale-95">Manage Credentials</button>
+      </div>
+    </div>
+    <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-5">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+        <h2 class="text-base font-bold text-amber-300"><i class="fa-solid fa-chalkboard-user mr-2"></i>Teacher Accounts</h2>
+        <button onclick="openCreateTeacherModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs cursor-pointer transition active:scale-95">Add Teacher</button>
+      </div>
+      <div id="superAdminTeacherGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </div>
+    <div class="bg-slate-900 border border-cyan-500/30 rounded-xl p-5 shadow-lg">
+      <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-4 mb-4 gap-3">
+        <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-users-gear mr-2"></i>Global Students Directory</h2>
+        <div class="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
+          <label class="flex items-center gap-1.5 text-xs text-slate-300 font-bold cursor-pointer select-none">
+            <input type="checkbox" id="chkSelectAllStudents" onchange="toggleSelectAllStudents(this.checked)" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
+            <span>Select All</span>
+          </label>
+          <button onclick="superadminBatchDeleteStudents()" id="btnBatchDeleteStudents" disabled class="px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed">Batch Delete</button>
+        </div>
+      </div>
+      <div id="superAdminStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+  `;
+}
+
+    async function enterDashboard() {
+  if (!currentUser) return;
+
+  // 🛡️ 防禦核心：嚴密阻擋學生在 F12 Console 隨意捏造 currentUser.role 進入介面
+  if (currentUser.role === 'superadmin') {
+    let isValid = false;
+    try {
+      // 進入介面前，拿 currentUser 裡面的憑證向 Firebase 該帳號的密碼節點即時核對
+      const verifySnap = await dbRootRef.child(`superAdmins/${currentUser.id}/password`).once('value');
+      if (verifySnap.exists() && String(verifySnap.val()).trim() === String(currentUser.authToken).trim()) {
+        isValid = true;
+      }
+    } catch (e) {
+      isValid = false;
     }
 
-    function logout() {
-      currentUser = null;
-      document.getElementById('mainHeader').classList.add('hidden');
-      document.getElementById('viewStudent').classList.add('hidden');
-      document.getElementById('viewTeacher').classList.add('hidden');
-      document.getElementById('viewSuperAdmin').classList.add('hidden');
-      document.getElementById('deathScreenOverlay').classList.remove('active');
-      document.getElementById('studentBanNoticeOverlay').classList.remove('active');
-      document.getElementById('viewLogin').classList.remove('hidden');
-      document.getElementById('loginUsername').value = "";
-      document.getElementById('loginPassword').value = "";
+    if (!isValid) {
+      alert("🚨 安全攔截：偵測到非法身分篡改或憑證失效，強制登出！");
+      logout();
+      return;
     }
+
+    // 驗證完全合法，動態產生 Admin 介面
+    const sa = currentUser;
+    document.getElementById('headerUserInfo').textContent = `Super Admin: ${sa.name}`;
+    document.getElementById('viewStudent').classList.add('hidden');
+    document.getElementById('viewTeacher').classList.add('hidden');
+    document.getElementById('viewTeacher').innerHTML = '';
+
+    const adminContainer = document.getElementById('viewSuperAdmin');
+    adminContainer.innerHTML = getSuperAdminTemplate();
+    adminContainer.classList.remove('hidden');
+    renderSuperAdminDashboard();
+
+  } else if (currentUser.role === 'teacher') {
+    let isValid = false;
+    try {
+      // 教師端身分即時核對
+      const verifySnap = await dbRootRef.child(`teachers/${currentUser.id}/password`).once('value');
+      if (verifySnap.exists() && String(verifySnap.val()).trim() === String(currentUser.authToken).trim()) {
+        isValid = true;
+      }
+    } catch (e) {
+      isValid = false;
+    }
+
+    if (!isValid) {
+      alert("🚨 安全攔截：教師身分驗證失敗，強制登出！");
+      logout();
+      return;
+    }
+
+    const tc = currentUser.data;
+    document.getElementById('headerUserInfo').textContent = `Teacher: ${tc.name}`;
+    document.getElementById('viewStudent').classList.add('hidden');
+    document.getElementById('viewSuperAdmin').classList.add('hidden');
+    document.getElementById('viewSuperAdmin').innerHTML = '';
+
+    const teacherContainer = document.getElementById('viewTeacher');
+    teacherContainer.innerHTML = getTeacherTemplate();
+    teacherContainer.classList.remove('hidden');
+
+    updateTeacherBossHeader();
+    populateClassDropdown();
+    populateTeacherBountySelect();
+    updateClassBanButtonUI();
+    renderTeacherGrid();
+
+  } else {
+    // 學生端：銷毀所有管理員與教師的 DOM 內容
+    document.getElementById('viewTeacher').innerHTML = '';
+    document.getElementById('viewSuperAdmin').innerHTML = '';
+    document.getElementById('viewTeacher').classList.add('hidden');
+    document.getElementById('viewSuperAdmin').classList.add('hidden');
+
+    const st = appData.students[currentUser.id] || currentUser.data;
+    document.getElementById('headerUserInfo').textContent = `Tamer: ${st.name} (${formatStudentClassesDisplay(st)})`;
+    document.getElementById('viewStudent').classList.remove('hidden');
+    populateStudentTeacherBossOptions();
+    updateStudentUI();
+  }
+
+  document.getElementById('viewLogin').classList.add('hidden');
+  document.getElementById('mainHeader').classList.remove('hidden');
+
+  renderBattleLogs();
+  renderAnnouncementsUI();
+  renderBountyUI();
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('mainHeader').classList.add('hidden');
+  document.getElementById('viewStudent').classList.add('hidden');
+  
+  // 徹底清空 DOM
+  const vTeacher = document.getElementById('viewTeacher');
+  const vAdmin = document.getElementById('viewSuperAdmin');
+  if (vTeacher) { vTeacher.innerHTML = ''; vTeacher.classList.add('hidden'); }
+  if (vAdmin) { vAdmin.innerHTML = ''; vAdmin.classList.add('hidden'); }
+
+  document.getElementById('deathScreenOverlay').classList.remove('active');
+  document.getElementById('studentBanNoticeOverlay').classList.remove('active');
+  document.getElementById('viewLogin').classList.remove('hidden');
+  document.getElementById('loginUsername').value = "";
+  document.getElementById('loginPassword').value = "";
+}
 
     function refreshCurrentView() {
   if (!currentUser) return;
@@ -4591,25 +4379,37 @@ function toggleFactionBuffModal() {
     }
 
     function allocateTrait(trait, amount) {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
-      if ((st.statPool || 0) < amount) {
-        showToast("Trait Allocation", `Not enough points! You have ${st.statPool || 0} pts remaining.`, "info");
-        return;
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
+  
+  // 🛡️ 限制合法單次加點額度（只能是 1, 5, 10），防止學生在 Console 傳入大量數值
+  if (![1, 5, 10].includes(amount)) {
+    showToast("Invalid Action", "加點數值不合法！", "damage");
+    return;
+  }
+
+  if ((st.statPool || 0) < amount) {
+    showToast("Trait Allocation", `點數不足！剩餘 ${st.statPool || 0} 點。`, "info");
+    return;
+  }
+  
+  // 使用 Firebase Transaction 同步校驗並原子化扣除點數
+  if (dbRootRef) {
+    dbRootRef.child(`students/${currentUser.id}`).transaction((cur) => {
+      if (!cur) return cur;
+      if ((cur.statPool || 0) < amount) return cur; // 雲端攔截餘額不足
+      cur.statPool = (cur.statPool || 0) - amount;
+      cur[trait] = (cur[trait] || 0) + amount;
+      return cur;
+    }, (err, committed, snap) => {
+      if (committed && snap.exists()) {
+        playSound('heal');
+        updateStudentUI();
       }
-      
-      const newPool = st.statPool - amount;
-      const newVal = (st[trait] || 0) + amount;
-
-      patchStudentAtomic(currentUser.id, {
-        statPool: newPool,
-        [trait]: newVal
-      });
-
-      // 已移除 addBattleLog，分配能力值不再寫入 log sheet
-      updateStudentUI();
-    }
+    });
+  }
+}
 
     function playEvolutionCutscene(tamerName, prevDigi, nextDigi, onComplete) {
       const overlay = document.getElementById('evoCutsceneOverlay');
@@ -4974,6 +4774,7 @@ function toggleFactionBuffModal() {
         isFainted: false,
         exp: preservedExp,
         statPool: preservedPool,
+        attackQuota: s.attackQuota || 0, // 👈 保留原攻擊次數
         courage: preservedCourage,
         love: preservedLove,
         discipline: preservedDiscipline,
