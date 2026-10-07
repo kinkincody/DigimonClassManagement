@@ -2956,20 +2956,26 @@ function rejectFactionRequest(reqKey) {
 
         const bountyTarget = currentBountyStudentId ? appData.students[currentBountyStudentId] : null;
 
-        if (bountyTarget && (!bountyTarget.isFainted && (bountyTarget.hp === undefined || bountyTarget.hp > 0))) {
+        if (bountyTarget) {
           const digi = DIGIMON_DB[bountyTarget.currentDigiId] || DIGIMON_DB['digitama1'];
           const maxHp = digi.maxHp || 100;
-          const curHp = bountyTarget.hp !== undefined ? bountyTarget.hp : maxHp;
-          const hpPct = Math.max(0, Math.min(100, Math.round((curHp / maxHp) * 100)));
+          const curHp = (bountyTarget.hp !== undefined && bountyTarget.hp !== null) ? Number(bountyTarget.hp) : maxHp;
+          const isTargetAlive = !bountyTarget.isFainted && curHp > 0;
 
-          document.getElementById('stBountyStudentName').textContent = bountyTarget.name;
-          document.getElementById('stBountyDigiName').textContent = `(${digi.name} - ${bountyTarget.username})`;
-          document.getElementById('stBountyStageBadge').textContent = (digi.stageName || 'ROOKIE').toUpperCase();
-          document.getElementById('stBountyHpText').textContent = `HP: ${curHp} / ${maxHp}`;
-          document.getElementById('stBountyHpBar').style.width = `${hpPct}%`;
-          setDigiImageTag(document.getElementById('stBountyDigiImg'), bountyTarget.currentDigiId);
+          if (isTargetAlive) {
+            const hpPct = Math.max(0, Math.min(100, Math.round((curHp / maxHp) * 100)));
 
-          stBountyCard.classList.remove('hidden');
+            document.getElementById('stBountyStudentName').textContent = bountyTarget.name;
+            document.getElementById('stBountyDigiName').textContent = `(${digi.name} - ${bountyTarget.username})`;
+            document.getElementById('stBountyStageBadge').textContent = (digi.stageName || 'ROOKIE').toUpperCase();
+            document.getElementById('stBountyHpText').textContent = `HP: ${curHp} / ${maxHp}`;
+            document.getElementById('stBountyHpBar').style.width = `${hpPct}%`;
+            setDigiImageTag(document.getElementById('stBountyDigiImg'), bountyTarget.currentDigiId);
+
+            stBountyCard.classList.remove('hidden');
+          } else {
+            stBountyCard.classList.add('hidden');
+          }
         } else {
           stBountyCard.classList.add('hidden');
         }
@@ -2987,11 +2993,14 @@ function rejectFactionRequest(reqKey) {
 
         if (targetStudent) {
           const digi = DIGIMON_DB[targetStudent.currentDigiId] || DIGIMON_DB['digitama1'];
-          const isDead = targetStudent.isFainted || (targetStudent.hp !== undefined && targetStudent.hp <= 0);
+          const maxHp = digi.maxHp || 100;
+          const curHp = (targetStudent.hp !== undefined && targetStudent.hp !== null) ? Number(targetStudent.hp) : maxHp;
+          // 只有當明確標記 isFainted 或 HP 確實 <= 0 時才視為死亡
+          const isDead = !!targetStudent.isFainted || curHp <= 0;
 
           document.getElementById('tcBountyDisplayName').textContent = `${targetStudent.name} (${targetStudent.username})`;
           document.getElementById('tcBountyDisplayDigi').textContent = `${digi.name} (${digi.stageName})`;
-          document.getElementById('tcBountyDisplayHp').textContent = `HP: ${targetStudent.hp || 0} / ${digi.maxHp}`;
+          document.getElementById('tcBountyDisplayHp').textContent = `HP: ${curHp} / ${maxHp}`;
           
           const statusBadge = document.getElementById('tcBountyDisplayStatus');
           if (isDead) {
@@ -4739,10 +4748,12 @@ function logout() {
       addBattleLog(`✨ [REVIVAL] Teacher revived [${s.name}] with full HP!`, "heal", s.classId);
       showToast("Student Revived!", `Restored ${s.name} to full life!`, "heal");
 
+      // 保持原本的 attackQuota 及 gachaTickets 不變，僅恢復 HP 並解除倒下狀態
       patchStudentAtomic(studentId, {
         isFainted: false,
         hp: reviveHp,
-        attackQuota: 3
+        attackQuota: s.attackQuota !== undefined ? s.attackQuota : 0,
+        gachaTickets: s.gachaTickets !== undefined ? s.gachaTickets : 0
       });
     }
 
