@@ -418,50 +418,51 @@
       </div>
     </div>
 <!-- 1. Student / Tamer View -->
+    <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
       <!-- 🛡️ Student Faction Info & Transfer Request Card (Multi-Class Support) -->
-<div id="studentFactionCard" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
-  <div class="flex items-center gap-3">
-    <div class="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-xl font-bold">
-      <i class="fa-solid fa-flag"></i>
-    </div>
-    <div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <label class="text-xs font-bold text-cyan-400 font-pixel">選擇班別:</label>
-        <select id="stFactionClassViewSelect" onchange="onStudentFactionClassChanged(this.value)" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-2.5 py-1 text-cyan-300 outline-none">
-        </select>
-        <span class="text-xs font-bold text-slate-400 font-pixel uppercase ml-1">陣營:</span>
-        <span id="stFactionBadge" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 font-pixel">NO FACTION</span>
-        <span id="stFactionBuffBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500 text-amber-300 font-mono"></span>
-        <button onclick="toggleFactionBuffModal()" class="px-2 py-0.5 rounded-full bg-indigo-900/60 hover:bg-indigo-800 text-indigo-300 border border-indigo-500/60 text-[10px] font-bold cursor-pointer transition active:scale-95" title="查看陣營說明">
-          <i class="fa-solid fa-circle-info mr-1"></i>說明
-        </button>
-      </div>
-      <p id="stFactionStatusText" class="text-[11px] text-slate-400 mt-1">同班級同陣營之同學為盟友，對決時免疫內訌傷害。</p>
-    </div>
-  </div>
+      <div id="studentFactionCard" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-xl font-bold">
+            <i class="fa-solid fa-flag"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <label class="text-xs font-bold text-cyan-400 font-pixel">Class 班別:</label>
+              <select id="stFactionClassViewSelect" onchange="onStudentFactionClassChanged(this.value)" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-2.5 py-1 text-cyan-300 outline-none">
+              </select>
+              <span class="text-xs font-bold text-slate-400 font-pixel uppercase ml-1">Faction 陣營:</span>
+              <span id="stFactionBadge" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 font-pixel">NO FACTION</span>
+              <span id="stFactionBuffBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500 text-amber-300 font-mono"></span>
+              <button onclick="toggleFactionBuffModal()" class="px-2 py-0.5 rounded-full bg-indigo-900/60 hover:bg-indigo-800 text-indigo-300 border border-indigo-500/60 text-[10px] font-bold cursor-pointer transition active:scale-95" title="View Faction Guide 查看陣營說明">
+                <i class="fa-solid fa-circle-info mr-1"></i>Guide 說明
+              </button>
+            </div>
+            <p id="stFactionStatusText" class="text-[11px] text-slate-400 mt-1">Classmates in the same faction are allies and immune to friendly fire. / 同班同陣營為盟友，免疫傷害。</p>
+          </div>
+        </div>
 
-  <div class="flex items-center gap-2">
-    <select id="stFactionSelect" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-3 py-2 text-cyan-200 outline-none">
-      <option value="">-- 申請轉移至該班陣營 --</option>
-    </select>
-    <button onclick="requestStudentFactionTransfer()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md transition active:scale-95 cursor-pointer">
-      <i class="fa-solid fa-paper-plane mr-1"></i> 申請加入
-    </button>
-  </div>
-</div>
+        <div class="flex items-center gap-2">
+          <select id="stFactionSelect" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-3 py-2 text-cyan-200 outline-none">
+            <option value="">-- Apply to Join Faction 申請加入陣營 --</option>
+          </select>
+          <button onclick="requestStudentFactionTransfer()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md transition active:scale-95 cursor-pointer">
+            <i class="fa-solid fa-paper-plane mr-1"></i> Apply 申請加入
+          </button>
+        </div>
+      </div>
 
       <!-- 📢 學生專屬置頂公告欄 -->
       <div id="studentAnnouncementBox" class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/50 rounded-2xl p-4 shadow-xl space-y-2.5">
         <div class="flex items-center justify-between border-b border-amber-500/30 pb-2">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-bullhorn text-amber-400 text-base animate-bounce"></i>
-            <h4 class="text-xs font-black text-amber-300 uppercase tracking-widest font-pixel">Class Announcements</h4>
+            <h4 class="text-xs font-black text-amber-300 uppercase tracking-widest font-pixel">Class Announcements 班級公告</h4>
           </div>
           <span id="studentAnnouncementClassTag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-bold">Class Notice</span>
         </div>
         <div id="studentAnnouncementsFeed" class="space-y-2">
-          <div class="text-xs text-slate-400 italic">No class announcements right now.</div>
+          <div class="text-xs text-slate-400 italic">No class announcements right now. / 目前無班級公告。</div>
         </div>
       </div>
 
@@ -483,7 +484,7 @@
             <div>
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 rounded bg-rose-900/80 border border-rose-500 text-rose-200 font-pixel text-[9px] font-black uppercase tracking-widest animate-bounce">
-                  ⚔️ BOUNTY TARGET ⚔️
+                  ⚔️ BOUNTY TARGET 懸賞目標 ⚔️
                 </span>
                 <span id="stBountyStageBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">CHAMPION</span>
               </div>
@@ -503,17 +504,17 @@
 
           <div class="flex flex-col sm:items-end justify-center">
             <div class="text-[10px] text-amber-300 font-pixel uppercase tracking-widest flex items-center gap-1.5">
-              <i class="fa-solid fa-trophy text-amber-400 animate-pulse"></i> Victor Elimination Bounty:
+              <i class="fa-solid fa-trophy text-amber-400 animate-pulse"></i> Elimination Bounty 擊殺懸賞獎勵:
             </div>
             <div class="flex items-center gap-2 mt-1">
               <span class="px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 font-pixel text-[11px] font-black shadow-md flex items-center gap-1">
                 <i class="fa-solid fa-bolt text-amber-400"></i> +300 EXP
               </span>
               <span class="px-2.5 py-1 rounded-xl bg-purple-500/20 border border-purple-400 text-purple-300 font-pixel text-[11px] font-black shadow-md flex items-center gap-1">
-                <i class="fa-solid fa-ticket text-purple-400"></i> +1 Ticket
+                <i class="fa-solid fa-ticket text-purple-400"></i> +1 Ticket 抽獎券
               </span>
             </div>
-            <p class="text-[10px] text-cyan-300 font-bold mt-1">★ Every strike on target grants an instant +30 EXP!</p>
+            <p class="text-[10px] text-cyan-300 font-bold mt-1">★ +30 EXP on every hit! / 每次命中即獎勵 +30 EXP！</p>
           </div>
         </div>
       </div>
@@ -526,7 +527,7 @@
           </div>
           <div class="flex-1">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-bold text-amber-300 font-pixel uppercase">Teacher Partner Boss</span>
+              <span class="text-[10px] font-bold text-amber-300 font-pixel uppercase">Teacher Partner Boss 老師夥伴首領</span>
               <span id="stBossStageBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">MEGA</span>
             </div>
             <h3 id="stBossName" class="text-sm font-black text-white truncate">WarGreymon</h3>
@@ -539,7 +540,7 @@
 
         <div class="flex items-center gap-2">
           <label class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <i class="fa-solid fa-crosshairs"></i> Target Teacher Boss:
+            <i class="fa-solid fa-crosshairs"></i> Target Teacher 目標老師:
           </label>
           <select id="stTeacherBossSelect" onchange="onStudentSelectTeacherBoss(this.value)" class="bg-slate-950 border border-amber-500/60 text-xs font-bold rounded-lg px-3 py-1.5 text-amber-200 outline-none">
           </select>
@@ -549,7 +550,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="studentMainInteractContainer">
         <div id="studentDigiviceCard" class="md:col-span-2 digi-card skin-classic rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500">
           <div id="stShieldBanner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-cyan-500/20 border border-cyan-400 rounded-full text-[11px] text-cyan-300 font-bold flex items-center gap-1.5 backdrop-blur shadow-lg animate-pulse">
-            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active (1 Attack Immunized)
+            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active 聖盾防禦中 (Blocks 1 Attack)
           </div>
 
           <div class="w-full flex justify-between items-center z-10 mb-4">
@@ -558,18 +559,18 @@
                 STAGE: DIGI-EGG
               </span>
               <span id="stFaintBadge" class="hidden font-pixel text-[10px] px-2.5 py-1 rounded bg-rose-950 border border-rose-500 text-rose-300 animate-pulse">
-                STATUS: FAINTED
+                STATUS: FAINTED 倒下
               </span>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="downloadStudentCard(currentUser.id)" class="text-xs font-bold px-3 py-1 rounded bg-cyan-950 border border-cyan-600 hover:bg-cyan-900 text-cyan-300 shadow flex items-center gap-1 cursor-pointer active:scale-95" title="Export Digital Tamer Card Image">
-                <i class="fa-solid fa-id-card"></i> ID Card
+              <button onclick="downloadStudentCard(currentUser.id)" class="text-xs font-bold px-3 py-1 rounded bg-cyan-950 border border-cyan-600 hover:bg-cyan-900 text-cyan-300 shadow flex items-center gap-1 cursor-pointer active:scale-95" title="Export Digital Tamer Card Image 匯出馴獸師證">
+                <i class="fa-solid fa-id-card"></i> ID Card 馴獸師證
               </button>
               <span id="stGachaTicketsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center gap-1">
-                <i class="fa-solid fa-ticket"></i> Tickets: 0
+                <i class="fa-solid fa-ticket"></i> Tickets 抽獎券: 0
               </span>
               <button id="btnOpenGacha" onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
-                <i class="fa-solid fa-gift"></i> Gacha
+                <i class="fa-solid fa-gift"></i> Gacha 抽獎
               </button>
             </div>
           </div>
@@ -579,8 +580,8 @@
               <img id="stDigiImage" src="" alt="Digimon" class="max-w-full max-h-full object-contain animate-glow transition-all duration-500">
               <div id="stFaintOverlay" class="hidden absolute inset-0 bg-rose-950/70 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center text-rose-300">
                 <i class="fa-solid fa-skull-crossbones text-4xl animate-bounce mb-2"></i>
-                <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE</span>
-                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher's Revival or De-evolution</span>
+                <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE 戰鬥倒下</span>
+                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher Revival / 等待老師復活</span>
               </div>
             </div>
             <h2 id="stDigiName" class="text-2xl font-black tracking-wider text-cyan-200 mt-3 drop-shadow flex items-center gap-2">
@@ -592,7 +593,7 @@
 
           <div class="z-10 mt-2 flex flex-col items-center gap-2.5 w-full max-w-md">
             <button id="btnEvolve" onclick="triggerEvolution()" class="hidden w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer active:scale-95">
-              <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
+              <i class="fa-solid fa-bolt mr-1"></i> Digivolution Ready! Click to EVOLVE / 進化就緒！點擊進化
             </button>
             
             <div id="stSkillsGrid" class="grid grid-cols-2 gap-2 w-full"></div>
@@ -602,7 +603,7 @@
                 Skin: Classic Cyan
               </span>
               <span id="stAttackQuotaBadge" class="text-amber-300 font-bold bg-amber-950/90 px-3 py-1 rounded border border-amber-600/50">
-                <i class="fa-solid fa-bolt mr-1"></i> Attacks Left: 0
+                <i class="fa-solid fa-bolt mr-1"></i> Attacks 攻擊次數: 0
               </span>
             </div>
           </div>
@@ -612,14 +613,14 @@
         <div id="stRightControlPanel" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
           <div>
             <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center justify-between">
-              <span><i class="fa-solid fa-chart-simple text-cyan-400 mr-2"></i>Tamer Status</span>
+              <span><i class="fa-solid fa-chart-simple text-cyan-400 mr-2"></i>Tamer Status 馴獸師狀態</span>
               <span id="stOwnerName" class="text-xs font-normal text-slate-400">Student: --</span>
             </h3>
 
             <!-- HP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
-                <span class="text-emerald-400"><i class="fa-solid fa-heart mr-1"></i>Health Points (HP)</span>
+                <span class="text-emerald-400"><i class="fa-solid fa-heart mr-1"></i>Health Points 生命值 (HP)</span>
                 <span id="stHpText" class="text-emerald-400 font-pixel text-[11px]">100 / 100</span>
               </div>
               <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
@@ -630,7 +631,7 @@
             <!-- EXP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
-                <span class="text-cyan-400"><i class="fa-solid fa-bolt mr-1"></i>Evolution Progress (EXP)</span>
+                <span class="text-cyan-400"><i class="fa-solid fa-bolt mr-1"></i>Evolution Progress 進化經驗 (EXP)</span>
                 <span id="stExpText" class="text-cyan-400 font-pixel text-[11px]">0 / 100</span>
               </div>
               <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
@@ -642,13 +643,13 @@
             <!-- 4 Traits Allocation by Student -->
             <div class="mt-4 space-y-2">
               <div class="flex justify-between items-center">
-                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Growth</p>
-                <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Unallocated: 0 pts</span>
+                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Matrix 特質數值</p>
+                <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Points 剩餘點數: 0</span>
               </div>
               
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
+                  <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage 勇氣</span>
                   <div class="flex items-center gap-1">
                     <span id="stValCourage" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('courage', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer active:scale-90">+1</button>
@@ -663,7 +664,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
+                  <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship 友情</span>
                   <div class="flex items-center gap-1">
                     <span id="stValLove" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('love', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+1</button>
@@ -678,7 +679,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
+                  <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline 紀律</span>
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('discipline', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+1</button>
@@ -693,7 +694,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
+                  <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom 智慧</span>
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('wisdom', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+1</button>
@@ -710,20 +711,20 @@
 
           <div class="border-t border-slate-800 pt-3">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Bag</span>
-              <button onclick="openGachaModal()" class="text-[10px] text-cyan-400 hover:underline">Get Items &rarr;</button>
+              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Bag 道具背包</span>
+              <button onclick="openGachaModal()" class="text-[10px] text-cyan-400 hover:underline">Get Items 獲取道具 &rarr;</button>
             </div>
             <div id="stInventoryList" class="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar pr-1 text-xs">
-              <div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha!</div>
+              <div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha! / 背包為空，可透過抽獎取得！</div>
             </div>
           </div>
 
           <div class="pt-2 border-t border-slate-800 flex gap-2">
             <button onclick="toggleEvolutionTreeModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-sitemap mr-1"></i> Evo Tree
+              <i class="fa-solid fa-sitemap mr-1"></i> Evo Tree 進化樹
             </button>
             <button onclick="toggleDexModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 font-bold border border-amber-500/20 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex
+              <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex 圖鑑
             </button>
           </div>
         </div>
@@ -731,25 +732,21 @@
 
       <!-- Class Battle Log Feed -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <h4 class="text-xs font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-          <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Class Events & Battle Logs (Max 50)</span>
-          <span class="text-[10px] text-slate-500" id="studentLogScopeTag">Classroom Log Feed</span>
-        </h4>
         <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
           <h4 class="text-xs font-bold text-cyan-300 flex items-center">
-            <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Class Events & Battle Logs (Max 50)
+            <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Battle Logs 戰報日誌 (Max 50)
           </h4>
           <div class="flex items-center gap-2">
             <select id="studentLogFactionFilter" onchange="renderBattleLogs()" class="bg-slate-950 border border-cyan-500/40 text-[10px] rounded px-2 py-1 text-cyan-200 outline-none">
-              <option value="ALL">全部戰報</option>
-              <option value="FACTION_ONLY">⚔️ 陣營交戰戰報</option>
-              <option value="MY_FACTION">🛡️ 本陣營戰報</option>
+              <option value="ALL">All Logs 全部戰報</option>
+              <option value="FACTION_ONLY">⚔️ Faction Battles 陣營交戰</option>
+              <option value="MY_FACTION">🛡️ My Faction 本陣營戰報</option>
             </select>
             <span class="text-[10px] text-slate-500" id="studentLogScopeTag">Classroom Log Feed</span>
           </div>
         </div>
         <div id="studentBattleLogs" class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar text-xs font-mono">
-          <div class="text-slate-500 italic">No events recorded for your class yet.</div>
+          <div class="text-slate-500 italic">No events recorded for your class yet. / 尚無戰鬥活動記錄。</div>
         </div>
       </div>
     </div>
@@ -761,7 +758,34 @@
     <div id="viewSuperAdmin" class="space-y-6 hidden"></div>
 
   <!-- MODALS -->
+  <!-- ⚔️ Student PvP Target Selector Modal -->
+  <div id="modalPvpTargetPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[1001] flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-cyan-500/60 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col p-5 text-slate-200 shadow-2xl relative">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-lg">
+            <i class="fa-solid fa-crosshairs animate-pulse"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-base text-cyan-300 uppercase tracking-wider font-pixel">選擇攻擊對象 (Select Target)</h3>
+            <p class="text-[11px] text-slate-400" id="pvpPickerClassSubtitle">Classroom Targets</p>
+          </div>
+        </div>
+        <button onclick="closePvpTargetModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
 
+      <!-- 快捷班級切換標籤（若學生有多重班別） -->
+      <div id="pvpPickerClassTabs" class="flex gap-2 pt-3 pb-1 overflow-x-auto text-xs font-bold"></div>
+
+      <!-- 同學卡片選擇清單 -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2 pr-1" id="pvpTargetsListContainer"></div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+        <span>★ 點擊卡片即可鎖定目標並發動攻擊</span>
+        <button onclick="closePvpTargetModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">取消</button>
+      </div>
+    </div>
+  </div>
   <!-- Manage Class Students Modal -->
   <div id="modalClassStudentsManager" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 text-slate-200 shadow-2xl">
@@ -2433,21 +2457,21 @@ function updateStudentFactionUI() {
   const myReq = (appData.factionRequests && (appData.factionRequests[reqKey] || appData.factionRequests[currentUser.id]));
   if (statusText) {
     if (myReq && myReq.classTagKey === activeClassKey) {
-      statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] 轉移審核中: [${myReq.requestedFactionName}]</span>`;
+      statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] Transfer Pending 審核中: [${myReq.requestedFactionName}]</span>`;
     } else {
-      statusText.textContent = `你在【${activeClass}】同陣營的同學為盟友；各班陣營獨立，享有專屬加乘！`;
+      statusText.textContent = `Classmates in [${activeClass}] in your faction are allies. / 【${activeClass}】同陣營同學為盟友，享有專屬加乘！`;
     }
   }
 
   if (select) {
     const factions = getFactionsForClass(activeClass);
-    select.innerHTML = `<option value="">-- 申請加入 [${activeClass}] 陣營 --</option>`;
+    select.innerHTML = `<option value="">-- Apply to Join [${activeClass}] Faction 申請加入陣營 --</option>`;
     factions.forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.id;
       const bName = f.buffType && FACTION_BUFFS[f.buffType] ? ` [${FACTION_BUFFS[f.buffType].name}]` : '';
       opt.textContent = `${f.name}${bName}`;
-      if (myFactionInfo.factionId === f.id) opt.textContent += " [目前陣營]";
+      if (myFactionInfo.factionId === f.id) opt.textContent += " (Current 目前陣營)";
       select.appendChild(opt);
     });
   }
@@ -2875,6 +2899,11 @@ function rejectFactionRequest(reqKey) {
     function populateTeacherBountySelect() {
       const select = document.getElementById('teacherBountyStudentSelect');
       if (!select) return;
+      
+      // 若老師正在點擊或操作該選單，跳過重繪，防礙選擇
+      if (document.activeElement === select) return;
+
+      const currentSelectedVal = select.value;
       select.innerHTML = '<option value="">-- Choose a student to place bounty on --</option>';
 
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
@@ -2882,7 +2911,10 @@ function rejectFactionRequest(reqKey) {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         const opt = document.createElement('option');
         opt.value = s.id;
-        opt.textContent = `${s.name} (${s.username}) - ${digi.name} [HP: ${s.hp || 0}]`;
+        opt.textContent = `${s.name} (學號: ${s.username || s.id}) - ${digi.name} [HP: ${s.hp !== undefined ? s.hp : digi.maxHp}]`;
+        if (s.id === currentSelectedVal) {
+          opt.selected = true;
+        }
         select.appendChild(opt);
       });
     }
@@ -6976,178 +7008,248 @@ function logout() {
       });
     }
 
-    // ⚔️ 學生發動技能核心（支援跨多所屬班級選單選擇）
+    let currentPvpPendingSkill = null;
+    let pvpSelectedClassContext = "";
+
     function castStudentSkill(skillIdx, targetMode) {
-  if (!currentUser || currentUser.role !== 'student') return;
-  const st = appData.students[currentUser.id];
-  if (!st) return;
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
 
-  if (isStudentBanned(st)) {
-    showToast("System Locked", "Your interactions are currently locked by the teacher!", "info");
-    return;
-  }
-
-  if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
-    showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
-    playSound('faint');
-    return;
-  }
-
-  if ((st.attackQuota || 0) <= 0) {
-    showToast("Action Depleted", "❌ Attacks left: 0!", "info");
-    return;
-  }
-
-  const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-  const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
-
-  if (targetMode === 'boss') {
-    if (!dbRootRef) return;
-    dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-      if (quota === null || quota <= 0) return 0;
-      return quota - 1;
-    }, (err, committed, snap) => {
-      if (!committed || snap.val() < 0) {
-        return showToast("Action Failed", "Attack quota deduction failed!", "info");
+      if (isStudentBanned(st)) {
+        showToast("System Locked", "Your interactions are currently locked by the teacher!", "info");
+        return;
       }
 
-      const teachersList = Object.values(appData.teachers || {});
-      let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
-      if (!tc) return alert("No active Teacher Boss found.");
+      if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
+        showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
+        playSound('faint');
+        return;
+      }
 
-      const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+      if ((st.attackQuota || 0) <= 0) {
+        showToast("Action Depleted", "❌ Attacks left: 0!", "info");
+        return;
+      }
 
-      if (skill.type === 'heal') {
-        let finalPower = skill.power;
-        // 陣營生命再生 Buff (+30%)
-        const facs = getFactionsForClass(st.classId);
-        const myFac = facs.find(f => f.id === st.factionId);
-        if (myFac && myFac.buffType === 'heal_boost') {
-          finalPower = Math.round(finalPower * 1.3);
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
+
+      if (targetMode === 'boss') {
+        if (!dbRootRef) return;
+        dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
+          if (quota === null || quota <= 0) return 0;
+          return quota - 1;
+        }, (err, committed, snap) => {
+          if (!committed || snap.val() < 0) {
+            return showToast("Action Failed", "Attack quota deduction failed!", "info");
+          }
+
+          const teachersList = Object.values(appData.teachers || {});
+          let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
+          if (!tc) return alert("No active Teacher Boss found.");
+
+          const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+
+          if (skill.type === 'heal') {
+            let finalPower = skill.power;
+            const facs = getFactionsForClass(st.classId);
+            const myFac = facs.find(f => f.id === st.factionId);
+            if (myFac && myFac.buffType === 'heal_boost') {
+              finalPower = Math.round(finalPower * 1.3);
+            }
+            dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
+              return Math.min(digi.maxHp, (hp || 100) + finalPower);
+            }, (hErr, hCommitted, hSnap) => {
+              if (hCommitted) {
+                playSound('heal');
+                addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${finalPower} HP!`, "heal", st.classId);
+                showToast("Healed!", `Restored +${finalPower} HP!`, "heal");
+              }
+            });
+          } else {
+            dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
+              const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
+              return Math.max(0, currentBossHp - skill.power);
+            }, (bErr, bCommitted, bSnap) => {
+              if (bCommitted) {
+                playSound('attack');
+                addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
+                showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
+              }
+            });
+          }
+        });
+      } else {
+        // PvP 模式：彈出介面選擇對象
+        const stClasses = parseStudentClasses(st.classId);
+        if (stClasses.length === 0) {
+          return alert("You are not currently enrolled in any class!");
         }
-        dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
-          return Math.min(digi.maxHp, (hp || 100) + finalPower);
-        }, (hErr, hCommitted, hSnap) => {
-          if (hCommitted) {
-            playSound('heal');
-            addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${finalPower} HP!`, "heal", st.classId);
-            showToast("Healed!", `Restored +${finalPower} HP!`, "heal");
-          }
-        });
-      } else {
-        dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
-          const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
-          return Math.max(0, currentBossHp - skill.power);
-        }, (bErr, bCommitted, bSnap) => {
-          if (bCommitted) {
-            playSound('attack');
-            addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
-            showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
-          }
-        });
+
+        currentPvpPendingSkill = { skillIdx, skill, digi };
+        pvpSelectedClassContext = studentActiveFactionViewClass || stClasses[0];
+        openPvpTargetModal();
       }
-    });
-  } else {
-    // PvP 模式
-    const stClasses = parseStudentClasses(st.classId);
-    if (stClasses.length === 0) {
-      return alert("You are not currently enrolled in any class!");
     }
 
-    let selectedAttackClass = stClasses[0];
+    function openPvpTargetModal() {
+      const modal = document.getElementById('modalPvpTargetPicker');
+      if (!modal) return;
+      renderPvpTargetModalContent();
+      modal.classList.remove('hidden');
+    }
 
-    if (stClasses.length > 1) {
-      let classPrompt = "⚔️ You are enrolled in multiple classes. Choose which class to battle:\n\n";
-      stClasses.forEach((c, idx) => {
-        classPrompt += `${idx + 1}. [Class ${c}]\n`;
+    function closePvpTargetModal() {
+      const modal = document.getElementById('modalPvpTargetPicker');
+      if (modal) modal.classList.add('hidden');
+      currentPvpPendingSkill = null;
+    }
+
+    function selectPvpClassContext(cls) {
+      pvpSelectedClassContext = cls;
+      renderPvpTargetModalContent();
+    }
+
+    function renderPvpTargetModalContent() {
+      if (!currentUser || currentUser.role !== 'student' || !currentPvpPendingSkill) return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      const subTitle = document.getElementById('pvpPickerClassSubtitle');
+      const tabsBox = document.getElementById('pvpPickerClassTabs');
+      const container = document.getElementById('pvpTargetsListContainer');
+      if (!container) return;
+
+      const stClasses = parseStudentClasses(st.classId);
+      if (!stClasses.includes(pvpSelectedClassContext)) {
+        pvpSelectedClassContext = stClasses[0] || "ALL";
+      }
+
+      if (subTitle) {
+        subTitle.textContent = `Skill 技能: [${currentPvpPendingSkill.skill.name}] (${currentPvpPendingSkill.skill.power} DMG) | Class 班別: ${pvpSelectedClassContext}`;
+      }
+
+      // 多班級切換標籤
+      if (tabsBox) {
+        tabsBox.innerHTML = '';
+        if (stClasses.length > 1) {
+          stClasses.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = (c === pvpSelectedClassContext)
+              ? "px-3 py-1 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95"
+              : "px-3 py-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
+            btn.textContent = `Class ${c}`;
+            btn.onclick = () => selectPvpClassContext(c);
+            tabsBox.appendChild(btn);
+          });
+        }
+      }
+
+      const classRoster = Object.values(appData.students || {})
+        .filter(s => studentIsInClass(s, pvpSelectedClassContext))
+        .sort((a, b) => String(a.username || a.id).localeCompare(String(b.username || b.id)));
+
+      const currentBountyTargetId = getEffectiveBountyIdForClass(pvpSelectedClassContext);
+      const atkFac = getStudentFactionInClass(st, pvpSelectedClassContext);
+
+      container.innerHTML = '';
+      if (classRoster.length <= 1) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs italic">No other classmates found in [${pvpSelectedClassContext}]. / 班別 [${pvpSelectedClassContext}] 中無其他同學可供挑戰。</div>`;
+        return;
+      }
+
+      classRoster.forEach((p, idx) => {
+        if (p.id === st.id) return; // 略過自己
+
+        const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
+        const maxHp = pDigi.maxHp || 100;
+        const curHp = (p.hp !== undefined && p.hp !== null) ? Number(p.hp) : maxHp;
+        const isDead = !!p.isFainted || curHp <= 0;
+        const isBounty = (currentBountyTargetId === p.id);
+        const tgtFac = getStudentFactionInClass(p, pvpSelectedClassContext);
+        const isAlly = (atkFac.factionId && tgtFac.factionId && atkFac.factionId === tgtFac.factionId);
+
+        const card = document.createElement('div');
+        let cardBg = "bg-slate-950 border-slate-800 hover:border-cyan-500";
+        if (isBounty) cardBg = "bg-rose-950/30 border-rose-500 shadow-md shadow-rose-900/30";
+        if (isDead) cardBg = "bg-slate-950/50 border-slate-800 opacity-40";
+
+        card.className = `p-3 rounded-2xl border-2 flex items-center justify-between gap-3 transition cursor-pointer active:scale-98 ${cardBg}`;
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="font-pixel text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-bold shrink-0">
+              #${idx + 1}
+            </span>
+            <div class="w-12 h-12 bg-slate-900 rounded-xl p-1 border border-slate-800 flex items-center justify-center shrink-0">
+              <img src="${getDigiImgSrc(p.currentDigiId)}" onerror="this.onerror=null;this.src='${pDigi.svg}';" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="truncate">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-black text-sm text-white">${p.name}</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-bold">
+                  ID 學號: ${p.username || p.id}
+                </span>
+                ${isBounty ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-rose-900 border border-rose-500 text-rose-200 font-bold animate-pulse">🎯 BOUNTY 懸賞目標</span>' : ''}
+                ${isAlly ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-bold">🛡️ Ally 同盟 (${tgtFac.factionName})</span>` : (tgtFac.factionName ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400">${tgtFac.factionName}</span>` : '')}
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+                <span>${pDigi.name} (${pDigi.stageName})</span>
+                <span class="${isDead ? 'text-rose-400 font-bold' : 'text-emerald-400 font-mono'}">HP: ${curHp} / ${maxHp}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="shrink-0">
+            ${isDead ? `
+              <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-500 font-bold text-xs">Fainted 已倒下</span>
+            ` : (isAlly ? `
+              <span class="px-3 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-700/60 text-indigo-300 font-bold text-xs">Ally Immune 盟友免疫</span>
+            ` : `
+              <button onclick="confirmExecutePvpAttack('${p.id}')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs shadow-md transition active:scale-95 cursor-pointer flex items-center gap-1">
+                <i class="fa-solid fa-crosshairs"></i> Attack 鎖定攻擊
+              </button>
+            `)}
+          </div>
+        `;
+        container.appendChild(card);
       });
-      const classChoice = prompt(classPrompt, "1");
-      if (classChoice === null || classChoice.trim() === "") return;
-      const chosenClassIdx = parseInt(classChoice.trim()) - 1;
-      if (isNaN(chosenClassIdx) || chosenClassIdx < 0 || chosenClassIdx >= stClasses.length) {
-        return alert("Invalid class selection!");
+    }
+
+    function confirmExecutePvpAttack(targetId) {
+      if (!currentUser || currentUser.role !== 'student' || !currentPvpPendingSkill) return;
+      const st = appData.students[currentUser.id];
+      const target = appData.students[targetId];
+      if (!st || !target) return;
+
+      const battleClass = pvpSelectedClassContext || parseStudentClasses(st.classId)[0] || 'ALL';
+      const atkFac = getStudentFactionInClass(st, battleClass);
+      const tgtFac = getStudentFactionInClass(target, battleClass);
+
+      if (atkFac.factionId && tgtFac.factionId && atkFac.factionId === tgtFac.factionId) {
+        playSound('shield');
+        return alert(`❌ 無法攻擊 [${target.name}]！你們在【${battleClass}】皆隸屬於同一個盟友陣營 [${atkFac.factionName}]，同盟成員不可互相攻擊！`);
       }
-      selectedAttackClass = stClasses[chosenClassIdx];
-    }
 
-    const classRoster = Object.values(appData.students || {})
-      .filter(s => studentIsInClass(s, selectedAttackClass))
-      .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
-
-    if (classRoster.length <= 1) {
-      return alert(`No other classmates found in [Class ${selectedAttackClass}] to challenge.`);
-    }
-
-    const currentBountyTargetId = getEffectiveBountyIdForClass(selectedAttackClass);
-
-    let menu = `=== Battle Directory [Class ${selectedAttackClass}] ===\n`;
-    if (st.factionName) {
-      menu += `🛡️ YOUR FACTION: [${st.factionName}] (Allies are protected from attacks)\n`;
-    }
-    if (currentBountyTargetId) {
-      const bTarget = appData.students[currentBountyTargetId];
-      menu += `🎯 BOUNTY TARGET: [${bTarget ? bTarget.name : currentBountyTargetId}]\n`;
-    }
-    menu += `Type the exact class number of your target:\n\n`;
-
-    classRoster.forEach((p, idx) => {
-      const classNum = idx + 1;
-      const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-      const bountyMark = (currentBountyTargetId === p.id) ? ' [🎯 BOUNTY]' : '';
-      const isAlly = (st.factionId && p.factionId && st.factionId === p.factionId && st.id !== p.id);
-      const allyMark = isAlly ? ` [🛡️ ALLY: ${p.factionName}]` : (p.factionName ? ` [${p.factionName}]` : ' [No Faction]');
-
-      if (p.id === st.id) {
-        menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
-      } else {
-        menu += `[#${classNum}] ${p.name} (${pDigi.name})${allyMark}${bountyMark} - HP: ${p.hp !== undefined ? p.hp : 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
+      if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
+        return alert(`同學 [${target.name}] 已經處於倒下狀態 (FAINTED)！請選擇其他存活對象。`);
       }
-    });
 
-    const choice = prompt(menu, "");
-    if (choice === null || choice.trim() === "") return;
+      const { skill, digi } = currentPvpPendingSkill;
+      closePvpTargetModal();
 
-    const chosenNum = parseInt(choice.trim());
-    const targetIdx = chosenNum - 1;
-
-    if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
-      return alert("Invalid number selected!");
+      // 扣除攻擊次數並結算傷害
+      dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
+        if (quota === null || quota <= 0) return 0;
+        return quota - 1;
+      }, (err, committed, snap) => {
+        if (!committed || snap.val() < 0) {
+          return showToast("Action Failed", "Attack quota deduction failed!", "info");
+        }
+        applyAttackDamageWithTransaction(st, target, skill, digi, battleClass);
+      });
     }
-
-    const target = classRoster[targetIdx];
-    if (target.id === st.id) {
-      return alert("You cannot target yourself! Action cancelled.");
-    }
-
-    // 🛡️ 核心判定：以當前戰鬥班別獨立判定同陣營（同班同陣營禁止攻擊）
-    // 取得當前對戰所屬班別（優先採用學生畫面當前選擇的班別，或該學生的所屬班別）
-    const battleClass = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || 'ALL';
-    
-    // 透過第 2 步加入的 getStudentFactionInClass 讀取雙方在該班別的獨立陣營
-    const atkFac = getStudentFactionInClass(st, battleClass);
-    const tgtFac = getStudentFactionInClass(target, battleClass);
-
-    if (atkFac.factionId && tgtFac.factionId && atkFac.factionId === tgtFac.factionId) {
-      playSound('shield');
-      return alert(`❌ 無法攻擊 [${target.name}]！你們在【${battleClass}】皆隸屬於同一個盟友陣營 [${atkFac.factionName}]，同盟成員不可互相攻擊！`);
-    }
-
-    if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
-      return alert(`Classmate [${target.name}] is already FAINTED! Choose an active target.`);
-    }
-
-    // 扣除攻擊次數並發動對決
-    dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-      if (quota === null || quota <= 0) return 0;
-      return quota - 1;
-    }, (err, committed, snap) => {
-      if (!committed || snap.val() < 0) {
-        return showToast("Action Failed", "Attack quota deduction failed!", "info");
-      }
-      applyAttackDamageWithTransaction(st, target, skill, digi, selectedAttackClass);
-    });
-  }
-}
 
     // 取得指定班級中當前有效的 Bounty ID
     function getEffectiveBountyIdForClass(className) {
