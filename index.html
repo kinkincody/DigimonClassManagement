@@ -569,6 +569,12 @@
               <span id="stGachaTicketsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center gap-1">
                 <i class="fa-solid fa-ticket"></i> Tickets 抽獎券: 0
               </span>
+<span id="stCoinsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-yellow-950 text-yellow-300 border border-yellow-500/50 flex items-center gap-1">
+  <i class="fa-solid fa-coins text-amber-400"></i> <span id="stCoinsCount">0</span> 金幣
+</span>
+<button onclick="toggleShopModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
+  <i class="fa-solid fa-store"></i> 數碼商店
+</button>
               <button id="btnOpenGacha" onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
                 <i class="fa-solid fa-gift"></i> Gacha 抽獎
               </button>
@@ -893,6 +899,46 @@
   </div>
 
   <!-- Gacha Capsule Modal -->
+<!-- 🏬 數碼黑市與道具商店 Modal -->
+<div id="modalShop" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border-2 border-yellow-500/60 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-yellow-500/20 border border-yellow-400 flex items-center justify-center text-amber-300 text-lg">
+          <i class="fa-solid fa-store"></i>
+        </div>
+        <div>
+          <h3 class="font-black text-base text-amber-300">DIGITAL MARKET 數碼商店</h3>
+          <p class="text-[11px] text-slate-400">購買戰鬥道具、特質數據晶片與激勵計劃 (Incentive) 積分！</p>
+        </div>
+      </div>
+      <button onclick="toggleShopModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <!-- 錢包概覽 -->
+    <div class="bg-slate-950 border border-yellow-500/40 rounded-2xl p-4 my-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-coins text-amber-400 text-2xl"></i>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">當前持有數碼幣</span>
+          <span id="shopUserCoins" class="text-xl font-pixel text-yellow-300">0</span> <span class="text-xs text-amber-400">Coins</span>
+        </div>
+      </div>
+      <div class="text-right">
+        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Incentive Scheme 分數</span>
+        <span id="shopUserIncentivePts" class="text-lg font-pixel text-emerald-400">0</span> <span class="text-xs text-emerald-400">Pts</span>
+      </div>
+    </div>
+
+    <!-- 商品列表 -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="shopItemsContainer"></div>
+
+    <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+      <span>★ 提示：擊殺同級/越級對手獲 10 金幣，擊殺懸賞目標獲 20 金幣！</span>
+      <button onclick="toggleShopModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 cursor-pointer active:scale-95">關閉</button>
+    </div>
+  </div>
+</div>
   <div id="modalGacha" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative overflow-hidden">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1635,6 +1681,194 @@
         }
       }
     };
+// 🛒 商店商品清單
+const SHOP_CATALOG = [
+  {
+    id: "shop_potion_small",
+    name: "小回復藥水 (Mini Potion)",
+    cost: 5,
+    icon: "🧪",
+    desc: "立即恢復 50 HP",
+    buy: (st) => {
+      const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      st.hp = Math.min(d.maxHp, (st.hp || 100) + 50);
+      playSound('heal');
+      return "+50 HP 已恢復";
+    }
+  },
+  {
+    id: "shop_potion_full",
+    name: "神聖生命精華 (Full Elixir)",
+    cost: 15,
+    icon: "💊",
+    desc: "立即恢復 100% 全滿 HP",
+    buy: (st) => {
+      const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      st.hp = d.maxHp;
+      playSound('heal');
+      return "生命值已完全恢復滿額！";
+    }
+  },
+  {
+    id: "shop_attack_booster",
+    name: "戰意驅動晶片 (Attack Booster)",
+    cost: 8,
+    icon: "🔋",
+    desc: "立即增加 +1 次攻擊次數",
+    buy: (st) => {
+      st.attackQuota = (st.attackQuota || 0) + 1;
+      playSound('shield');
+      return "+1 次攻擊次數已入賬";
+    }
+  },
+  {
+    id: "shop_chip_courage",
+    name: "勇氣數據晶片 (Courage Chip)",
+    cost: 20,
+    icon: "🔥",
+    desc: "增加 +50 EXP 及 +50 勇氣特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.courage = (st.courage || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Courage 特質增加";
+    }
+  },
+  {
+    id: "shop_chip_love",
+    name: "友情數據晶片 (Friendship Chip)",
+    cost: 20,
+    icon: "🐺",
+    desc: "增加 +50 EXP 及 +50 友情特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.love = (st.love || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Friendship 特質增加";
+    }
+  },
+  {
+    id: "shop_chip_discipline",
+    name: "紀律數據晶片 (Discipline Chip)",
+    cost: 20,
+    icon: "🛡️",
+    desc: "增加 +50 EXP 及 +50 紀律特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.discipline = (st.discipline || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Discipline 特質增加";
+    }
+  },
+  {
+    id: "shop_chip_wisdom",
+    name: "智慧數據晶片 (Wisdom Chip)",
+    cost: 20,
+    icon: "🧠",
+    desc: "增加 +50 EXP 及 +50 智慧特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.wisdom = (st.wisdom || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Wisdom 特質增加";
+    }
+  },
+  {
+    id: "shop_incentive_point",
+    name: "校園獎勵計劃積分券 (Incentive Scheme)",
+    cost: 1000,
+    icon: "🎖️",
+    desc: "以 1000:1 匯率兌換 1 點實質激勵計劃分數",
+    buy: (st) => {
+      st.incentivePoints = (st.incentivePoints || 0) + 1;
+      playSound('evolve');
+      return "+1 點校園激勵計劃積分成功入賬！";
+    }
+  }
+];
+
+function toggleShopModal() {
+  const modal = document.getElementById('modalShop');
+  if (!modal) return;
+  const isHidden = modal.classList.toggle('hidden');
+  if (!isHidden) renderShopItems();
+}
+
+function renderShopItems() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st) return;
+
+  document.getElementById('shopUserCoins').textContent = st.coins || 0;
+  document.getElementById('shopUserIncentivePts').textContent = st.incentivePoints || 0;
+
+  const container = document.getElementById('shopItemsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  SHOP_CATALOG.forEach(item => {
+    const canAfford = (st.coins || 0) >= item.cost;
+    const card = document.createElement('div');
+    card.className = "bg-slate-950 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-3 shadow hover:border-yellow-500/40 transition";
+    card.innerHTML = `
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">${item.icon}</span>
+        <div>
+          <div class="font-bold text-xs text-white">${item.name}</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">${item.desc}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="font-pixel text-xs text-amber-400 font-bold">${item.cost} 幣</span>
+        <button onclick="buyShopItem('${item.id}')" ${!canAfford ? 'disabled' : ''} class="px-3.5 py-1.5 rounded-xl font-bold text-xs ${canAfford ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 cursor-pointer active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed'} shadow">
+          購買
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function buyShopItem(shopItemId) {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const item = SHOP_CATALOG.find(i => i.id === shopItemId);
+  if (!item) return;
+
+  if (!dbRootRef) return;
+  dbRootRef.child(`students/${currentUser.id}`).transaction(cur => {
+    if (!cur) return cur;
+    const currentCoins = cur.coins || 0;
+    if (currentCoins < item.cost) return cur; // 攔截餘額不足
+
+    cur.coins = currentCoins - item.cost;
+    return cur;
+  }, (err, committed, snap) => {
+    if (committed && snap.exists()) {
+      const st = appData.students[currentUser.id];
+      st.coins = snap.val().coins;
+      const resMsg = item.buy(st);
+
+      // 同步回寫道具產生的數值效果
+      patchStudentAtomic(currentUser.id, {
+        hp: st.hp,
+        exp: st.exp,
+        attackQuota: st.attackQuota,
+        courage: st.courage,
+        love: st.love,
+        discipline: st.discipline,
+        wisdom: st.wisdom,
+        incentivePoints: st.incentivePoints
+      });
+
+      addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]: ${resMsg}`, "normal", st.classId);
+      showToast("購買成功！", resMsg, "heal");
+      updateStudentUI();
+      renderShopItems();
+    } else {
+      showToast("購買失敗", "數碼幣餘額不足！", "damage");
+    }
+  });
+}
 const DIGIMON_DB = {
       "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor", power: 10, type: "damage", icon: "fa-shield" }] },
       "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Ember Spark", power: 12, type: "damage", icon: "fa-fire" }] },
@@ -1961,7 +2195,10 @@ function normalizeStudent(s, keyId) {
     courage: Number(s.courage) || 0,
     love: Number(s.love) || 0,
     discipline: Number(s.discipline) || 0,
+    coins: Number(s.coins) || 0,
+    incentivePoints: Number(s.incentivePoints) || 0,
     wisdom: Number(s.wisdom) || 0
+    
   };
 }
 
@@ -3796,6 +4033,12 @@ function getTeacherTemplate() {
           <button onclick="rewardAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-ticket"></i> Class +1 Gacha
           </button>
+<button onclick="teacherPromptClassCoins('reward')" class="px-2.5 py-1.5 rounded bg-yellow-950 border border-yellow-500 text-yellow-300 text-xs font-bold hover:bg-yellow-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+  <i class="fa-solid fa-coins text-amber-400"></i> Class +金幣
+</button>
+<button onclick="teacherPromptClassCoins('deduct')" class="px-2.5 py-1.5 rounded bg-slate-900 border border-yellow-800 text-yellow-500 text-xs font-bold hover:bg-yellow-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
+  <i class="fa-solid fa-circle-minus text-yellow-600"></i> Class -金幣
+</button>
           <button onclick="deductAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-slate-900 border border-purple-800 text-purple-300 text-xs font-bold hover:bg-purple-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-ticket-simple"></i> Class -1 Gacha
           </button>
@@ -4310,7 +4553,8 @@ function logout() {
 
       renderStudentBossBar();
       renderBountyUI();
-
+      const coinCountEl = document.getElementById('stCoinsCount');
+      if (coinCountEl) coinCountEl.textContent = st.coins || 0;
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const maxHp = digi.maxHp || 100;
       if (st.hp === undefined) st.hp = maxHp;
@@ -5170,6 +5414,7 @@ function logout() {
     }
 
     function renderTeacherGrid() {
+  
   const container = document.getElementById('teacherStudentGrid');
   if (!container || !currentUser) return;
   container.innerHTML = '';
@@ -5250,7 +5495,7 @@ function logout() {
             <div class="font-bold text-slate-200">${digi.name}</div>
             <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 0} / ${digi.maxHp}</div>
             <div class="text-slate-400 font-mono text-[11px]">
-              EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span>
+              EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span> | 金幣: <span class="text-yellow-400 font-bold">${s.coins || 0}</span>
             </div>
           </div>
         </div>
@@ -5261,6 +5506,14 @@ function logout() {
           <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+10 EXP</button>
           <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 Ticket</button>
           <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 Attack</button>
+      <div class="grid grid-cols-2 gap-1 mt-1">
+  <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="p-1 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded text-[10px] text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+    <i class="fa-solid fa-plus text-[9px]"></i> 獎勵金幣
+  </button>
+  <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="p-1 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded text-[10px] text-yellow-500 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+    <i class="fa-solid fa-minus text-[9px]"></i> 扣除金幣
+  </button>
+</div>
         </div>
         <div class="grid grid-cols-4 gap-1">
           <button onclick="deductStudentTicket('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Ticket">-1 Ticket</button>
@@ -5290,7 +5543,104 @@ function logout() {
     container.appendChild(card);
   });
 }
+    // ==========================================
+// 👨‍🏫 老師單獨增減特定學生數碼幣
+// ==========================================
+function teacherAdjustStudentCoins(studentId, mode = 'add') {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const s = appData.students[studentId];
+  if (!s) return;
 
+  const isAdd = (mode === 'add');
+  const defaultAmount = isAdd ? "20" : "10";
+  const promptText = isAdd 
+    ? `【獎勵金幣】要發放多少數碼幣給學生 [${s.name}]？` 
+    : `【扣除金幣】要扣除學生 [${s.name}] 多少數碼幣？(目前持有: ${s.coins || 0})`;
+
+  const inputVal = prompt(promptText, defaultAmount);
+  if (inputVal === null || inputVal.trim() === '') return;
+
+  const amount = parseInt(inputVal.trim());
+  if (isNaN(amount) || amount <= 0) {
+    alert("請輸入大於 0 的有效整數！");
+    return;
+  }
+
+  if (!dbRootRef) return;
+
+  // 使用 Firebase Transaction 保證數值原子化計算，並防止扣成負數
+  dbRootRef.child(`students/${studentId}/coins`).transaction((curCoins) => {
+    const base = curCoins || 0;
+    if (isAdd) {
+      return base + amount;
+    } else {
+      return Math.max(0, base - amount);
+    }
+  }, (err, committed, snap) => {
+    if (committed && snap.exists()) {
+      const finalCoins = snap.val();
+      if (isAdd) {
+        playSound('gacha');
+        addBattleLog(`💰⭐ [COIN REWARD] 老師獎勵了學生 [${s.name}] +${amount} 數碼幣 (現有: ${finalCoins})！`, "gacha", s.classId);
+        showToast("數碼幣獎勵成功", `已發放 +${amount} 金幣給 ${s.name}！`, "heal");
+      } else {
+        playSound('attack');
+        addBattleLog(`💸⚠️ [COIN DEDUCT] 老師扣除了學生 [${s.name}] -${amount} 數碼幣 (剩餘: ${finalCoins})！`, "battle", s.classId);
+        showToast("數碼幣扣除成功", `已扣除 ${s.name} 的 ${amount} 金幣！`, "damage");
+      }
+    } else {
+      showToast("操作失敗", "資料庫更新未完成，請稍後重試。", "damage");
+    }
+  });
+}
+
+// ==========================================
+// 👨‍🏫 老師為當前班級全體學生批量增減金幣
+// ==========================================
+function teacherPromptClassCoins(mode = 'reward') {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
+
+  if (myStudents.length === 0) {
+    showToast("班級操作", "當前班級無任何學生！", "info");
+    return;
+  }
+
+  const isReward = (mode === 'reward');
+  const classTitle = (targetClass === 'ALL') ? "全校所有班級" : `班級 [${targetClass}]`;
+  const defaultVal = isReward ? "20" : "10";
+  const promptText = isReward 
+    ? `【全班獎勵】為 ${classTitle} 全體學生 (${myStudents.length} 人) 每人發放多少數碼幣？` 
+    : `【全班扣除】為 ${classTitle} 全體學生 (${myStudents.length} 人) 每人扣除多少數碼幣？`;
+
+  const inputVal = prompt(promptText, defaultVal);
+  if (inputVal === null || inputVal.trim() === '') return;
+
+  const amount = parseInt(inputVal.trim());
+  if (isNaN(amount) || amount <= 0) {
+    alert("請輸入大於 0 的有效整數！");
+    return;
+  }
+
+  const updates = {};
+  myStudents.forEach(s => {
+    const cur = s.coins || 0;
+    updates[`students/${s.id}/coins`] = isReward ? (cur + amount) : Math.max(0, cur - amount);
+  });
+
+  executeAtomicMultiPathUpdate(updates).then(() => {
+    if (isReward) {
+      playSound('gacha');
+      addBattleLog(`💰🎉 [CLASS COIN REWARD] 老師為 ${classTitle} 全體學生 (${myStudents.length} 人) 發放了 +${amount} 數碼幣！`, "gacha", targetClass);
+      showToast("金幣發放完成", `已為 ${classTitle} 全員每人增加 +${amount} 數碼幣！`, "heal");
+    } else {
+      playSound('attack');
+      addBattleLog(`💸⚠️ [CLASS COIN DEDUCT] 老師從 ${classTitle} 全體學生扣除了 -${amount} 數碼幣！`, "battle", targetClass);
+      showToast("金幣扣除完成", `已從 ${classTitle} 全員扣除 ${amount} 數碼幣！`, "damage");
+    }
+  });
+}
     function rewardStudent(id, exp) {
       const s = appData.students[id];
       if (!s) return;
