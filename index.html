@@ -2014,9 +2014,10 @@ const DIGIMON_DB = {
       imgEl.src = fallbackList[0];
     }
 
-    function getPreviousDigiId(currentId) {
-
-      // 數碼暴龍階段等級對照 (0: 數碼蛋 ~ 5: 究極體)
+    // ========================================================
+    // 數碼暴龍階段等級對照 (0: 數碼蛋 ~ 5: 究極體)
+    // Digimon Stage Order Definition (0: Digi-Egg ~ 5: Mega)
+    // ========================================================
     const STAGE_ORDER = {
       "DIGI-EGG": 0,
       "IN-TRAINING": 1,
@@ -2026,7 +2027,10 @@ const DIGIMON_DB = {
       "MEGA": 5
     };
 
-    // 計算擊殺階級差距之基礎經驗值
+    // ========================================================
+    // ⚔️ 計算擊殺階級差距之基礎經驗值 (PvP Kill EXP Calculator)
+    // 同級: 100 EXP | 越一級: 150 EXP | 越兩級+: 200 EXP | 弱一級: 50 EXP | 弱兩級+: 0 EXP
+    // ========================================================
     function calculatePvPBaseKillExp(attackerDigiId, targetDigiId) {
       const atkDigi = DIGIMON_DB[attackerDigiId] || DIGIMON_DB['digitama1'];
       const tgtDigi = DIGIMON_DB[targetDigiId] || DIGIMON_DB['digitama1'];
@@ -2034,15 +2038,17 @@ const DIGIMON_DB = {
       const atkStageRank = STAGE_ORDER[atkDigi.stage] !== undefined ? STAGE_ORDER[atkDigi.stage] : 0;
       const tgtStageRank = STAGE_ORDER[tgtDigi.stage] !== undefined ? STAGE_ORDER[tgtDigi.stage] : 0;
 
-      const diff = tgtStageRank - atkStageRank; // 目標階級 - 攻擊者階級
+      const diff = tgtStageRank - atkStageRank; // 目標階級 - 攻擊者階級 (Target Rank - Attacker Rank)
 
-      if (diff >= 2) return 200;       // 越兩級或以上: 200 EXP
-      if (diff === 1) return 150;      // 越一級: 150 EXP
-      if (diff === 0) return 100;      // 平級: 100 EXP
-      if (diff === -1) return 50;      // 弱一級: 50 EXP
-      return 0;                        // 弱兩級或以下 (<= -2): 0 EXP (無經驗)
+      if (diff >= 2) return 200;       // 越兩級或以上 (+2 or more ranks): 200 EXP
+      if (diff === 1) return 150;      // 越一級 (+1 rank higher): 150 EXP
+      if (diff === 0) return 100;      // 平級 (Same rank): 100 EXP
+      if (diff === -1) return 50;      // 弱一級 (-1 rank lower): 50 EXP
+      return 0;                        // 弱兩級或以下 (-2 ranks or lower): 0 EXP (無經驗 No EXP)
     }
 
+    // 取得前一階段數碼暴龍形態
+    function getPreviousDigiId(currentId) {
       const cur = DIGIMON_DB[currentId];
       if (!cur) return getRandomEggId();
       if (cur.prevForm && DIGIMON_DB[cur.prevForm]) return cur.prevForm;
@@ -7358,246 +7364,360 @@ function teacherPromptClassCoins(mode = 'reward') {
       });
     }
 
-    let currentPvpPendingSkill = null;
-    let pvpSelectedClassContext = "";
+    // 學生施放技能暫存索引
+    let currentPendingSkillIndex = null;
+    let pvpPickerActiveTabClass = "";
 
+    // ========================================================
+    // 學生發動技能按鈕 (vs Boss 或 vs Classmate 同學)
+    // ========================================================
     function castStudentSkill(skillIdx, targetMode) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
-      if (!st) return;
-
-      if (isStudentBanned(st)) {
-        showToast("System Locked", "Your interactions are currently locked by the teacher!", "info");
-        return;
-      }
-
-      if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
-        showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
-        playSound('faint');
-        return;
-      }
-
-      if ((st.attackQuota || 0) <= 0) {
-        showToast("Action Depleted", "❌ Attacks left: 0!", "info");
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
+        showToast("Action Locked / 行動受限", "Digimon is fainted or banned! / 數碼暴龍已倒下或已被老師鎖定！", "damage");
         return;
       }
 
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
+      const skill = (digi.skills && digi.skills[skillIdx]) ? digi.skills[skillIdx] : { name: "Attack", power: 20, type: "damage" };
 
-      if (targetMode === 'boss') {
-        if (!dbRootRef) return;
-        dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-          if (quota === null || quota <= 0) return 0;
-          return quota - 1;
-        }, (err, committed, snap) => {
-          if (!committed || snap.val() < 0) {
-            return showToast("Action Failed", "Attack quota deduction failed!", "info");
+      // 回復技能：對自身進行治療
+      if (skill.type === 'heal') {
+        let healAmt = skill.power || 20;
+        // 陣營 Holy Blessing 增益 (+30% 回復)
+        const myFacInfo = getStudentFactionInClass(st, parseStudentClasses(st.classId)[0] || 'ALL');
+        if (myFacInfo.factionId) {
+          const factions = getFactionsForClass(parseStudentClasses(st.classId)[0] || 'ALL');
+          const myFac = factions.find(f => f.id === myFacInfo.factionId);
+          if (myFac && myFac.buffType === 'heal_boost') {
+            healAmt = Math.round(healAmt * 1.3);
           }
-
-          const teachersList = Object.values(appData.teachers || {});
-          let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
-          if (!tc) return alert("No active Teacher Boss found.");
-
-          const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
-
-          if (skill.type === 'heal') {
-            let finalPower = skill.power;
-            const facs = getFactionsForClass(st.classId);
-            const myFac = facs.find(f => f.id === st.factionId);
-            if (myFac && myFac.buffType === 'heal_boost') {
-              finalPower = Math.round(finalPower * 1.3);
-            }
-            dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
-              return Math.min(digi.maxHp, (hp || 100) + finalPower);
-            }, (hErr, hCommitted, hSnap) => {
-              if (hCommitted) {
-                playSound('heal');
-                addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${finalPower} HP!`, "heal", st.classId);
-                showToast("Healed!", `Restored +${finalPower} HP!`, "heal");
-              }
-            });
-          } else {
-            dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
-              const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
-              return Math.max(0, currentBossHp - skill.power);
-            }, (bErr, bCommitted, bSnap) => {
-              if (bCommitted) {
-                playSound('attack');
-                addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
-                showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
-              }
-            });
-          }
-        });
-      } else {
-        // PvP 模式：彈出介面選擇對象
-        const stClasses = parseStudentClasses(st.classId);
-        if (stClasses.length === 0) {
-          return alert("You are not currently enrolled in any class!");
         }
+        const maxHp = digi.maxHp || 100;
+        const newHp = Math.min(maxHp, (st.hp || 0) + healAmt);
+        patchStudentAtomic(currentUser.id, { hp: newHp });
+        playSound('heal');
+        addBattleLog(`💚 [HEAL / 回復] ${st.name} used [${skill.name}], recovered +${healAmt} HP! (HP: ${newHp}/${maxHp})`, "heal", st.classId);
+        showToast("Recovery / 回復成功", `+${healAmt} HP restored! / 成功回復 +${healAmt} HP！`, "heal");
+        updateStudentUI();
+        return;
+      }
 
-        currentPvpPendingSkill = { skillIdx, skill, digi };
-        pvpSelectedClassContext = studentActiveFactionViewClass || stClasses[0];
-        openPvpTargetModal();
+      // 檢查剩餘攻擊次數 (Attack Quota)
+      if ((st.attackQuota || 0) <= 0) {
+        playSound('attack');
+        showToast("No Attacks Left / 攻擊次數不足", "You have 0 attacks left! Await teacher grant or draw via Gacha. / 攻擊次數為 0！請等待老師獎勵或透過抽獎獲取！", "damage");
+        return;
+      }
+
+      // 攻擊老師 Partner 首領
+      if (targetMode === 'boss') {
+        executeAttackTeacherBoss(skill);
+      } else {
+        // 攻擊同學 (PvP)：開啟目標選擇器
+        currentPendingSkillIndex = skillIdx;
+        openPvpTargetPicker();
       }
     }
 
-    function openPvpTargetModal() {
+    // ========================================================
+    // ⚔️ 學生攻擊老師 Partner 首領 (Attack Teacher Boss)
+    // ========================================================
+    function executeAttackTeacherBoss(skill) {
+      const st = appData.students[currentUser.id];
+      const tcId = studentTargetTeacherId || 'teacher1';
+      const tc = appData.teachers[tcId] || Object.values(appData.teachers || {})[0];
+      if (!tc) return alert("No active Teacher Boss! / 無可攻擊的老師首領！");
+
+      let dmg = skill.power || 20;
+      // 陣營力量激增 Buff (+20% 傷害)
+      const myFacInfo = getStudentFactionInClass(st, parseStudentClasses(st.classId)[0] || 'ALL');
+      if (myFacInfo.factionId) {
+        const factions = getFactionsForClass(parseStudentClasses(st.classId)[0] || 'ALL');
+        const myFac = factions.find(f => f.id === myFacInfo.factionId);
+        if (myFac && myFac.buffType === 'atk_boost') {
+          dmg = Math.round(dmg * 1.2);
+        }
+      }
+
+      const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+      const curHp = tc.hp !== undefined ? tc.hp : (tc.maxHp || 2000);
+      const nextHp = Math.max(0, curHp - dmg);
+
+      // 扣除攻擊次數並獎勵命中 EXP
+      const newQuota = Math.max(0, (st.attackQuota || 1) - 1);
+      patchStudentAtomic(currentUser.id, {
+        attackQuota: newQuota,
+        exp: (st.exp || 0) + 15,
+        statPool: (st.statPool || 0) + 15
+      });
+
+      patchTeacherAtomic(tc.id, { hp: nextHp });
+      playSound('attack');
+      addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG! (+15 EXP)`, "battle", st.classId);
+      showToast("Hit Boss / 命中首領", `Dealt ${dmg} DMG to ${tcDigi.name}! (+15 EXP) / 對首領造成 ${dmg} 點傷害！(+15 EXP)`, "damage");
+      updateStudentUI();
+    }
+
+    // ========================================================
+    // 🎯 開啟同學選擇彈窗 (Open PvP Target Picker)
+    // ========================================================
+    function openPvpTargetPicker() {
       const modal = document.getElementById('modalPvpTargetPicker');
       if (!modal) return;
-      renderPvpTargetModalContent();
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      const stClasses = parseStudentClasses(st.classId);
+      if (stClasses.length === 0) stClasses.push("ALL");
+
+      if (!pvpPickerActiveTabClass || !stClasses.includes(pvpPickerActiveTabClass)) {
+        pvpPickerActiveTabClass = stClasses[0];
+      }
+
+      // 渲染班級切換標籤
+      const tabsBox = document.getElementById('pvpPickerClassTabs');
+      if (tabsBox) {
+        tabsBox.innerHTML = '';
+        stClasses.forEach(c => {
+          const tabBtn = document.createElement('button');
+          tabBtn.className = (c === pvpPickerActiveTabClass)
+            ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white font-bold cursor-pointer active:scale-95"
+            : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white font-bold cursor-pointer active:scale-95";
+          tabBtn.textContent = c;
+          tabBtn.onclick = () => {
+            pvpPickerActiveTabClass = c;
+            openPvpTargetPicker();
+          };
+          tabsBox.appendChild(tabBtn);
+        });
+      }
+
+      document.getElementById('pvpPickerClassSubtitle').textContent = `Targeting Classmates in [${pvpPickerActiveTabClass}] / 選擇【${pvpPickerActiveTabClass}】班級目標`;
+      renderPvpTargetsList(pvpPickerActiveTabClass);
       modal.classList.remove('hidden');
     }
 
     function closePvpTargetModal() {
       const modal = document.getElementById('modalPvpTargetPicker');
       if (modal) modal.classList.add('hidden');
-      currentPvpPendingSkill = null;
+      currentPendingSkillIndex = null;
     }
 
-    function selectPvpClassContext(cls) {
-      pvpSelectedClassContext = cls;
-      renderPvpTargetModalContent();
-    }
-
-    function renderPvpTargetModalContent() {
-      if (!currentUser || currentUser.role !== 'student' || !currentPvpPendingSkill) return;
-      const st = appData.students[currentUser.id];
-      if (!st) return;
-
-      const subTitle = document.getElementById('pvpPickerClassSubtitle');
-      const tabsBox = document.getElementById('pvpPickerClassTabs');
+    // ========================================================
+    // 渲染可攻擊的同學列表 (含階級、陣營、預計獲得經驗中英對照)
+    // ========================================================
+    function renderPvpTargetsList(classFilter) {
       const container = document.getElementById('pvpTargetsListContainer');
-      if (!container) return;
-
-      const stClasses = parseStudentClasses(st.classId);
-      if (!stClasses.includes(pvpSelectedClassContext)) {
-        pvpSelectedClassContext = stClasses[0] || "ALL";
-      }
-
-      if (subTitle) {
-        subTitle.textContent = `Skill 技能: [${currentPvpPendingSkill.skill.name}] (${currentPvpPendingSkill.skill.power} DMG) | Class 班別: ${pvpSelectedClassContext}`;
-      }
-
-      // 多班級切換標籤
-      if (tabsBox) {
-        tabsBox.innerHTML = '';
-        if (stClasses.length > 1) {
-          stClasses.forEach(c => {
-            const btn = document.createElement('button');
-            btn.className = (c === pvpSelectedClassContext)
-              ? "px-3 py-1 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95"
-              : "px-3 py-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
-            btn.textContent = `Class ${c}`;
-            btn.onclick = () => selectPvpClassContext(c);
-            tabsBox.appendChild(btn);
-          });
-        }
-      }
-
-      const classRoster = Object.values(appData.students || {})
-        .filter(s => studentIsInClass(s, pvpSelectedClassContext))
-        .sort((a, b) => String(a.username || a.id).localeCompare(String(b.username || b.id)));
-
-      const currentBountyTargetId = getEffectiveBountyIdForClass(pvpSelectedClassContext);
-      const atkFac = getStudentFactionInClass(st, pvpSelectedClassContext);
-
+      if (!container || !currentUser) return;
       container.innerHTML = '';
-      if (classRoster.length <= 1) {
-        container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs italic">No other classmates found in [${pvpSelectedClassContext}]. / 班別 [${pvpSelectedClassContext}] 中無其他同學可供挑戰。</div>`;
+
+      const me = appData.students[currentUser.id];
+      const myDigi = DIGIMON_DB[me.currentDigiId] || DIGIMON_DB['digitama1'];
+      const myFac = getStudentFactionInClass(me, classFilter);
+
+      // 篩選同班且存活的同學（排除自己）
+      const candidates = Object.values(appData.students || {}).filter(s => {
+        if (s.id === currentUser.id) return false;
+        return studentIsInClass(s, classFilter);
+      });
+
+      if (candidates.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-500 italic text-xs">No other classmates found in [${classFilter}]. / 在 [${classFilter}] 找不到其他同班同學。</div>`;
         return;
       }
 
-      classRoster.forEach((p, idx) => {
-        if (p.id === st.id) return; // 略過自己
+      const activeBountyTargetId = appData.bounties ? (appData.bounties[sanitizeClassKey(classFilter)] || appData.bounties['ALL']) : null;
 
-        const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-        const maxHp = pDigi.maxHp || 100;
-        const curHp = (p.hp !== undefined && p.hp !== null) ? Number(p.hp) : maxHp;
-        const isDead = !!p.isFainted || curHp <= 0;
-        const isBounty = (currentBountyTargetId === p.id);
-        const tgtFac = getStudentFactionInClass(p, pvpSelectedClassContext);
-        const isAlly = (atkFac.factionId && tgtFac.factionId && atkFac.factionId === tgtFac.factionId);
+      candidates.forEach(target => {
+        const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+        const isFainted = target.isFainted || (target.hp !== undefined && target.hp <= 0);
+        const tgtFac = getStudentFactionInClass(target, classFilter);
+        const isSameFaction = (myFac.factionId && tgtFac.factionId && myFac.factionId === tgtFac.factionId);
+        const isBounty = (activeBountyTargetId === target.id);
+
+        // 計算擊殺經驗值
+        const killExpReward = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
+        const diffRank = (STAGE_ORDER[tgtDigi.stage] || 0) - (STAGE_ORDER[myDigi.stage] || 0);
+
+        let rankDiffLabel = "同級 (Same)";
+        let rankColor = "text-cyan-300";
+        if (diffRank >= 2) { rankDiffLabel = `越兩級+ (+${diffRank} Mega Gap)`; rankColor = "text-amber-400 font-bold"; }
+        else if (diffRank === 1) { rankDiffLabel = "越一級 (+1 Higher)"; rankColor = "text-emerald-400 font-bold"; }
+        else if (diffRank === -1) { rankDiffLabel = "弱一級 (-1 Lower)"; rankColor = "text-slate-400"; }
+        else if (diffRank <= -2) { rankDiffLabel = "弱兩級+ (Weak/No EXP)"; rankColor = "text-purple-400"; }
 
         const card = document.createElement('div');
-        let cardBg = "bg-slate-950 border-slate-800 hover:border-cyan-500";
-        if (isBounty) cardBg = "bg-rose-950/30 border-rose-500 shadow-md shadow-rose-900/30";
-        if (isDead) cardBg = "bg-slate-950/50 border-slate-800 opacity-40";
-
-        card.className = `p-3 rounded-2xl border-2 flex items-center justify-between gap-3 transition cursor-pointer active:scale-98 ${cardBg}`;
+        card.className = `p-3 rounded-2xl border ${isBounty ? 'border-rose-500 bg-rose-950/20' : (isSameFaction ? 'border-indigo-600/50 bg-indigo-950/20' : 'border-slate-800 bg-slate-950')} flex items-center justify-between gap-3 transition hover:border-cyan-400/80 cursor-pointer ${isFainted ? 'opacity-40 cursor-not-allowed' : ''}`;
 
         card.innerHTML = `
           <div class="flex items-center gap-3 min-w-0">
-            <span class="font-pixel text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-bold shrink-0">
-              #${idx + 1}
-            </span>
             <div class="w-12 h-12 bg-slate-900 rounded-xl p-1 border border-slate-800 flex items-center justify-center shrink-0">
-              <img src="${getDigiImgSrc(p.currentDigiId)}" onerror="this.onerror=null;this.src='${pDigi.svg}';" class="max-w-full max-h-full object-contain">
+              <img src="${getDigiImgSrc(target.currentDigiId)}" onerror="this.onerror=null;this.src='${tgtDigi.svg}';" class="max-w-full max-h-full object-contain">
             </div>
             <div class="truncate">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="font-black text-sm text-white">${p.name}</span>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-bold">
-                  ID 學號: ${p.username || p.id}
-                </span>
-                ${isBounty ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-rose-900 border border-rose-500 text-rose-200 font-bold animate-pulse">🎯 BOUNTY 懸賞目標</span>' : ''}
-                ${isAlly ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-bold">🛡️ Ally 同盟 (${tgtFac.factionName})</span>` : (tgtFac.factionName ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400">${tgtFac.factionName}</span>` : '')}
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white truncate">${target.name}</span>
+                <span class="text-[10px] font-mono text-slate-400">(${target.username})</span>
+                ${isBounty ? '<span class="px-1.5 py-0.2 rounded bg-rose-900 border border-rose-500 text-rose-300 font-pixel text-[8px] animate-pulse">BOUNTY 懸賞</span>' : ''}
+                ${target.hasShield ? '<span class="text-[10px] text-cyan-400" title="Shield Active 護盾"><i class="fa-solid fa-shield-halved"></i></span>' : ''}
               </div>
-              <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
-                <span>${pDigi.name} (${pDigi.stageName})</span>
-                <span class="${isDead ? 'text-rose-400 font-bold' : 'text-emerald-400 font-mono'}">HP: ${curHp} / ${maxHp}</span>
+              <div class="text-[11px] text-slate-300 mt-0.5">
+                ${tgtDigi.name} <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 text-cyan-300">${tgtDigi.stageName}</span>
+                · HP: <b class="text-emerald-400 font-mono">${target.hp !== undefined ? target.hp : tgtDigi.maxHp}</b> / ${tgtDigi.maxHp}
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>陣營 Faction: <b class="${tgtFac.factionName ? 'text-indigo-300' : 'text-slate-500'}">${tgtFac.factionName || '無陣營 (None)'}</b></span>
+                <span>|</span>
+                <span class="${rankColor}">階級: ${rankDiffLabel}</span>
               </div>
             </div>
           </div>
 
-          <div class="shrink-0">
-            ${isDead ? `
-              <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-500 font-bold text-xs">Fainted 已倒下</span>
-            ` : (isAlly ? `
-              <span class="px-3 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-700/60 text-indigo-300 font-bold text-xs">Ally Immune 盟友免疫</span>
-            ` : `
-              <button onclick="confirmExecutePvpAttack('${p.id}')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs shadow-md transition active:scale-95 cursor-pointer flex items-center gap-1">
-                <i class="fa-solid fa-crosshairs"></i> Attack 鎖定攻擊
-              </button>
-            `)}
+          <div class="text-right shrink-0">
+            <div class="font-pixel text-xs text-amber-300">擊殺: +${killExpReward} EXP</div>
+            <div class="text-[10px] text-slate-400">Kill Reward</div>
+            ${isSameFaction ? '<span class="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-600 block mt-1">同陣營盟友 (免傷)</span>' : ''}
+            ${isFainted ? '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600 block mt-1">已倒下 Fainted</span>' : ''}
           </div>
         `;
+
+        if (!isFainted) {
+          card.onclick = () => executePvPAttack(target.id, classFilter);
+        }
         container.appendChild(card);
       });
     }
 
-    function confirmExecutePvpAttack(targetId) {
-      if (!currentUser || currentUser.role !== 'student' || !currentPvpPendingSkill) return;
-      const st = appData.students[currentUser.id];
+    // ========================================================
+    // ⚔️ 執行學生對學生攻擊與擊殺結算核心 (PvP Execution & Kill EXP)
+    // ========================================================
+    function executePvPAttack(targetId, targetClass) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const me = appData.students[currentUser.id];
       const target = appData.students[targetId];
-      if (!st || !target) return;
+      if (!me || !target) return;
 
-      const battleClass = pvpSelectedClassContext || parseStudentClasses(st.classId)[0] || 'ALL';
-      const atkFac = getStudentFactionInClass(st, battleClass);
-      const tgtFac = getStudentFactionInClass(target, battleClass);
-
-      if (atkFac.factionId && tgtFac.factionId && atkFac.factionId === tgtFac.factionId) {
-        playSound('shield');
-        return alert(`❌ 無法攻擊 [${target.name}]！你們在【${battleClass}】皆隸屬於同一個盟友陣營 [${atkFac.factionName}]，同盟成員不可互相攻擊！`);
+      if ((me.attackQuota || 0) <= 0) {
+        showToast("No Attacks / 攻擊次數不足", "No attack quota left! / 攻擊次數已用盡！", "damage");
+        closePvpTargetModal();
+        return;
       }
 
       if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
-        return alert(`同學 [${target.name}] 已經處於倒下狀態 (FAINTED)！請選擇其他存活對象。`);
+        showToast("Already Fainted / 目標已倒下", `${target.name} is already fainted! / ${target.name} 已經倒下，無法再受攻擊！`, "info");
+        return;
       }
 
-      const { skill, digi } = currentPvpPendingSkill;
+      const myDigi = DIGIMON_DB[me.currentDigiId] || DIGIMON_DB['digitama1'];
+      const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skill = (myDigi.skills && myDigi.skills[currentPendingSkillIndex !== null ? currentPendingSkillIndex : 0]) || { name: "Attack", power: 25 };
+
+      // 1. 同陣營盟友免傷判斷 (Friendly Fire Immunity)
+      const myFac = getStudentFactionInClass(me, targetClass);
+      const tgtFac = getStudentFactionInClass(target, targetClass);
+      if (myFac.factionId && tgtFac.factionId && myFac.factionId === tgtFac.factionId) {
+        playSound('shield');
+        showToast("Faction Ally / 陣營盟友", `${target.name} is in your faction [${myFac.factionName}]! Immune to friendly fire. / 同陣營盟友免疫傷害！`, "info");
+        return;
+      }
+
       closePvpTargetModal();
 
-      // 扣除攻擊次數並結算傷害
-      dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-        if (quota === null || quota <= 0) return 0;
-        return quota - 1;
-      }, (err, committed, snap) => {
-        if (!committed || snap.val() < 0) {
-          return showToast("Action Failed", "Attack quota deduction failed!", "info");
+      // 2. 計算傷害加成與減免 (Buffs & Debuffs)
+      let dmg = skill.power || 25;
+      const factionsInClass = getFactionsForClass(targetClass);
+
+      // 攻擊方：力量激增 Buff (+20% 傷害)
+      if (myFac.factionId) {
+        const fObj = factionsInClass.find(f => f.id === myFac.factionId);
+        if (fObj && fObj.buffType === 'atk_boost') dmg = Math.round(dmg * 1.2);
+      }
+      // 防禦方：易傷詛咒 (雙倍受傷) 或 鋼鐵要塞 (-20% 受傷)
+      if (tgtFac.factionId) {
+        const fObj = factionsInClass.find(f => f.id === tgtFac.factionId);
+        if (fObj && fObj.buffType === 'vulnerable_debuff') dmg = Math.round(dmg * 2.0);
+        else if (fObj && fObj.buffType === 'def_boost') dmg = Math.max(1, Math.round(dmg * 0.8));
+      }
+
+      // 扣除攻擊次數
+      const newQuota = Math.max(0, (me.attackQuota || 1) - 1);
+      const updates = {};
+      updates[`students/${me.id}/attackQuota`] = newQuota;
+
+      // 3. 護盾抵擋判定 (Shield Block)
+      if (target.hasShield) {
+        updates[`students/${target.id}/hasShield`] = false;
+        executeAtomicMultiPathUpdate(updates).then(() => {
+          playSound('shield');
+          addBattleLog(`🛡️ [SHIELD BLOCK / 護盾格擋] ${target.name}'s Aegis Shield blocked ${me.name}'s [${skill.name}]!`, "battle", targetClass);
+          showToast("Blocked by Shield / 護盾格擋", `${target.name}'s shield blocked your attack! / ${target.name} 的數碼聖盾抵擋了你的攻擊！`, "info");
+          updateStudentUI();
+        });
+        return;
+      }
+
+      // 4. 計算剩餘生命值
+      const curHp = target.hp !== undefined ? target.hp : (tgtDigi.maxHp || 100);
+      const nextHp = Math.max(0, curHp - dmg);
+      updates[`students/${target.id}/hp`] = nextHp;
+
+      // 5. 命中獎勵（懸賞目標每次命中額外 +30 EXP）
+      const activeBountyTargetId = appData.bounties ? (appData.bounties[sanitizeClassKey(targetClass)] || appData.bounties['ALL']) : null;
+      let expGained = 10;
+      let coinsGained = 0;
+
+      if (activeBountyTargetId === target.id) {
+        expGained += 30; // 懸賞命中獎勵
+      }
+
+      // 6. 擊殺判定 (Kill Confirmation)
+      if (nextHp <= 0) {
+        updates[`students/${target.id}/isFainted`] = true;
+
+        // 計算階級差距經驗 (同級 100, 越一級 150, 越兩級 200, 弱一級 50, 弱兩級 0)
+        const baseKillExp = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
+        let killExp = baseKillExp;
+
+        // 陣營 EXP Frenzy 增益 (+25% EXP)
+        if (myFac.factionId) {
+          const fObj = factionsInClass.find(f => f.id === myFac.factionId);
+          if (fObj && fObj.buffType === 'exp_boost') {
+            killExp = Math.round(killExp * 1.25);
+          }
         }
-        applyAttackDamageWithTransaction(st, target, skill, digi, battleClass);
+
+        expGained += killExp;
+        coinsGained += 10; // 成功擊殺基礎金幣獎勵
+
+        // 懸賞擊殺特別大獎 (Elimination Bounty: +300 EXP, +1 Ticket, +20 Coins)
+        if (activeBountyTargetId === target.id) {
+          expGained += 300;
+          coinsGained += 20;
+          updates[`students/${me.id}/gachaTickets`] = (me.gachaTickets || 0) + 1;
+          updates[`bounties/${sanitizeClassKey(targetClass)}`] = null; // 結算並清除懸賞
+          addBattleLog(`🎯🏆 [BOUNTY CLAIMED / 懸賞達成] ${me.name} eliminated Bounty Target [${target.name}]! Awarded +300 EXP, +1 Ticket & +20 Coins!`, "evolution", targetClass);
+        }
+
+        playSound('faint');
+        addBattleLog(`☠️⚔️ [PVP KILL / 對決擊殺] ${me.name}'s [${myDigi.name}] defeated ${target.name}'s [${tgtDigi.name}]! (Kill EXP: +${killExp}, Total EXP: +${expGained}, +${coinsGained} Coins)`, "battle", targetClass);
+        showToast("Target Defeated! / 擊殺對手！", `Defeated ${target.name}! Gained +${expGained} EXP & +${coinsGained} Coins! / 成功擊殺 ${target.name}！獲得 +${expGained} EXP 與 +${coinsGained} 金幣！`, "evolution");
+      } else {
+        playSound('attack');
+        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
+        showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
+      }
+
+      // 更新攻擊者經驗值、點數池與金幣
+      updates[`students/${me.id}/exp`] = (me.exp || 0) + expGained;
+      updates[`students/${me.id}/statPool`] = (me.statPool || 0) + expGained;
+      if (coinsGained > 0) {
+        updates[`students/${me.id}/coins`] = (me.coins || 0) + coinsGained;
+      }
+
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        updateStudentUI();
       });
     }
 
