@@ -657,10 +657,7 @@
 <button onclick="toggleShopModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
   <i class="fa-solid fa-store"></i> 數碼商店
 </button>
-<!-- 📝 考卷模式按鈕 -->
-<button onclick="openExamModalForStudent()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
-  <i class="fa-solid fa-file-pen"></i> 考卷測驗 (Exam)
-</button>
+
               <button id="btnOpenGacha" onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
                 <i class="fa-solid fa-gift"></i> Gacha 抽獎
               </button>
@@ -7711,297 +7708,361 @@ function teacherPromptClassCoins(mode = 'reward') {
     }
 
     // 5. 學生端狀態同步處理
+    // ==========================================
+    // 📝 學生端考卷同步與作答核心修復版
+    // ==========================================
     function onStudentExamStateSync() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const modal = document.getElementById('modalExamStudent');
+      if (!modal) return;
+
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      // 1. 若當前沒有啟動中的考卷，立即關閉並清除定時器
       if (!activeExamInstance || !activeExamInstance.active) {
         if (examStudentCountdownTimer) {
           clearInterval(examStudentCountdownTimer);
           examStudentCountdownTimer = null;
         }
-        // 若學生已在結算畫面則不強制關閉，否則關閉視窗
-        const resultSection = document.getElementById('examResultSection');
-        if (resultSection && resultSection.classList.contains('hidden')) {
-          document.getElementById('modalExamStudent').classList.add('hidden');
-        }
+        modal.classList.add('hidden');
         return;
       }
 
-      const st = appData.students[currentUser.id];
-      if (!st || isStudentBanned(st)) return;
-      if (activeExamInstance.classTag !== 'ALL' && !studentIsInClass(st, activeExamInstance.classTag)) return;
+      // 2. 班級權限比對（支援 'ALL' 或多班級精確比對）
+      const examClass = (activeExamInstance.classTag || 'ALL').trim();
+      const stClasses = parseStudentClasses(st.classId);
+      const isClassAllowed = (examClass === 'ALL') || stClasses.some(c => c.toLowerCase() === examClass.toLowerCase());
 
-      // 若學生已提交過，顯示結算結果
-      const mySub = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
-      if (mySub) {
-        renderStudentExamResult(mySub);
-      }
-    }
-
-    // 6. 打開學生作答視窗
-    function openExamModalForStudent() {
-      if (!activeExamInstance || !activeExamInstance.active) {
-        return alert("目前沒有進行中的考卷測驗！(No active exam right now)");
+      if (!isClassAllowed) {
+        modal.classList.add('hidden');
+        return;
       }
 
-      const st = appData.students[currentUser.id];
-      if (!st || isStudentBanned(st)) {
-        return alert("操作已被鎖定，無法參與測驗！");
+      // 3. 確保題目陣列存在且有題目
+      const questions = activeExamInstance.questions || [];
+      if (questions.length === 0) {
+        console.warn("考卷題目陣列為空！");
+        return;
       }
 
-      if (activeExamInstance.classTag !== 'ALL' && !studentIsInClass(st, activeExamInstance.classTag)) {
-        return alert("此考卷不屬於你所在的班級！");
-      }
+      // 4. 檢查學生是否已經提交過此份考卷
+      const mySubmission = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
 
-      const modal = document.getElementById('modalExamStudent');
+      // 顯示考卷視窗
       modal.classList.remove('hidden');
 
-      // 若已提交，直接展示報告
-      const mySub = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
-      if (mySub) {
-        renderStudentExamResult(mySub);
-        return;
+      // 更新考卷標題
+      const titleEl = document.getElementById('examPaperTitle');
+      if (titleEl) {
+        titleEl.textContent = activeExamInstance.title || "班級考卷測驗 (Class Exam)";
       }
 
-      // 否則進入作答狀態
-      document.getElementById('examTakingSection').classList.remove('hidden');
-      document.getElementById('examResultSection').classList.add('hidden');
-      document.getElementById('examPaperTitle').textContent = activeExamInstance.title;
-
-      currentExamQIndex = 0;
-      renderCurrentExamQuestion();
-      startStudentExamTimer();
-    }
-
-    function closeStudentExamModal() {
-      document.getElementById('modalExamStudent').classList.add('hidden');
-    }
-
-    // 7. 渲染當前題目
-    function renderCurrentExamQuestion() {
-      if (!activeExamInstance || !activeExamInstance.questions) return;
-      const qList = activeExamInstance.questions;
-      const curQ = qList[currentExamQIndex];
-      if (!curQ) return;
-
-      document.getElementById('examQuestionProgressText').textContent = `第 ${currentExamQIndex + 1} / ${qList.length} 題 (Question ${currentExamQIndex + 1} of ${qList.length})`;
-      document.getElementById('examQuestionContent').textContent = curQ.question;
-
-      const typeBadge = document.getElementById('examQuestionTypeBadge');
-      const mcContainer = document.getElementById('examOptionsContainer');
-      const fillContainer = document.getElementById('examFillInputContainer');
-      const fillInput = document.getElementById('examFillInput');
-
-      // 導航按鈕狀態控制
-      document.getElementById('btnExamPrev').disabled = (currentExamQIndex === 0);
-      document.getElementById('btnExamPrev').style.opacity = (currentExamQIndex === 0) ? '0.4' : '1';
-      document.getElementById('btnExamNext').classList.toggle('hidden', currentExamQIndex === qList.length - 1);
-
-      if (curQ.isFillBlank) {
-        typeBadge.textContent = "填空題 (Fill-in)";
-        typeBadge.className = "px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 font-pixel text-[10px]";
-        mcContainer.classList.add('hidden');
-        fillContainer.classList.remove('hidden');
-
-        // 回填學生已寫下的答案
-        fillInput.value = studentExamAnswers[currentExamQIndex] || '';
-        fillInput.oninput = (e) => {
-          studentExamAnswers[currentExamQIndex] = e.target.value;
-        };
+      if (mySubmission) {
+        // 已提交：停止倒數，直接展示成績與題解報告
+        if (examStudentCountdownTimer) {
+          clearInterval(examStudentCountdownTimer);
+          examStudentCountdownTimer = null;
+        }
+        displayExamResultReport(mySubmission);
       } else {
-        typeBadge.textContent = "選擇題 (MCQ)";
-        typeBadge.className = "px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-pixel text-[10px]";
-        fillContainer.classList.add('hidden');
-        mcContainer.classList.remove('hidden');
-        mcContainer.innerHTML = '';
+        // 進行中：顯示作答區、隱藏結算區
+        document.getElementById('examTakingSection').classList.remove('hidden');
+        document.getElementById('examResultSection').classList.add('hidden');
 
-        const selectedAns = studentExamAnswers[currentExamQIndex];
+        // 初始化作答索引防呆
+        if (typeof currentExamQIndex !== 'number' || currentExamQIndex >= questions.length || currentExamQIndex < 0) {
+          currentExamQIndex = 0;
+        }
 
-        curQ.options.forEach((optText, i) => {
-          const isSelected = selectedAns === optText;
-          const btn = document.createElement('button');
-          btn.className = `p-3.5 rounded-xl border text-left text-xs font-bold transition flex items-center justify-between cursor-pointer active:scale-95 ${
-            isSelected 
-              ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30' 
-              : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-indigo-500/50'
-          }`;
-          btn.innerHTML = `
-            <span>${String.fromCharCode(65 + i)}. ${optText}</span>
-            ${isSelected ? '<i class="fa-solid fa-circle-check text-white"></i>' : '<i class="fa-regular fa-circle text-slate-600"></i>'}
-          `;
-          btn.onclick = () => {
-            studentExamAnswers[currentExamQIndex] = optText;
-            renderCurrentExamQuestion();
-          };
-          mcContainer.appendChild(btn);
-        });
-      }
-    }
-
-    function navigateExamQuestion(delta) {
-      if (!activeExamInstance || !activeExamInstance.questions) return;
-      const nextIdx = currentExamQIndex + delta;
-      if (nextIdx >= 0 && nextIdx < activeExamInstance.questions.length) {
-        currentExamQIndex = nextIdx;
+        // 啟動倒數計時與渲染目前題目
+        startStudentExamTimer();
         renderCurrentExamQuestion();
       }
     }
 
-    // 8. 學生作答即時倒數計時器
+    // 啟動學生端倒數計時器
     function startStudentExamTimer() {
       if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
-
       const badge = document.getElementById('examStudentTimerBadge');
-      const updateTimer = () => {
-        if (!activeExamInstance || !activeExamInstance.active) {
-          clearInterval(examStudentCountdownTimer);
-          return;
+      if (!badge || !activeExamInstance) return;
+
+      const durationSec = (activeExamInstance.timeLimitMinutes || 30) * 60;
+      const startTime = activeExamInstance.startTime || activeExamInstance.timestamp || Date.now();
+
+      function updateTick() {
+        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        const remainSec = durationSec - elapsedSec;
+
+        if (remainSec <= 0) {
+          badge.textContent = "00:00";
+          if (examStudentCountdownTimer) {
+            clearInterval(examStudentCountdownTimer);
+            examStudentCountdownTimer = null;
+          }
+          // 時間到自動交卷
+          if (!isExamSubmitting) {
+            submitExamPaper(true);
+          }
+        } else {
+          const m = Math.floor(remainSec / 60);
+          const s = remainSec % 60;
+          badge.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
-
-        const elapsedSec = Math.floor((Date.now() - activeExamInstance.startTime) / 1000);
-        const remainSec = Math.max(0, activeExamInstance.limitSeconds - elapsedSec);
-
-        const mins = Math.floor(remainSec / 60);
-        const secs = remainSec % 60;
-        if (badge) {
-          badge.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-
-        // 時間到強制自動交卷
-        if (remainSec <= 0 && !isExamSubmitting) {
-          clearInterval(examStudentCountdownTimer);
-          showToast("時間到", "已達測驗時限，系統正自動強制交卷！", "damage");
-          submitExamPaper(true);
-        }
-      };
-
-      updateTimer();
-      examStudentCountdownTimer = setInterval(updateTimer, 1000);
-    }
-
-    // 9. 提交考卷與算分
-    function submitExamPaper(isForced = false) {
-      if (isExamSubmitting) return;
-      if (!isForced && !confirm("確定要提交考卷嗎？提交後將立即結算得分與題解！")) return;
-
-      isExamSubmitting = true;
-      if (examStudentCountdownTimer) {
-        clearInterval(examStudentCountdownTimer);
-        examStudentCountdownTimer = null;
       }
 
-      const qList = activeExamInstance.questions || [];
-      let correctCount = 0;
-      const detailedReports = [];
+      updateTick();
+      examStudentCountdownTimer = setInterval(updateTick, 1000);
+    }
 
-      qList.forEach((q, idx) => {
-        const studentAns = (studentExamAnswers[idx] || '').trim();
-        let isCorrect = false;
+    // 渲染當前題目的完整內容與選項
+    function renderCurrentExamQuestion() {
+      if (!activeExamInstance || !activeExamInstance.questions) return;
+      const questions = activeExamInstance.questions;
+      if (currentExamQIndex >= questions.length) currentExamQIndex = 0;
 
-        if (q.isFillBlank) {
-          // 填空題字串忽略大小寫與頭尾空白
-          isCorrect = studentAns.toLowerCase() === q.correctAnswer.toLowerCase();
-        } else {
-          isCorrect = studentAns === q.correctAnswer;
+      const q = questions[currentExamQIndex];
+      if (!q) return;
+
+      // 1. 進度與題型標籤
+      const progressText = document.getElementById('examQuestionProgressText');
+      const typeBadge = document.getElementById('examQuestionTypeBadge');
+      if (progressText) {
+        progressText.textContent = `第 ${currentExamQIndex + 1} / ${questions.length} 題 (Question ${currentExamQIndex + 1} of ${questions.length})`;
+      }
+
+      const qType = (q.type || 'MCQ').toUpperCase();
+      const isFill = (qType === 'FILL' || qType === '填空' || qType === '填空題');
+
+      if (typeBadge) {
+        typeBadge.textContent = isFill ? "填空題 (Fill-in)" : "選擇題 (MCQ)";
+      }
+
+      // 2. 題目內容文字
+      const contentBox = document.getElementById('examQuestionContent');
+      if (contentBox) {
+        contentBox.textContent = q.question || "題目載入異常";
+      }
+
+      // 3. 容器切換與內容載入
+      const optionsContainer = document.getElementById('examOptionsContainer');
+      const fillContainer = document.getElementById('examFillInputContainer');
+      const fillInput = document.getElementById('examFillInput');
+
+      const savedAnswer = studentExamAnswers[currentExamQIndex] !== undefined ? studentExamAnswers[currentExamQIndex] : '';
+
+      if (isFill) {
+        optionsContainer.classList.add('hidden');
+        fillContainer.classList.remove('hidden');
+        if (fillInput) {
+          fillInput.value = savedAnswer;
+          fillInput.oninput = function() {
+            studentExamAnswers[currentExamQIndex] = this.value.trim();
+          };
         }
+      } else {
+        fillContainer.classList.add('hidden');
+        optionsContainer.classList.remove('hidden');
+        optionsContainer.innerHTML = '';
 
-        if (isCorrect) correctCount++;
+        // 選項相容性處理：相容 q.options 與 q.choices
+        const optionsList = Array.isArray(q.options) ? q.options : (Array.isArray(q.choices) ? q.choices : []);
 
-        detailedReports.push({
+        optionsList.forEach((optText, optIdx) => {
+          const btn = document.createElement('button');
+          const isSelected = (savedAnswer === optText);
+
+          btn.className = `w-full text-left p-3.5 rounded-xl border-2 transition font-bold text-xs flex items-center justify-between cursor-pointer active:scale-95 ${
+            isSelected 
+              ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg' 
+              : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50'
+          }`;
+
+          btn.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-indigo-500 text-white' : 'bg-slate-900 text-slate-400'} flex items-center justify-center font-mono text-[11px] font-black">
+                ${String.fromCharCode(65 + optIdx)}
+              </span>
+              <span>${optText}</span>
+            </div>
+            ${isSelected ? '<i class="fa-solid fa-check text-indigo-400"></i>' : ''}
+          `;
+
+          btn.onclick = function() {
+            studentExamAnswers[currentExamQIndex] = optText;
+            renderCurrentExamQuestion();
+            // 選擇題點擊後自動跳往下一題（最後一題除外）
+            if (currentExamQIndex < questions.length - 1) {
+              setTimeout(() => {
+                navigateExamQuestion(1);
+              }, 220);
+            }
+          };
+
+          optionsContainer.appendChild(btn);
+        });
+      }
+
+      // 4. 上一題 / 下一題按鈕控制
+      const btnPrev = document.getElementById('btnExamPrev');
+      const btnNext = document.getElementById('btnExamNext');
+      if (btnPrev) btnPrev.style.visibility = (currentExamQIndex === 0) ? 'hidden' : 'visible';
+      if (btnNext) btnNext.style.visibility = (currentExamQIndex === questions.length - 1) ? 'hidden' : 'visible';
+    }
+
+    // 題目切換跳轉導航
+    function navigateExamQuestion(delta) {
+      if (!activeExamInstance || !activeExamInstance.questions) return;
+      const questions = activeExamInstance.questions;
+      const targetIndex = currentExamQIndex + delta;
+      if (targetIndex >= 0 && targetIndex < questions.length) {
+        currentExamQIndex = targetIndex;
+        renderCurrentExamQuestion();
+      }
+    }
+
+    // 提交考卷與算分
+    function submitExamPaper(isAutoTimeout = false) {
+      if (!activeExamInstance || !activeExamInstance.questions || isExamSubmitting) return;
+      const questions = activeExamInstance.questions;
+
+      if (!isAutoTimeout) {
+        const answeredCount = Object.keys(studentExamAnswers).length;
+        if (answeredCount < questions.length) {
+          if (!confirm(`尚有 ${questions.length - answeredCount} 題未作答，確定要現在提交嗎？`)) {
+            return;
+          }
+        } else {
+          if (!confirm("確定提交考卷進行評分？")) return;
+        }
+      }
+
+      isExamSubmitting = true;
+      let correctCount = 0;
+      const details = [];
+
+      questions.forEach((q, idx) => {
+        const studentAns = (studentExamAnswers[idx] || '').trim();
+        const correctAns = String(q.correctAnswer || q.correct || '').trim();
+        const isRight = (studentAns.toLowerCase() === correctAns.toLowerCase());
+
+        if (isRight) correctCount++;
+
+        details.push({
           question: q.question,
-          studentAnswer: studentAns || "(未作答)",
-          correctAnswer: q.correctAnswer,
-          isCorrect: isCorrect,
-          explanation: q.explanation
+          studentAns: studentAns || "(未作答)",
+          correctAns: correctAns,
+          explanation: q.explanation || "無解析",
+          isCorrect: isRight
         });
       });
 
-      const totalQ = qList.length;
+      const totalQ = questions.length;
+      const accuracy = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
       const isPerfect = (correctCount === totalQ && totalQ > 0);
 
-      // 每對一題 +10 EXP；全對額外獲得 100 金幣 + 300 EXP
+      // 獎勵結算：每對 1 題 +10 EXP；滿分額外 +100 金幣與 +300 EXP
       let earnedExp = correctCount * 10;
       let earnedCoins = 0;
+
       if (isPerfect) {
         earnedExp += 300;
         earnedCoins += 100;
       }
 
+      const st = appData.students[currentUser.id];
       const submissionData = {
         studentId: currentUser.id,
-        studentName: appData.students[currentUser.id]?.name || currentUser.id,
+        studentName: st ? st.name : currentUser.id,
         score: correctCount,
         total: totalQ,
-        accuracyPct: totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0,
+        accuracy: accuracy,
         earnedExp: earnedExp,
         earnedCoins: earnedCoins,
         isPerfect: isPerfect,
-        detailedReports: detailedReports,
-        submittedAt: Date.now(),
-        timeStr: new Date().toLocaleTimeString()
+        details: details,
+        submitTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        timestamp: Date.now()
       };
 
-      // 寫入學生數值
-      const curStudent = appData.students[currentUser.id];
-      if (curStudent) {
-        patchStudentAtomic(currentUser.id, {
-          exp: (curStudent.exp || 0) + earnedExp,
-          statPool: (curStudent.statPool || 0) + earnedExp,
-          coins: (curStudent.coins || 0) + earnedCoins
-        });
+      const updates = {};
+      updates[`activeExam/submissions/${currentUser.id}`] = submissionData;
+      if (st) {
+        updates[`students/${currentUser.id}/exp`] = (st.exp || 0) + earnedExp;
+        updates[`students/${currentUser.id}/statPool`] = (st.statPool || 0) + earnedExp;
+        updates[`students/${currentUser.id}/coins`] = (st.coins || 0) + earnedCoins;
       }
 
-      // 同步提交資料至 Firebase
-      if (dbRootRef) {
-        dbRootRef.child(`activeExam/submissions/${currentUser.id}`).set(submissionData).then(() => {
-          isExamSubmitting = false;
-          playSound(isPerfect ? 'evolve' : 'heal');
-          addBattleLog(`📝 [EXAM FINISHED] ${submissionData.studentName} 完成了考卷，答對 ${correctCount}/${totalQ} 題 (獲得 +${earnedExp} EXP, +${earnedCoins} 金幣)！`, isPerfect ? "evolution" : "heal", curStudent?.classId);
-          renderStudentExamResult(submissionData);
-        });
-      }
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        isExamSubmitting = false;
+        if (examStudentCountdownTimer) {
+          clearInterval(examStudentCountdownTimer);
+          examStudentCountdownTimer = null;
+        }
+
+        playSound(isPerfect ? 'evolve' : 'heal');
+        if (isPerfect && typeof confetti === 'function') {
+          confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
+        }
+
+        addBattleLog(
+          `📝 [EXAM COMPLETED] ${st.name} 完成了考卷測驗，得分：${correctCount}/${totalQ} (${accuracy}%)，獎勵 +${earnedExp} EXP 與 +${earnedCoins} 金幣！`,
+          "evolution",
+          st.classId
+        );
+
+        displayExamResultReport(submissionData);
+        updateStudentUI();
+      }).catch(err => {
+        isExamSubmitting = false;
+        alert("提交失敗: " + err.message);
+      });
     }
 
-    // 10. 顯示結算與逐題題解
-    function renderStudentExamResult(sub) {
+    // 顯示測驗報告與題解清單
+    function displayExamResultReport(sub) {
       document.getElementById('examTakingSection').classList.add('hidden');
       const resultSec = document.getElementById('examResultSection');
       resultSec.classList.remove('hidden');
 
-      document.getElementById('examResultScoreText').textContent = `${sub.score} / ${sub.total} 題答對 (${sub.accuracyPct}%)`;
+      document.getElementById('examResultScoreText').textContent = `${sub.score} / ${sub.total} 題答對 (${sub.accuracy}%)`;
       document.getElementById('examExpRewardText').textContent = `+${sub.earnedExp} EXP`;
       document.getElementById('examCoinRewardText').textContent = `+${sub.earnedCoins} 金幣 (Coins)`;
 
-      if (sub.isPerfect && typeof confetti === 'function') {
-        confetti({ particleCount: 160, spread: 100, origin: { y: 0.5 } });
-      }
-
       const listContainer = document.getElementById('examExplanationsList');
+      if (!listContainer) return;
       listContainer.innerHTML = '';
 
-      (sub.detailedReports || []).forEach((rep, i) => {
+      (sub.details || []).forEach((d, idx) => {
         const item = document.createElement('div');
-        item.className = `p-4 rounded-xl border ${rep.isCorrect ? 'bg-slate-950 border-emerald-500/40' : 'bg-slate-950 border-rose-500/40'} space-y-2 text-xs`;
+        item.className = `p-3 rounded-xl border-2 ${d.isCorrect ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-rose-950/20 border-rose-500/40'} text-xs space-y-1.5`;
+
         item.innerHTML = `
-          <div class="flex items-center justify-between font-bold">
-            <span class="text-white text-sm">第 ${i + 1} 題：${rep.question}</span>
-            <span class="${rep.isCorrect ? 'text-emerald-400 font-pixel' : 'text-rose-400 font-pixel'}">
-              ${rep.isCorrect ? '✔ 正確 (Correct)' : '✖ 錯誤 (Incorrect)'}
+          <div class="flex items-start justify-between gap-2">
+            <div class="font-bold text-white leading-relaxed">
+              <span class="${d.isCorrect ? 'text-emerald-400' : 'text-rose-400'} font-black mr-1">第 ${idx + 1} 題:</span>
+              ${d.question}
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${d.isCorrect ? 'bg-emerald-950 text-emerald-300 border border-emerald-500' : 'bg-rose-950 text-rose-300 border border-rose-500'}">
+              ${d.isCorrect ? '正確 (Correct)' : '錯誤 (Wrong)'}
             </span>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-            <div class="${rep.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">
-              <b>你的答案：</b> ${rep.studentAnswer}
-            </div>
-            <div class="text-emerald-400">
-              <b>正確答案：</b> ${rep.correctAnswer}
-            </div>
+          <div class="flex flex-wrap gap-4 text-[11px] font-mono mt-1">
+            <span class="text-slate-400">你的回答: <b class="${d.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">${d.studentAns}</b></span>
+            <span class="text-slate-400">正確答案: <b class="text-emerald-300">${d.correctAns}</b></span>
           </div>
-          <div class="mt-2 p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-[11px] leading-relaxed">
-            <span class="text-amber-400 font-bold block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i>題解說明 (Explanation):</span>
-            ${rep.explanation}
+          <div class="text-[11px] text-slate-300 bg-slate-950/80 p-2 rounded-lg border border-slate-800 leading-relaxed mt-1">
+            <b class="text-cyan-400"><i class="fa-solid fa-lightbulb mr-1"></i>題解解析:</b> ${d.explanation}
           </div>
         `;
         listContainer.appendChild(item);
       });
+    }
+
+    // 關閉學生端考卷報告視窗
+    function closeStudentExamModal() {
+      const modal = document.getElementById('modalExamStudent');
+      if (modal) modal.classList.add('hidden');
     }
 
     // 11. 老師端即時監控面板
