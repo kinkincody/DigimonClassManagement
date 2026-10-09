@@ -238,7 +238,89 @@
       </div>
     </div>
   </div>
+  <!-- 📝 學生考卷作答與結算視窗 (Exam Modal for Student) -->
+  <div id="modalExamStudent" class="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-indigo-500 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 shadow-2xl relative text-slate-200">
+      
+      <!-- 考卷標題與倒數計時 -->
+      <div class="flex items-center justify-between border-b border-indigo-500/40 pb-3 mb-4">
+        <div>
+          <h3 class="font-pixel text-sm sm:text-base text-indigo-300 flex items-center gap-2">
+            <i class="fa-solid fa-graduation-cap text-indigo-400"></i>
+            <span id="examPaperTitle">班級考卷測驗 (Class Exam)</span>
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-0.5" id="examPaperSubtitle">請在限時內完成作答並提交 (Complete within time limit)</p>
+        </div>
+        <!-- 倒數計時器 -->
+        <div class="font-mono text-xs sm:text-sm px-3 py-1.5 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-black flex items-center gap-1.5 animate-pulse">
+          <i class="fa-solid fa-stopwatch"></i>
+          <span id="examStudentTimerBadge">00:00</span>
+        </div>
+      </div>
 
+      <!-- 考卷進行中視窗 -->
+      <div id="examTakingSection" class="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar pr-1">
+        <div>
+          <!-- 進度提示 -->
+          <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+            <span id="examQuestionProgressText">第 1 / 10 題 (Question 1 of 10)</span>
+            <span id="examQuestionTypeBadge" class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-pixel text-[10px]">選擇題 (MCQ)</span>
+          </div>
+
+          <!-- 題目內容 -->
+          <div id="examQuestionContent" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm sm:text-base font-bold text-white mb-4 shadow-inner leading-relaxed">
+            載入題目中...
+          </div>
+
+          <!-- 選擇題選項容器 -->
+          <div id="examOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+
+          <!-- 填空題輸入框容器 -->
+          <div id="examFillInputContainer" class="hidden space-y-2 mb-4">
+            <label class="block text-xs font-bold text-cyan-300">請輸入你的答案 (Your Answer):</label>
+            <input type="text" id="examFillInput" placeholder="請在此填寫答案 (Type answer here)..." class="w-full bg-slate-950 border-2 border-indigo-500/60 rounded-xl p-3 text-sm text-white outline-none focus:border-indigo-400">
+          </div>
+        </div>
+
+        <!-- 導航與提交按鈕 -->
+        <div class="pt-4 border-t border-slate-800 flex justify-between items-center gap-2">
+          <button id="btnExamPrev" onclick="navigateExamQuestion(-1)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer active:scale-95 flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i> 上一題 (Prev)
+          </button>
+          <div class="flex items-center gap-2">
+            <button id="btnExamNext" onclick="navigateExamQuestion(1)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer active:scale-95 flex items-center gap-1.5">
+              下一題 (Next) <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button id="btnExamSubmit" onclick="submitExamPaper(false)" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg cursor-pointer active:scale-95 flex items-center gap-1.5">
+              <i class="fa-solid fa-paper-plane"></i> 提交考卷 (Submit)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結算與題解報告視窗 (Result & Explanations) -->
+      <div id="examResultSection" class="hidden flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-4">
+        <!-- 成績概覽橫幅 -->
+        <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 border-2 border-indigo-400 rounded-2xl p-4 text-center">
+          <div class="text-xs text-indigo-300 font-pixel uppercase tracking-widest">★ 測驗成績報告 (Exam Report) ★</div>
+          <div class="text-3xl font-black text-white mt-1" id="examResultScoreText">0 / 0 題答對 (0%)</div>
+          <div class="mt-2 flex items-center justify-center gap-3 text-xs font-mono" id="examRewardBadges">
+            <span class="px-2.5 py-1 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 font-bold" id="examExpRewardText">+0 EXP</span>
+            <span class="px-2.5 py-1 rounded-lg bg-yellow-950 border border-yellow-500 text-yellow-300 font-bold" id="examCoinRewardText">+0 金幣 (Coins)</span>
+          </div>
+        </div>
+
+        <!-- 逐題解析列表 -->
+        <div class="space-y-3" id="examExplanationsList"></div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end">
+          <button onclick="closeStudentExamModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl cursor-pointer active:scale-95">
+            關閉 (Close)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-11/12 max-w-md"></div>
 
@@ -574,6 +656,10 @@
 </span>
 <button onclick="toggleShopModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
   <i class="fa-solid fa-store"></i> 數碼商店
+</button>
+<!-- 📝 考卷模式按鈕 -->
+<button onclick="openExamModalForStudent()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
+  <i class="fa-solid fa-file-pen"></i> 考卷測驗 (Exam)
 </button>
               <button id="btnOpenGacha" onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
                 <i class="fa-solid fa-gift"></i> Gacha 抽獎
@@ -2101,7 +2187,15 @@ const DIGIMON_DB = {
     let activeQuizInstance = null;
     let activeTeacherSubTab = 'main';
     let isQuizTimeoutSubmitting = false; // 防止重複觸發逾時
-
+    
+    // === 考卷系統全域變數 ===
+    let importedExamQuestions = [];
+    let activeExamInstance = null;
+    let studentExamAnswers = {}; // 儲存學生每題當前答案 { questionIndex: answer }
+    let currentExamQIndex = 0;
+    let examStudentCountdownTimer = null;
+    let examTeacherCountdownTimer = null;
+    let isExamSubmitting = false;
     // 🥷 老師隱藏模式狀態（true = 不記錄任何 Log）
     let isTeacherStealthMode = false;
 
@@ -2260,20 +2354,30 @@ function normalizeStudent(s, keyId) {
       activeTeacherSubTab = tabName;
       const btnMain = document.getElementById('btnTeacherTabMain');
       const btnQuiz = document.getElementById('btnTeacherTabQuiz');
+      const btnExam = document.getElementById('btnTeacherTabExam');
       const viewMain = document.getElementById('teacherSubViewMain');
       const viewQuiz = document.getElementById('teacherSubViewQuiz');
+      const viewExam = document.getElementById('teacherSubViewExam');
+
+      // 重置所有樣式
+      [btnMain, btnQuiz, btnExam].forEach(b => {
+        if (b) b.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+      });
+      [viewMain, viewQuiz, viewExam].forEach(v => {
+        if (v) v.classList.add('hidden');
+      });
 
       if (tabName === 'main') {
-        btnMain.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        btnQuiz.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        viewMain.classList.remove('hidden');
-        viewQuiz.classList.add('hidden');
-      } else {
-        btnMain.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        btnQuiz.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-amber-600 to-yellow-600 text-slate-950 cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        viewMain.classList.add('hidden');
-        viewQuiz.classList.remove('hidden');
+        if (btnMain) btnMain.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewMain) viewMain.classList.remove('hidden');
+      } else if (tabName === 'quiz') {
+        if (btnQuiz) btnQuiz.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-amber-600 to-yellow-600 text-slate-950 cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewQuiz) viewQuiz.classList.remove('hidden');
         renderTeacherQuizLiveDashboard();
+      } else if (tabName === 'exam') {
+        if (btnExam) btnExam.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-indigo-600 to-purple-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewExam) viewExam.classList.remove('hidden');
+        renderTeacherExamDashboard();
       }
     }
 
@@ -2415,6 +2519,16 @@ function normalizeStudent(s, keyId) {
           renderQuizModalForStudent();
           if (currentUser && currentUser.role === 'teacher') {
             renderTeacherQuizLiveDashboard();
+          }
+        });
+       // 考卷系統即時同步監聽
+        dbRootRef.child('activeExam').on('value', (snap) => {
+          activeExamInstance = snap.val();
+          if (currentUser && currentUser.role === 'student') {
+            onStudentExamStateSync();
+          }
+          if (currentUser && currentUser.role === 'teacher') {
+            renderTeacherExamDashboard();
           }
         });
 
@@ -4024,6 +4138,9 @@ function getTeacherTemplate() {
       <button id="btnTeacherTabQuiz" onclick="switchTeacherSubTab('quiz')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
         <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> 搶答即時監控中心 (Pop-up Quiz Live)
       </button>
+<button id="btnTeacherTabExam" onclick="switchTeacherSubTab('exam')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-file-excel text-emerald-400"></i> 考卷系統中心 (Exam Paper Hub)
+      </button>
     </div>
 
     <div id="teacherSubViewMain" class="space-y-6">
@@ -4321,6 +4438,91 @@ function getTeacherTemplate() {
               <tbody id="quizStudentAnswersTbody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+<!-- 考卷發布與即時監控子頁面 -->
+    <div id="teacherSubViewExam" class="space-y-6 hidden">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border-2 border-indigo-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-500/30 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400 flex items-center justify-center text-indigo-300 text-lg">
+              <i class="fa-solid fa-file-pen"></i>
+            </div>
+            <div>
+              <h3 class="text-sm sm:text-base font-black text-indigo-300 uppercase tracking-wider font-pixel">考卷測驗發布中心 (Exam Management)</h3>
+              <p class="text-[11px] text-slate-400">匯入 Excel (Column A:題目, B:正解, C-E:錯選, F:題型, G:題解)</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="excelExamFileInput" class="cursor-pointer px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95 shadow">
+              <i class="fa-solid fa-file-excel"></i> 匯入考卷 (Import Excel)
+            </label>
+            <input id="excelExamFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExamExcelImport(event)" class="hidden">
+            <span id="examBankStatus" class="text-xs text-slate-400 font-mono bg-slate-950 px-2.5 py-1 rounded border border-slate-800">已載入: 0 題</span>
+            <button onclick="teacherCloseLiveExam()" class="px-3 py-1.5 rounded-xl bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">強制收卷/結束 (Close Exam)</button>
+          </div>
+        </div>
+
+        <div class="space-y-3 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">考卷標題 (Exam Title):</label>
+              <input type="text" id="teacherExamTitleInput" placeholder="例如：期中數碼綜合評量測驗" value="數碼課堂全單元綜合測驗" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-400">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">測驗限時 (Time Limit):</label>
+              <div class="flex items-center gap-2">
+                <select id="teacherExamTimeLimitSelect" onchange="onExamTimePresetChange(this.value)" class="flex-1 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-2 text-xs text-indigo-200 font-mono outline-none">
+                  <option value="20">20 分鐘 (20 Mins)</option>
+                  <option value="25">25 分鐘 (25 Mins)</option>
+                  <option value="30" selected>30 分鐘 (30 Mins)</option>
+                  <option value="50">50 分鐘 (50 Mins)</option>
+                  <option value="custom">自訂時間 (Custom)</option>
+                </select>
+                <input type="number" id="teacherExamCustomMinutes" placeholder="分鐘" min="1" max="180" class="hidden w-20 bg-slate-900 border border-indigo-500/60 rounded-lg px-2 py-2 text-xs text-indigo-200 font-mono outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div class="text-xs text-slate-400">
+              目標班級：<span id="teacherExamTargetClassBadge" class="text-indigo-300 font-bold font-mono">ALL</span>
+            </div>
+            <button onclick="teacherLaunchExam()" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer flex items-center gap-2">
+              <i class="fa-solid fa-rocket"></i> 正式發布考卷 (Launch Exam)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 老師端即時監控與全班成績狀態 -->
+      <div class="bg-slate-900 border border-indigo-500/40 rounded-2xl p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 mb-3 gap-2">
+          <div class="flex items-center gap-3">
+            <h4 class="text-xs font-black text-indigo-300 uppercase font-pixel">考卷測驗即時監控 (Exam Monitor)</h4>
+            <div id="tcExamCountdownWrapper" class="hidden px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 text-xs font-mono font-bold flex items-center gap-1.5 animate-pulse">
+              <i class="fa-solid fa-stopwatch"></i> 剩餘：<span id="tcExamRemainingTime">00:00</span>
+            </div>
+          </div>
+          <span class="text-xs text-slate-400 font-mono" id="examClassProgressText">已繳交：0 / 0</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-2">#</th>
+                <th class="p-2">學生 (Student)</th>
+                <th class="p-2 text-center">狀態 (Status)</th>
+                <th class="p-2 text-center">得分 (Score)</th>
+                <th class="p-2 text-center">正確率 (Accuracy)</th>
+                <th class="p-2 text-center">獲得 EXP</th>
+                <th class="p-2 text-center">獲得金幣</th>
+                <th class="p-2 text-right">交卷時間</th>
+              </tr>
+            </thead>
+            <tbody id="examStudentsTbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -7365,6 +7567,522 @@ function teacherPromptClassCoins(mode = 'reward') {
             renderQuizModalForStudent();
           }
         });
+      }
+    }
+
+// ========================================================
+    // 📝 考卷系統 (EXAM MODE SYSTEM ENGINE)
+    // ========================================================
+
+    // 1. 自訂時間下拉選單聯動
+    function onExamTimePresetChange(val) {
+      const customInput = document.getElementById('teacherExamCustomMinutes');
+      if (!customInput) return;
+      if (val === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+      }
+    }
+
+    // 2. Excel 考卷檔案解析
+    function handleExamExcelImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          importedExamQuestions = [];
+
+          // Column A: 題目, B: 正解, C: 錯選1, D: 錯選2, E: 錯選3, F: 題型, G: 題解
+          for (let i = 1; i < jsonRows.length; i++) {
+            const row = jsonRows[i];
+            if (!row || !row[0] || row[1] === undefined) continue;
+
+            const questionText = String(row[0]).trim();
+            const correctAnswer = String(row[1]).trim();
+            const w1 = row[2] !== undefined ? String(row[2]).trim() : '';
+            const w2 = row[3] !== undefined ? String(row[3]).trim() : '';
+            const w3 = row[4] !== undefined ? String(row[4]).trim() : '';
+            const typeRaw = row[5] !== undefined ? String(row[5]).trim().toLowerCase() : '';
+            const explanation = row[6] !== undefined ? String(row[6]).trim() : '無額外題解說明 (No explanation provided)';
+
+            // 判斷題型：只要包含「填空」或「fill」即為填空題，其餘為選擇題
+            const isFillBlank = typeRaw.includes('填空') || typeRaw.includes('fill');
+
+            let options = [];
+            if (!isFillBlank) {
+              const opts = [{ text: correctAnswer, isCorrect: true }];
+              if (w1) opts.push({ text: w1, isCorrect: false });
+              if (w2) opts.push({ text: w2, isCorrect: false });
+              if (w3) opts.push({ text: w3, isCorrect: false });
+
+              // 選項隨機洗牌（防抄襲）
+              for (let j = opts.length - 1; j > 0; j--) {
+                const k = Math.floor(Math.random() * (j + 1));
+                [opts[j], opts[k]] = [opts[k], opts[j]];
+              }
+              options = opts.map(o => o.text);
+            }
+
+            importedExamQuestions.push({
+              index: importedExamQuestions.length + 1,
+              question: questionText,
+              correctAnswer: correctAnswer,
+              options: options,
+              isFillBlank: isFillBlank,
+              explanation: explanation
+            });
+          }
+
+          if (importedExamQuestions.length === 0) {
+            return alert("未能讀取有效試題，請確保 Column A 為題目、Column B 為正確答案！");
+          }
+
+          const statusBadge = document.getElementById('examBankStatus');
+          if (statusBadge) statusBadge.textContent = `已載入: ${importedExamQuestions.length} 題`;
+
+          showToast("考卷匯入成功", `成功匯入 ${importedExamQuestions.length} 道試題！`, "heal");
+        } catch (err) {
+          alert("考卷匯入失敗: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // 3. 老師發布全卷
+    function teacherLaunchExam() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (importedExamQuestions.length === 0) {
+        return alert("請先點擊「匯入考卷 (Import Excel)」載入試題！");
+      }
+
+      const title = (document.getElementById('teacherExamTitleInput').value || '').trim() || "數碼綜合評量測驗";
+      const presetVal = document.getElementById('teacherExamTimeLimitSelect').value;
+      let limitMinutes = parseInt(presetVal);
+
+      if (presetVal === 'custom') {
+        const customVal = parseInt(document.getElementById('teacherExamCustomMinutes').value);
+        if (isNaN(customVal) || customVal <= 0) {
+          return alert("請輸入有效的自訂限時分鐘數！");
+        }
+        limitMinutes = customVal;
+      }
+
+      const targetClass = selectedTeacherClass || 'ALL';
+
+      const examPayload = {
+        active: true,
+        title: title,
+        classTag: targetClass,
+        totalQuestions: importedExamQuestions.length,
+        questions: importedExamQuestions,
+        limitMinutes: limitMinutes,
+        limitSeconds: limitMinutes * 60,
+        startTime: Date.now(),
+        submissions: {}
+      };
+
+      if (dbRootRef) {
+        dbRootRef.child('activeExam').set(examPayload).then(() => {
+          addBattleLog(`📝 [EXAM LAUNCHED] 老師發布了考卷【${title}】(共 ${importedExamQuestions.length} 題，限時 ${limitMinutes} 分鐘)！`, "evolution", targetClass);
+          showToast("考卷已發布", `測驗已正式開始，限時 ${limitMinutes} 分鐘！`, "evolution");
+          renderTeacherExamDashboard();
+        });
+      }
+    }
+
+    // 4. 老師強制結束考卷
+    function teacherCloseLiveExam() {
+      if (!confirm("確定要強制結束並關閉目前測驗？尚未提交的學生將被強制收卷。")) return;
+      if (dbRootRef) {
+        dbRootRef.child('activeExam/active').set(false).then(() => {
+          showToast("測驗已結束", "考卷測驗已關閉。", "info");
+          addBattleLog(`📝 [EXAM CLOSED] 老師結束了目前的考卷測驗。`, "normal", selectedTeacherClass);
+        });
+      }
+    }
+
+    // 5. 學生端狀態同步處理
+    function onStudentExamStateSync() {
+      if (!activeExamInstance || !activeExamInstance.active) {
+        if (examStudentCountdownTimer) {
+          clearInterval(examStudentCountdownTimer);
+          examStudentCountdownTimer = null;
+        }
+        // 若學生已在結算畫面則不強制關閉，否則關閉視窗
+        const resultSection = document.getElementById('examResultSection');
+        if (resultSection && resultSection.classList.contains('hidden')) {
+          document.getElementById('modalExamStudent').classList.add('hidden');
+        }
+        return;
+      }
+
+      const st = appData.students[currentUser.id];
+      if (!st || isStudentBanned(st)) return;
+      if (activeExamInstance.classTag !== 'ALL' && !studentIsInClass(st, activeExamInstance.classTag)) return;
+
+      // 若學生已提交過，顯示結算結果
+      const mySub = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
+      if (mySub) {
+        renderStudentExamResult(mySub);
+      }
+    }
+
+    // 6. 打開學生作答視窗
+    function openExamModalForStudent() {
+      if (!activeExamInstance || !activeExamInstance.active) {
+        return alert("目前沒有進行中的考卷測驗！(No active exam right now)");
+      }
+
+      const st = appData.students[currentUser.id];
+      if (!st || isStudentBanned(st)) {
+        return alert("操作已被鎖定，無法參與測驗！");
+      }
+
+      if (activeExamInstance.classTag !== 'ALL' && !studentIsInClass(st, activeExamInstance.classTag)) {
+        return alert("此考卷不屬於你所在的班級！");
+      }
+
+      const modal = document.getElementById('modalExamStudent');
+      modal.classList.remove('hidden');
+
+      // 若已提交，直接展示報告
+      const mySub = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
+      if (mySub) {
+        renderStudentExamResult(mySub);
+        return;
+      }
+
+      // 否則進入作答狀態
+      document.getElementById('examTakingSection').classList.remove('hidden');
+      document.getElementById('examResultSection').classList.add('hidden');
+      document.getElementById('examPaperTitle').textContent = activeExamInstance.title;
+
+      currentExamQIndex = 0;
+      renderCurrentExamQuestion();
+      startStudentExamTimer();
+    }
+
+    function closeStudentExamModal() {
+      document.getElementById('modalExamStudent').classList.add('hidden');
+    }
+
+    // 7. 渲染當前題目
+    function renderCurrentExamQuestion() {
+      if (!activeExamInstance || !activeExamInstance.questions) return;
+      const qList = activeExamInstance.questions;
+      const curQ = qList[currentExamQIndex];
+      if (!curQ) return;
+
+      document.getElementById('examQuestionProgressText').textContent = `第 ${currentExamQIndex + 1} / ${qList.length} 題 (Question ${currentExamQIndex + 1} of ${qList.length})`;
+      document.getElementById('examQuestionContent').textContent = curQ.question;
+
+      const typeBadge = document.getElementById('examQuestionTypeBadge');
+      const mcContainer = document.getElementById('examOptionsContainer');
+      const fillContainer = document.getElementById('examFillInputContainer');
+      const fillInput = document.getElementById('examFillInput');
+
+      // 導航按鈕狀態控制
+      document.getElementById('btnExamPrev').disabled = (currentExamQIndex === 0);
+      document.getElementById('btnExamPrev').style.opacity = (currentExamQIndex === 0) ? '0.4' : '1';
+      document.getElementById('btnExamNext').classList.toggle('hidden', currentExamQIndex === qList.length - 1);
+
+      if (curQ.isFillBlank) {
+        typeBadge.textContent = "填空題 (Fill-in)";
+        typeBadge.className = "px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 font-pixel text-[10px]";
+        mcContainer.classList.add('hidden');
+        fillContainer.classList.remove('hidden');
+
+        // 回填學生已寫下的答案
+        fillInput.value = studentExamAnswers[currentExamQIndex] || '';
+        fillInput.oninput = (e) => {
+          studentExamAnswers[currentExamQIndex] = e.target.value;
+        };
+      } else {
+        typeBadge.textContent = "選擇題 (MCQ)";
+        typeBadge.className = "px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-pixel text-[10px]";
+        fillContainer.classList.add('hidden');
+        mcContainer.classList.remove('hidden');
+        mcContainer.innerHTML = '';
+
+        const selectedAns = studentExamAnswers[currentExamQIndex];
+
+        curQ.options.forEach((optText, i) => {
+          const isSelected = selectedAns === optText;
+          const btn = document.createElement('button');
+          btn.className = `p-3.5 rounded-xl border text-left text-xs font-bold transition flex items-center justify-between cursor-pointer active:scale-95 ${
+            isSelected 
+              ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30' 
+              : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-indigo-500/50'
+          }`;
+          btn.innerHTML = `
+            <span>${String.fromCharCode(65 + i)}. ${optText}</span>
+            ${isSelected ? '<i class="fa-solid fa-circle-check text-white"></i>' : '<i class="fa-regular fa-circle text-slate-600"></i>'}
+          `;
+          btn.onclick = () => {
+            studentExamAnswers[currentExamQIndex] = optText;
+            renderCurrentExamQuestion();
+          };
+          mcContainer.appendChild(btn);
+        });
+      }
+    }
+
+    function navigateExamQuestion(delta) {
+      if (!activeExamInstance || !activeExamInstance.questions) return;
+      const nextIdx = currentExamQIndex + delta;
+      if (nextIdx >= 0 && nextIdx < activeExamInstance.questions.length) {
+        currentExamQIndex = nextIdx;
+        renderCurrentExamQuestion();
+      }
+    }
+
+    // 8. 學生作答即時倒數計時器
+    function startStudentExamTimer() {
+      if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+
+      const badge = document.getElementById('examStudentTimerBadge');
+      const updateTimer = () => {
+        if (!activeExamInstance || !activeExamInstance.active) {
+          clearInterval(examStudentCountdownTimer);
+          return;
+        }
+
+        const elapsedSec = Math.floor((Date.now() - activeExamInstance.startTime) / 1000);
+        const remainSec = Math.max(0, activeExamInstance.limitSeconds - elapsedSec);
+
+        const mins = Math.floor(remainSec / 60);
+        const secs = remainSec % 60;
+        if (badge) {
+          badge.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // 時間到強制自動交卷
+        if (remainSec <= 0 && !isExamSubmitting) {
+          clearInterval(examStudentCountdownTimer);
+          showToast("時間到", "已達測驗時限，系統正自動強制交卷！", "damage");
+          submitExamPaper(true);
+        }
+      };
+
+      updateTimer();
+      examStudentCountdownTimer = setInterval(updateTimer, 1000);
+    }
+
+    // 9. 提交考卷與算分
+    function submitExamPaper(isForced = false) {
+      if (isExamSubmitting) return;
+      if (!isForced && !confirm("確定要提交考卷嗎？提交後將立即結算得分與題解！")) return;
+
+      isExamSubmitting = true;
+      if (examStudentCountdownTimer) {
+        clearInterval(examStudentCountdownTimer);
+        examStudentCountdownTimer = null;
+      }
+
+      const qList = activeExamInstance.questions || [];
+      let correctCount = 0;
+      const detailedReports = [];
+
+      qList.forEach((q, idx) => {
+        const studentAns = (studentExamAnswers[idx] || '').trim();
+        let isCorrect = false;
+
+        if (q.isFillBlank) {
+          // 填空題字串忽略大小寫與頭尾空白
+          isCorrect = studentAns.toLowerCase() === q.correctAnswer.toLowerCase();
+        } else {
+          isCorrect = studentAns === q.correctAnswer;
+        }
+
+        if (isCorrect) correctCount++;
+
+        detailedReports.push({
+          question: q.question,
+          studentAnswer: studentAns || "(未作答)",
+          correctAnswer: q.correctAnswer,
+          isCorrect: isCorrect,
+          explanation: q.explanation
+        });
+      });
+
+      const totalQ = qList.length;
+      const isPerfect = (correctCount === totalQ && totalQ > 0);
+
+      // 每對一題 +10 EXP；全對額外獲得 100 金幣 + 300 EXP
+      let earnedExp = correctCount * 10;
+      let earnedCoins = 0;
+      if (isPerfect) {
+        earnedExp += 300;
+        earnedCoins += 100;
+      }
+
+      const submissionData = {
+        studentId: currentUser.id,
+        studentName: appData.students[currentUser.id]?.name || currentUser.id,
+        score: correctCount,
+        total: totalQ,
+        accuracyPct: totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0,
+        earnedExp: earnedExp,
+        earnedCoins: earnedCoins,
+        isPerfect: isPerfect,
+        detailedReports: detailedReports,
+        submittedAt: Date.now(),
+        timeStr: new Date().toLocaleTimeString()
+      };
+
+      // 寫入學生數值
+      const curStudent = appData.students[currentUser.id];
+      if (curStudent) {
+        patchStudentAtomic(currentUser.id, {
+          exp: (curStudent.exp || 0) + earnedExp,
+          statPool: (curStudent.statPool || 0) + earnedExp,
+          coins: (curStudent.coins || 0) + earnedCoins
+        });
+      }
+
+      // 同步提交資料至 Firebase
+      if (dbRootRef) {
+        dbRootRef.child(`activeExam/submissions/${currentUser.id}`).set(submissionData).then(() => {
+          isExamSubmitting = false;
+          playSound(isPerfect ? 'evolve' : 'heal');
+          addBattleLog(`📝 [EXAM FINISHED] ${submissionData.studentName} 完成了考卷，答對 ${correctCount}/${totalQ} 題 (獲得 +${earnedExp} EXP, +${earnedCoins} 金幣)！`, isPerfect ? "evolution" : "heal", curStudent?.classId);
+          renderStudentExamResult(submissionData);
+        });
+      }
+    }
+
+    // 10. 顯示結算與逐題題解
+    function renderStudentExamResult(sub) {
+      document.getElementById('examTakingSection').classList.add('hidden');
+      const resultSec = document.getElementById('examResultSection');
+      resultSec.classList.remove('hidden');
+
+      document.getElementById('examResultScoreText').textContent = `${sub.score} / ${sub.total} 題答對 (${sub.accuracyPct}%)`;
+      document.getElementById('examExpRewardText').textContent = `+${sub.earnedExp} EXP`;
+      document.getElementById('examCoinRewardText').textContent = `+${sub.earnedCoins} 金幣 (Coins)`;
+
+      if (sub.isPerfect && typeof confetti === 'function') {
+        confetti({ particleCount: 160, spread: 100, origin: { y: 0.5 } });
+      }
+
+      const listContainer = document.getElementById('examExplanationsList');
+      listContainer.innerHTML = '';
+
+      (sub.detailedReports || []).forEach((rep, i) => {
+        const item = document.createElement('div');
+        item.className = `p-4 rounded-xl border ${rep.isCorrect ? 'bg-slate-950 border-emerald-500/40' : 'bg-slate-950 border-rose-500/40'} space-y-2 text-xs`;
+        item.innerHTML = `
+          <div class="flex items-center justify-between font-bold">
+            <span class="text-white text-sm">第 ${i + 1} 題：${rep.question}</span>
+            <span class="${rep.isCorrect ? 'text-emerald-400 font-pixel' : 'text-rose-400 font-pixel'}">
+              ${rep.isCorrect ? '✔ 正確 (Correct)' : '✖ 錯誤 (Incorrect)'}
+            </span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+            <div class="${rep.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">
+              <b>你的答案：</b> ${rep.studentAnswer}
+            </div>
+            <div class="text-emerald-400">
+              <b>正確答案：</b> ${rep.correctAnswer}
+            </div>
+          </div>
+          <div class="mt-2 p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-[11px] leading-relaxed">
+            <span class="text-amber-400 font-bold block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i>題解說明 (Explanation):</span>
+            ${rep.explanation}
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    // 11. 老師端即時監控面板
+    function renderTeacherExamDashboard() {
+      const tcCountdownWrapper = document.getElementById('tcExamCountdownWrapper');
+      const tcRemainingTime = document.getElementById('tcExamRemainingTime');
+      const progressEl = document.getElementById('examClassProgressText');
+      const tbody = document.getElementById('examStudentsTbody');
+      const targetClassBadge = document.getElementById('teacherExamTargetClassBadge');
+
+      if (!tbody) return;
+
+      const targetClass = selectedTeacherClass || 'ALL';
+      if (targetClassBadge) targetClassBadge.textContent = targetClass;
+
+      const classStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
+
+      if (examTeacherCountdownTimer) {
+        clearInterval(examTeacherCountdownTimer);
+        examTeacherCountdownTimer = null;
+      }
+
+      if (!activeExamInstance || !activeExamInstance.active) {
+        if (tcCountdownWrapper) tcCountdownWrapper.classList.add('hidden');
+        if (progressEl) progressEl.textContent = `已繳交：0 / ${classStudents.length}`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500 italic">目前無進行中的考卷測驗。</td></tr>`;
+        return;
+      }
+
+      if (tcCountdownWrapper) tcCountdownWrapper.classList.remove('hidden');
+
+      const updateTcTimer = () => {
+        const elapsedSec = Math.floor((Date.now() - activeExamInstance.startTime) / 1000);
+        const remainSec = Math.max(0, activeExamInstance.limitSeconds - elapsedSec);
+        const mins = Math.floor(remainSec / 60);
+        const secs = remainSec % 60;
+        if (tcRemainingTime) {
+          tcRemainingTime.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+      };
+      updateTcTimer();
+      examTeacherCountdownTimer = setInterval(updateTcTimer, 1000);
+
+      const submissions = activeExamInstance.submissions || {};
+      let submittedCount = 0;
+      tbody.innerHTML = '';
+
+      classStudents.forEach((st, idx) => {
+        const sub = submissions[st.id];
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition border-b border-slate-900";
+
+        if (sub) {
+          submittedCount++;
+          tr.innerHTML = `
+            <td class="p-2 text-slate-400">${idx + 1}</td>
+            <td class="p-2 font-bold text-white">${st.name} <span class="text-slate-500 text-[10px]">(${st.username})</span></td>
+            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold text-[10px]">已交卷</span></td>
+            <td class="p-2 text-center font-bold text-indigo-300">${sub.score} / ${sub.total}</td>
+            <td class="p-2 text-center font-bold ${sub.accuracyPct >= 60 ? 'text-emerald-400' : 'text-rose-400'}">${sub.accuracyPct}%</td>
+            <td class="p-2 text-center font-mono text-cyan-300">+${sub.earnedExp}</td>
+            <td class="p-2 text-center font-mono text-amber-300">+${sub.earnedCoins}</td>
+            <td class="p-2 text-right font-mono text-slate-400">${sub.timeStr}</td>
+          `;
+        } else {
+          tr.innerHTML = `
+            <td class="p-2 text-slate-400">${idx + 1}</td>
+            <td class="p-2 font-bold text-slate-300">${st.name} <span class="text-slate-500 text-[10px]">(${st.username})</span></td>
+            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-500 text-[10px]">作答中 (In Progress)</span></td>
+            <td class="p-2 text-center text-slate-600">--</td>
+            <td class="p-2 text-center text-slate-600">--</td>
+            <td class="p-2 text-center text-slate-600">--</td>
+            <td class="p-2 text-center text-slate-600">--</td>
+            <td class="p-2 text-right text-slate-600">--</td>
+          `;
+        }
+        tbody.appendChild(tr);
+      });
+
+      if (progressEl) {
+        progressEl.textContent = `已繳交：${submittedCount} / ${classStudents.length}`;
       }
     }
 
