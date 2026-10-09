@@ -2643,14 +2643,17 @@ function updateStudentFactionUI() {
   const statusText = document.getElementById('stFactionStatusText');
   const select = document.getElementById('stFactionSelect');
 
-  const stClasses = parseStudentClasses(st.classId);
-  if (stClasses.length === 0) stClasses.push("ALL");
+  let stClasses = parseStudentClasses(st.classId);
+  if (!stClasses || stClasses.length === 0) {
+    stClasses = ['ALL'];
+  }
 
+  // 自動鎖定有效班別
   if (!studentActiveFactionViewClass || !stClasses.includes(studentActiveFactionViewClass)) {
     studentActiveFactionViewClass = stClasses[0];
   }
 
-  // 渲染學生所屬班別切換器
+  // 1. 渲染學生所屬班別下拉清單
   if (classSel) {
     classSel.innerHTML = '';
     stClasses.forEach(c => {
@@ -2664,18 +2667,24 @@ function updateStudentFactionUI() {
 
   const activeClass = studentActiveFactionViewClass;
   const activeClassKey = sanitizeClassKey(activeClass);
-  const myFactionInfo = getStudentFactionInClass(st, activeClass);
+  
+  // 取得學生在該班級的陣營設定（向下相容舊版單一陣營）
+  let myFactionInfo = getStudentFactionInClass(st, activeClass);
+  if (!myFactionInfo.factionId && st.factionId) {
+    myFactionInfo = { factionId: st.factionId, factionName: st.factionName || 'Ally' };
+  }
 
-  // 取得該班別中該陣營的 Buff
+  // 取得該班級所有陣營，並查詢當前陣營的 Buff
+  const factions = getFactionsForClass(activeClass);
   let activeBuff = null;
   if (myFactionInfo.factionId) {
-    const factions = getFactionsForClass(activeClass);
     const myFac = factions.find(f => f.id === myFactionInfo.factionId);
     if (myFac && myFac.buffType && FACTION_BUFFS[myFac.buffType]) {
       activeBuff = FACTION_BUFFS[myFac.buffType];
     }
   }
 
+  // 2. 更新陣營徽章文字與樣式
   if (badge) {
     if (myFactionInfo.factionName) {
       badge.textContent = myFactionInfo.factionName.toUpperCase();
@@ -2686,6 +2695,7 @@ function updateStudentFactionUI() {
     }
   }
 
+  // 3. 更新 Buff 徽章
   if (buffBadge) {
     if (activeBuff) {
       buffBadge.textContent = `${activeBuff.name} (${activeBuff.desc})`;
@@ -2695,31 +2705,32 @@ function updateStudentFactionUI() {
     }
   }
 
-  // 檢查該學生在該班級的申請狀態
+  // 4. 更新轉移申請狀態提示
   const reqKey = `${currentUser.id}_${activeClassKey}`;
   const myReq = (appData.factionRequests && (appData.factionRequests[reqKey] || appData.factionRequests[currentUser.id]));
   if (statusText) {
-    if (myReq && myReq.classTagKey === activeClassKey) {
-      statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] Transfer Pending 審核中: [${myReq.requestedFactionName}]</span>`;
+    if (myReq && (myReq.classTagKey === activeClassKey || myReq.classId === activeClass)) {
+      statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] 轉移申請審核中: [${myReq.requestedFactionName}]</span>`;
+    } else if (myFactionInfo.factionName) {
+      statusText.textContent = `你在【${activeClass}】隸屬【${myFactionInfo.factionName}】。同陣營同學為盟友，免疫傷害！`;
     } else {
-      statusText.textContent = `Classmates in [${activeClass}] in your faction are allies. / 【${activeClass}】同陣營同學為盟友，享有專屬加乘！`;
+      statusText.textContent = `你在【${activeClass}】尚未加入陣營。可於右側選擇陣營並提交申請。`;
     }
   }
 
+  // 5. 填入可申請之陣營下拉清單
   if (select) {
-    const factions = getFactionsForClass(activeClass);
-    select.innerHTML = `<option value="">-- Apply to Join [${activeClass}] Faction 申請加入陣營 --</option>`;
+    select.innerHTML = `<option value="">-- 申請加入 [${activeClass}] 陣營 --</option>`;
     factions.forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.id;
       const bName = f.buffType && FACTION_BUFFS[f.buffType] ? ` [${FACTION_BUFFS[f.buffType].name}]` : '';
       opt.textContent = `${f.name}${bName}`;
-      if (myFactionInfo.factionId === f.id) opt.textContent += " (Current 目前陣營)";
+      if (myFactionInfo.factionId === f.id) opt.textContent += " (目前所屬)";
       select.appendChild(opt);
     });
   }
 }
-
 
 // 老師針對指定陣營批量發放獎勵 (EXP / Tickets / Attack Quota)
 
@@ -4419,6 +4430,7 @@ function getSuperAdminTemplate() {
     document.getElementById('viewStudent').classList.remove('hidden');
     populateStudentTeacherBossOptions();
     updateStudentUI();
+    updateStudentFactionUI(); // 👈 加入此行：登入進入儀表板後立即刷新陣營資訊
   }
 
   document.getElementById('viewLogin').classList.add('hidden');
@@ -4559,6 +4571,7 @@ function logout() {
 
       renderStudentBossBar();
       renderBountyUI();
+      updateStudentFactionUI(); // 👈 加入此行：保證每次刷新學生畫面時必定更新陣營狀態
       const coinCountEl = document.getElementById('stCoinsCount');
       if (coinCountEl) coinCountEl.textContent = st.coins || 0;
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
