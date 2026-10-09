@@ -2996,19 +2996,33 @@ function renderTeacherFactionPanel() {
     } else {
       let reqHtml = '';
       requests.forEach(r => {
+        const curFac = r.currentFactionName || "無陣營 (None)";
         reqHtml += `
-          <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-2.5 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-xs text-white">${r.studentName}</span>
-              <span class="text-[10px] text-slate-400">申請加入 [${r.classId || '該班'}] 陣營</span>
-              <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-bold text-xs">${r.requestedFactionName}</span>
+          <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 font-bold text-xs">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-white">${r.studentName}</span>
+                  <span class="text-[10px] text-slate-400 font-mono">[班級 Class: ${r.classId || '該班'}]</span>
+                </div>
+                <div class="text-[11px] mt-1 flex items-center gap-1.5 flex-wrap">
+                  <span class="text-slate-400">原陣營 (Current):</span>
+                  <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-bold text-[10px]">${curFac}</span>
+                  <i class="fa-solid fa-arrow-right text-amber-400 text-[10px]"></i>
+                  <span class="text-indigo-300 font-bold">申請陣營 (Target):</span>
+                  <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-bold text-[10px]">${r.requestedFactionName}</span>
+                </div>
+              </div>
             </div>
             <div class="flex items-center gap-1.5">
-              <button onclick="approveFactionRequest('${r._key}')" class="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-bold rounded text-xs transition active:scale-95 cursor-pointer">
-                <i class="fa-solid fa-check mr-1"></i> Approve
+              <button onclick="approveFactionRequest('${r._key}')" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-bold rounded-lg text-xs transition active:scale-95 cursor-pointer shadow">
+                <i class="fa-solid fa-check mr-1"></i> 核准 (Approve)
               </button>
-              <button onclick="rejectFactionRequest('${r._key}')" class="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 border border-rose-600 text-rose-300 font-bold rounded text-xs transition active:scale-95 cursor-pointer">
-                <i class="fa-solid fa-xmark mr-1"></i> Decline
+              <button onclick="rejectFactionRequest('${r._key}')" class="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-600 text-rose-300 font-bold rounded-lg text-xs transition active:scale-95 cursor-pointer shadow">
+                <i class="fa-solid fa-xmark mr-1"></i> 拒絕 (Decline)
               </button>
             </div>
           </div>
@@ -3075,47 +3089,48 @@ function deleteFaction(factionId, explicitClassKey = '') {
 }
 
 function requestStudentFactionTransfer() {
-  if (!currentUser || currentUser.role !== 'student') return;
-  const st = appData.students[currentUser.id];
-  if (!st || isStudentBanned(st)) return alert("Action locked by teacher!");
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st || isStudentBanned(st)) return alert("Action locked by teacher! / 操作已被老師鎖定！");
 
-  const select = document.getElementById('stFactionSelect');
-  const targetFactionId = select.value;
-  if (!targetFactionId) return alert("請先選擇要申請加入的目標陣營！");
+      const select = document.getElementById('stFactionSelect');
+      const targetFactionId = select.value;
+      if (!targetFactionId) return alert("請先選擇要申請加入的目標陣營！ / Please select target faction!");
 
-  const targetClass = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || 'ALL';
-  const tagKey = sanitizeClassKey(targetClass);
+      const targetClass = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || 'ALL';
+      const tagKey = sanitizeClassKey(targetClass);
 
-  const availableFactions = getFactionsForClass(targetClass);
-  const selectedFaction = availableFactions.find(f => f.id === targetFactionId);
-  if (!selectedFaction) return alert("所選陣營無效！");
+      const availableFactions = getFactionsForClass(targetClass);
+      const selectedFaction = availableFactions.find(f => f.id === targetFactionId);
+      if (!selectedFaction) return alert("所選陣營無效！ / Invalid faction!");
 
-  const currentFac = getStudentFactionInClass(st, targetClass);
-  if (currentFac.factionId === targetFactionId) {
-    return alert(`你在班別 [${targetClass}] 中已經屬於 [${selectedFaction.name}] 陣營！`);
-  }
+      const currentFac = getStudentFactionInClass(st, targetClass);
+      if (currentFac.factionId === targetFactionId) {
+        return alert(`你在班別 [${targetClass}] 中已經屬於 [${selectedFaction.name}] 陣營！`);
+      }
 
-  const reqKey = `${st.id}_${tagKey}`;
-  const reqData = {
-    reqKey: reqKey,
-    studentId: st.id,
-    studentName: st.name,
-    classId: targetClass,
-    classTagKey: tagKey,
-    requestedFactionId: selectedFaction.id,
-    requestedFactionName: selectedFaction.name,
-    timestamp: Date.now()
-  };
+      const reqKey = `${st.id}_${tagKey}`;
+      const reqData = {
+        reqKey: reqKey,
+        studentId: st.id,
+        studentName: st.name,
+        classId: targetClass,
+        classTagKey: tagKey,
+        currentFactionId: currentFac.factionId || null,
+        currentFactionName: currentFac.factionName || "無陣營 (No Faction)", // 👈 記錄原本的陣營名稱
+        requestedFactionId: selectedFaction.id,
+        requestedFactionName: selectedFaction.name,
+        timestamp: Date.now()
+      };
 
-  if (dbRootRef) {
-    dbRootRef.child(`factionRequests/${reqKey}`).set(reqData).then(() => {
-      playSound('shield');
-      showToast("申請已送出", `已申請於 [${targetClass}] 加入 [${selectedFaction.name}]，等待老師審批！`, "info");
-      addBattleLog(`📨 [陣營申請] ${st.name} 申請在 [${targetClass}] 加入陣營 [${selectedFaction.name}]。`, "normal", targetClass);
-    });
-  }
-}
-
+      if (dbRootRef) {
+        dbRootRef.child(`factionRequests/${reqKey}`).set(reqData).then(() => {
+          playSound('shield');
+          showToast("申請已送出 / Sent", `已申請加入 [${selectedFaction.name}]，等待老師審批！`, "info");
+          addBattleLog(`📨 [陣營申請 / Faction Req] ${st.name} 申請從 [${reqData.currentFactionName}] 轉移至 [${selectedFaction.name}] (班級: ${targetClass})。`, "normal", targetClass);
+        });
+      }
+    }
 function approveFactionRequest(reqKey) {
   const req = appData.factionRequests && appData.factionRequests[reqKey];
   if (!req) return;
@@ -4264,10 +4279,12 @@ function getTeacherTemplate() {
             <div class="flex items-center gap-3">
               <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">Class: All</span>
               <select id="teacherQuizTimeLimitSelect" class="bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
-                <option value="15">15 秒</option>
-                <option value="30" selected>30 秒</option>
-                <option value="60">60 秒</option>
-              </select>
+  <option value="15">15 秒 (15s)</option>
+  <option value="30" selected>30 秒 (30s)</option>
+  <option value="60">60 秒 (60s)</option>
+  <option value="90">90 秒 (90s)</option>
+  <option value="0">無限時間 (No Limit)</option>
+</select>
             </div>
             <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer">即刻發布搶答</button>
           </div>
@@ -6837,10 +6854,11 @@ function teacherPromptClassCoins(mode = 'reward') {
       const w3 = document.getElementById('teacherQuizOpt4').value.trim();
       
       const timeLimitSelect = document.getElementById('teacherQuizTimeLimitSelect');
-      const timeLimitSec = timeLimitSelect ? parseInt(timeLimitSelect.value) || 30 : 30;
+      // 解析選定時間（0 代表無限時間）
+      const timeLimitSec = timeLimitSelect ? parseInt(timeLimitSelect.value) : 30;
 
       if (!q || !correct) {
-        return alert("Please provide at least a question and the correct answer (Option 1)!");
+        return alert("請至少填寫問題與正確答案 (選項 1)！ / Please provide a question and correct answer!");
       }
 
       const rawOptions = [{ text: correct, isCorrect: true }];
@@ -6849,7 +6867,7 @@ function teacherPromptClassCoins(mode = 'reward') {
       if (w3) rawOptions.push({ text: w3, isCorrect: false });
 
       if (rawOptions.length < 2) {
-        return alert("Please provide at least one wrong distractor option!");
+        return alert("請至少提供一個錯誤選項！ / Please provide at least one wrong distractor option!");
       }
 
       for (let i = rawOptions.length - 1; i > 0; i--) {
@@ -6875,9 +6893,9 @@ function teacherPromptClassCoins(mode = 'reward') {
 
       if (dbRootRef) {
         dbRootRef.child('activeQuiz').set(quizData).then(() => {
-          const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒` : '無作答限時';
+          const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒 (${timeLimitSec}s)` : '無限時間 (No Limit)';
           addBattleLog(`⚡ [LIVE QUIZ] 老師發布搶答 (${limitMsg}): "${q}"! 1st: +2 次攻擊, 2nd: +1 次攻擊, 3rd: +30 EXP, 其餘答對: +10 EXP!`, "evolution", targetClass);
-          showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！`, "evolution");
+          showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！ / Speed Quiz Launched!`, "evolution");
           renderTeacherQuizLiveDashboard();
         });
       }
@@ -6952,21 +6970,28 @@ function teacherPromptClassCoins(mode = 'reward') {
       const isActive = !!activeQuizInstance.active;
       const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
 
-      if (isActive && timeLimitSec > 0) {
+      if (isActive) {
         if (countdownBadge) countdownBadge.classList.remove('hidden');
         
         const updateTcTimer = () => {
           const elapsedSec = Math.floor((Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000);
-          const remaining = Math.max(0, timeLimitSec - elapsedSec);
-          if (tcCountdownSec) tcCountdownSec.textContent = `${remaining}s`;
+          
+          if (timeLimitSec > 0) {
+            // 有限時間：倒數模式
+            const remaining = Math.max(0, timeLimitSec - elapsedSec);
+            if (tcCountdownSec) tcCountdownSec.textContent = `${remaining}s`;
 
-          if (remaining <= 0) {
-            clearInterval(quizTeacherCountdownTimer);
-            quizTeacherCountdownTimer = null;
-            if (statusBadge) {
-              statusBadge.textContent = "TIME OVER";
-              statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold";
+            if (remaining <= 0) {
+              clearInterval(quizTeacherCountdownTimer);
+              quizTeacherCountdownTimer = null;
+              if (statusBadge) {
+                statusBadge.textContent = "TIME OVER (時間到)";
+                statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold";
+              }
             }
+          } else {
+            // 無限時間：顯示累計作答時間
+            if (tcCountdownSec) tcCountdownSec.textContent = `∞ (${elapsedSec}s)`;
           }
         };
 
@@ -7102,12 +7127,12 @@ function teacherPromptClassCoins(mode = 'reward') {
       if (badgeTimeout) badgeTimeout.textContent = `⏰ ${timeoutCount} 逾時`;
     }
 
-    // === 🛠️ 修復版：防止搶答秒逾時與死循環發送通知 ===
+    // === 🛠️ 修復版：支援無限時間與搶答防秒逾時機制 ===
     function renderQuizModalForStudent() {
       const modal = document.getElementById('modalQuizOverlay');
       if (!modal) return;
 
-      // 每次進入前，先徹底清理既有學生倒數計時器
+      // 每次進入前，徹底清理既有學生倒數計時器
       if (quizStudentCountdownTimer) {
         clearInterval(quizStudentCountdownTimer);
         quizStudentCountdownTimer = null;
@@ -7143,91 +7168,203 @@ function teacherPromptClassCoins(mode = 'reward') {
 
         document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
 
+        // 取得限時秒數（0 代表無限制）
         const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? Number(activeQuizInstance.timeLimit) : 30;
+        const isUnlimited = (timeLimitSec <= 0);
 
-        // 狀況 A：該學生已經提交過答案，或者已經被判定逾時
-        if (mySub) {
-          isQuizTimeoutSubmitting = false; // 已有確定結果，關閉防重送鎖
-          if (timerBadge) timerBadge.classList.add('hidden');
-          if (barWrapper) barWrapper.classList.add('hidden');
-
-          grid.innerHTML = '';
-          feedbackBox.classList.remove('hidden');
-
-          if (mySub.isTimeout) {
-            feedbackText.innerHTML = `⏰ <b class="text-rose-400">已逾時未作答！</b> 本題自動判定為錯誤，無任何獎勵！`;
-          } else if (mySub.isCorrect) {
-            if (mySub.rank === 1) {
-              feedbackText.innerHTML = `🎉 恭喜你獲得 <b class="text-amber-300">第一名 (冠軍)</b>！自動增加 <b class="text-amber-400">+2 次攻擊次數</b>！`;
-            } else if (mySub.rank === 2) {
-              feedbackText.innerHTML = `🥈 恭喜你獲得 <b class="text-slate-200">第二名 (亞軍)</b>！自動增加 <b class="text-cyan-300">+1 次攻擊次數</b>！`;
-            } else if (mySub.rank === 3) {
-              feedbackText.innerHTML = `🥉 恭喜你獲得 <b class="text-amber-500">第三名 (季軍)</b>！自動獲得 <b class="text-emerald-400">+30 EXP</b>！`;
-            } else {
-              feedbackText.innerHTML = `✅ 答案正確！自動獲得 <b class="text-emerald-400">+10 EXP</b>！`;
-            }
-          } else {
-            feedbackText.innerHTML = `❌ 答案不正確！沒有獲得獎勵，下次請再接再厲！`;
-          }
-
-          const winners = activeQuizInstance.winners || {};
-          let snippet = '';
-          if (winners.rank1) snippet += `<div>🥇 第1名: ${winners.rank1.studentName} (+2 攻擊)</div>`;
-          if (winners.rank2) snippet += `<div>🥈 第2名: ${winners.rank2.studentName} (+1 攻擊)</div>`;
-          if (winners.rank3) snippet += `<div>🥉 第3名: ${winners.rank3.studentName} (+30 EXP)</div>`;
-          podiumBox.innerHTML = snippet;
-
-        } else {
-          // 狀況 B：學生尚未作答，正常渲染題目與選項
+        if (!mySub) {
+          // 學生尚未提交作答
+          isQuizTimeoutSubmitting = false;
           feedbackBox.classList.add('hidden');
           grid.innerHTML = '';
 
-          activeQuizInstance.options.forEach((optText, idx) => {
-            const btn = document.createElement('button');
-            btn.className = "py-3 px-4 rounded-xl bg-slate-950 border border-cyan-500/50 hover:bg-cyan-950 text-cyan-200 font-bold text-xs shadow transition active:scale-95 cursor-pointer text-left flex items-center justify-between";
-            btn.innerHTML = `<span>${optText}</span> <i class="fa-solid fa-chevron-right text-[10px] text-cyan-400"></i>`;
-            btn.onclick = () => submitStudentQuizAnswer(idx);
-            grid.appendChild(btn);
-          });
-
-          // 啟動限時倒數機制
-          if (timeLimitSec > 0) {
-            if (timerBadge) timerBadge.classList.remove('hidden');
+          // 倒數與進度條介面顯示控制
+          if (isUnlimited) {
+            // 無限時間：隱藏進度條，倒數徽章顯示為無限標誌
+            if (barWrapper) barWrapper.classList.add('hidden');
+            if (timerBadge) {
+              timerBadge.classList.remove('hidden');
+              timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-bold flex items-center gap-1.5";
+            }
+            if (timerSecText) timerSecText.innerHTML = '<i class="fa-solid fa-infinity"></i> 無限時間';
+          } else {
+            // 有限時間：啟用進度條與倒數計時
             if (barWrapper) barWrapper.classList.remove('hidden');
+            if (timerBadge) {
+              timerBadge.classList.remove('hidden');
+              timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-bold flex items-center gap-1.5 animate-pulse";
+            }
 
-            const quizStartMs = activeQuizInstance.timestamp || Date.now();
-
-            const handleCountdownTick = () => {
-              // 取得經過秒數，若本地時鐘超前出現負數則強制作為 0
-              const diffMs = Date.now() - quizStartMs;
-              const elapsedSec = diffMs > 0 ? (diffMs / 1000) : 0;
+            const updateCountdownUI = () => {
+              const quizStartMs = activeQuizInstance.timestamp || Date.now();
+              const elapsedSec = Math.floor((Date.now() - quizStartMs) / 1000);
               const remaining = Math.max(0, timeLimitSec - elapsedSec);
-              const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
 
-              if (timerSecText) timerSecText.textContent = `${Math.ceil(remaining)}s`;
-              if (barFill) barFill.style.width = `${pct}%`;
+              if (timerSecText) timerSecText.textContent = `${remaining}s`;
 
-              // 倒數歸零時觸發逾時，且必須確認尚未在提交逾時狀態
+              if (barFill) {
+                const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
+                barFill.style.width = `${pct}%`;
+              }
+
+              // 只有在明確設定有限時間且剩餘時間歸零時，才判定為逾時
               if (remaining <= 0) {
-                if (quizStudentCountdownTimer) {
-                  clearInterval(quizStudentCountdownTimer);
-                  quizStudentCountdownTimer = null;
+                clearInterval(quizStudentCountdownTimer);
+                quizStudentCountdownTimer = null;
+                if (!isQuizTimeoutSubmitting) {
+                  isQuizTimeoutSubmitting = true;
+                  submitQuizAnswer(null, true); // 自動提交逾時
                 }
-                autoSubmitTimeoutForStudent();
               }
             };
 
-            handleCountdownTick();
-            quizStudentCountdownTimer = setInterval(handleCountdownTick, 250);
-          } else {
-            if (timerBadge) timerBadge.classList.add('hidden');
-            if (barWrapper) barWrapper.classList.add('hidden');
+            updateCountdownUI();
+            quizStudentCountdownTimer = setInterval(updateCountdownUI, 250);
           }
+
+          // 渲染 4 個作答選項按鈕
+          (activeQuizInstance.options || []).forEach((optText, optIdx) => {
+            const btn = document.createElement('button');
+            btn.className = "p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-slate-700 hover:border-amber-400 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 text-left flex items-center gap-2.5 cursor-pointer";
+            btn.innerHTML = `
+              <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-pixel text-[10px] text-amber-300 shrink-0">
+                ${String.fromCharCode(65 + optIdx)}
+              </span>
+              <span class="truncate">${optText}</span>
+            `;
+            btn.onclick = () => submitQuizAnswer(optIdx, false);
+            grid.appendChild(btn);
+          });
+
+        } else {
+          // 學生已經作答過或已判定逾時，展示作答結果反饋
+          if (timerBadge) timerBadge.classList.add('hidden');
+          if (barWrapper) barWrapper.classList.add('hidden');
+          grid.innerHTML = '';
+
+          feedbackBox.classList.remove('hidden');
+
+          if (mySub.isTimeout) {
+            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-clock mr-1"></i>回答時間已過！(判定逾時未答)</span>`;
+          } else if (mySub.isCorrect) {
+            let rankText = "";
+            if (mySub.rank === 1) rankText = "🥇 第一名神速答對！獎勵：+2 次攻擊！";
+            else if (mySub.rank === 2) rankText = "🥈 第二名答對！獎勵：+1 次攻擊！";
+            else if (mySub.rank === 3) rankText = "🥉 第三名答對！獎勵：+30 EXP！";
+            else rankText = "✨ 答對！獎勵：+10 EXP！";
+
+            feedbackText.innerHTML = `<span class="text-emerald-400 font-black"><i class="fa-solid fa-circle-check mr-1"></i>回答正確！${rankText}</span>`;
+          } else {
+            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-circle-xmark mr-1"></i>回答錯誤！下次加油！</span>`;
+          }
+
+          // 即時榮譽榜 (前三名)
+          const winners = activeQuizInstance.winners || {};
+          let podiumHtml = `<div class="font-bold text-amber-300 border-b border-slate-800 pb-1 mb-1 font-pixel text-[10px]">即時神速榜單：</div>`;
+          podiumHtml += `<div>🥇 1st: ${winners.rank1 ? winners.rank1.studentName : '等待中...'}</div>`;
+          podiumHtml += `<div>🥈 2nd: ${winners.rank2 ? winners.rank2.studentName : '等待中...'}</div>`;
+          podiumHtml += `<div>🥉 3rd: ${winners.rank3 ? winners.rank3.studentName : '等待中...'}</div>`;
+          podiumBox.innerHTML = podiumHtml;
         }
 
         modal.classList.remove('hidden');
       } else {
         modal.classList.add('hidden');
+      }
+    }
+
+    // 學生提交作答處理
+    function submitQuizAnswer(chosenIndex, isTimeout = false) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      if (!activeQuizInstance || !activeQuizInstance.active) return;
+
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      if (quizStudentCountdownTimer) {
+        clearInterval(quizStudentCountdownTimer);
+        quizStudentCountdownTimer = null;
+      }
+
+      const isCorrect = !isTimeout && (chosenIndex === activeQuizInstance.correctIndex);
+      const chosenText = (!isTimeout && activeQuizInstance.options && activeQuizInstance.options[chosenIndex])
+        ? activeQuizInstance.options[chosenIndex]
+        : (isTimeout ? '⏰ 逾時未答' : '未作答');
+
+      const submitTime = Date.now();
+      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      // 使用 Firebase Transaction 決定搶答名次與核發獎勵
+      if (dbRootRef) {
+        dbRootRef.child('activeQuiz').transaction((cur) => {
+          if (!cur || !cur.active) return cur;
+          if (!cur.submissions) cur.submissions = {};
+          if (cur.submissions[currentUser.id]) return cur; // 避免重複作答
+
+          if (!cur.winners) cur.winners = {};
+
+          let awardedRank = null;
+          if (isCorrect) {
+            if (!cur.winners.rank1) {
+              awardedRank = 1;
+              cur.winners.rank1 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+            } else if (!cur.winners.rank2) {
+              awardedRank = 2;
+              cur.winners.rank2 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+            } else if (!cur.winners.rank3) {
+              awardedRank = 3;
+              cur.winners.rank3 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+            }
+          }
+
+          cur.submissions[currentUser.id] = {
+            studentId: st.id,
+            studentName: st.name,
+            answerText: chosenText,
+            isCorrect: isCorrect,
+            isTimeout: isTimeout,
+            rank: awardedRank,
+            timestamp: submitTime,
+            timeString: timeString
+          };
+
+          return cur;
+        }, (err, committed, snap) => {
+          if (committed && snap.exists()) {
+            const finalQuiz = snap.val();
+            const myFinalSub = finalQuiz.submissions && finalQuiz.submissions[currentUser.id];
+
+            if (myFinalSub && myFinalSub.isCorrect) {
+              playSound('evolve');
+              if (typeof confetti === 'function') {
+                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+              }
+
+              // 依排名核發獎勵
+              if (myFinalSub.rank === 1) {
+                grantAttackQuota(st.id, 2);
+                showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數！", "evolution");
+              } else if (myFinalSub.rank === 2) {
+                grantAttackQuota(st.id, 1);
+                showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數！", "evolution");
+              } else if (myFinalSub.rank === 3) {
+                rewardStudent(st.id, 30);
+                showToast("搶答季軍！", "第 3 名答對！榮獲 +30 EXP！", "evolution");
+              } else {
+                rewardStudent(st.id, 10);
+                showToast("回答正確！", "成功答對題目，獎勵 +10 EXP！", "heal");
+              }
+            } else if (isTimeout) {
+              playSound('faint');
+              showToast("逾時", "回答時間已結束！", "damage");
+            } else {
+              playSound('attack');
+              showToast("回答錯誤", "下次再接再厲！", "damage");
+            }
+
+            renderQuizModalForStudent();
+          }
+        });
       }
     }
 
