@@ -818,7 +818,27 @@
           </div>
         </div>
       </div>
-
+      <!-- 💬 學生端：與老師的專屬私訊卡片 (Student Direct Message with Teacher) -->
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-comment-dots text-cyan-400 text-base animate-pulse"></i>
+            <h4 class="text-xs font-black text-cyan-300 uppercase tracking-widest font-pixel">Teacher Direct Messages 老師專屬私訊</h4>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">1-on-1 (Max 5)</span>
+        </div>
+        <!-- 學生私訊列表 -->
+        <div id="studentChatMessagesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1 text-xs">
+          <div class="text-slate-500 italic text-center py-4">目前尚無與老師的私訊記錄。</div>
+        </div>
+        <!-- 學生回覆輸入框 -->
+        <div class="pt-2 border-t border-slate-800 flex gap-2">
+          <input type="text" id="studentMsgInput" placeholder="輸入回覆給老師的訊息..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+          <button onclick="sendStudentMessage()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1 shrink-0">
+            <i class="fa-solid fa-paper-plane"></i> 回覆
+          </button>
+        </div>
+      </div>
       <!-- Class Battle Log Feed -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
         <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
@@ -2195,7 +2215,257 @@ const DIGIMON_DB = {
     let isExamSubmitting = false;
     // 🥷 老師隱藏模式狀態（true = 不記錄任何 Log）
     let isTeacherStealthMode = false;
+    // === 師生私訊功能核心邏輯 ===
+   // === 師生私訊功能核心邏輯 ===
+    let selectedTeacherMsgStudentId = "";
+    let teacherReadMessageTimestamps = {}; // 記錄老師最後已讀時間戳 { studentId: timestamp }
 
+   // 檢查指定學生是否有未讀的新訊息
+    function hasStudentUnreadMsg(studentId) {
+      const studentMsgsObj = (appData.messages && appData.messages[studentId]) || {};
+      const lastRead = teacherReadMessageTimestamps[studentId] || 0;
+      return Object.values(studentMsgsObj).some(m => m.senderRole === 'student' && (m.timestamp || 0) > lastRead);
+    }
+
+    // 更新老師分頁按鈕上的紅點通知總數
+    function updateTeacherGlobalMsgBadge() {
+      const badge = document.getElementById('teacherTabMsgUnreadBadge');
+      if (!badge || !currentUser || currentUser.role !== 'teacher') return;
+
+      let unreadTotal = 0;
+      Object.keys(appData.students || {}).forEach(sId => {
+        if (hasStudentUnreadMsg(sId)) unreadTotal++;
+      });
+
+      if (unreadTotal > 0) {
+        badge.textContent = unreadTotal;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // 填充老師端學生選擇清單（若有新訊息顯示醒目提示）
+    function populateTeacherMsgStudentDropdown() {
+      const select = document.getElementById('teacherMsgStudentSelect');
+      if (!select) return;
+      const curVal = select.value;
+      select.innerHTML = '<option value="">-- 請選擇學生 (Select Student) --</option>';
+
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      myStudents.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        const isUnread = hasStudentUnreadMsg(s.id);
+        opt.textContent = `${isUnread ? '🔴 [NEW] ' : ''}${s.name} (${s.username || s.id}) - 班級: ${formatStudentClassesDisplay(s)}`;
+        if (isUnread) opt.className = "text-rose-400 font-bold bg-slate-900";
+        if (s.id === curVal || s.id === selectedTeacherMsgStudentId) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      if (!selectedTeacherMsgStudentId && myStudents.length > 0) {
+        selectedTeacherMsgStudentId = select.value;
+      }
+      renderTeacherChatMessageList();
+      updateTeacherGlobalMsgBadge();
+    }
+
+    function onTeacherSelectMsgStudent(studentId) {
+      selectedTeacherMsgStudentId = studentId;
+      if (studentId) {
+        teacherReadMessageTimestamps[studentId] = Date.now();
+      }
+      renderTeacherChatMessageList();
+      populateTeacherMsgStudentDropdown();
+    }
+
+    // 渲染老師端的私訊內容
+    function renderTeacherChatMessageList() {
+      const container = document.getElementById('teacherChatMessagesList');
+      const titleEl = document.getElementById('teacherMsgTargetTitle');
+      const countEl = document.getElementById('teacherMsgCountBadge');
+      const clearBtn = document.getElementById('btnTeacherClearChat');
+      if (!container) return;
+
+      if (!selectedTeacherMsgStudentId) {
+        if (titleEl) titleEl.textContent = "請先在上方選擇學生";
+        if (countEl) countEl.textContent = "訊息數：0 / 5";
+        if (clearBtn) clearBtn.classList.add('hidden');
+        container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">請先在上方下拉選單選擇一位學生</div>';
+        return;
+      }
+
+      // 當切換到該學生，視為已讀
+      teacherReadMessageTimestamps[selectedTeacherMsgStudentId] = Date.now();
+      updateTeacherGlobalMsgBadge();
+
+      const st = appData.students[selectedTeacherMsgStudentId];
+      if (titleEl) titleEl.textContent = `與 ${st ? st.name : selectedTeacherMsgStudentId} 的 1 對 1 私訊`;
+
+      const studentMsgsObj = (appData.messages && appData.messages[selectedTeacherMsgStudentId]) || {};
+      const msgList = Object.entries(studentMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
+        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+      if (countEl) countEl.textContent = `訊息數：${msgList.length} / 5`;
+
+      if (msgList.length === 0) {
+        if (clearBtn) clearBtn.classList.add('hidden');
+        container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">尚無訊息記錄。在下方輸入即可開始對話！</div>';
+        return;
+      }
+
+      if (clearBtn) clearBtn.classList.remove('hidden');
+
+      let html = '';
+      msgList.forEach(m => {
+        const isTeacher = m.senderRole === 'teacher';
+        html += `
+          <div class="flex flex-col ${isTeacher ? 'items-end' : 'items-start'}">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="text-[10px] font-bold ${isTeacher ? 'text-amber-400' : 'text-cyan-400'}">${escapeHtml(m.senderName)}</span>
+              <span class="text-[9px] text-slate-500 font-mono">${m.time || ''}</span>
+            </div>
+            <div class="max-w-[75%] px-3 py-2 rounded-2xl text-xs break-words shadow ${isTeacher ? 'bg-amber-500/20 border border-amber-400/60 text-amber-100 rounded-tr-none' : 'bg-slate-900 border border-cyan-500/50 text-slate-100 rounded-tl-none'}">
+              ${escapeHtml(m.text)}
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // 🗑️ 老師清空當前選取學生的私訊歷史
+    function clearTeacherCurrentChatHistory() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherMsgStudentId) return alert("請先選擇一位學生！");
+
+      const st = appData.students[selectedTeacherMsgStudentId];
+      const sName = st ? st.name : selectedTeacherMsgStudentId;
+
+      if (!confirm(`確定要完全清除與學生【${sName}】的所有私訊對話記錄嗎？\n(清除後無法復原)`)) return;
+
+      if (dbRootRef) {
+        dbRootRef.child(`messages/${selectedTeacherMsgStudentId}`).remove().then(() => {
+          playSound('attack');
+          showToast("Chat Cleared", `已清空與 ${sName} 的私訊紀錄！`, "damage");
+          renderTeacherChatMessageList();
+        }).catch(err => {
+          alert("清空失敗: " + err.message);
+        });
+      }
+    }
+
+    // 老師發送訊息
+    function sendTeacherMessage() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherMsgStudentId) return alert("請先選擇一位學生！");
+
+      const input = document.getElementById('teacherMsgInput');
+      const text = (input.value || '').trim();
+      if (!text) return;
+
+      const tc = appData.teachers[currentUser.id] || currentUser.data;
+      postMessageDirectly(selectedTeacherMsgStudentId, {
+        senderRole: 'teacher',
+        senderId: currentUser.id,
+        senderName: tc.name || '老師 (Teacher)',
+        text: text
+      }, () => {
+        input.value = '';
+      });
+    }
+
+    // 學生端渲染專屬私訊
+    function renderStudentChatMessageList() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const container = document.getElementById('studentChatMessagesList');
+      if (!container) return;
+
+      const myMsgsObj = (appData.messages && appData.messages[currentUser.id]) || {};
+      const msgList = Object.entries(myMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
+        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+      if (msgList.length === 0) {
+        container.innerHTML = '<div class="text-slate-500 italic text-center py-4">目前尚無與老師的私訊記錄。可以在下方發送訊息給老師！</div>';
+        return;
+      }
+
+      let html = '';
+      msgList.forEach(m => {
+        const isMe = m.senderRole === 'student';
+        html += `
+          <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="text-[10px] font-bold ${isMe ? 'text-cyan-400' : 'text-amber-400'}">${escapeHtml(m.senderName)}</span>
+              <span class="text-[9px] text-slate-500 font-mono">${m.time || ''}</span>
+            </div>
+            <div class="max-w-[80%] px-3 py-1.5 rounded-xl text-xs break-words shadow ${isMe ? 'bg-cyan-600 text-white rounded-tr-none' : 'bg-slate-950 border border-amber-500/50 text-amber-200 rounded-tl-none'}">
+              ${escapeHtml(m.text)}
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // 學生發送訊息給老師
+    function sendStudentMessage() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (isStudentBanned(st)) return alert("你的帳號已被老師設定為唯讀，無法傳送訊息！");
+
+      const input = document.getElementById('studentMsgInput');
+      const text = (input.value || '').trim();
+      if (!text) return;
+
+      postMessageDirectly(currentUser.id, {
+        senderRole: 'student',
+        senderId: currentUser.id,
+        senderName: st.name || currentUser.id,
+        text: text
+      }, () => {
+        input.value = '';
+      });
+    }
+
+    // 共通寫入函式：保證最多保留 5 則，超額從最舊刪除
+    function postMessageDirectly(studentId, msgPayload, callback) {
+      if (!dbRootRef) return;
+      const studentMsgRef = dbRootRef.child(`messages/${studentId}`);
+
+      studentMsgRef.once('value').then(snap => {
+        const currentData = snap.val() || {};
+        const keys = Object.keys(currentData).sort((a, b) => (currentData[a].timestamp || 0) - (currentData[b].timestamp || 0));
+
+        const updates = {};
+        // 若當前已有 5 則以上，先刪除最舊的
+        if (keys.length >= 5) {
+          const deleteCount = keys.length - 4; // 保留 4 個以腾出 1 個新位置
+          for (let i = 0; i < deleteCount; i++) {
+            updates[keys[i]] = null;
+          }
+        }
+
+        const newKey = studentMsgRef.push().key;
+        updates[newKey] = {
+          senderRole: msgPayload.senderRole,
+          senderId: msgPayload.senderId,
+          senderName: msgPayload.senderName,
+          text: msgPayload.text,
+          timestamp: Date.now(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        studentMsgRef.update(updates).then(() => {
+          playSound('shield');
+          if (callback) callback();
+        }).catch(err => {
+          alert("訊息發送失敗: " + err.message);
+        });
+      });
+    }
     // 搶答動態倒數計時器變數
     let quizStudentCountdownTimer = null;
     let quizTeacherCountdownTimer = null;
@@ -2352,15 +2622,17 @@ function normalizeStudent(s, keyId) {
       const btnMain = document.getElementById('btnTeacherTabMain');
       const btnQuiz = document.getElementById('btnTeacherTabQuiz');
       const btnExam = document.getElementById('btnTeacherTabExam');
+      const btnMsg = document.getElementById('btnTeacherTabMsg');
       const viewMain = document.getElementById('teacherSubViewMain');
       const viewQuiz = document.getElementById('teacherSubViewQuiz');
       const viewExam = document.getElementById('teacherSubViewExam');
+      const viewMsg = document.getElementById('teacherSubViewMessage');
 
       // 重置所有樣式
-      [btnMain, btnQuiz, btnExam].forEach(b => {
+      [btnMain, btnQuiz, btnExam, btnMsg].forEach(b => {
         if (b) b.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
       });
-      [viewMain, viewQuiz, viewExam].forEach(v => {
+      [viewMain, viewQuiz, viewExam, viewMsg].forEach(v => {
         if (v) v.classList.add('hidden');
       });
 
@@ -2375,6 +2647,10 @@ function normalizeStudent(s, keyId) {
         if (btnExam) btnExam.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-indigo-600 to-purple-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
         if (viewExam) viewExam.classList.remove('hidden');
         renderTeacherExamDashboard();
+      } else if (tabName === 'msg') {
+        if (btnMsg) btnMsg.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-cyan-600 to-blue-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewMsg) viewMsg.classList.remove('hidden');
+        populateTeacherMsgStudentDropdown();
       }
     }
 
@@ -2528,12 +2804,44 @@ function normalizeStudent(s, keyId) {
             renderTeacherExamDashboard();
           }
         });
+      // 💬 私訊即時監聽 (保留最多 5 則 + 老師醒目通知)
+        let isFirstMsgSync = true;
+        dbRootRef.child('messages').on('value', (snap) => {
+          const prevMessages = appData.messages || {};
+          appData.messages = snap.val() || {};
 
+          // 當老師在線且收到學生最新訊息時，發出醒目提示與音效
+          if (currentUser && currentUser.role === 'teacher') {
+            if (!isFirstMsgSync) {
+              Object.entries(appData.messages).forEach(([studentId, msgs]) => {
+                if (!msgs) return;
+                const newLatest = Object.values(msgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+                const oldMsgs = prevMessages[studentId] || {};
+                const oldLatest = Object.values(oldMsgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+
+                if (newLatest && newLatest.senderRole === 'student' && (!oldLatest || newLatest.timestamp > oldLatest.timestamp)) {
+                  playSound('gacha');
+                  showToast("💬 收到學生新私訊！", `來自【${newLatest.senderName}】：${newLatest.text}`, "info");
+                }
+              });
+            }
+            updateTeacherGlobalMsgBadge();
+            if (activeTeacherSubTab === 'msg') {
+              populateTeacherMsgStudentDropdown();
+            }
+          }
+
+          if (currentUser && currentUser.role === 'student') {
+            renderStudentChatMessageList();
+          }
+          isFirstMsgSync = false;
+        });
       } catch (err) {
         console.error("Fatal Firebase Init Error:", err);
         updateSyncStatusUI(false, `❌ Init Crash: ${err.message}`);
       }
     }
+    
 
     function retryFirebaseConnection() {
       updateSyncStatusUI(false, "Reconnecting...");
@@ -4138,6 +4446,11 @@ function getTeacherTemplate() {
 <button id="btnTeacherTabExam" onclick="switchTeacherSubTab('exam')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
         <i class="fa-solid fa-file-excel text-emerald-400"></i> 考卷系統中心 (Exam Paper Hub)
       </button>
+<button id="btnTeacherTabMsg" onclick="switchTeacherSubTab('msg')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 relative">
+  <i class="fa-solid fa-comments text-cyan-400"></i> 
+  <span>師生私訊中心 (Messages)</span>
+  <span id="teacherTabMsgUnreadBadge" class="hidden px-1.5 py-0.2 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold animate-pulse">0</span>
+</button>
     </div>
 
     <div id="teacherSubViewMain" class="space-y-6">
@@ -4520,6 +4833,60 @@ function getTeacherTemplate() {
             </thead>
             <tbody id="examStudentsTbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  <!-- 💬 老師與個別學生私訊子分頁 -->
+    <div id="teacherSubViewMessage" class="space-y-6 hidden">
+      <div class="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border-2 border-cyan-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-500/30 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-lg">
+              <i class="fa-solid fa-comments"></i>
+            </div>
+            <div>
+              <h3 class="text-sm sm:text-base font-black text-cyan-300 uppercase tracking-wider font-pixel">師生個別私訊系統 (Direct Messages)</h3>
+              <p class="text-[11px] text-slate-400">僅限老師與個別學生 1 對 1 通訊，自動保留最新 5 則訊息（超過自動刪除最舊）</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：5 則 / 學生</span>
+          </div>
+        </div>
+
+        <!-- 選擇學生區塊 -->
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+          <label class="text-xs font-bold text-cyan-300 shrink-0"><i class="fa-solid fa-user mr-1"></i> 選擇私訊學生：</label>
+          <select id="teacherMsgStudentSelect" onchange="onTeacherSelectMsgStudent(this.value)" class="flex-1 bg-slate-900 border border-cyan-500/60 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
+            <option value="">-- 請選擇學生 (Select Student) --</option>
+          </select>
+        </div>
+
+        <!-- 私訊對話框體 -->
+        <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col h-[380px]">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-300" id="teacherMsgTargetTitle">請先在上方選擇學生</span>
+              <span class="text-[10px] text-slate-500 font-mono" id="teacherMsgCountBadge">訊息數：0 / 5</span>
+            </div>
+            <!-- 🗑️ 老師清空當前對話按鈕 -->
+            <button id="btnTeacherClearChat" onclick="clearTeacherCurrentChatHistory()" class="hidden px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-300 text-[11px] font-bold cursor-pointer transition active:scale-95 flex items-center gap-1.5">
+              <i class="fa-solid fa-trash-can"></i> 清空對話 (Clear History)
+            </button>
+          </div>
+
+          <!-- 訊息列表 -->
+          <div id="teacherChatMessagesList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+            <div class="text-slate-500 text-xs italic text-center py-10">尚無訊息或未選擇學生</div>
+          </div>
+
+          <!-- 訊息輸入與發送 -->
+          <div class="pt-3 border-t border-slate-800 flex gap-2">
+            <input type="text" id="teacherMsgInput" placeholder="輸入要傳送給該學生的訊息..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+            <button onclick="sendTeacherMessage()" class="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-paper-plane"></i> 發送
+            </button>
+          </div>
         </div>
       </div>
     </div>
