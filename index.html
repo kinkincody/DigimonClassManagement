@@ -825,7 +825,7 @@
             <i class="fa-solid fa-comment-dots text-cyan-400 text-base animate-pulse"></i>
             <h4 class="text-xs font-black text-cyan-300 uppercase tracking-widest font-pixel">Teacher Direct Messages 老師專屬私訊</h4>
           </div>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">1-on-1 (Max 5)</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">1-on-1 (Max 10)</span>5)</span>
         </div>
         <!-- 學生私訊列表 -->
         <div id="studentChatMessagesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1 text-xs">
@@ -2215,15 +2215,34 @@ const DIGIMON_DB = {
     let isExamSubmitting = false;
     // 🥷 老師隱藏模式狀態（true = 不記錄任何 Log）
     let isTeacherStealthMode = false;
-    // === 師生私訊功能核心邏輯 ===
-   // === 師生私訊功能核心邏輯 ===
+   // === 師生私訊功能核心邏輯 (上限 10 則 & 本地持久化已讀防重彈) ===
     let selectedTeacherMsgStudentId = "";
-    let teacherReadMessageTimestamps = {}; // 記錄老師最後已讀時間戳 { studentId: timestamp }
+    
+    // 從 localStorage 載入已讀時間戳，防止重新整理頁面後重複彈出提示
+    function getTeacherReadTimestamps() {
+      try {
+        const raw = localStorage.getItem("TEACHER_CHAT_READ_TIMESTAMPS");
+        return raw ? JSON.parse(raw) : {};
+      } catch(e) {
+        return {};
+      }
+    }
 
-   // 檢查指定學生是否有未讀的新訊息
+    // 標記特定學生訊息為已讀
+    function markStudentMsgAsRead(studentId) {
+      if (!studentId) return;
+      const reads = getTeacherReadTimestamps();
+      reads[studentId] = Date.now();
+      try {
+        localStorage.setItem("TEACHER_CHAT_READ_TIMESTAMPS", JSON.stringify(reads));
+      } catch(e) {}
+    }
+
+    // 檢查指定學生是否有未讀的新訊息
     function hasStudentUnreadMsg(studentId) {
       const studentMsgsObj = (appData.messages && appData.messages[studentId]) || {};
-      const lastRead = teacherReadMessageTimestamps[studentId] || 0;
+      const reads = getTeacherReadTimestamps();
+      const lastRead = reads[studentId] || 0;
       return Object.values(studentMsgsObj).some(m => m.senderRole === 'student' && (m.timestamp || 0) > lastRead);
     }
 
@@ -2245,7 +2264,7 @@ const DIGIMON_DB = {
       }
     }
 
-    // 填充老師端學生選擇清單（若有新訊息顯示醒目提示）
+    // 填充老師端學生選擇清單
     function populateTeacherMsgStudentDropdown() {
       const select = document.getElementById('teacherMsgStudentSelect');
       if (!select) return;
@@ -2273,7 +2292,7 @@ const DIGIMON_DB = {
     function onTeacherSelectMsgStudent(studentId) {
       selectedTeacherMsgStudentId = studentId;
       if (studentId) {
-        teacherReadMessageTimestamps[studentId] = Date.now();
+        markStudentMsgAsRead(studentId);
       }
       renderTeacherChatMessageList();
       populateTeacherMsgStudentDropdown();
@@ -2289,14 +2308,14 @@ const DIGIMON_DB = {
 
       if (!selectedTeacherMsgStudentId) {
         if (titleEl) titleEl.textContent = "請先在上方選擇學生";
-        if (countEl) countEl.textContent = "訊息數：0 / 5";
+        if (countEl) countEl.textContent = "訊息數：0 / 10";
         if (clearBtn) clearBtn.classList.add('hidden');
         container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">請先在上方下拉選單選擇一位學生</div>';
         return;
       }
 
-      // 當切換到該學生，視為已讀
-      teacherReadMessageTimestamps[selectedTeacherMsgStudentId] = Date.now();
+      // 當開啟或切換到該學生，立即標記已讀並消除紅點
+      markStudentMsgAsRead(selectedTeacherMsgStudentId);
       updateTeacherGlobalMsgBadge();
 
       const st = appData.students[selectedTeacherMsgStudentId];
@@ -2306,7 +2325,7 @@ const DIGIMON_DB = {
       const msgList = Object.entries(studentMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
         .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
-      if (countEl) countEl.textContent = `訊息數：${msgList.length} / 5`;
+      if (countEl) countEl.textContent = `訊息數：${msgList.length} / 10`;
 
       if (msgList.length === 0) {
         if (clearBtn) clearBtn.classList.add('hidden');
@@ -2349,6 +2368,7 @@ const DIGIMON_DB = {
         dbRootRef.child(`messages/${selectedTeacherMsgStudentId}`).remove().then(() => {
           playSound('attack');
           showToast("Chat Cleared", `已清空與 ${sName} 的私訊紀錄！`, "damage");
+          markStudentMsgAsRead(selectedTeacherMsgStudentId);
           renderTeacherChatMessageList();
         }).catch(err => {
           alert("清空失敗: " + err.message);
@@ -2373,6 +2393,7 @@ const DIGIMON_DB = {
         text: text
       }, () => {
         input.value = '';
+        markStudentMsgAsRead(selectedTeacherMsgStudentId);
       });
     }
 
@@ -2430,7 +2451,7 @@ const DIGIMON_DB = {
       });
     }
 
-    // 共通寫入函式：保證最多保留 5 則，超額從最舊刪除
+    // 共通寫入函式：保證最多保留 10 則，超額從最舊刪除
     function postMessageDirectly(studentId, msgPayload, callback) {
       if (!dbRootRef) return;
       const studentMsgRef = dbRootRef.child(`messages/${studentId}`);
@@ -2440,9 +2461,9 @@ const DIGIMON_DB = {
         const keys = Object.keys(currentData).sort((a, b) => (currentData[a].timestamp || 0) - (currentData[b].timestamp || 0));
 
         const updates = {};
-        // 若當前已有 5 則以上，先刪除最舊的
-        if (keys.length >= 5) {
-          const deleteCount = keys.length - 4; // 保留 4 個以腾出 1 個新位置
+        // 若當前已有 10 則以上，先刪除最舊的
+        if (keys.length >= 10) {
+          const deleteCount = keys.length - 9; // 保留 9 個以騰出 1 個新位置
           for (let i = 0; i < deleteCount; i++) {
             updates[keys[i]] = null;
           }
@@ -2804,38 +2825,50 @@ function normalizeStudent(s, keyId) {
             renderTeacherExamDashboard();
           }
         });
-      // 💬 私訊即時監聽 (保留最多 5 則 + 老師醒目通知)
-        let isFirstMsgSync = true;
-        dbRootRef.child('messages').on('value', (snap) => {
-          const prevMessages = appData.messages || {};
-          appData.messages = snap.val() || {};
+      // 💬 私訊即時監聽 (保留最多 10 則 + 精確防重複彈窗)
+      let isFirstMsgSync = true;
+      dbRootRef.child('messages').on('value', (snap) => {
+        const prevMessages = appData.messages || {};
+        appData.messages = snap.val() || {};
 
-          // 當老師在線且收到學生最新訊息時，發出醒目提示與音效
-          if (currentUser && currentUser.role === 'teacher') {
-            if (!isFirstMsgSync) {
-              Object.entries(appData.messages).forEach(([studentId, msgs]) => {
-                if (!msgs) return;
-                const newLatest = Object.values(msgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
-                const oldMsgs = prevMessages[studentId] || {};
-                const oldLatest = Object.values(oldMsgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+        if (currentUser && currentUser.role === 'teacher') {
+          if (!isFirstMsgSync) {
+            const reads = getTeacherReadTimestamps();
+            Object.entries(appData.messages).forEach(([studentId, msgs]) => {
+              if (!msgs) return;
+              const newLatest = Object.values(msgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+              const oldMsgs = prevMessages[studentId] || {};
+              const oldLatest = Object.values(oldMsgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+              const studentLastRead = reads[studentId] || 0;
 
-                if (newLatest && newLatest.senderRole === 'student' && (!oldLatest || newLatest.timestamp > oldLatest.timestamp)) {
+              // 只有當新訊息時間大於已讀時間戳、且大於上一次同步時間、且老師目前沒有正開著該學生對話視窗時才彈出提示
+              if (
+                newLatest &&
+                newLatest.senderRole === 'student' &&
+                newLatest.timestamp > studentLastRead &&
+                (!oldLatest || newLatest.timestamp > oldLatest.timestamp)
+              ) {
+                if (activeTeacherSubTab !== 'msg' || selectedTeacherMsgStudentId !== studentId) {
                   playSound('gacha');
                   showToast("💬 收到學生新私訊！", `來自【${newLatest.senderName}】：${newLatest.text}`, "info");
+                } else {
+                  // 若老師正開著該學生視窗，直接標為已讀
+                  markStudentMsgAsRead(studentId);
                 }
-              });
-            }
-            updateTeacherGlobalMsgBadge();
-            if (activeTeacherSubTab === 'msg') {
-              populateTeacherMsgStudentDropdown();
-            }
+              }
+            });
           }
+          updateTeacherGlobalMsgBadge();
+          if (activeTeacherSubTab === 'msg') {
+            populateTeacherMsgStudentDropdown();
+          }
+        }
 
-          if (currentUser && currentUser.role === 'student') {
-            renderStudentChatMessageList();
-          }
-          isFirstMsgSync = false;
-        });
+        if (currentUser && currentUser.role === 'student') {
+          renderStudentChatMessageList();
+        }
+        isFirstMsgSync = false;
+      });
       } catch (err) {
         console.error("Fatal Firebase Init Error:", err);
         updateSyncStatusUI(false, `❌ Init Crash: ${err.message}`);
@@ -4846,11 +4879,11 @@ function getTeacherTemplate() {
             </div>
             <div>
               <h3 class="text-sm sm:text-base font-black text-cyan-300 uppercase tracking-wider font-pixel">師生個別私訊系統 (Direct Messages)</h3>
-              <p class="text-[11px] text-slate-400">僅限老師與個別學生 1 對 1 通訊，自動保留最新 5 則訊息（超過自動刪除最舊）</p>
+              <p class="text-[11px] text-slate-400">僅限老師與個別學生 1 對 1 通訊，自動保留最新 10 則訊息（超過自動刪除最舊）</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：5 則 / 學生</span>
+            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：10 則 / 學生</span>
           </div>
         </div>
 
