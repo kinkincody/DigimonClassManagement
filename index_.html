@@ -238,7 +238,89 @@
       </div>
     </div>
   </div>
+  <!-- 📝 學生考卷作答與結算視窗 (Exam Modal for Student) -->
+  <div id="modalExamStudent" class="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-indigo-500 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 shadow-2xl relative text-slate-200">
+      
+      <!-- 考卷標題與倒數計時 -->
+      <div class="flex items-center justify-between border-b border-indigo-500/40 pb-3 mb-4">
+        <div>
+          <h3 class="font-pixel text-sm sm:text-base text-indigo-300 flex items-center gap-2">
+            <i class="fa-solid fa-graduation-cap text-indigo-400"></i>
+            <span id="examPaperTitle">班級考卷測驗 (Class Exam)</span>
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-0.5" id="examPaperSubtitle">請在限時內完成作答並提交 (Complete within time limit)</p>
+        </div>
+        <!-- 倒數計時器 -->
+        <div class="font-mono text-xs sm:text-sm px-3 py-1.5 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-black flex items-center gap-1.5 animate-pulse">
+          <i class="fa-solid fa-stopwatch"></i>
+          <span id="examStudentTimerBadge">00:00</span>
+        </div>
+      </div>
 
+      <!-- 考卷進行中視窗 -->
+      <div id="examTakingSection" class="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar pr-1">
+        <div>
+          <!-- 進度提示 -->
+          <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+            <span id="examQuestionProgressText">第 1 / 10 題 (Question 1 of 10)</span>
+            <span id="examQuestionTypeBadge" class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-pixel text-[10px]">選擇題 (MCQ)</span>
+          </div>
+
+          <!-- 題目內容 -->
+          <div id="examQuestionContent" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm sm:text-base font-bold text-white mb-4 shadow-inner leading-relaxed">
+            載入題目中...
+          </div>
+
+          <!-- 選擇題選項容器 -->
+          <div id="examOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+
+          <!-- 填空題輸入框容器 -->
+          <div id="examFillInputContainer" class="hidden space-y-2 mb-4">
+            <label class="block text-xs font-bold text-cyan-300">請輸入你的答案 (Your Answer):</label>
+            <input type="text" id="examFillInput" placeholder="請在此填寫答案 (Type answer here)..." class="w-full bg-slate-950 border-2 border-indigo-500/60 rounded-xl p-3 text-sm text-white outline-none focus:border-indigo-400">
+          </div>
+        </div>
+
+        <!-- 導航與提交按鈕 -->
+        <div class="pt-4 border-t border-slate-800 flex justify-between items-center gap-2">
+          <button id="btnExamPrev" onclick="navigateExamQuestion(-1)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer active:scale-95 flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i> 上一題 (Prev)
+          </button>
+          <div class="flex items-center gap-2">
+            <button id="btnExamNext" onclick="navigateExamQuestion(1)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer active:scale-95 flex items-center gap-1.5">
+              下一題 (Next) <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button id="btnExamSubmit" onclick="submitExamPaper(false)" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg cursor-pointer active:scale-95 flex items-center gap-1.5">
+              <i class="fa-solid fa-paper-plane"></i> 提交考卷 (Submit)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結算與題解報告視窗 (Result & Explanations) -->
+      <div id="examResultSection" class="hidden flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-4">
+        <!-- 成績概覽橫幅 -->
+        <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 border-2 border-indigo-400 rounded-2xl p-4 text-center">
+          <div class="text-xs text-indigo-300 font-pixel uppercase tracking-widest">★ 測驗成績報告 (Exam Report) ★</div>
+          <div class="text-3xl font-black text-white mt-1" id="examResultScoreText">0 / 0 題答對 (0%)</div>
+          <div class="mt-2 flex items-center justify-center gap-3 text-xs font-mono" id="examRewardBadges">
+            <span class="px-2.5 py-1 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 font-bold" id="examExpRewardText">+0 EXP</span>
+            <span class="px-2.5 py-1 rounded-lg bg-yellow-950 border border-yellow-500 text-yellow-300 font-bold" id="examCoinRewardText">+0 金幣 (Coins)</span>
+          </div>
+        </div>
+
+        <!-- 逐題解析列表 -->
+        <div class="space-y-3" id="examExplanationsList"></div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end">
+          <button onclick="closeStudentExamModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl cursor-pointer active:scale-95">
+            關閉 (Close)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-11/12 max-w-md"></div>
 
@@ -418,50 +500,51 @@
       </div>
     </div>
 <!-- 1. Student / Tamer View -->
+    <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
       <!-- 🛡️ Student Faction Info & Transfer Request Card (Multi-Class Support) -->
-<div id="studentFactionCard" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
-  <div class="flex items-center gap-3">
-    <div class="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-xl font-bold">
-      <i class="fa-solid fa-flag"></i>
-    </div>
-    <div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <label class="text-xs font-bold text-cyan-400 font-pixel">選擇班別:</label>
-        <select id="stFactionClassViewSelect" onchange="onStudentFactionClassChanged(this.value)" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-2.5 py-1 text-cyan-300 outline-none">
-        </select>
-        <span class="text-xs font-bold text-slate-400 font-pixel uppercase ml-1">陣營:</span>
-        <span id="stFactionBadge" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 font-pixel">NO FACTION</span>
-        <span id="stFactionBuffBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500 text-amber-300 font-mono"></span>
-        <button onclick="toggleFactionBuffModal()" class="px-2 py-0.5 rounded-full bg-indigo-900/60 hover:bg-indigo-800 text-indigo-300 border border-indigo-500/60 text-[10px] font-bold cursor-pointer transition active:scale-95" title="查看陣營說明">
-          <i class="fa-solid fa-circle-info mr-1"></i>說明
-        </button>
-      </div>
-      <p id="stFactionStatusText" class="text-[11px] text-slate-400 mt-1">同班級同陣營之同學為盟友，對決時免疫內訌傷害。</p>
-    </div>
-  </div>
+      <div id="studentFactionCard" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-xl font-bold">
+            <i class="fa-solid fa-flag"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <label class="text-xs font-bold text-cyan-400 font-pixel">Class 班別:</label>
+              <select id="stFactionClassViewSelect" onchange="onStudentFactionClassChanged(this.value)" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-2.5 py-1 text-cyan-300 outline-none">
+              </select>
+              <span class="text-xs font-bold text-slate-400 font-pixel uppercase ml-1">Faction 陣營:</span>
+              <span id="stFactionBadge" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 font-pixel">NO FACTION</span>
+              <span id="stFactionBuffBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-500 text-amber-300 font-mono"></span>
+              <button onclick="toggleFactionBuffModal()" class="px-2 py-0.5 rounded-full bg-indigo-900/60 hover:bg-indigo-800 text-indigo-300 border border-indigo-500/60 text-[10px] font-bold cursor-pointer transition active:scale-95" title="View Faction Guide 查看陣營說明">
+                <i class="fa-solid fa-circle-info mr-1"></i>Guide 說明
+              </button>
+            </div>
+            <p id="stFactionStatusText" class="text-[11px] text-slate-400 mt-1">Classmates in the same faction are allies and immune to friendly fire. / 同班同陣營為盟友，免疫傷害。</p>
+          </div>
+        </div>
 
-  <div class="flex items-center gap-2">
-    <select id="stFactionSelect" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-3 py-2 text-cyan-200 outline-none">
-      <option value="">-- 申請轉移至該班陣營 --</option>
-    </select>
-    <button onclick="requestStudentFactionTransfer()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md transition active:scale-95 cursor-pointer">
-      <i class="fa-solid fa-paper-plane mr-1"></i> 申請加入
-    </button>
-  </div>
-</div>
+        <div class="flex items-center gap-2">
+          <select id="stFactionSelect" class="bg-slate-950 border border-cyan-500/60 text-xs font-bold rounded-lg px-3 py-2 text-cyan-200 outline-none">
+            <option value="">-- Apply to Join Faction 申請加入陣營 --</option>
+          </select>
+          <button onclick="requestStudentFactionTransfer()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs shadow-md transition active:scale-95 cursor-pointer">
+            <i class="fa-solid fa-paper-plane mr-1"></i> Apply 申請加入
+          </button>
+        </div>
+      </div>
 
       <!-- 📢 學生專屬置頂公告欄 -->
       <div id="studentAnnouncementBox" class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/50 rounded-2xl p-4 shadow-xl space-y-2.5">
         <div class="flex items-center justify-between border-b border-amber-500/30 pb-2">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-bullhorn text-amber-400 text-base animate-bounce"></i>
-            <h4 class="text-xs font-black text-amber-300 uppercase tracking-widest font-pixel">Class Announcements</h4>
+            <h4 class="text-xs font-black text-amber-300 uppercase tracking-widest font-pixel">Class Announcements 班級公告</h4>
           </div>
           <span id="studentAnnouncementClassTag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-bold">Class Notice</span>
         </div>
         <div id="studentAnnouncementsFeed" class="space-y-2">
-          <div class="text-xs text-slate-400 italic">No class announcements right now.</div>
+          <div class="text-xs text-slate-400 italic">No class announcements right now. / 目前無班級公告。</div>
         </div>
       </div>
 
@@ -483,7 +566,7 @@
             <div>
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 rounded bg-rose-900/80 border border-rose-500 text-rose-200 font-pixel text-[9px] font-black uppercase tracking-widest animate-bounce">
-                  ⚔️ BOUNTY TARGET ⚔️
+                  ⚔️ BOUNTY TARGET 懸賞目標 ⚔️
                 </span>
                 <span id="stBountyStageBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">CHAMPION</span>
               </div>
@@ -503,17 +586,17 @@
 
           <div class="flex flex-col sm:items-end justify-center">
             <div class="text-[10px] text-amber-300 font-pixel uppercase tracking-widest flex items-center gap-1.5">
-              <i class="fa-solid fa-trophy text-amber-400 animate-pulse"></i> Victor Elimination Bounty:
+              <i class="fa-solid fa-trophy text-amber-400 animate-pulse"></i> Elimination Bounty 擊殺懸賞獎勵:
             </div>
             <div class="flex items-center gap-2 mt-1">
               <span class="px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-300 font-pixel text-[11px] font-black shadow-md flex items-center gap-1">
                 <i class="fa-solid fa-bolt text-amber-400"></i> +300 EXP
               </span>
               <span class="px-2.5 py-1 rounded-xl bg-purple-500/20 border border-purple-400 text-purple-300 font-pixel text-[11px] font-black shadow-md flex items-center gap-1">
-                <i class="fa-solid fa-ticket text-purple-400"></i> +1 Ticket
+                <i class="fa-solid fa-ticket text-purple-400"></i> +1 Ticket 抽獎券
               </span>
             </div>
-            <p class="text-[10px] text-cyan-300 font-bold mt-1">★ Every strike on target grants an instant +30 EXP!</p>
+            <p class="text-[10px] text-cyan-300 font-bold mt-1">★ +30 EXP on every hit! / 每次命中即獎勵 +30 EXP！</p>
           </div>
         </div>
       </div>
@@ -526,7 +609,7 @@
           </div>
           <div class="flex-1">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-bold text-amber-300 font-pixel uppercase">Teacher Partner Boss</span>
+              <span class="text-[10px] font-bold text-amber-300 font-pixel uppercase">Teacher Partner Boss 老師夥伴首領</span>
               <span id="stBossStageBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">MEGA</span>
             </div>
             <h3 id="stBossName" class="text-sm font-black text-white truncate">WarGreymon</h3>
@@ -539,7 +622,7 @@
 
         <div class="flex items-center gap-2">
           <label class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <i class="fa-solid fa-crosshairs"></i> Target Teacher Boss:
+            <i class="fa-solid fa-crosshairs"></i> Target Teacher 目標老師:
           </label>
           <select id="stTeacherBossSelect" onchange="onStudentSelectTeacherBoss(this.value)" class="bg-slate-950 border border-amber-500/60 text-xs font-bold rounded-lg px-3 py-1.5 text-amber-200 outline-none">
           </select>
@@ -549,7 +632,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="studentMainInteractContainer">
         <div id="studentDigiviceCard" class="md:col-span-2 digi-card skin-classic rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500">
           <div id="stShieldBanner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-cyan-500/20 border border-cyan-400 rounded-full text-[11px] text-cyan-300 font-bold flex items-center gap-1.5 backdrop-blur shadow-lg animate-pulse">
-            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active (1 Attack Immunized)
+            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active 聖盾防禦中 (Blocks 1 Attack)
           </div>
 
           <div class="w-full flex justify-between items-center z-10 mb-4">
@@ -558,18 +641,25 @@
                 STAGE: DIGI-EGG
               </span>
               <span id="stFaintBadge" class="hidden font-pixel text-[10px] px-2.5 py-1 rounded bg-rose-950 border border-rose-500 text-rose-300 animate-pulse">
-                STATUS: FAINTED
+                STATUS: FAINTED 倒下
               </span>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="downloadStudentCard(currentUser.id)" class="text-xs font-bold px-3 py-1 rounded bg-cyan-950 border border-cyan-600 hover:bg-cyan-900 text-cyan-300 shadow flex items-center gap-1 cursor-pointer active:scale-95" title="Export Digital Tamer Card Image">
-                <i class="fa-solid fa-id-card"></i> ID Card
+              <button onclick="downloadStudentCard(currentUser.id)" class="text-xs font-bold px-3 py-1 rounded bg-cyan-950 border border-cyan-600 hover:bg-cyan-900 text-cyan-300 shadow flex items-center gap-1 cursor-pointer active:scale-95" title="Export Digital Tamer Card Image 匯出馴獸師證">
+                <i class="fa-solid fa-id-card"></i> ID Card 馴獸師證
               </button>
               <span id="stGachaTicketsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-500/50 flex items-center gap-1">
-                <i class="fa-solid fa-ticket"></i> Tickets: 0
+                <i class="fa-solid fa-ticket"></i> Tickets 抽獎券: 0
               </span>
+<span id="stCoinsBadge" class="text-xs font-bold px-2.5 py-1 rounded bg-yellow-950 text-yellow-300 border border-yellow-500/50 flex items-center gap-1">
+  <i class="fa-solid fa-coins text-amber-400"></i> <span id="stCoinsCount">0</span> 金幣
+</span>
+<button onclick="toggleShopModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
+  <i class="fa-solid fa-store"></i> 數碼商店
+</button>
+
               <button id="btnOpenGacha" onclick="openGachaModal()" class="text-xs font-bold px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md flex items-center gap-1 cursor-pointer active:scale-95">
-                <i class="fa-solid fa-gift"></i> Gacha
+                <i class="fa-solid fa-gift"></i> Gacha 抽獎
               </button>
             </div>
           </div>
@@ -579,8 +669,8 @@
               <img id="stDigiImage" src="" alt="Digimon" class="max-w-full max-h-full object-contain animate-glow transition-all duration-500">
               <div id="stFaintOverlay" class="hidden absolute inset-0 bg-rose-950/70 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center text-rose-300">
                 <i class="fa-solid fa-skull-crossbones text-4xl animate-bounce mb-2"></i>
-                <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE</span>
-                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher's Revival or De-evolution</span>
+                <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE 戰鬥倒下</span>
+                <span class="text-[9px] text-slate-300 mt-1">Awaiting Teacher Revival / 等待老師復活</span>
               </div>
             </div>
             <h2 id="stDigiName" class="text-2xl font-black tracking-wider text-cyan-200 mt-3 drop-shadow flex items-center gap-2">
@@ -592,7 +682,7 @@
 
           <div class="z-10 mt-2 flex flex-col items-center gap-2.5 w-full max-w-md">
             <button id="btnEvolve" onclick="triggerEvolution()" class="hidden w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer active:scale-95">
-              <i class="fa-solid fa-bolt mr-1"></i> Evolution Ready! Click to EVOLVE
+              <i class="fa-solid fa-bolt mr-1"></i> Digivolution Ready! Click to EVOLVE / 進化就緒！點擊進化
             </button>
             
             <div id="stSkillsGrid" class="grid grid-cols-2 gap-2 w-full"></div>
@@ -602,7 +692,7 @@
                 Skin: Classic Cyan
               </span>
               <span id="stAttackQuotaBadge" class="text-amber-300 font-bold bg-amber-950/90 px-3 py-1 rounded border border-amber-600/50">
-                <i class="fa-solid fa-bolt mr-1"></i> Attacks Left: 0
+                <i class="fa-solid fa-bolt mr-1"></i> Attacks 攻擊次數: 0
               </span>
             </div>
           </div>
@@ -612,14 +702,14 @@
         <div id="stRightControlPanel" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
           <div>
             <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center justify-between">
-              <span><i class="fa-solid fa-chart-simple text-cyan-400 mr-2"></i>Tamer Status</span>
+              <span><i class="fa-solid fa-chart-simple text-cyan-400 mr-2"></i>Tamer Status 馴獸師狀態</span>
               <span id="stOwnerName" class="text-xs font-normal text-slate-400">Student: --</span>
             </h3>
 
             <!-- HP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
-                <span class="text-emerald-400"><i class="fa-solid fa-heart mr-1"></i>Health Points (HP)</span>
+                <span class="text-emerald-400"><i class="fa-solid fa-heart mr-1"></i>Health Points 生命值 (HP)</span>
                 <span id="stHpText" class="text-emerald-400 font-pixel text-[11px]">100 / 100</span>
               </div>
               <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
@@ -630,7 +720,7 @@
             <!-- EXP Progress Bar -->
             <div class="mt-4 space-y-1.5">
               <div class="flex justify-between text-xs font-bold">
-                <span class="text-cyan-400"><i class="fa-solid fa-bolt mr-1"></i>Evolution Progress (EXP)</span>
+                <span class="text-cyan-400"><i class="fa-solid fa-bolt mr-1"></i>Evolution Progress 進化經驗 (EXP)</span>
                 <span id="stExpText" class="text-cyan-400 font-pixel text-[11px]">0 / 100</span>
               </div>
               <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
@@ -642,13 +732,13 @@
             <!-- 4 Traits Allocation by Student -->
             <div class="mt-4 space-y-2">
               <div class="flex justify-between items-center">
-                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Growth</p>
-                <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Unallocated: 0 pts</span>
+                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Trait Matrix 特質數值</p>
+                <span id="stAvailableTraitBadge" class="text-[10px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700">Points 剩餘點數: 0</span>
               </div>
               
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage</span>
+                  <span class="text-rose-400"><i class="fa-solid fa-fire mr-1"></i> Courage 勇氣</span>
                   <div class="flex items-center gap-1">
                     <span id="stValCourage" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('courage', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-[10px] hover:bg-rose-800 font-bold cursor-pointer active:scale-90">+1</button>
@@ -663,7 +753,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship</span>
+                  <span class="text-emerald-400"><i class="fa-solid fa-handshake-angle mr-1"></i> Friendship 友情</span>
                   <div class="flex items-center gap-1">
                     <span id="stValLove" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('love', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] hover:bg-emerald-800 font-bold cursor-pointer active:scale-90">+1</button>
@@ -678,7 +768,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline</span>
+                  <span class="text-amber-400"><i class="fa-solid fa-shield-halved mr-1"></i> Discipline 紀律</span>
                   <div class="flex items-center gap-1">
                     <span id="stValDiscipline" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('discipline', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[10px] hover:bg-amber-800 font-bold cursor-pointer active:scale-95">+1</button>
@@ -693,7 +783,7 @@
 
               <div>
                 <div class="flex justify-between items-center text-xs mb-0.5">
-                  <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom</span>
+                  <span class="text-blue-400"><i class="fa-solid fa-brain mr-1"></i> Wisdom 智慧</span>
                   <div class="flex items-center gap-1">
                     <span id="stValWisdom" class="font-bold text-slate-300 mr-1 text-xs">0</span>
                     <button onclick="allocateTrait('wisdom', 1)" class="btn-trait px-1.5 py-0.5 rounded bg-blue-950 border border-blue-600 text-blue-300 text-[10px] hover:bg-blue-800 font-bold cursor-pointer active:scale-95">+1</button>
@@ -710,46 +800,62 @@
 
           <div class="border-t border-slate-800 pt-3">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Bag</span>
-              <button onclick="openGachaModal()" class="text-[10px] text-cyan-400 hover:underline">Get Items &rarr;</button>
+              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Bag 道具背包</span>
+              <button onclick="openGachaModal()" class="text-[10px] text-cyan-400 hover:underline">Get Items 獲取道具 &rarr;</button>
             </div>
             <div id="stInventoryList" class="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar pr-1 text-xs">
-              <div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha!</div>
+              <div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha! / 背包為空，可透過抽獎取得！</div>
             </div>
           </div>
 
           <div class="pt-2 border-t border-slate-800 flex gap-2">
             <button onclick="toggleEvolutionTreeModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 font-bold border border-cyan-500/20 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-sitemap mr-1"></i> Evo Tree
+              <i class="fa-solid fa-sitemap mr-1"></i> Evo Tree 進化樹
             </button>
             <button onclick="toggleDexModal()" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 font-bold border border-amber-500/20 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex
+              <i class="fa-solid fa-book-open mr-1"></i> Digi-Dex 圖鑑
             </button>
           </div>
         </div>
       </div>
-
+      <!-- 💬 學生端：與老師的專屬私訊卡片 (Student Direct Message with Teacher) -->
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-comment-dots text-cyan-400 text-base animate-pulse"></i>
+            <h4 class="text-xs font-black text-cyan-300 uppercase tracking-widest font-pixel">Teacher Direct Messages 老師專屬私訊</h4>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">1-on-1 (Max 5)</span>
+        </div>
+        <!-- 學生私訊列表 -->
+        <div id="studentChatMessagesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1 text-xs">
+          <div class="text-slate-500 italic text-center py-4">目前尚無與老師的私訊記錄。</div>
+        </div>
+        <!-- 學生回覆輸入框 -->
+        <div class="pt-2 border-t border-slate-800 flex gap-2">
+          <input type="text" id="studentMsgInput" placeholder="輸入回覆給老師的訊息..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+          <button onclick="sendStudentMessage()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1 shrink-0">
+            <i class="fa-solid fa-paper-plane"></i> 回覆
+          </button>
+        </div>
+      </div>
       <!-- Class Battle Log Feed -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <h4 class="text-xs font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-          <span><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Class Events & Battle Logs (Max 50)</span>
-          <span class="text-[10px] text-slate-500" id="studentLogScopeTag">Classroom Log Feed</span>
-        </h4>
         <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
           <h4 class="text-xs font-bold text-cyan-300 flex items-center">
-            <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Class Events & Battle Logs (Max 50)
+            <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Battle Logs 戰報日誌 (Max 50)
           </h4>
           <div class="flex items-center gap-2">
             <select id="studentLogFactionFilter" onchange="renderBattleLogs()" class="bg-slate-950 border border-cyan-500/40 text-[10px] rounded px-2 py-1 text-cyan-200 outline-none">
-              <option value="ALL">全部戰報</option>
-              <option value="FACTION_ONLY">⚔️ 陣營交戰戰報</option>
-              <option value="MY_FACTION">🛡️ 本陣營戰報</option>
+              <option value="ALL">All Logs 全部戰報</option>
+              <option value="FACTION_ONLY">⚔️ Faction Battles 陣營交戰</option>
+              <option value="MY_FACTION">🛡️ My Faction 本陣營戰報</option>
             </select>
             <span class="text-[10px] text-slate-500" id="studentLogScopeTag">Classroom Log Feed</span>
           </div>
         </div>
         <div id="studentBattleLogs" class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar text-xs font-mono">
-          <div class="text-slate-500 italic">No events recorded for your class yet.</div>
+          <div class="text-slate-500 italic">No events recorded for your class yet. / 尚無戰鬥活動記錄。</div>
         </div>
       </div>
     </div>
@@ -761,7 +867,34 @@
     <div id="viewSuperAdmin" class="space-y-6 hidden"></div>
 
   <!-- MODALS -->
+  <!-- ⚔️ Student PvP Target Selector Modal -->
+  <div id="modalPvpTargetPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[1001] flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-cyan-500/60 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col p-5 text-slate-200 shadow-2xl relative">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-lg">
+            <i class="fa-solid fa-crosshairs animate-pulse"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-base text-cyan-300 uppercase tracking-wider font-pixel">選擇攻擊對象 (Select Target)</h3>
+            <p class="text-[11px] text-slate-400" id="pvpPickerClassSubtitle">Classroom Targets</p>
+          </div>
+        </div>
+        <button onclick="closePvpTargetModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
 
+      <!-- 快捷班級切換標籤（若學生有多重班別） -->
+      <div id="pvpPickerClassTabs" class="flex gap-2 pt-3 pb-1 overflow-x-auto text-xs font-bold"></div>
+
+      <!-- 同學卡片選擇清單 -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2 pr-1" id="pvpTargetsListContainer"></div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+        <span>★ 點擊卡片即可鎖定目標並發動攻擊</span>
+        <button onclick="closePvpTargetModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">取消</button>
+      </div>
+    </div>
+  </div>
   <!-- Manage Class Students Modal -->
   <div id="modalClassStudentsManager" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 text-slate-200 shadow-2xl">
@@ -869,6 +1002,46 @@
   </div>
 
   <!-- Gacha Capsule Modal -->
+<!-- 🏬 數碼黑市與道具商店 Modal -->
+<div id="modalShop" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border-2 border-yellow-500/60 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-yellow-500/20 border border-yellow-400 flex items-center justify-center text-amber-300 text-lg">
+          <i class="fa-solid fa-store"></i>
+        </div>
+        <div>
+          <h3 class="font-black text-base text-amber-300">DIGITAL MARKET 數碼商店</h3>
+          <p class="text-[11px] text-slate-400">購買戰鬥道具、特質數據晶片與激勵計劃 (Incentive) 積分！</p>
+        </div>
+      </div>
+      <button onclick="toggleShopModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <!-- 錢包概覽 -->
+    <div class="bg-slate-950 border border-yellow-500/40 rounded-2xl p-4 my-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-coins text-amber-400 text-2xl"></i>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">當前持有數碼幣</span>
+          <span id="shopUserCoins" class="text-xl font-pixel text-yellow-300">0</span> <span class="text-xs text-amber-400">Coins</span>
+        </div>
+      </div>
+      <div class="text-right">
+        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Incentive Scheme 分數</span>
+        <span id="shopUserIncentivePts" class="text-lg font-pixel text-emerald-400">0</span> <span class="text-xs text-emerald-400">Pts</span>
+      </div>
+    </div>
+
+    <!-- 商品列表 -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="shopItemsContainer"></div>
+
+    <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+      <span>★ 提示：擊殺同級/越級對手獲 10 金幣，擊殺懸賞目標獲 20 金幣！</span>
+      <button onclick="toggleShopModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 cursor-pointer active:scale-95">關閉</button>
+    </div>
+  </div>
+</div>
   <div id="modalGacha" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 text-slate-200 shadow-2xl relative overflow-hidden">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1611,6 +1784,194 @@
         }
       }
     };
+// 🛒 商店商品清單
+const SHOP_CATALOG = [
+  {
+    id: "shop_potion_small",
+    name: "小回復藥水 (Mini Potion)",
+    cost: 5,
+    icon: "🧪",
+    desc: "立即恢復 50 HP",
+    buy: (st) => {
+      const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      st.hp = Math.min(d.maxHp, (st.hp || 100) + 50);
+      playSound('heal');
+      return "+50 HP 已恢復";
+    }
+  },
+  {
+    id: "shop_potion_full",
+    name: "神聖生命精華 (Full Elixir)",
+    cost: 15,
+    icon: "💊",
+    desc: "立即恢復 100% 全滿 HP",
+    buy: (st) => {
+      const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      st.hp = d.maxHp;
+      playSound('heal');
+      return "生命值已完全恢復滿額！";
+    }
+  },
+  {
+    id: "shop_attack_booster",
+    name: "戰意驅動晶片 (Attack Booster)",
+    cost: 8,
+    icon: "🔋",
+    desc: "立即增加 +1 次攻擊次數",
+    buy: (st) => {
+      st.attackQuota = (st.attackQuota || 0) + 1;
+      playSound('shield');
+      return "+1 次攻擊次數已入賬";
+    }
+  },
+  {
+    id: "shop_chip_courage",
+    name: "勇氣數據晶片 (Courage Chip)",
+    cost: 20,
+    icon: "🔥",
+    desc: "增加 +50 EXP 及 +50 勇氣特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.courage = (st.courage || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Courage 特質增加";
+    }
+  },
+  {
+    id: "shop_chip_love",
+    name: "友情數據晶片 (Friendship Chip)",
+    cost: 20,
+    icon: "🐺",
+    desc: "增加 +50 EXP 及 +50 友情特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.love = (st.love || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Friendship 特質增加";
+    }
+  },
+  {
+    id: "shop_chip_discipline",
+    name: "紀律數據晶片 (Discipline Chip)",
+    cost: 20,
+    icon: "🛡️",
+    desc: "增加 +50 EXP 及 +50 紀律特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.discipline = (st.discipline || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Discipline 特質增加";
+    }
+  },
+  {
+    id: "shop_chip_wisdom",
+    name: "智慧數據晶片 (Wisdom Chip)",
+    cost: 20,
+    icon: "🧠",
+    desc: "增加 +50 EXP 及 +50 智慧特質點",
+    buy: (st) => {
+      st.exp = (st.exp || 0) + 50;
+      st.wisdom = (st.wisdom || 0) + 50;
+      playSound('evolve');
+      return "+50 EXP & +50 Wisdom 特質增加";
+    }
+  },
+  {
+    id: "shop_incentive_point",
+    name: "校園獎勵計劃積分券 (Incentive Scheme)",
+    cost: 1000,
+    icon: "🎖️",
+    desc: "以 1000:1 匯率兌換 1 點實質激勵計劃分數",
+    buy: (st) => {
+      st.incentivePoints = (st.incentivePoints || 0) + 1;
+      playSound('evolve');
+      return "+1 點校園激勵計劃積分成功入賬！";
+    }
+  }
+];
+
+function toggleShopModal() {
+  const modal = document.getElementById('modalShop');
+  if (!modal) return;
+  const isHidden = modal.classList.toggle('hidden');
+  if (!isHidden) renderShopItems();
+}
+
+function renderShopItems() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st) return;
+
+  document.getElementById('shopUserCoins').textContent = st.coins || 0;
+  document.getElementById('shopUserIncentivePts').textContent = st.incentivePoints || 0;
+
+  const container = document.getElementById('shopItemsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  SHOP_CATALOG.forEach(item => {
+    const canAfford = (st.coins || 0) >= item.cost;
+    const card = document.createElement('div');
+    card.className = "bg-slate-950 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-3 shadow hover:border-yellow-500/40 transition";
+    card.innerHTML = `
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">${item.icon}</span>
+        <div>
+          <div class="font-bold text-xs text-white">${item.name}</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">${item.desc}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="font-pixel text-xs text-amber-400 font-bold">${item.cost} 幣</span>
+        <button onclick="buyShopItem('${item.id}')" ${!canAfford ? 'disabled' : ''} class="px-3.5 py-1.5 rounded-xl font-bold text-xs ${canAfford ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 cursor-pointer active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed'} shadow">
+          購買
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function buyShopItem(shopItemId) {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const item = SHOP_CATALOG.find(i => i.id === shopItemId);
+  if (!item) return;
+
+  if (!dbRootRef) return;
+  dbRootRef.child(`students/${currentUser.id}`).transaction(cur => {
+    if (!cur) return cur;
+    const currentCoins = cur.coins || 0;
+    if (currentCoins < item.cost) return cur; // 攔截餘額不足
+
+    cur.coins = currentCoins - item.cost;
+    return cur;
+  }, (err, committed, snap) => {
+    if (committed && snap.exists()) {
+      const st = appData.students[currentUser.id];
+      st.coins = snap.val().coins;
+      const resMsg = item.buy(st);
+
+      // 同步回寫道具產生的數值效果
+      patchStudentAtomic(currentUser.id, {
+        hp: st.hp,
+        exp: st.exp,
+        attackQuota: st.attackQuota,
+        courage: st.courage,
+        love: st.love,
+        discipline: st.discipline,
+        wisdom: st.wisdom,
+        incentivePoints: st.incentivePoints
+      });
+
+      addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]: ${resMsg}`, "normal", st.classId);
+      showToast("購買成功！", resMsg, "heal");
+      updateStudentUI();
+      renderShopItems();
+    } else {
+      showToast("購買失敗", "數碼幣餘額不足！", "damage");
+    }
+  });
+}
 const DIGIMON_DB = {
       "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor", power: 10, type: "damage", icon: "fa-shield" }] },
       "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Ember Spark", power: 12, type: "damage", icon: "fa-fire" }] },
@@ -1756,9 +2117,10 @@ const DIGIMON_DB = {
       imgEl.src = fallbackList[0];
     }
 
-    function getPreviousDigiId(currentId) {
-
-      // 數碼暴龍階段等級對照 (0: 數碼蛋 ~ 5: 究極體)
+    // ========================================================
+    // 數碼暴龍階段等級對照 (0: 數碼蛋 ~ 5: 究極體)
+    // Digimon Stage Order Definition (0: Digi-Egg ~ 5: Mega)
+    // ========================================================
     const STAGE_ORDER = {
       "DIGI-EGG": 0,
       "IN-TRAINING": 1,
@@ -1768,7 +2130,10 @@ const DIGIMON_DB = {
       "MEGA": 5
     };
 
-    // 計算擊殺階級差距之基礎經驗值
+    // ========================================================
+    // ⚔️ 計算擊殺階級差距之基礎經驗值 (PvP Kill EXP Calculator)
+    // 同級: 100 EXP | 越一級: 150 EXP | 越兩級+: 200 EXP | 弱一級: 50 EXP | 弱兩級+: 0 EXP
+    // ========================================================
     function calculatePvPBaseKillExp(attackerDigiId, targetDigiId) {
       const atkDigi = DIGIMON_DB[attackerDigiId] || DIGIMON_DB['digitama1'];
       const tgtDigi = DIGIMON_DB[targetDigiId] || DIGIMON_DB['digitama1'];
@@ -1776,15 +2141,17 @@ const DIGIMON_DB = {
       const atkStageRank = STAGE_ORDER[atkDigi.stage] !== undefined ? STAGE_ORDER[atkDigi.stage] : 0;
       const tgtStageRank = STAGE_ORDER[tgtDigi.stage] !== undefined ? STAGE_ORDER[tgtDigi.stage] : 0;
 
-      const diff = tgtStageRank - atkStageRank; // 目標階級 - 攻擊者階級
+      const diff = tgtStageRank - atkStageRank; // 目標階級 - 攻擊者階級 (Target Rank - Attacker Rank)
 
-      if (diff >= 2) return 200;       // 越兩級或以上: 200 EXP
-      if (diff === 1) return 150;      // 越一級: 150 EXP
-      if (diff === 0) return 100;      // 平級: 100 EXP
-      if (diff === -1) return 50;      // 弱一級: 50 EXP
-      return 0;                        // 弱兩級或以下 (<= -2): 0 EXP (無經驗)
+      if (diff >= 2) return 200;       // 越兩級或以上 (+2 or more ranks): 200 EXP
+      if (diff === 1) return 150;      // 越一級 (+1 rank higher): 150 EXP
+      if (diff === 0) return 100;      // 平級 (Same rank): 100 EXP
+      if (diff === -1) return 50;      // 弱一級 (-1 rank lower): 50 EXP
+      return 0;                        // 弱兩級或以下 (-2 ranks or lower): 0 EXP (無經驗 No EXP)
     }
 
+    // 取得前一階段數碼暴龍形態
+    function getPreviousDigiId(currentId) {
       const cur = DIGIMON_DB[currentId];
       if (!cur) return getRandomEggId();
       if (cur.prevForm && DIGIMON_DB[cur.prevForm]) return cur.prevForm;
@@ -1837,10 +2204,270 @@ const DIGIMON_DB = {
     let activeQuizInstance = null;
     let activeTeacherSubTab = 'main';
     let isQuizTimeoutSubmitting = false; // 防止重複觸發逾時
-
+    
+    // === 考卷系統全域變數 ===
+    let importedExamQuestions = [];
+    let activeExamInstance = null;
+    let studentExamAnswers = {}; // 儲存學生每題當前答案 { questionIndex: answer }
+    let currentExamQIndex = 0;
+    let examStudentCountdownTimer = null;
+    let examTeacherCountdownTimer = null;
+let isExamSubmitting = false;
+let currentExamSessionId = null; // 記錄當前進行中考卷 ID，防止重複彈出或中途重置
+let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     // 🥷 老師隱藏模式狀態（true = 不記錄任何 Log）
     let isTeacherStealthMode = false;
+    // === 師生私訊功能核心邏輯 ===
+   // === 師生私訊功能核心邏輯 ===
+    let selectedTeacherMsgStudentId = "";
+    let teacherReadMessageTimestamps = {}; // 記錄老師最後已讀時間戳 { studentId: timestamp }
 
+   // 檢查指定學生是否有未讀的新訊息
+    function hasStudentUnreadMsg(studentId) {
+      const studentMsgsObj = (appData.messages && appData.messages[studentId]) || {};
+      const lastRead = teacherReadMessageTimestamps[studentId] || 0;
+      return Object.values(studentMsgsObj).some(m => m.senderRole === 'student' && (m.timestamp || 0) > lastRead);
+    }
+
+    // 更新老師分頁按鈕上的紅點通知總數
+    function updateTeacherGlobalMsgBadge() {
+      const badge = document.getElementById('teacherTabMsgUnreadBadge');
+      if (!badge || !currentUser || currentUser.role !== 'teacher') return;
+
+      let unreadTotal = 0;
+      Object.keys(appData.students || {}).forEach(sId => {
+        if (hasStudentUnreadMsg(sId)) unreadTotal++;
+      });
+
+      if (unreadTotal > 0) {
+        badge.textContent = unreadTotal;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // 填充老師端學生選擇清單（若有新訊息顯示醒目提示）
+    function populateTeacherMsgStudentDropdown() {
+      const select = document.getElementById('teacherMsgStudentSelect');
+      if (!select) return;
+      const curVal = select.value;
+      select.innerHTML = '<option value="">-- 請選擇學生 (Select Student) --</option>';
+
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      myStudents.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        const isUnread = hasStudentUnreadMsg(s.id);
+        opt.textContent = `${isUnread ? '🔴 [NEW] ' : ''}${s.name} (${s.username || s.id}) - 班級: ${formatStudentClassesDisplay(s)}`;
+        if (isUnread) opt.className = "text-rose-400 font-bold bg-slate-900";
+        if (s.id === curVal || s.id === selectedTeacherMsgStudentId) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      if (!selectedTeacherMsgStudentId && myStudents.length > 0) {
+        selectedTeacherMsgStudentId = select.value;
+      }
+      renderTeacherChatMessageList();
+      updateTeacherGlobalMsgBadge();
+    }
+
+    function onTeacherSelectMsgStudent(studentId) {
+      selectedTeacherMsgStudentId = studentId;
+      if (studentId) {
+        teacherReadMessageTimestamps[studentId] = Date.now();
+      }
+      renderTeacherChatMessageList();
+      populateTeacherMsgStudentDropdown();
+    }
+
+    // 渲染老師端的私訊內容
+    function renderTeacherChatMessageList() {
+      const container = document.getElementById('teacherChatMessagesList');
+      const titleEl = document.getElementById('teacherMsgTargetTitle');
+      const countEl = document.getElementById('teacherMsgCountBadge');
+      const clearBtn = document.getElementById('btnTeacherClearChat');
+      if (!container) return;
+
+      if (!selectedTeacherMsgStudentId) {
+        if (titleEl) titleEl.textContent = "請先在上方選擇學生";
+        if (countEl) countEl.textContent = "訊息數：0 / 5";
+        if (clearBtn) clearBtn.classList.add('hidden');
+        container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">請先在上方下拉選單選擇一位學生</div>';
+        return;
+      }
+
+      // 當切換到該學生，視為已讀
+      teacherReadMessageTimestamps[selectedTeacherMsgStudentId] = Date.now();
+      updateTeacherGlobalMsgBadge();
+
+      const st = appData.students[selectedTeacherMsgStudentId];
+      if (titleEl) titleEl.textContent = `與 ${st ? st.name : selectedTeacherMsgStudentId} 的 1 對 1 私訊`;
+
+      const studentMsgsObj = (appData.messages && appData.messages[selectedTeacherMsgStudentId]) || {};
+      const msgList = Object.entries(studentMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
+        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+      if (countEl) countEl.textContent = `訊息數：${msgList.length} / 5`;
+
+      if (msgList.length === 0) {
+        if (clearBtn) clearBtn.classList.add('hidden');
+        container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">尚無訊息記錄。在下方輸入即可開始對話！</div>';
+        return;
+      }
+
+      if (clearBtn) clearBtn.classList.remove('hidden');
+
+      let html = '';
+      msgList.forEach(m => {
+        const isTeacher = m.senderRole === 'teacher';
+        html += `
+          <div class="flex flex-col ${isTeacher ? 'items-end' : 'items-start'}">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="text-[10px] font-bold ${isTeacher ? 'text-amber-400' : 'text-cyan-400'}">${escapeHtml(m.senderName)}</span>
+              <span class="text-[9px] text-slate-500 font-mono">${m.time || ''}</span>
+            </div>
+            <div class="max-w-[75%] px-3 py-2 rounded-2xl text-xs break-words shadow ${isTeacher ? 'bg-amber-500/20 border border-amber-400/60 text-amber-100 rounded-tr-none' : 'bg-slate-900 border border-cyan-500/50 text-slate-100 rounded-tl-none'}">
+              ${escapeHtml(m.text)}
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // 🗑️ 老師清空當前選取學生的私訊歷史
+    function clearTeacherCurrentChatHistory() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherMsgStudentId) return alert("請先選擇一位學生！");
+
+      const st = appData.students[selectedTeacherMsgStudentId];
+      const sName = st ? st.name : selectedTeacherMsgStudentId;
+
+      if (!confirm(`確定要完全清除與學生【${sName}】的所有私訊對話記錄嗎？\n(清除後無法復原)`)) return;
+
+      if (dbRootRef) {
+        dbRootRef.child(`messages/${selectedTeacherMsgStudentId}`).remove().then(() => {
+          playSound('attack');
+          showToast("Chat Cleared", `已清空與 ${sName} 的私訊紀錄！`, "damage");
+          renderTeacherChatMessageList();
+        }).catch(err => {
+          alert("清空失敗: " + err.message);
+        });
+      }
+    }
+
+    // 老師發送訊息
+    function sendTeacherMessage() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherMsgStudentId) return alert("請先選擇一位學生！");
+
+      const input = document.getElementById('teacherMsgInput');
+      const text = (input.value || '').trim();
+      if (!text) return;
+
+      const tc = appData.teachers[currentUser.id] || currentUser.data;
+      postMessageDirectly(selectedTeacherMsgStudentId, {
+        senderRole: 'teacher',
+        senderId: currentUser.id,
+        senderName: tc.name || '老師 (Teacher)',
+        text: text
+      }, () => {
+        input.value = '';
+      });
+    }
+
+    // 學生端渲染專屬私訊
+    function renderStudentChatMessageList() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const container = document.getElementById('studentChatMessagesList');
+      if (!container) return;
+
+      const myMsgsObj = (appData.messages && appData.messages[currentUser.id]) || {};
+      const msgList = Object.entries(myMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
+        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+      if (msgList.length === 0) {
+        container.innerHTML = '<div class="text-slate-500 italic text-center py-4">目前尚無與老師的私訊記錄。可以在下方發送訊息給老師！</div>';
+        return;
+      }
+
+      let html = '';
+      msgList.forEach(m => {
+        const isMe = m.senderRole === 'student';
+        html += `
+          <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="text-[10px] font-bold ${isMe ? 'text-cyan-400' : 'text-amber-400'}">${escapeHtml(m.senderName)}</span>
+              <span class="text-[9px] text-slate-500 font-mono">${m.time || ''}</span>
+            </div>
+            <div class="max-w-[80%] px-3 py-1.5 rounded-xl text-xs break-words shadow ${isMe ? 'bg-cyan-600 text-white rounded-tr-none' : 'bg-slate-950 border border-amber-500/50 text-amber-200 rounded-tl-none'}">
+              ${escapeHtml(m.text)}
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // 學生發送訊息給老師
+    function sendStudentMessage() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (isStudentBanned(st)) return alert("你的帳號已被老師設定為唯讀，無法傳送訊息！");
+
+      const input = document.getElementById('studentMsgInput');
+      const text = (input.value || '').trim();
+      if (!text) return;
+
+      postMessageDirectly(currentUser.id, {
+        senderRole: 'student',
+        senderId: currentUser.id,
+        senderName: st.name || currentUser.id,
+        text: text
+      }, () => {
+        input.value = '';
+      });
+    }
+
+    // 共通寫入函式：保證最多保留 5 則，超額從最舊刪除
+    function postMessageDirectly(studentId, msgPayload, callback) {
+      if (!dbRootRef) return;
+      const studentMsgRef = dbRootRef.child(`messages/${studentId}`);
+
+      studentMsgRef.once('value').then(snap => {
+        const currentData = snap.val() || {};
+        const keys = Object.keys(currentData).sort((a, b) => (currentData[a].timestamp || 0) - (currentData[b].timestamp || 0));
+
+        const updates = {};
+        // 若當前已有 5 則以上，先刪除最舊的
+        if (keys.length >= 5) {
+          const deleteCount = keys.length - 4; // 保留 4 個以腾出 1 個新位置
+          for (let i = 0; i < deleteCount; i++) {
+            updates[keys[i]] = null;
+          }
+        }
+
+        const newKey = studentMsgRef.push().key;
+        updates[newKey] = {
+          senderRole: msgPayload.senderRole,
+          senderId: msgPayload.senderId,
+          senderName: msgPayload.senderName,
+          text: msgPayload.text,
+          timestamp: Date.now(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        studentMsgRef.update(updates).then(() => {
+          playSound('shield');
+          if (callback) callback();
+        }).catch(err => {
+          alert("訊息發送失敗: " + err.message);
+        });
+      });
+    }
     // 搶答動態倒數計時器變數
     let quizStudentCountdownTimer = null;
     let quizTeacherCountdownTimer = null;
@@ -1937,7 +2564,10 @@ function normalizeStudent(s, keyId) {
     courage: Number(s.courage) || 0,
     love: Number(s.love) || 0,
     discipline: Number(s.discipline) || 0,
+    coins: Number(s.coins) || 0,
+    incentivePoints: Number(s.incentivePoints) || 0,
     wisdom: Number(s.wisdom) || 0
+    
   };
 }
 
@@ -1993,20 +2623,36 @@ function normalizeStudent(s, keyId) {
       activeTeacherSubTab = tabName;
       const btnMain = document.getElementById('btnTeacherTabMain');
       const btnQuiz = document.getElementById('btnTeacherTabQuiz');
+      const btnExam = document.getElementById('btnTeacherTabExam');
+      const btnMsg = document.getElementById('btnTeacherTabMsg');
       const viewMain = document.getElementById('teacherSubViewMain');
       const viewQuiz = document.getElementById('teacherSubViewQuiz');
+      const viewExam = document.getElementById('teacherSubViewExam');
+      const viewMsg = document.getElementById('teacherSubViewMessage');
+
+      // 重置所有樣式
+      [btnMain, btnQuiz, btnExam, btnMsg].forEach(b => {
+        if (b) b.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+      });
+      [viewMain, viewQuiz, viewExam, viewMsg].forEach(v => {
+        if (v) v.classList.add('hidden');
+      });
 
       if (tabName === 'main') {
-        btnMain.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        btnQuiz.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        viewMain.classList.remove('hidden');
-        viewQuiz.classList.add('hidden');
-      } else {
-        btnMain.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        btnQuiz.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-amber-600 to-yellow-600 text-slate-950 cursor-pointer active:scale-95 flex items-center justify-center gap-2";
-        viewMain.classList.add('hidden');
-        viewQuiz.classList.remove('hidden');
+        if (btnMain) btnMain.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewMain) viewMain.classList.remove('hidden');
+      } else if (tabName === 'quiz') {
+        if (btnQuiz) btnQuiz.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-amber-600 to-yellow-600 text-slate-950 cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewQuiz) viewQuiz.classList.remove('hidden');
         renderTeacherQuizLiveDashboard();
+      } else if (tabName === 'exam') {
+        if (btnExam) btnExam.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-indigo-600 to-purple-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewExam) viewExam.classList.remove('hidden');
+        renderTeacherExamDashboard();
+      } else if (tabName === 'msg') {
+        if (btnMsg) btnMsg.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-cyan-600 to-blue-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (viewMsg) viewMsg.classList.remove('hidden');
+        populateTeacherMsgStudentDropdown();
       }
     }
 
@@ -2150,12 +2796,54 @@ function normalizeStudent(s, keyId) {
             renderTeacherQuizLiveDashboard();
           }
         });
+       // 考卷系統即時同步監聽
+        dbRootRef.child('activeExam').on('value', (snap) => {
+          activeExamInstance = snap.val();
+          if (currentUser && currentUser.role === 'student') {
+            onStudentExamStateSync();
+          }
+          if (currentUser && currentUser.role === 'teacher') {
+            renderTeacherExamDashboard();
+          }
+        });
+      // 💬 私訊即時監聽 (保留最多 5 則 + 老師醒目通知)
+        let isFirstMsgSync = true;
+        dbRootRef.child('messages').on('value', (snap) => {
+          const prevMessages = appData.messages || {};
+          appData.messages = snap.val() || {};
 
+          // 當老師在線且收到學生最新訊息時，發出醒目提示與音效
+          if (currentUser && currentUser.role === 'teacher') {
+            if (!isFirstMsgSync) {
+              Object.entries(appData.messages).forEach(([studentId, msgs]) => {
+                if (!msgs) return;
+                const newLatest = Object.values(msgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+                const oldMsgs = prevMessages[studentId] || {};
+                const oldLatest = Object.values(oldMsgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+
+                if (newLatest && newLatest.senderRole === 'student' && (!oldLatest || newLatest.timestamp > oldLatest.timestamp)) {
+                  playSound('gacha');
+                  showToast("💬 收到學生新私訊！", `來自【${newLatest.senderName}】：${newLatest.text}`, "info");
+                }
+              });
+            }
+            updateTeacherGlobalMsgBadge();
+            if (activeTeacherSubTab === 'msg') {
+              populateTeacherMsgStudentDropdown();
+            }
+          }
+
+          if (currentUser && currentUser.role === 'student') {
+            renderStudentChatMessageList();
+          }
+          isFirstMsgSync = false;
+        });
       } catch (err) {
         console.error("Fatal Firebase Init Error:", err);
         updateSyncStatusUI(false, `❌ Init Crash: ${err.message}`);
       }
     }
+    
 
     function retryFirebaseConnection() {
       updateSyncStatusUI(false, "Reconnecting...");
@@ -2376,14 +3064,17 @@ function updateStudentFactionUI() {
   const statusText = document.getElementById('stFactionStatusText');
   const select = document.getElementById('stFactionSelect');
 
-  const stClasses = parseStudentClasses(st.classId);
-  if (stClasses.length === 0) stClasses.push("ALL");
+  let stClasses = parseStudentClasses(st.classId);
+  if (!stClasses || stClasses.length === 0) {
+    stClasses = ['ALL'];
+  }
 
+  // 自動鎖定有效班別
   if (!studentActiveFactionViewClass || !stClasses.includes(studentActiveFactionViewClass)) {
     studentActiveFactionViewClass = stClasses[0];
   }
 
-  // 渲染學生所屬班別切換器
+  // 1. 渲染學生所屬班別下拉清單
   if (classSel) {
     classSel.innerHTML = '';
     stClasses.forEach(c => {
@@ -2397,18 +3088,24 @@ function updateStudentFactionUI() {
 
   const activeClass = studentActiveFactionViewClass;
   const activeClassKey = sanitizeClassKey(activeClass);
-  const myFactionInfo = getStudentFactionInClass(st, activeClass);
+  
+  // 取得學生在該班級的陣營設定（向下相容舊版單一陣營）
+  let myFactionInfo = getStudentFactionInClass(st, activeClass);
+  if (!myFactionInfo.factionId && st.factionId) {
+    myFactionInfo = { factionId: st.factionId, factionName: st.factionName || 'Ally' };
+  }
 
-  // 取得該班別中該陣營的 Buff
+  // 取得該班級所有陣營，並查詢當前陣營的 Buff
+  const factions = getFactionsForClass(activeClass);
   let activeBuff = null;
   if (myFactionInfo.factionId) {
-    const factions = getFactionsForClass(activeClass);
     const myFac = factions.find(f => f.id === myFactionInfo.factionId);
     if (myFac && myFac.buffType && FACTION_BUFFS[myFac.buffType]) {
       activeBuff = FACTION_BUFFS[myFac.buffType];
     }
   }
 
+  // 2. 更新陣營徽章文字與樣式
   if (badge) {
     if (myFactionInfo.factionName) {
       badge.textContent = myFactionInfo.factionName.toUpperCase();
@@ -2419,6 +3116,7 @@ function updateStudentFactionUI() {
     }
   }
 
+  // 3. 更新 Buff 徽章
   if (buffBadge) {
     if (activeBuff) {
       buffBadge.textContent = `${activeBuff.name} (${activeBuff.desc})`;
@@ -2428,31 +3126,32 @@ function updateStudentFactionUI() {
     }
   }
 
-  // 檢查該學生在該班級的申請狀態
+  // 4. 更新轉移申請狀態提示
   const reqKey = `${currentUser.id}_${activeClassKey}`;
   const myReq = (appData.factionRequests && (appData.factionRequests[reqKey] || appData.factionRequests[currentUser.id]));
   if (statusText) {
-    if (myReq && myReq.classTagKey === activeClassKey) {
-      statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] 轉移審核中: [${myReq.requestedFactionName}]</span>`;
+    if (myReq && (myReq.classTagKey === activeClassKey || myReq.classId === activeClass)) {
+      statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] 轉移申請審核中: [${myReq.requestedFactionName}]</span>`;
+    } else if (myFactionInfo.factionName) {
+      statusText.textContent = `你在【${activeClass}】隸屬【${myFactionInfo.factionName}】。同陣營同學為盟友，免疫傷害！`;
     } else {
-      statusText.textContent = `你在【${activeClass}】同陣營的同學為盟友；各班陣營獨立，享有專屬加乘！`;
+      statusText.textContent = `你在【${activeClass}】尚未加入陣營。可於右側選擇陣營並提交申請。`;
     }
   }
 
+  // 5. 填入可申請之陣營下拉清單
   if (select) {
-    const factions = getFactionsForClass(activeClass);
     select.innerHTML = `<option value="">-- 申請加入 [${activeClass}] 陣營 --</option>`;
     factions.forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.id;
       const bName = f.buffType && FACTION_BUFFS[f.buffType] ? ` [${FACTION_BUFFS[f.buffType].name}]` : '';
       opt.textContent = `${f.name}${bName}`;
-      if (myFactionInfo.factionId === f.id) opt.textContent += " [目前陣營]";
+      if (myFactionInfo.factionId === f.id) opt.textContent += " (目前所屬)";
       select.appendChild(opt);
     });
   }
 }
-
 
 // 老師針對指定陣營批量發放獎勵 (EXP / Tickets / Attack Quota)
 
@@ -2718,19 +3417,33 @@ function renderTeacherFactionPanel() {
     } else {
       let reqHtml = '';
       requests.forEach(r => {
+        const curFac = r.currentFactionName || "無陣營 (None)";
         reqHtml += `
-          <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-2.5 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-xs text-white">${r.studentName}</span>
-              <span class="text-[10px] text-slate-400">申請加入 [${r.classId || '該班'}] 陣營</span>
-              <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-bold text-xs">${r.requestedFactionName}</span>
+          <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 font-bold text-xs">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-white">${r.studentName}</span>
+                  <span class="text-[10px] text-slate-400 font-mono">[班級 Class: ${r.classId || '該班'}]</span>
+                </div>
+                <div class="text-[11px] mt-1 flex items-center gap-1.5 flex-wrap">
+                  <span class="text-slate-400">原陣營 (Current):</span>
+                  <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-bold text-[10px]">${curFac}</span>
+                  <i class="fa-solid fa-arrow-right text-amber-400 text-[10px]"></i>
+                  <span class="text-indigo-300 font-bold">申請陣營 (Target):</span>
+                  <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-bold text-[10px]">${r.requestedFactionName}</span>
+                </div>
+              </div>
             </div>
             <div class="flex items-center gap-1.5">
-              <button onclick="approveFactionRequest('${r._key}')" class="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-bold rounded text-xs transition active:scale-95 cursor-pointer">
-                <i class="fa-solid fa-check mr-1"></i> Approve
+              <button onclick="approveFactionRequest('${r._key}')" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-bold rounded-lg text-xs transition active:scale-95 cursor-pointer shadow">
+                <i class="fa-solid fa-check mr-1"></i> 核准 (Approve)
               </button>
-              <button onclick="rejectFactionRequest('${r._key}')" class="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 border border-rose-600 text-rose-300 font-bold rounded text-xs transition active:scale-95 cursor-pointer">
-                <i class="fa-solid fa-xmark mr-1"></i> Decline
+              <button onclick="rejectFactionRequest('${r._key}')" class="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-600 text-rose-300 font-bold rounded-lg text-xs transition active:scale-95 cursor-pointer shadow">
+                <i class="fa-solid fa-xmark mr-1"></i> 拒絕 (Decline)
               </button>
             </div>
           </div>
@@ -2797,47 +3510,48 @@ function deleteFaction(factionId, explicitClassKey = '') {
 }
 
 function requestStudentFactionTransfer() {
-  if (!currentUser || currentUser.role !== 'student') return;
-  const st = appData.students[currentUser.id];
-  if (!st || isStudentBanned(st)) return alert("Action locked by teacher!");
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st || isStudentBanned(st)) return alert("Action locked by teacher! / 操作已被老師鎖定！");
 
-  const select = document.getElementById('stFactionSelect');
-  const targetFactionId = select.value;
-  if (!targetFactionId) return alert("請先選擇要申請加入的目標陣營！");
+      const select = document.getElementById('stFactionSelect');
+      const targetFactionId = select.value;
+      if (!targetFactionId) return alert("請先選擇要申請加入的目標陣營！ / Please select target faction!");
 
-  const targetClass = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || 'ALL';
-  const tagKey = sanitizeClassKey(targetClass);
+      const targetClass = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || 'ALL';
+      const tagKey = sanitizeClassKey(targetClass);
 
-  const availableFactions = getFactionsForClass(targetClass);
-  const selectedFaction = availableFactions.find(f => f.id === targetFactionId);
-  if (!selectedFaction) return alert("所選陣營無效！");
+      const availableFactions = getFactionsForClass(targetClass);
+      const selectedFaction = availableFactions.find(f => f.id === targetFactionId);
+      if (!selectedFaction) return alert("所選陣營無效！ / Invalid faction!");
 
-  const currentFac = getStudentFactionInClass(st, targetClass);
-  if (currentFac.factionId === targetFactionId) {
-    return alert(`你在班別 [${targetClass}] 中已經屬於 [${selectedFaction.name}] 陣營！`);
-  }
+      const currentFac = getStudentFactionInClass(st, targetClass);
+      if (currentFac.factionId === targetFactionId) {
+        return alert(`你在班別 [${targetClass}] 中已經屬於 [${selectedFaction.name}] 陣營！`);
+      }
 
-  const reqKey = `${st.id}_${tagKey}`;
-  const reqData = {
-    reqKey: reqKey,
-    studentId: st.id,
-    studentName: st.name,
-    classId: targetClass,
-    classTagKey: tagKey,
-    requestedFactionId: selectedFaction.id,
-    requestedFactionName: selectedFaction.name,
-    timestamp: Date.now()
-  };
+      const reqKey = `${st.id}_${tagKey}`;
+      const reqData = {
+        reqKey: reqKey,
+        studentId: st.id,
+        studentName: st.name,
+        classId: targetClass,
+        classTagKey: tagKey,
+        currentFactionId: currentFac.factionId || null,
+        currentFactionName: currentFac.factionName || "無陣營 (No Faction)", // 👈 記錄原本的陣營名稱
+        requestedFactionId: selectedFaction.id,
+        requestedFactionName: selectedFaction.name,
+        timestamp: Date.now()
+      };
 
-  if (dbRootRef) {
-    dbRootRef.child(`factionRequests/${reqKey}`).set(reqData).then(() => {
-      playSound('shield');
-      showToast("申請已送出", `已申請於 [${targetClass}] 加入 [${selectedFaction.name}]，等待老師審批！`, "info");
-      addBattleLog(`📨 [陣營申請] ${st.name} 申請在 [${targetClass}] 加入陣營 [${selectedFaction.name}]。`, "normal", targetClass);
-    });
-  }
-}
-
+      if (dbRootRef) {
+        dbRootRef.child(`factionRequests/${reqKey}`).set(reqData).then(() => {
+          playSound('shield');
+          showToast("申請已送出 / Sent", `已申請加入 [${selectedFaction.name}]，等待老師審批！`, "info");
+          addBattleLog(`📨 [陣營申請 / Faction Req] ${st.name} 申請從 [${reqData.currentFactionName}] 轉移至 [${selectedFaction.name}] (班級: ${targetClass})。`, "normal", targetClass);
+        });
+      }
+    }
 function approveFactionRequest(reqKey) {
   const req = appData.factionRequests && appData.factionRequests[reqKey];
   if (!req) return;
@@ -2875,6 +3589,11 @@ function rejectFactionRequest(reqKey) {
     function populateTeacherBountySelect() {
       const select = document.getElementById('teacherBountyStudentSelect');
       if (!select) return;
+      
+      // 若老師正在點擊或操作該選單，跳過重繪，防礙選擇
+      if (document.activeElement === select) return;
+
+      const currentSelectedVal = select.value;
       select.innerHTML = '<option value="">-- Choose a student to place bounty on --</option>';
 
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
@@ -2882,7 +3601,10 @@ function rejectFactionRequest(reqKey) {
         const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
         const opt = document.createElement('option');
         opt.value = s.id;
-        opt.textContent = `${s.name} (${s.username}) - ${digi.name} [HP: ${s.hp || 0}]`;
+        opt.textContent = `${s.name} (學號: ${s.username || s.id}) - ${digi.name} [HP: ${s.hp !== undefined ? s.hp : digi.maxHp}]`;
+        if (s.id === currentSelectedVal) {
+          opt.selected = true;
+        }
         select.appendChild(opt);
       });
     }
@@ -3723,6 +4445,14 @@ function getTeacherTemplate() {
       <button id="btnTeacherTabQuiz" onclick="switchTeacherSubTab('quiz')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
         <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> 搶答即時監控中心 (Pop-up Quiz Live)
       </button>
+<button id="btnTeacherTabExam" onclick="switchTeacherSubTab('exam')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-file-excel text-emerald-400"></i> 考卷系統中心 (Exam Paper Hub)
+      </button>
+<button id="btnTeacherTabMsg" onclick="switchTeacherSubTab('msg')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 relative">
+  <i class="fa-solid fa-comments text-cyan-400"></i> 
+  <span>師生私訊中心 (Messages)</span>
+  <span id="teacherTabMsgUnreadBadge" class="hidden px-1.5 py-0.2 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold animate-pulse">0</span>
+</button>
     </div>
 
     <div id="teacherSubViewMain" class="space-y-6">
@@ -3764,6 +4494,12 @@ function getTeacherTemplate() {
           <button onclick="rewardAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-ticket"></i> Class +1 Gacha
           </button>
+<button onclick="teacherPromptClassCoins('reward')" class="px-2.5 py-1.5 rounded bg-yellow-950 border border-yellow-500 text-yellow-300 text-xs font-bold hover:bg-yellow-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+  <i class="fa-solid fa-coins text-amber-400"></i> Class +金幣
+</button>
+<button onclick="teacherPromptClassCoins('deduct')" class="px-2.5 py-1.5 rounded bg-slate-900 border border-yellow-800 text-yellow-500 text-xs font-bold hover:bg-yellow-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
+  <i class="fa-solid fa-circle-minus text-yellow-600"></i> Class -金幣
+</button>
           <button onclick="deductAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-slate-900 border border-purple-800 text-purple-300 text-xs font-bold hover:bg-purple-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
             <i class="fa-solid fa-ticket-simple"></i> Class -1 Gacha
           </button>
@@ -3972,10 +4708,12 @@ function getTeacherTemplate() {
             <div class="flex items-center gap-3">
               <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">Class: All</span>
               <select id="teacherQuizTimeLimitSelect" class="bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
-                <option value="15">15 秒</option>
-                <option value="30" selected>30 秒</option>
-                <option value="60">60 秒</option>
-              </select>
+  <option value="15">15 秒 (15s)</option>
+  <option value="30" selected>30 秒 (30s)</option>
+  <option value="60">60 秒 (60s)</option>
+  <option value="90">90 秒 (90s)</option>
+  <option value="0">無限時間 (No Limit)</option>
+</select>
             </div>
             <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer">即刻發布搶答</button>
           </div>
@@ -4011,6 +4749,145 @@ function getTeacherTemplate() {
             <table class="w-full text-left text-xs">
               <tbody id="quizStudentAnswersTbody"></tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+<!-- 考卷發布與即時監控子頁面 -->
+    <div id="teacherSubViewExam" class="space-y-6 hidden">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border-2 border-indigo-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-500/30 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400 flex items-center justify-center text-indigo-300 text-lg">
+              <i class="fa-solid fa-file-pen"></i>
+            </div>
+            <div>
+              <h3 class="text-sm sm:text-base font-black text-indigo-300 uppercase tracking-wider font-pixel">考卷測驗發布中心 (Exam Management)</h3>
+              <p class="text-[11px] text-slate-400">匯入 Excel (Column A:題目, B:正解, C-E:錯選, F:題型, G:題解)</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="excelExamFileInput" class="cursor-pointer px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95 shadow">
+              <i class="fa-solid fa-file-excel"></i> 匯入考卷 (Import Excel)
+            </label>
+            <input id="excelExamFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExamExcelImport(event)" class="hidden">
+            <span id="examBankStatus" class="text-xs text-slate-400 font-mono bg-slate-950 px-2.5 py-1 rounded border border-slate-800">已載入: 0 題</span>
+            <button onclick="teacherCloseLiveExam()" class="px-3 py-1.5 rounded-xl bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">強制收卷/結束 (Close Exam)</button>
+          </div>
+        </div>
+
+        <div class="space-y-3 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">考卷標題 (Exam Title):</label>
+              <input type="text" id="teacherExamTitleInput" placeholder="例如：期中數碼綜合評量測驗" value="數碼課堂全單元綜合測驗" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-400">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">測驗限時 (Time Limit):</label>
+              <div class="flex items-center gap-2">
+                <select id="teacherExamTimeLimitSelect" onchange="onExamTimePresetChange(this.value)" class="flex-1 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-2 text-xs text-indigo-200 font-mono outline-none">
+                  <option value="20">20 分鐘 (20 Mins)</option>
+                  <option value="25">25 分鐘 (25 Mins)</option>
+                  <option value="30" selected>30 分鐘 (30 Mins)</option>
+                  <option value="50">50 分鐘 (50 Mins)</option>
+                  <option value="custom">自訂時間 (Custom)</option>
+                </select>
+                <input type="number" id="teacherExamCustomMinutes" placeholder="分鐘" min="1" max="180" class="hidden w-20 bg-slate-900 border border-indigo-500/60 rounded-lg px-2 py-2 text-xs text-indigo-200 font-mono outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div class="text-xs text-slate-400">
+              目標班級：<span id="teacherExamTargetClassBadge" class="text-indigo-300 font-bold font-mono">ALL</span>
+            </div>
+            <button onclick="teacherLaunchExam()" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer flex items-center gap-2">
+              <i class="fa-solid fa-rocket"></i> 正式發布考卷 (Launch Exam)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 老師端即時監控與全班成績狀態 -->
+      <div class="bg-slate-900 border border-indigo-500/40 rounded-2xl p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 mb-3 gap-2">
+          <div class="flex items-center gap-3">
+            <h4 class="text-xs font-black text-indigo-300 uppercase font-pixel">考卷測驗即時監控 (Exam Monitor)</h4>
+            <div id="tcExamCountdownWrapper" class="hidden px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 text-xs font-mono font-bold flex items-center gap-1.5 animate-pulse">
+              <i class="fa-solid fa-stopwatch"></i> 剩餘：<span id="tcExamRemainingTime">00:00</span>
+            </div>
+          </div>
+          <span class="text-xs text-slate-400 font-mono" id="examClassProgressText">已繳交：0 / 0</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-2">#</th>
+                <th class="p-2">學生 (Student)</th>
+                <th class="p-2 text-center">狀態 (Status)</th>
+                <th class="p-2 text-center">得分 (Score)</th>
+                <th class="p-2 text-center">正確率 (Accuracy)</th>
+                <th class="p-2 text-center">獲得 EXP</th>
+                <th class="p-2 text-center">獲得金幣</th>
+                <th class="p-2 text-right">交卷時間</th>
+              </tr>
+            </thead>
+            <tbody id="examStudentsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  <!-- 💬 老師與個別學生私訊子分頁 -->
+    <div id="teacherSubViewMessage" class="space-y-6 hidden">
+      <div class="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border-2 border-cyan-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-500/30 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-lg">
+              <i class="fa-solid fa-comments"></i>
+            </div>
+            <div>
+              <h3 class="text-sm sm:text-base font-black text-cyan-300 uppercase tracking-wider font-pixel">師生個別私訊系統 (Direct Messages)</h3>
+              <p class="text-[11px] text-slate-400">僅限老師與個別學生 1 對 1 通訊，自動保留最新 5 則訊息（超過自動刪除最舊）</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：5 則 / 學生</span>
+          </div>
+        </div>
+
+        <!-- 選擇學生區塊 -->
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+          <label class="text-xs font-bold text-cyan-300 shrink-0"><i class="fa-solid fa-user mr-1"></i> 選擇私訊學生：</label>
+          <select id="teacherMsgStudentSelect" onchange="onTeacherSelectMsgStudent(this.value)" class="flex-1 bg-slate-900 border border-cyan-500/60 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
+            <option value="">-- 請選擇學生 (Select Student) --</option>
+          </select>
+        </div>
+
+        <!-- 私訊對話框體 -->
+        <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col h-[380px]">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-300" id="teacherMsgTargetTitle">請先在上方選擇學生</span>
+              <span class="text-[10px] text-slate-500 font-mono" id="teacherMsgCountBadge">訊息數：0 / 5</span>
+            </div>
+            <!-- 🗑️ 老師清空當前對話按鈕 -->
+            <button id="btnTeacherClearChat" onclick="clearTeacherCurrentChatHistory()" class="hidden px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-300 text-[11px] font-bold cursor-pointer transition active:scale-95 flex items-center gap-1.5">
+              <i class="fa-solid fa-trash-can"></i> 清空對話 (Clear History)
+            </button>
+          </div>
+
+          <!-- 訊息列表 -->
+          <div id="teacherChatMessagesList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+            <div class="text-slate-500 text-xs italic text-center py-10">尚無訊息或未選擇學生</div>
+          </div>
+
+          <!-- 訊息輸入與發送 -->
+          <div class="pt-3 border-t border-slate-800 flex gap-2">
+            <input type="text" id="teacherMsgInput" placeholder="輸入要傳送給該學生的訊息..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+            <button onclick="sendTeacherMessage()" class="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-paper-plane"></i> 發送
+            </button>
           </div>
         </div>
       </div>
@@ -4138,6 +5015,7 @@ function getSuperAdminTemplate() {
     document.getElementById('viewStudent').classList.remove('hidden');
     populateStudentTeacherBossOptions();
     updateStudentUI();
+    updateStudentFactionUI(); // 👈 加入此行：登入進入儀表板後立即刷新陣營資訊
   }
 
   document.getElementById('viewLogin').classList.add('hidden');
@@ -4278,7 +5156,9 @@ function logout() {
 
       renderStudentBossBar();
       renderBountyUI();
-
+      updateStudentFactionUI(); // 👈 加入此行：保證每次刷新學生畫面時必定更新陣營狀態
+      const coinCountEl = document.getElementById('stCoinsCount');
+      if (coinCountEl) coinCountEl.textContent = st.coins || 0;
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const maxHp = digi.maxHp || 100;
       if (st.hp === undefined) st.hp = maxHp;
@@ -5138,6 +6018,7 @@ function logout() {
     }
 
     function renderTeacherGrid() {
+  
   const container = document.getElementById('teacherStudentGrid');
   if (!container || !currentUser) return;
   container.innerHTML = '';
@@ -5218,7 +6099,7 @@ function logout() {
             <div class="font-bold text-slate-200">${digi.name}</div>
             <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 0} / ${digi.maxHp}</div>
             <div class="text-slate-400 font-mono text-[11px]">
-              EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span>
+              EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span> | 金幣: <span class="text-yellow-400 font-bold">${s.coins || 0}</span>
             </div>
           </div>
         </div>
@@ -5229,6 +6110,14 @@ function logout() {
           <button onclick="rewardStudent('${s.id}', 10)" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+10 EXP</button>
           <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 Ticket</button>
           <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 Attack</button>
+      <div class="grid grid-cols-2 gap-1 mt-1">
+  <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="p-1 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded text-[10px] text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+    <i class="fa-solid fa-plus text-[9px]"></i> 獎勵金幣
+  </button>
+  <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="p-1 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded text-[10px] text-yellow-500 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+    <i class="fa-solid fa-minus text-[9px]"></i> 扣除金幣
+  </button>
+</div>
         </div>
         <div class="grid grid-cols-4 gap-1">
           <button onclick="deductStudentTicket('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Ticket">-1 Ticket</button>
@@ -5258,7 +6147,104 @@ function logout() {
     container.appendChild(card);
   });
 }
+    // ==========================================
+// 👨‍🏫 老師單獨增減特定學生數碼幣
+// ==========================================
+function teacherAdjustStudentCoins(studentId, mode = 'add') {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const s = appData.students[studentId];
+  if (!s) return;
 
+  const isAdd = (mode === 'add');
+  const defaultAmount = isAdd ? "20" : "10";
+  const promptText = isAdd 
+    ? `【獎勵金幣】要發放多少數碼幣給學生 [${s.name}]？` 
+    : `【扣除金幣】要扣除學生 [${s.name}] 多少數碼幣？(目前持有: ${s.coins || 0})`;
+
+  const inputVal = prompt(promptText, defaultAmount);
+  if (inputVal === null || inputVal.trim() === '') return;
+
+  const amount = parseInt(inputVal.trim());
+  if (isNaN(amount) || amount <= 0) {
+    alert("請輸入大於 0 的有效整數！");
+    return;
+  }
+
+  if (!dbRootRef) return;
+
+  // 使用 Firebase Transaction 保證數值原子化計算，並防止扣成負數
+  dbRootRef.child(`students/${studentId}/coins`).transaction((curCoins) => {
+    const base = curCoins || 0;
+    if (isAdd) {
+      return base + amount;
+    } else {
+      return Math.max(0, base - amount);
+    }
+  }, (err, committed, snap) => {
+    if (committed && snap.exists()) {
+      const finalCoins = snap.val();
+      if (isAdd) {
+        playSound('gacha');
+        addBattleLog(`💰⭐ [COIN REWARD] 老師獎勵了學生 [${s.name}] +${amount} 數碼幣 (現有: ${finalCoins})！`, "gacha", s.classId);
+        showToast("數碼幣獎勵成功", `已發放 +${amount} 金幣給 ${s.name}！`, "heal");
+      } else {
+        playSound('attack');
+        addBattleLog(`💸⚠️ [COIN DEDUCT] 老師扣除了學生 [${s.name}] -${amount} 數碼幣 (剩餘: ${finalCoins})！`, "battle", s.classId);
+        showToast("數碼幣扣除成功", `已扣除 ${s.name} 的 ${amount} 金幣！`, "damage");
+      }
+    } else {
+      showToast("操作失敗", "資料庫更新未完成，請稍後重試。", "damage");
+    }
+  });
+}
+
+// ==========================================
+// 👨‍🏫 老師為當前班級全體學生批量增減金幣
+// ==========================================
+function teacherPromptClassCoins(mode = 'reward') {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
+
+  if (myStudents.length === 0) {
+    showToast("班級操作", "當前班級無任何學生！", "info");
+    return;
+  }
+
+  const isReward = (mode === 'reward');
+  const classTitle = (targetClass === 'ALL') ? "全校所有班級" : `班級 [${targetClass}]`;
+  const defaultVal = isReward ? "20" : "10";
+  const promptText = isReward 
+    ? `【全班獎勵】為 ${classTitle} 全體學生 (${myStudents.length} 人) 每人發放多少數碼幣？` 
+    : `【全班扣除】為 ${classTitle} 全體學生 (${myStudents.length} 人) 每人扣除多少數碼幣？`;
+
+  const inputVal = prompt(promptText, defaultVal);
+  if (inputVal === null || inputVal.trim() === '') return;
+
+  const amount = parseInt(inputVal.trim());
+  if (isNaN(amount) || amount <= 0) {
+    alert("請輸入大於 0 的有效整數！");
+    return;
+  }
+
+  const updates = {};
+  myStudents.forEach(s => {
+    const cur = s.coins || 0;
+    updates[`students/${s.id}/coins`] = isReward ? (cur + amount) : Math.max(0, cur - amount);
+  });
+
+  executeAtomicMultiPathUpdate(updates).then(() => {
+    if (isReward) {
+      playSound('gacha');
+      addBattleLog(`💰🎉 [CLASS COIN REWARD] 老師為 ${classTitle} 全體學生 (${myStudents.length} 人) 發放了 +${amount} 數碼幣！`, "gacha", targetClass);
+      showToast("金幣發放完成", `已為 ${classTitle} 全員每人增加 +${amount} 數碼幣！`, "heal");
+    } else {
+      playSound('attack');
+      addBattleLog(`💸⚠️ [CLASS COIN DEDUCT] 老師從 ${classTitle} 全體學生扣除了 -${amount} 數碼幣！`, "battle", targetClass);
+      showToast("金幣扣除完成", `已從 ${classTitle} 全員扣除 ${amount} 數碼幣！`, "damage");
+    }
+  });
+}
     function rewardStudent(id, exp) {
       const s = appData.students[id];
       if (!s) return;
@@ -6436,10 +7422,11 @@ function logout() {
       const w3 = document.getElementById('teacherQuizOpt4').value.trim();
       
       const timeLimitSelect = document.getElementById('teacherQuizTimeLimitSelect');
-      const timeLimitSec = timeLimitSelect ? parseInt(timeLimitSelect.value) || 30 : 30;
+      // 解析選定時間（0 代表無限時間）
+      const timeLimitSec = timeLimitSelect ? parseInt(timeLimitSelect.value) : 30;
 
       if (!q || !correct) {
-        return alert("Please provide at least a question and the correct answer (Option 1)!");
+        return alert("請至少填寫問題與正確答案 (選項 1)！ / Please provide a question and correct answer!");
       }
 
       const rawOptions = [{ text: correct, isCorrect: true }];
@@ -6448,7 +7435,7 @@ function logout() {
       if (w3) rawOptions.push({ text: w3, isCorrect: false });
 
       if (rawOptions.length < 2) {
-        return alert("Please provide at least one wrong distractor option!");
+        return alert("請至少提供一個錯誤選項！ / Please provide at least one wrong distractor option!");
       }
 
       for (let i = rawOptions.length - 1; i > 0; i--) {
@@ -6474,9 +7461,9 @@ function logout() {
 
       if (dbRootRef) {
         dbRootRef.child('activeQuiz').set(quizData).then(() => {
-          const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒` : '無作答限時';
+          const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒 (${timeLimitSec}s)` : '無限時間 (No Limit)';
           addBattleLog(`⚡ [LIVE QUIZ] 老師發布搶答 (${limitMsg}): "${q}"! 1st: +2 次攻擊, 2nd: +1 次攻擊, 3rd: +30 EXP, 其餘答對: +10 EXP!`, "evolution", targetClass);
-          showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！`, "evolution");
+          showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！ / Speed Quiz Launched!`, "evolution");
           renderTeacherQuizLiveDashboard();
         });
       }
@@ -6551,21 +7538,28 @@ function logout() {
       const isActive = !!activeQuizInstance.active;
       const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? activeQuizInstance.timeLimit : 30;
 
-      if (isActive && timeLimitSec > 0) {
+      if (isActive) {
         if (countdownBadge) countdownBadge.classList.remove('hidden');
         
         const updateTcTimer = () => {
           const elapsedSec = Math.floor((Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000);
-          const remaining = Math.max(0, timeLimitSec - elapsedSec);
-          if (tcCountdownSec) tcCountdownSec.textContent = `${remaining}s`;
+          
+          if (timeLimitSec > 0) {
+            // 有限時間：倒數模式
+            const remaining = Math.max(0, timeLimitSec - elapsedSec);
+            if (tcCountdownSec) tcCountdownSec.textContent = `${remaining}s`;
 
-          if (remaining <= 0) {
-            clearInterval(quizTeacherCountdownTimer);
-            quizTeacherCountdownTimer = null;
-            if (statusBadge) {
-              statusBadge.textContent = "TIME OVER";
-              statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold";
+            if (remaining <= 0) {
+              clearInterval(quizTeacherCountdownTimer);
+              quizTeacherCountdownTimer = null;
+              if (statusBadge) {
+                statusBadge.textContent = "TIME OVER (時間到)";
+                statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold";
+              }
             }
+          } else {
+            // 無限時間：顯示累計作答時間
+            if (tcCountdownSec) tcCountdownSec.textContent = `∞ (${elapsedSec}s)`;
           }
         };
 
@@ -6701,12 +7695,12 @@ function logout() {
       if (badgeTimeout) badgeTimeout.textContent = `⏰ ${timeoutCount} 逾時`;
     }
 
-    // === 🛠️ 修復版：防止搶答秒逾時與死循環發送通知 ===
+    // === 🛠️ 修復版：支援無限時間與搶答防秒逾時機制 ===
     function renderQuizModalForStudent() {
       const modal = document.getElementById('modalQuizOverlay');
       if (!modal) return;
 
-      // 每次進入前，先徹底清理既有學生倒數計時器
+      // 每次進入前，徹底清理既有學生倒數計時器
       if (quizStudentCountdownTimer) {
         clearInterval(quizStudentCountdownTimer);
         quizStudentCountdownTimer = null;
@@ -6742,86 +7736,103 @@ function logout() {
 
         document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
 
+        // 取得限時秒數（0 代表無限制）
         const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? Number(activeQuizInstance.timeLimit) : 30;
+        const isUnlimited = (timeLimitSec <= 0);
 
-        // 狀況 A：該學生已經提交過答案，或者已經被判定逾時
-        if (mySub) {
-          isQuizTimeoutSubmitting = false; // 已有確定結果，關閉防重送鎖
-          if (timerBadge) timerBadge.classList.add('hidden');
-          if (barWrapper) barWrapper.classList.add('hidden');
-
-          grid.innerHTML = '';
-          feedbackBox.classList.remove('hidden');
-
-          if (mySub.isTimeout) {
-            feedbackText.innerHTML = `⏰ <b class="text-rose-400">已逾時未作答！</b> 本題自動判定為錯誤，無任何獎勵！`;
-          } else if (mySub.isCorrect) {
-            if (mySub.rank === 1) {
-              feedbackText.innerHTML = `🎉 恭喜你獲得 <b class="text-amber-300">第一名 (冠軍)</b>！自動增加 <b class="text-amber-400">+2 次攻擊次數</b>！`;
-            } else if (mySub.rank === 2) {
-              feedbackText.innerHTML = `🥈 恭喜你獲得 <b class="text-slate-200">第二名 (亞軍)</b>！自動增加 <b class="text-cyan-300">+1 次攻擊次數</b>！`;
-            } else if (mySub.rank === 3) {
-              feedbackText.innerHTML = `🥉 恭喜你獲得 <b class="text-amber-500">第三名 (季軍)</b>！自動獲得 <b class="text-emerald-400">+30 EXP</b>！`;
-            } else {
-              feedbackText.innerHTML = `✅ 答案正確！自動獲得 <b class="text-emerald-400">+10 EXP</b>！`;
-            }
-          } else {
-            feedbackText.innerHTML = `❌ 答案不正確！沒有獲得獎勵，下次請再接再厲！`;
-          }
-
-          const winners = activeQuizInstance.winners || {};
-          let snippet = '';
-          if (winners.rank1) snippet += `<div>🥇 第1名: ${winners.rank1.studentName} (+2 攻擊)</div>`;
-          if (winners.rank2) snippet += `<div>🥈 第2名: ${winners.rank2.studentName} (+1 攻擊)</div>`;
-          if (winners.rank3) snippet += `<div>🥉 第3名: ${winners.rank3.studentName} (+30 EXP)</div>`;
-          podiumBox.innerHTML = snippet;
-
-        } else {
-          // 狀況 B：學生尚未作答，正常渲染題目與選項
+        if (!mySub) {
+          // 學生尚未提交作答
+          isQuizTimeoutSubmitting = false;
           feedbackBox.classList.add('hidden');
           grid.innerHTML = '';
 
-          activeQuizInstance.options.forEach((optText, idx) => {
-            const btn = document.createElement('button');
-            btn.className = "py-3 px-4 rounded-xl bg-slate-950 border border-cyan-500/50 hover:bg-cyan-950 text-cyan-200 font-bold text-xs shadow transition active:scale-95 cursor-pointer text-left flex items-center justify-between";
-            btn.innerHTML = `<span>${optText}</span> <i class="fa-solid fa-chevron-right text-[10px] text-cyan-400"></i>`;
-            btn.onclick = () => submitStudentQuizAnswer(idx);
-            grid.appendChild(btn);
-          });
-
-          // 啟動限時倒數機制
-          if (timeLimitSec > 0) {
-            if (timerBadge) timerBadge.classList.remove('hidden');
+          // 倒數與進度條介面顯示控制
+          if (isUnlimited) {
+            // 無限時間：隱藏進度條，倒數徽章顯示為無限標誌
+            if (barWrapper) barWrapper.classList.add('hidden');
+            if (timerBadge) {
+              timerBadge.classList.remove('hidden');
+              timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-bold flex items-center gap-1.5";
+            }
+            if (timerSecText) timerSecText.innerHTML = '<i class="fa-solid fa-infinity"></i> 無限時間';
+          } else {
+            // 有限時間：啟用進度條與倒數計時
             if (barWrapper) barWrapper.classList.remove('hidden');
+            if (timerBadge) {
+              timerBadge.classList.remove('hidden');
+              timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-bold flex items-center gap-1.5 animate-pulse";
+            }
 
-            const quizStartMs = activeQuizInstance.timestamp || Date.now();
-
-            const handleCountdownTick = () => {
-              // 取得經過秒數，若本地時鐘超前出現負數則強制作為 0
-              const diffMs = Date.now() - quizStartMs;
-              const elapsedSec = diffMs > 0 ? (diffMs / 1000) : 0;
+            const updateCountdownUI = () => {
+              const quizStartMs = activeQuizInstance.timestamp || Date.now();
+              const elapsedSec = Math.floor((Date.now() - quizStartMs) / 1000);
               const remaining = Math.max(0, timeLimitSec - elapsedSec);
-              const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
 
-              if (timerSecText) timerSecText.textContent = `${Math.ceil(remaining)}s`;
-              if (barFill) barFill.style.width = `${pct}%`;
+              if (timerSecText) timerSecText.textContent = `${remaining}s`;
 
-              // 倒數歸零時觸發逾時，且必須確認尚未在提交逾時狀態
+              if (barFill) {
+                const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
+                barFill.style.width = `${pct}%`;
+              }
+
+              // 只有在明確設定有限時間且剩餘時間歸零時，才判定為逾時
               if (remaining <= 0) {
-                if (quizStudentCountdownTimer) {
-                  clearInterval(quizStudentCountdownTimer);
-                  quizStudentCountdownTimer = null;
+                clearInterval(quizStudentCountdownTimer);
+                quizStudentCountdownTimer = null;
+                if (!isQuizTimeoutSubmitting) {
+                  isQuizTimeoutSubmitting = true;
+                  submitQuizAnswer(null, true); // 自動提交逾時
                 }
-                autoSubmitTimeoutForStudent();
               }
             };
 
-            handleCountdownTick();
-            quizStudentCountdownTimer = setInterval(handleCountdownTick, 250);
-          } else {
-            if (timerBadge) timerBadge.classList.add('hidden');
-            if (barWrapper) barWrapper.classList.add('hidden');
+            updateCountdownUI();
+            quizStudentCountdownTimer = setInterval(updateCountdownUI, 250);
           }
+
+          // 渲染 4 個作答選項按鈕
+          (activeQuizInstance.options || []).forEach((optText, optIdx) => {
+            const btn = document.createElement('button');
+            btn.className = "p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-slate-700 hover:border-amber-400 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 text-left flex items-center gap-2.5 cursor-pointer";
+            btn.innerHTML = `
+              <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-pixel text-[10px] text-amber-300 shrink-0">
+                ${String.fromCharCode(65 + optIdx)}
+              </span>
+              <span class="truncate">${optText}</span>
+            `;
+            btn.onclick = () => submitQuizAnswer(optIdx, false);
+            grid.appendChild(btn);
+          });
+
+        } else {
+          // 學生已經作答過或已判定逾時，展示作答結果反饋
+          if (timerBadge) timerBadge.classList.add('hidden');
+          if (barWrapper) barWrapper.classList.add('hidden');
+          grid.innerHTML = '';
+
+          feedbackBox.classList.remove('hidden');
+
+          if (mySub.isTimeout) {
+            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-clock mr-1"></i>回答時間已過！(判定逾時未答)</span>`;
+          } else if (mySub.isCorrect) {
+            let rankText = "";
+            if (mySub.rank === 1) rankText = "🥇 第一名神速答對！獎勵：+2 次攻擊！";
+            else if (mySub.rank === 2) rankText = "🥈 第二名答對！獎勵：+1 次攻擊！";
+            else if (mySub.rank === 3) rankText = "🥉 第三名答對！獎勵：+30 EXP！";
+            else rankText = "✨ 答對！獎勵：+10 EXP！";
+
+            feedbackText.innerHTML = `<span class="text-emerald-400 font-black"><i class="fa-solid fa-circle-check mr-1"></i>回答正確！${rankText}</span>`;
+          } else {
+            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-circle-xmark mr-1"></i>回答錯誤！下次加油！</span>`;
+          }
+
+          // 即時榮譽榜 (前三名)
+          const winners = activeQuizInstance.winners || {};
+          let podiumHtml = `<div class="font-bold text-amber-300 border-b border-slate-800 pb-1 mb-1 font-pixel text-[10px]">即時神速榜單：</div>`;
+          podiumHtml += `<div>🥇 1st: ${winners.rank1 ? winners.rank1.studentName : '等待中...'}</div>`;
+          podiumHtml += `<div>🥈 2nd: ${winners.rank2 ? winners.rank2.studentName : '等待中...'}</div>`;
+          podiumHtml += `<div>🥉 3rd: ${winners.rank3 ? winners.rank3.studentName : '等待中...'}</div>`;
+          podiumBox.innerHTML = podiumHtml;
         }
 
         modal.classList.remove('hidden');
@@ -6830,55 +7841,950 @@ function logout() {
       }
     }
 
-    function autoSubmitTimeoutForStudent() {
-      if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
-      if (!dbRootRef) return;
+    // 學生提交作答處理
+    function submitQuizAnswer(chosenIndex, isTimeout = false) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      if (!activeQuizInstance || !activeQuizInstance.active) return;
 
-      // 嚴格雙重防抖防護：如果已經在送出逾時、或者資料庫快照中已存在自己的提交，立刻退出
-      if (isQuizTimeoutSubmitting) return;
-      if (activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id]) return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
 
-      isQuizTimeoutSubmitting = true;
-
-      // 停止計時器以杜絕後續重複 tick
       if (quizStudentCountdownTimer) {
         clearInterval(quizStudentCountdownTimer);
         quizStudentCountdownTimer = null;
       }
 
-      const st = appData.students[currentUser.id] || { name: currentUser.id };
-      const now = Date.now();
+      const isCorrect = !isTimeout && (chosenIndex === activeQuizInstance.correctIndex);
+      const chosenText = (!isTimeout && activeQuizInstance.options && activeQuizInstance.options[chosenIndex])
+        ? activeQuizInstance.options[chosenIndex]
+        : (isTimeout ? '⏰ 逾時未答' : '未作答');
 
-      dbRootRef.child('activeQuiz').transaction((quiz) => {
-        if (!quiz || !quiz.active) return quiz;
-        if (!quiz.submissions) quiz.submissions = {};
-        // 若伺服器端已有本學生的提交紀錄（例如已手動作答或已標記逾時），則保持原樣不重複改寫
-        if (quiz.submissions[currentUser.id]) return quiz;
+      const submitTime = Date.now();
+      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-        quiz.submissions[currentUser.id] = {
-          answerIdx: -1,
-          answerText: "【逾時未作答】",
-          isCorrect: false,
-          isTimeout: true,
-          timestamp: now,
-          rank: null
-        };
-        return quiz;
-      }, (err, committed, snap) => {
-        if (committed && snap && snap.exists()) {
-          const finalSub = snap.val()?.submissions?.[currentUser.id];
-          // 只有在本次 transaction 確實是由當前逾時操作寫入時才發送通知，避免伺服器重疊觸發
-          if (finalSub && finalSub.isTimeout && finalSub.timestamp === now) {
-            playSound('faint');
-            showToast("Time's Up!", "作答時間截止！列為未作答錯誤。", "damage");
-            addBattleLog(`⏰ [QUIZ TIMEOUT] ${st.name} 未在限時內回答問題，列為錯誤！`, "battle", st.classId);
+      // 使用 Firebase Transaction 決定搶答名次與核發獎勵
+      if (dbRootRef) {
+        dbRootRef.child('activeQuiz').transaction((cur) => {
+          if (!cur || !cur.active) return cur;
+          if (!cur.submissions) cur.submissions = {};
+          if (cur.submissions[currentUser.id]) return cur; // 避免重複作答
+
+          if (!cur.winners) cur.winners = {};
+
+          let awardedRank = null;
+          if (isCorrect) {
+            if (!cur.winners.rank1) {
+              awardedRank = 1;
+              cur.winners.rank1 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+            } else if (!cur.winners.rank2) {
+              awardedRank = 2;
+              cur.winners.rank2 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+            } else if (!cur.winners.rank3) {
+              awardedRank = 3;
+              cur.winners.rank3 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+            }
           }
-          renderQuizModalForStudent();
-        } else {
-          isQuizTimeoutSubmitting = false;
-        }
+
+          cur.submissions[currentUser.id] = {
+            studentId: st.id,
+            studentName: st.name,
+            answerText: chosenText,
+            isCorrect: isCorrect,
+            isTimeout: isTimeout,
+            rank: awardedRank,
+            timestamp: submitTime,
+            timeString: timeString
+          };
+
+          return cur;
+        }, (err, committed, snap) => {
+          if (committed && snap.exists()) {
+            const finalQuiz = snap.val();
+            const myFinalSub = finalQuiz.submissions && finalQuiz.submissions[currentUser.id];
+
+            if (myFinalSub && myFinalSub.isCorrect) {
+              playSound('evolve');
+              if (typeof confetti === 'function') {
+                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+              }
+
+              // 依排名核發獎勵
+              if (myFinalSub.rank === 1) {
+                grantAttackQuota(st.id, 2);
+                showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數！", "evolution");
+              } else if (myFinalSub.rank === 2) {
+                grantAttackQuota(st.id, 1);
+                showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數！", "evolution");
+              } else if (myFinalSub.rank === 3) {
+                rewardStudent(st.id, 30);
+                showToast("搶答季軍！", "第 3 名答對！榮獲 +30 EXP！", "evolution");
+              } else {
+                rewardStudent(st.id, 10);
+                showToast("回答正確！", "成功答對題目，獎勵 +10 EXP！", "heal");
+              }
+            } else if (isTimeout) {
+              playSound('faint');
+              showToast("逾時", "回答時間已結束！", "damage");
+            } else {
+              playSound('attack');
+              showToast("回答錯誤", "下次再接再厲！", "damage");
+            }
+
+            renderQuizModalForStudent();
+          }
+        });
+      }
+    }
+
+// ========================================================
+    // 📝 考卷系統 (EXAM MODE SYSTEM ENGINE)
+    // ========================================================
+
+    // 1. 自訂時間下拉選單聯動
+    function onExamTimePresetChange(val) {
+      const customInput = document.getElementById('teacherExamCustomMinutes');
+      if (!customInput) return;
+      if (val === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+      }
+    }
+
+    // 2. Excel 考卷檔案解析
+    function handleExamExcelImport(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      if (!jsonRows || jsonRows.length <= 1) {
+        alert("Excel 題庫為空！");
+        return;
+      }
+
+      importedExamQuestions = [];
+      // 假設 Row 0 為標題欄 (題目, 正確答案, 錯誤選項1, 錯誤選項2, 錯誤選項3, 題型, 題解)
+      for (let i = 1; i < jsonRows.length; i++) {
+        const row = jsonRows[i];
+        if (!row || row[0] === undefined || row[0] === null || String(row[0]).trim() === '') continue;
+
+        const qText = String(row[0]).trim();
+        const correctAns = (row[1] !== undefined && row[1] !== null) ? String(row[1]).trim() : "";
+        const opt2 = row[2] !== undefined ? String(row[2]).trim() : "";
+        const opt3 = row[3] !== undefined ? String(row[3]).trim() : "";
+        const opt4 = row[4] !== undefined ? String(row[4]).trim() : "";
+        const qType = row[5] !== undefined ? String(row[5]).trim() : (opt2 ? "選擇題" : "填空題");
+        const explain = row[6] !== undefined ? String(row[6]).trim() : "";
+
+        const options = [correctAns, opt2, opt3, opt4].filter(o => o !== "");
+        // 打散選項順序
+        options.sort(() => Math.random() - 0.5);
+
+        importedExamQuestions.push({
+          question: qText,
+          answer: correctAns,
+          options: options,
+          type: qType,
+          explanation: explain
+        });
+      }
+
+      const statusEl = document.getElementById('examBankStatus');
+      if (statusEl) statusEl.textContent = `已載入: ${importedExamQuestions.length} 題`;
+      showToast("題庫匯入成功", `成功載入 ${importedExamQuestions.length} 道考卷試題！`, "heal");
+    } catch (err) {
+      alert("考卷匯入失敗: " + err.message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+    // 3. 老師發布全卷
+    function teacherLaunchExam() {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  if (!importedExamQuestions || importedExamQuestions.length === 0) {
+    return alert("請先匯入 Excel 考卷題庫！");
+  }
+
+  const titleInput = document.getElementById('teacherExamTitleInput');
+  const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : "班級綜合測驗";
+  
+  const timeSelect = document.getElementById('teacherExamTimeLimitSelect');
+  let durationMins = 30;
+  if (timeSelect && timeSelect.value === 'custom') {
+    const customInp = document.getElementById('teacherExamCustomMinutes');
+    durationMins = parseInt(customInp ? customInp.value : 30) || 30;
+  } else if (timeSelect) {
+    durationMins = parseInt(timeSelect.value) || 30;
+  }
+
+  const targetClass = selectedTeacherClass || 'ALL';
+  const newExamId = "exam_" + Date.now();
+  const startTime = Date.now();
+  const durationSec = durationMins * 60;
+
+  const newExamPayload = {
+    examId: newExamId,
+    title: title,
+    targetClass: targetClass,
+    durationSec: durationSec,
+    startTime: startTime,
+    endTime: startTime + (durationSec * 1000),
+    questions: importedExamQuestions,
+    status: 'ACTIVE',
+    submissions: {}
+  };
+
+  if (dbRootRef) {
+    dbRootRef.child('activeExam').set(newExamPayload).then(() => {
+      playSound('shield');
+      showToast("考卷發布成功", `【${title}】已向班級 [${targetClass}] 發布！`, "info");
+      addBattleLog(`📝 [EXAM LAUNCHED] 老師發布了考卷【${title}】(限時 ${durationMins} 分鐘，班級: ${targetClass})。`, "evolution", targetClass);
+activeExamInstance = newExamPayload;
+      renderTeacherExamDashboard();
+    }).catch(err => {
+      alert("發布失敗: " + err.message);
+    });
+  }
+}
+
+    // 4. 老師強制結束考卷
+    function teacherCloseLiveExam() {
+      if (!confirm("確定要強制結束並關閉目前測驗？尚未提交的學生將被強制收卷。")) return;
+      if (dbRootRef) {
+        dbRootRef.child('activeExam/active').set(false).then(() => {
+          showToast("測驗已結束", "考卷測驗已關閉。", "info");
+          addBattleLog(`📝 [EXAM CLOSED] 老師結束了目前的考卷測驗。`, "normal", selectedTeacherClass);
+        });
+      }
+    }
+
+
+// 老師手動結束/關閉考卷
+function teacherCloseLiveExam() {
+  if (!activeExamInstance || activeExamInstance.status !== 'ACTIVE') {
+    return alert("目前沒有進行中的考卷！");
+  }
+  if (!confirm("確定要強制結束並關閉此考卷嗎？\n尚未交卷的學生將無法繼續作答。")) return;
+
+  if (dbRootRef) {
+    dbRootRef.child('activeExam').update({
+      status: 'CLOSED'
+    }).then(() => {
+      playSound('attack');
+      showToast("考卷已結束", "已收卷並結束測驗！", "damage");
+      addBattleLog(`🛑 [EXAM CLOSED] 老師手動結束了考卷【${activeExamInstance.title || '測驗'}】。`, "battle", selectedTeacherClass);
+      renderTeacherExamDashboard();
+    });
+  }
+}
+    // 5. 學生端狀態同步處理
+    // ==========================================
+    // 📝 學生端考卷同步與作答核心修復版
+    // ==========================================
+    function onStudentExamStateSync() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const modal = document.getElementById('modalExamStudent');
+  if (!modal) return;
+
+  // 1. 若無進行中考卷或已結束
+  if (!activeExamInstance || activeExamInstance.status !== 'ACTIVE') {
+    if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+    examStudentCountdownTimer = null;
+    modal.classList.add('hidden');
+    currentExamSessionId = null;
+    studentHasSubmittedCurrentExam = false;
+    return;
+  }
+
+  const st = appData.students[currentUser.id];
+  if (!st) return;
+
+  // 2. 班級資格比對
+  const targetClass = activeExamInstance.targetClass || 'ALL';
+  if (targetClass !== 'ALL' && !studentIsInClass(st, targetClass)) {
+    modal.classList.add('hidden');
+    return;
+  }
+
+  // 3. 檢查本學生是否已提交此考卷
+  const submissions = activeExamInstance.submissions || {};
+  const mySub = submissions[currentUser.id];
+
+  // 4. 【關鍵修復】：若考卷 ID 未改變，說明是其他同學交卷或資料庫更新，切勿重置當前作答！
+  if (currentExamSessionId === activeExamInstance.examId) {
+    // 若自己已交卷，僅展示結果頁面
+    if (mySub && !studentHasSubmittedCurrentExam) {
+      studentHasSubmittedCurrentExam = true;
+      renderStudentExamResultView(mySub);
+    }
+    return;
+  }
+
+  // 5. 【全新考卷發布】：彈出視窗並初始化此學生的作答環境
+  currentExamSessionId = activeExamInstance.examId;
+  studentHasSubmittedCurrentExam = !!mySub;
+  studentExamAnswers = {};
+  currentExamQIndex = 0;
+
+  // 更新考卷標題與界面
+  const titleEl = document.getElementById('examPaperTitle');
+  if (titleEl) titleEl.textContent = activeExamInstance.title || "班級考卷測驗";
+  const subTitleEl = document.getElementById('examPaperSubtitle');
+  if (subTitleEl) subTitleEl.textContent = `共 ${activeExamInstance.questions?.length || 0} 題，請在時限內完成作答並提交。`;
+
+  // 彈出視窗
+  modal.classList.remove('hidden');
+  playSound('gacha');
+
+  if (mySub) {
+    // 已經交過卷，直接顯示結果
+    renderStudentExamResultView(mySub);
+  } else {
+    // 進行作答流程
+    document.getElementById('examTakingSection')?.classList.remove('hidden');
+    document.getElementById('examResultSection')?.classList.add('hidden');
+    startStudentExamTimer();
+    renderStudentExamQuestion();
+  }
+}
+
+// ==========================================
+// 📝 學生端考卷題目渲染與切換邏輯修復
+// ==========================================
+
+// 保存當前題目答案到暫存物件
+function saveCurrentQuestionAnswer() {
+  if (!activeExamInstance || !activeExamInstance.questions) return;
+  const qList = activeExamInstance.questions;
+  const q = qList[currentExamQIndex];
+  if (!q) return;
+
+  const isFill = (q.type && (q.type.includes('填空') || q.type.toUpperCase().includes('FILL')));
+  if (isFill) {
+    const inputEl = document.getElementById('examFillInput');
+    if (inputEl) {
+      studentExamAnswers[currentExamQIndex] = inputEl.value.trim();
+    }
+  }
+}
+
+// 切換上一題 / 下一題
+function navigateExamQuestion(delta) {
+  if (!activeExamInstance || !activeExamInstance.questions) return;
+  saveCurrentQuestionAnswer();
+
+  const total = activeExamInstance.questions.length;
+  const nextIdx = currentExamQIndex + delta;
+
+  if (nextIdx >= 0 && nextIdx < total) {
+    currentExamQIndex = nextIdx;
+    renderStudentExamQuestion();
+  }
+}
+
+// 選擇選擇題選項
+function selectExamMCQOption(optValue) {
+  studentExamAnswers[currentExamQIndex] = String(optValue).trim();
+  renderStudentExamQuestion();
+}
+
+// 渲染當前題目的完整內容
+function renderStudentExamQuestion() {
+  if (!activeExamInstance || !activeExamInstance.questions) return;
+  const questions = activeExamInstance.questions;
+  const total = questions.length;
+
+  if (total === 0) {
+    document.getElementById('examQuestionContent').textContent = "考卷題庫為空！";
+    return;
+  }
+
+  // 防呆：確保索引合法
+  if (currentExamQIndex < 0) currentExamQIndex = 0;
+  if (currentExamQIndex >= total) currentExamQIndex = total - 1;
+
+  const q = questions[currentExamQIndex];
+
+  // 1. 更新題號進度與題型標籤
+  const progressText = document.getElementById('examQuestionProgressText');
+  if (progressText) {
+    progressText.textContent = `第 ${currentExamQIndex + 1} / ${total} 題 (Question ${currentExamQIndex + 1} of ${total})`;
+  }
+
+  const isFill = (q.type && (String(q.type).includes('填空') || String(q.type).toUpperCase().includes('FILL')));
+  const typeBadge = document.getElementById('examQuestionTypeBadge');
+  if (typeBadge) {
+    typeBadge.textContent = isFill ? "填空題 (Fill-in)" : "選擇題 (MCQ)";
+  }
+
+  // 2. 顯示題目內容（多重相容欄位名稱：question / text / content / q）
+  const qText = q.question || q.text || q.content || q.title || `題目 ${currentExamQIndex + 1}`;
+  const contentBox = document.getElementById('examQuestionContent');
+  if (contentBox) {
+    contentBox.textContent = qText;
+  }
+
+  // 3. 處理選擇題 vs 填空題容器
+  const optContainer = document.getElementById('examOptionsContainer');
+  const fillContainer = document.getElementById('examFillInputContainer');
+  const fillInput = document.getElementById('examFillInput');
+  const currentSavedAns = studentExamAnswers[currentExamQIndex] !== undefined ? studentExamAnswers[currentExamQIndex] : '';
+
+  if (isFill) {
+    if (optContainer) {
+      optContainer.classList.add('hidden');
+      optContainer.innerHTML = '';
+    }
+    if (fillContainer) {
+      fillContainer.classList.remove('hidden');
+      if (fillInput) fillInput.value = currentSavedAns;
+    }
+  } else {
+    if (fillContainer) fillContainer.classList.add('hidden');
+    if (optContainer) {
+      optContainer.classList.remove('hidden');
+      optContainer.innerHTML = '';
+
+      // 提取選項列表（支援 options 陣列、或 opt1~opt4 / A,B,C,D 欄位）
+      let rawOptions = [];
+      if (Array.isArray(q.options) && q.options.length > 0) {
+        rawOptions = q.options;
+      } else {
+        const pool = [q.opt1, q.opt2, q.opt3, q.opt4, q.a, q.b, q.c, q.d, q.answer];
+        rawOptions = pool.filter(o => o !== undefined && o !== null && String(o).trim() !== '');
+      }
+
+      // 若未打散或為空，預設提供答案選項
+      if (rawOptions.length === 0 && q.answer) {
+        rawOptions = [q.answer];
+      }
+
+      // 去重保證選項完整
+      const uniqueOptions = Array.from(new Set(rawOptions.map(o => String(o).trim())));
+
+      uniqueOptions.forEach((opt, idx) => {
+        const isSelected = String(currentSavedAns).trim() === opt;
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.className = `p-3 rounded-2xl text-xs sm:text-sm font-bold border-2 transition text-left flex items-center justify-between cursor-pointer active:scale-95 ${
+          isSelected 
+            ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg shadow-indigo-500/20' 
+            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50'
+        }`;
+        btn.innerHTML = `
+          <span>${String.fromCharCode(65 + idx)}. ${opt}</span>
+          ${isSelected ? '<i class="fa-solid fa-circle-check text-indigo-400 text-sm"></i>' : '<i class="fa-regular fa-circle text-slate-600 text-sm"></i>'}
+        `;
+        btn.onclick = () => selectExamMCQOption(opt);
+        optContainer.appendChild(btn);
       });
     }
+  }
+
+  // 4. 更新導航按鈕狀態
+  const btnPrev = document.getElementById('btnExamPrev');
+  const btnNext = document.getElementById('btnExamNext');
+  if (btnPrev) {
+    btnPrev.disabled = (currentExamQIndex === 0);
+    btnPrev.classList.toggle('opacity-40', currentExamQIndex === 0);
+    btnPrev.classList.toggle('cursor-not-allowed', currentExamQIndex === 0);
+  }
+  if (btnNext) {
+    btnNext.disabled = (currentExamQIndex === total - 1);
+    btnNext.classList.toggle('opacity-40', currentExamQIndex === total - 1);
+    btnNext.classList.toggle('cursor-not-allowed', currentExamQIndex === total - 1);
+  }
+}
+
+// 關閉學生考卷彈窗
+function closeStudentExamModal() {
+  const modal = document.getElementById('modalExamStudent');
+  if (modal) modal.classList.add('hidden');
+}
+
+// 渲染考卷成績報告及題解
+function renderStudentExamResultView(sub) {
+  const takingSec = document.getElementById('examTakingSection');
+  const resultSec = document.getElementById('examResultSection');
+  if (takingSec) takingSec.classList.add('hidden');
+  if (resultSec) resultSec.classList.remove('hidden');
+
+  const scoreText = document.getElementById('examResultScoreText');
+  if (scoreText) {
+    scoreText.textContent = `${sub.correctCount} / ${sub.totalQuestions} 題答對 (${sub.scorePct}%)`;
+  }
+
+  const expEl = document.getElementById('examExpRewardText');
+  if (expEl) expEl.textContent = `+${sub.expReward} EXP`;
+  const coinEl = document.getElementById('examCoinRewardText');
+  if (coinEl) coinEl.textContent = `+${sub.coinReward} 金幣 (Coins)`;
+
+  const explanationsList = document.getElementById('examExplanationsList');
+  if (!explanationsList) return;
+  explanationsList.innerHTML = '';
+
+  const details = sub.detailedAnswers || {};
+  Object.keys(details).forEach((idxKey) => {
+    const item = details[idxKey];
+    const qNum = parseInt(idxKey) + 1;
+    const card = document.createElement('div');
+    card.className = `p-3 rounded-xl border ${item.isCorrect ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-rose-950/30 border-rose-500/50'} text-xs space-y-1`;
+    card.innerHTML = `
+      <div class="flex items-center justify-between font-bold">
+        <span class="text-white">第 ${qNum} 題</span>
+        <span class="${item.isCorrect ? 'text-emerald-400' : 'text-rose-400'} font-pixel text-[10px]">
+          ${item.isCorrect ? '✔ 正確 (CORRECT)' : '✘ 錯誤 (INCORRECT)'}
+        </span>
+      </div>
+      <div class="text-slate-300">你的答案: <span class="font-bold ${item.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">${item.userAns || '(未作答)'}</span></div>
+      ${!item.isCorrect ? `<div class="text-emerald-400">正確答案: <span class="font-bold">${item.correctAns}</span></div>` : ''}
+      ${item.explanation ? `<div class="text-slate-400 text-[11px] pt-1 border-t border-slate-800"><i class="fa-solid fa-circle-info mr-1"></i>題解: ${item.explanation}</div>` : ''}
+    `;
+    explanationsList.appendChild(card);
+  });
+}
+
+// 學生端考卷倒數計時器
+function startStudentExamTimer() {
+  if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+  const badge = document.getElementById('examStudentTimerBadge');
+
+  examStudentCountdownTimer = setInterval(() => {
+    if (!activeExamInstance || !activeExamInstance.endTime) {
+      clearInterval(examStudentCountdownTimer);
+      return;
+    }
+
+    const remainingSec = Math.max(0, Math.floor((activeExamInstance.endTime - Date.now()) / 1000));
+    const mins = Math.floor(remainingSec / 60);
+    const secs = remainingSec % 60;
+    if (badge) {
+      badge.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    if (remainingSec <= 0) {
+      clearInterval(examStudentCountdownTimer);
+      examStudentCountdownTimer = null;
+      if (!studentHasSubmittedCurrentExam) {
+        showToast("測驗時間截止", "時間到，系統自動繳交考卷！", "damage");
+        submitExamPaper(true);
+      }
+    }
+  }, 1000);
+}
+
+    // 啟動學生端倒數計時器
+    function startStudentExamTimer() {
+      if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+      const badge = document.getElementById('examStudentTimerBadge');
+      if (!badge || !activeExamInstance) return;
+
+      const durationSec = (activeExamInstance.timeLimitMinutes || 30) * 60;
+      const startTime = activeExamInstance.startTime || activeExamInstance.timestamp || Date.now();
+
+      function updateTick() {
+        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        const remainSec = durationSec - elapsedSec;
+
+        if (remainSec <= 0) {
+          badge.textContent = "00:00";
+          if (examStudentCountdownTimer) {
+            clearInterval(examStudentCountdownTimer);
+            examStudentCountdownTimer = null;
+          }
+          // 時間到自動交卷
+          if (!isExamSubmitting) {
+            submitExamPaper(true);
+          }
+        } else {
+          const m = Math.floor(remainSec / 60);
+          const s = remainSec % 60;
+          badge.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+      }
+
+      updateTick();
+      examStudentCountdownTimer = setInterval(updateTick, 1000);
+    }
+
+    // 渲染當前題目的完整內容與選項
+    function renderCurrentExamQuestion() {
+      if (!activeExamInstance || !activeExamInstance.questions) return;
+      const questions = activeExamInstance.questions;
+      if (currentExamQIndex >= questions.length) currentExamQIndex = 0;
+
+      const q = questions[currentExamQIndex];
+      if (!q) return;
+
+      // 1. 進度與題型標籤
+      const progressText = document.getElementById('examQuestionProgressText');
+      const typeBadge = document.getElementById('examQuestionTypeBadge');
+      if (progressText) {
+        progressText.textContent = `第 ${currentExamQIndex + 1} / ${questions.length} 題 (Question ${currentExamQIndex + 1} of ${questions.length})`;
+      }
+
+      const qType = (q.type || 'MCQ').toUpperCase();
+      const isFill = (qType === 'FILL' || qType === '填空' || qType === '填空題');
+
+      if (typeBadge) {
+        typeBadge.textContent = isFill ? "填空題 (Fill-in)" : "選擇題 (MCQ)";
+      }
+
+      // 2. 題目內容文字
+      const contentBox = document.getElementById('examQuestionContent');
+      if (contentBox) {
+        contentBox.textContent = q.question || "題目載入異常";
+      }
+
+      // 3. 容器切換與內容載入
+      const optionsContainer = document.getElementById('examOptionsContainer');
+      const fillContainer = document.getElementById('examFillInputContainer');
+      const fillInput = document.getElementById('examFillInput');
+
+      const savedAnswer = studentExamAnswers[currentExamQIndex] !== undefined ? studentExamAnswers[currentExamQIndex] : '';
+
+      if (isFill) {
+        optionsContainer.classList.add('hidden');
+        fillContainer.classList.remove('hidden');
+        if (fillInput) {
+          fillInput.value = savedAnswer;
+          fillInput.oninput = function() {
+            studentExamAnswers[currentExamQIndex] = this.value.trim();
+          };
+        }
+      } else {
+        fillContainer.classList.add('hidden');
+        optionsContainer.classList.remove('hidden');
+        optionsContainer.innerHTML = '';
+
+        // 選項相容性處理：相容 q.options 與 q.choices
+        const optionsList = Array.isArray(q.options) ? q.options : (Array.isArray(q.choices) ? q.choices : []);
+
+        optionsList.forEach((optText, optIdx) => {
+          const btn = document.createElement('button');
+          const isSelected = (savedAnswer === optText);
+
+          btn.className = `w-full text-left p-3.5 rounded-xl border-2 transition font-bold text-xs flex items-center justify-between cursor-pointer active:scale-95 ${
+            isSelected 
+              ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg' 
+              : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50'
+          }`;
+
+          btn.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-indigo-500 text-white' : 'bg-slate-900 text-slate-400'} flex items-center justify-center font-mono text-[11px] font-black">
+                ${String.fromCharCode(65 + optIdx)}
+              </span>
+              <span>${optText}</span>
+            </div>
+            ${isSelected ? '<i class="fa-solid fa-check text-indigo-400"></i>' : ''}
+          `;
+
+          btn.onclick = function() {
+            studentExamAnswers[currentExamQIndex] = optText;
+            renderCurrentExamQuestion();
+            // 選擇題點擊後自動跳往下一題（最後一題除外）
+            if (currentExamQIndex < questions.length - 1) {
+              setTimeout(() => {
+                navigateExamQuestion(1);
+              }, 220);
+            }
+          };
+
+          optionsContainer.appendChild(btn);
+        });
+      }
+
+      // 4. 上一題 / 下一題按鈕控制
+      const btnPrev = document.getElementById('btnExamPrev');
+      const btnNext = document.getElementById('btnExamNext');
+      if (btnPrev) btnPrev.style.visibility = (currentExamQIndex === 0) ? 'hidden' : 'visible';
+      if (btnNext) btnNext.style.visibility = (currentExamQIndex === questions.length - 1) ? 'hidden' : 'visible';
+    }
+
+    // 題目切換跳轉導航
+    function navigateExamQuestion(delta) {
+      if (!activeExamInstance || !activeExamInstance.questions) return;
+      const questions = activeExamInstance.questions;
+      const targetIndex = currentExamQIndex + delta;
+      if (targetIndex >= 0 && targetIndex < questions.length) {
+        currentExamQIndex = targetIndex;
+        renderCurrentExamQuestion();
+      }
+    }
+
+    // 提交考卷與算分
+    function submitExamPaper(isAutoTimeout = false) {
+  if (isExamSubmitting || studentHasSubmittedCurrentExam) return;
+  if (!activeExamInstance || !activeExamInstance.questions) return;
+
+  saveCurrentQuestionAnswer();
+
+  const questions = activeExamInstance.questions;
+  const answeredCount = Object.keys(studentExamAnswers).filter(k => {
+    return studentExamAnswers[k] !== undefined && studentExamAnswers[k] !== null && String(studentExamAnswers[k]).trim() !== '';
+  }).length;
+
+  if (!isAutoTimeout && answeredCount < questions.length) {
+    if (!confirm(`尚有 ${questions.length - answeredCount} 題未填寫答案，確定現在交卷嗎？`)) {
+      return;
+    }
+  }
+
+  isExamSubmitting = true;
+  let correctCount = 0;
+  const detailedAnswers = {};
+
+  questions.forEach((q, idx) => {
+    // 取得學生作答內容
+    const rawStuAns = studentExamAnswers[idx];
+    const stuAns = (rawStuAns !== undefined && rawStuAns !== null) ? String(rawStuAns).trim() : "";
+
+    // 容錯提取正確答案（相容 answer, ans, correct, opt1）
+    let correctAns = "";
+    if (q.answer !== undefined && q.answer !== null) correctAns = String(q.answer).trim();
+    else if (q.ans !== undefined && q.ans !== null) correctAns = String(q.ans).trim();
+    else if (q.correct !== undefined && q.correct !== null) correctAns = String(q.correct).trim();
+
+    // 核心判定修復：學生未作答（空白）或題庫無正解時，嚴格判定為錯誤
+    let isCorrect = false;
+    if (stuAns !== "" && correctAns !== "") {
+      isCorrect = (stuAns.toLowerCase() === correctAns.toLowerCase());
+    }
+
+    if (isCorrect) correctCount++;
+
+    detailedAnswers[idx] = {
+      userAns: stuAns || "(未作答)",
+      correctAns: correctAns || "無設定正解",
+      isCorrect: isCorrect,
+      explanation: q.explanation || q.desc || q.explain || ""
+    };
+  });
+
+  const totalQ = questions.length;
+  const scorePct = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
+  const expReward = correctCount * 15;
+  const coinReward = correctCount * 2;
+
+  const st = appData.students[currentUser.id];
+  const submissionData = {
+    studentId: currentUser.id,
+    studentName: st ? st.name : currentUser.id,
+    classId: st ? (st.classId || 'ALL') : 'ALL',
+    correctCount: correctCount,
+    totalQuestions: totalQ,
+    scorePct: scorePct,
+    expReward: expReward,
+    coinReward: coinReward,
+    detailedAnswers: detailedAnswers,
+    submittedAt: Date.now(),
+    submitTimeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  };
+
+  if (dbRootRef) {
+    const updates = {};
+    updates[`activeExam/submissions/${currentUser.id}`] = submissionData;
+    updates[`students/${currentUser.id}/exp`] = (st.exp || 0) + expReward;
+    updates[`students/${currentUser.id}/statPool`] = (st.statPool || 0) + expReward;
+    updates[`students/${currentUser.id}/coins`] = (st.coins || 0) + coinReward;
+
+    dbRootRef.update(updates).then(() => {
+      isExamSubmitting = false;
+      studentHasSubmittedCurrentExam = true;
+      if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+      playSound('evolve');
+      addBattleLog(`🎓 [EXAM SUBMIT] ${submissionData.studentName} 完成並繳交考卷，成績: ${correctCount}/${totalQ} (${scorePct}%)，獲得 +${expReward} EXP 及 +${coinReward} 金幣！`, "evolution", st ? st.classId : 'ALL');
+      renderStudentExamResultView(submissionData);
+    }).catch(err => {
+      isExamSubmitting = false;
+      alert("繳卷失敗，請重試: " + err.message);
+    });
+  }
+}
+
+    // 顯示測驗報告與題解清單
+    function displayExamResultReport(sub) {
+      document.getElementById('examTakingSection').classList.add('hidden');
+      const resultSec = document.getElementById('examResultSection');
+      resultSec.classList.remove('hidden');
+
+      document.getElementById('examResultScoreText').textContent = `${sub.score} / ${sub.total} 題答對 (${sub.accuracy}%)`;
+      document.getElementById('examExpRewardText').textContent = `+${sub.earnedExp} EXP`;
+      document.getElementById('examCoinRewardText').textContent = `+${sub.earnedCoins} 金幣 (Coins)`;
+
+      const listContainer = document.getElementById('examExplanationsList');
+      if (!listContainer) return;
+      listContainer.innerHTML = '';
+
+      (sub.details || []).forEach((d, idx) => {
+        const item = document.createElement('div');
+        item.className = `p-3 rounded-xl border-2 ${d.isCorrect ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-rose-950/20 border-rose-500/40'} text-xs space-y-1.5`;
+
+        item.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div class="font-bold text-white leading-relaxed">
+              <span class="${d.isCorrect ? 'text-emerald-400' : 'text-rose-400'} font-black mr-1">第 ${idx + 1} 題:</span>
+              ${d.question}
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${d.isCorrect ? 'bg-emerald-950 text-emerald-300 border border-emerald-500' : 'bg-rose-950 text-rose-300 border border-rose-500'}">
+              ${d.isCorrect ? '正確 (Correct)' : '錯誤 (Wrong)'}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-4 text-[11px] font-mono mt-1">
+            <span class="text-slate-400">你的回答: <b class="${d.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">${d.studentAns}</b></span>
+            <span class="text-slate-400">正確答案: <b class="text-emerald-300">${d.correctAns}</b></span>
+          </div>
+          <div class="text-[11px] text-slate-300 bg-slate-950/80 p-2 rounded-lg border border-slate-800 leading-relaxed mt-1">
+            <b class="text-cyan-400"><i class="fa-solid fa-lightbulb mr-1"></i>題解解析:</b> ${d.explanation}
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    // 關閉學生端考卷報告視窗
+    function closeStudentExamModal() {
+      const modal = document.getElementById('modalExamStudent');
+      if (modal) modal.classList.add('hidden');
+    }
+
+   function renderTeacherExamDashboard() {
+  const tbody = document.getElementById('examStudentsTbody');
+  const progressText = document.getElementById('examClassProgressText');
+  const timerBadgeWrapper = document.getElementById('tcExamCountdownWrapper');
+  const remainingTimeEl = document.getElementById('tcExamRemainingTime');
+  const targetClassBadge = document.getElementById('teacherExamTargetClassBadge');
+
+  const curClass = selectedTeacherClass || 'ALL';
+  if (targetClassBadge) {
+    targetClassBadge.textContent = curClass;
+  }
+
+  // 1. 取得目標班級的學生名單
+  const allStudents = Object.values(appData.students || {});
+  const classStudents = allStudents.filter(s => studentIsInClass(s, curClass));
+
+  // 2. 判斷是否有考卷（只要 activeExamInstance 存在且包含 questions 即判定有考卷）
+  const hasActiveExam = (
+    activeExamInstance && 
+    activeExamInstance.questions && 
+    activeExamInstance.questions.length > 0 &&
+    activeExamInstance.status !== 'CLOSED'
+  );
+
+  const submissions = (activeExamInstance && activeExamInstance.submissions) ? activeExamInstance.submissions : {};
+
+  // 3. 計算交卷人數
+  let submittedCount = 0;
+  classStudents.forEach(s => {
+    if (submissions[s.id]) submittedCount++;
+  });
+
+  if (progressText) {
+    if (hasActiveExam) {
+      progressText.textContent = `已繳交：${submittedCount} / ${classStudents.length} 人 (${classStudents.length > 0 ? Math.round((submittedCount / classStudents.length) * 100) : 0}%)`;
+    } else {
+      progressText.textContent = `名單總數：${classStudents.length} 人 (未發布考卷)`;
+    }
+  }
+
+  // 4. 處理倒數計時器
+  if (hasActiveExam && activeExamInstance.endTime) {
+    if (timerBadgeWrapper) timerBadgeWrapper.classList.remove('hidden');
+    if (!examTeacherCountdownTimer) {
+      examTeacherCountdownTimer = setInterval(() => {
+        if (!activeExamInstance || !activeExamInstance.endTime || activeExamInstance.status === 'CLOSED') {
+          clearInterval(examTeacherCountdownTimer);
+          examTeacherCountdownTimer = null;
+          if (timerBadgeWrapper) timerBadgeWrapper.classList.add('hidden');
+          return;
+        }
+        const leftSec = Math.max(0, Math.floor((activeExamInstance.endTime - Date.now()) / 1000));
+        const m = Math.floor(leftSec / 60);
+        const s = leftSec % 60;
+        if (remainingTimeEl) {
+          remainingTimeEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        if (leftSec <= 0) {
+          clearInterval(examTeacherCountdownTimer);
+          examTeacherCountdownTimer = null;
+        }
+      }, 1000);
+    }
+  } else {
+    if (examTeacherCountdownTimer) {
+      clearInterval(examTeacherCountdownTimer);
+      examTeacherCountdownTimer = null;
+    }
+    if (timerBadgeWrapper) timerBadgeWrapper.classList.add('hidden');
+  }
+
+  if (!tbody) return;
+
+  // 5. 若無任何學生資料
+  if (classStudents.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500 italic">目前所選班級 [${curClass}] 沒有任何學生。請在上方切換班級或匯入學生名單。</td></tr>`;
+    return;
+  }
+
+  // 6. 徹底渲染全班名單與作答情況（無論發布與否，絕對保證列出所有學生）
+  let html = '';
+  classStudents.forEach((st, idx) => {
+    const sub = submissions[st.id];
+    const isDone = !!sub;
+
+    let statusBadge = '';
+    if (!hasActiveExam) {
+      statusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-800 text-[10px]">未發布 (Standby)</span>`;
+    } else if (isDone) {
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500 font-bold text-[10px] animate-pulse shadow">已交卷 (Submitted)</span>`;
+    } else {
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-600 text-[10px] animate-pulse">作答中 (Answering...)</span>`;
+    }
+
+    html += `
+      <tr class="border-b border-slate-800/80 hover:bg-slate-900/40 transition">
+        <td class="p-2.5 font-mono text-slate-500">${idx + 1}</td>
+        <td class="p-2.5 font-bold text-white flex items-center gap-2">
+          <span>${escapeHtml(st.name)}</span>
+          <span class="text-[10px] font-mono text-slate-500 font-normal">(${escapeHtml(st.username || st.id)})</span>
+        </td>
+        <td class="p-2.5 text-center">
+          ${statusBadge}
+        </td>
+        <td class="p-2.5 text-center font-mono font-bold ${isDone ? 'text-amber-300 text-sm' : 'text-slate-600'}">
+          ${isDone ? `${sub.correctCount} /${sub.totalQuestions}` : '-- / --'}
+        </td>
+        <td class="p-2.5 text-center font-mono font-bold ${isDone ? 'text-cyan-300' : 'text-slate-600'}">
+          ${isDone ? `${sub.scorePct}%` : '--%'}
+        </td>
+        <td class="p-2.5 text-center font-mono ${isDone ? 'text-emerald-400 font-bold' : 'text-slate-600'}">
+          ${isDone ? `+${sub.expReward}` : '+0'}
+        </td>
+        <td class="p-2.5 text-center font-mono ${isDone ? 'text-yellow-400 font-bold' : 'text-slate-600'}">
+          ${isDone ? `+${sub.coinReward}` : '+0'}
+        </td>
+        <td class="p-2.5 text-right font-mono text-slate-400 text-[11px]">
+          ${isDone ? (sub.submitTimeStr || '已繳交') : '--:--:--'}
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
 
     function submitStudentQuizAnswer(chosenIdx) {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
@@ -6976,178 +8882,362 @@ function logout() {
       });
     }
 
-    // ⚔️ 學生發動技能核心（支援跨多所屬班級選單選擇）
+    // 學生施放技能暫存索引
+    let currentPendingSkillIndex = null;
+    let pvpPickerActiveTabClass = "";
+
+    // ========================================================
+    // 學生發動技能按鈕 (vs Boss 或 vs Classmate 同學)
+    // ========================================================
     function castStudentSkill(skillIdx, targetMode) {
-  if (!currentUser || currentUser.role !== 'student') return;
-  const st = appData.students[currentUser.id];
-  if (!st) return;
-
-  if (isStudentBanned(st)) {
-    showToast("System Locked", "Your interactions are currently locked by the teacher!", "info");
-    return;
-  }
-
-  if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
-    showToast("Action Forbidden", "❌ Your Digimon is fainted!", "info");
-    playSound('faint');
-    return;
-  }
-
-  if ((st.attackQuota || 0) <= 0) {
-    showToast("Action Depleted", "❌ Attacks left: 0!", "info");
-    return;
-  }
-
-  const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-  const skill = digi.skills[skillIdx] || { name: "Attack", power: 20, type: "damage" };
-
-  if (targetMode === 'boss') {
-    if (!dbRootRef) return;
-    dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-      if (quota === null || quota <= 0) return 0;
-      return quota - 1;
-    }, (err, committed, snap) => {
-      if (!committed || snap.val() < 0) {
-        return showToast("Action Failed", "Attack quota deduction failed!", "info");
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
+        showToast("Action Locked / 行動受限", "Digimon is fainted or banned! / 數碼暴龍已倒下或已被老師鎖定！", "damage");
+        return;
       }
 
-      const teachersList = Object.values(appData.teachers || {});
-      let tc = appData.teachers[studentTargetTeacherId] || appData.teachers[st.teacherId] || teachersList[0];
-      if (!tc) return alert("No active Teacher Boss found.");
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skill = (digi.skills && digi.skills[skillIdx]) ? digi.skills[skillIdx] : { name: "Attack", power: 20, type: "damage" };
+
+      // 回復技能：對自身進行治療
+      if (skill.type === 'heal') {
+        let healAmt = skill.power || 20;
+        // 陣營 Holy Blessing 增益 (+30% 回復)
+        const myFacInfo = getStudentFactionInClass(st, parseStudentClasses(st.classId)[0] || 'ALL');
+        if (myFacInfo.factionId) {
+          const factions = getFactionsForClass(parseStudentClasses(st.classId)[0] || 'ALL');
+          const myFac = factions.find(f => f.id === myFacInfo.factionId);
+          if (myFac && myFac.buffType === 'heal_boost') {
+            healAmt = Math.round(healAmt * 1.3);
+          }
+        }
+        const maxHp = digi.maxHp || 100;
+        const newHp = Math.min(maxHp, (st.hp || 0) + healAmt);
+        patchStudentAtomic(currentUser.id, { hp: newHp });
+        playSound('heal');
+        addBattleLog(`💚 [HEAL / 回復] ${st.name} used [${skill.name}], recovered +${healAmt} HP! (HP: ${newHp}/${maxHp})`, "heal", st.classId);
+        showToast("Recovery / 回復成功", `+${healAmt} HP restored! / 成功回復 +${healAmt} HP！`, "heal");
+        updateStudentUI();
+        return;
+      }
+
+      // 檢查剩餘攻擊次數 (Attack Quota)
+      if ((st.attackQuota || 0) <= 0) {
+        playSound('attack');
+        showToast("No Attacks Left / 攻擊次數不足", "You have 0 attacks left! Await teacher grant or draw via Gacha. / 攻擊次數為 0！請等待老師獎勵或透過抽獎獲取！", "damage");
+        return;
+      }
+
+      // 攻擊老師 Partner 首領
+      if (targetMode === 'boss') {
+        executeAttackTeacherBoss(skill);
+      } else {
+        // 攻擊同學 (PvP)：開啟目標選擇器
+        currentPendingSkillIndex = skillIdx;
+        openPvpTargetPicker();
+      }
+    }
+
+    // ========================================================
+    // ⚔️ 學生攻擊老師 Partner 首領 (Attack Teacher Boss)
+    // ========================================================
+    function executeAttackTeacherBoss(skill) {
+      const st = appData.students[currentUser.id];
+      const tcId = studentTargetTeacherId || 'teacher1';
+      const tc = appData.teachers[tcId] || Object.values(appData.teachers || {})[0];
+      if (!tc) return alert("No active Teacher Boss! / 無可攻擊的老師首領！");
+
+      let dmg = skill.power || 20;
+      // 陣營力量激增 Buff (+20% 傷害)
+      const myFacInfo = getStudentFactionInClass(st, parseStudentClasses(st.classId)[0] || 'ALL');
+      if (myFacInfo.factionId) {
+        const factions = getFactionsForClass(parseStudentClasses(st.classId)[0] || 'ALL');
+        const myFac = factions.find(f => f.id === myFacInfo.factionId);
+        if (myFac && myFac.buffType === 'atk_boost') {
+          dmg = Math.round(dmg * 1.2);
+        }
+      }
 
       const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
+      const curHp = tc.hp !== undefined ? tc.hp : (tc.maxHp || 2000);
+      const nextHp = Math.max(0, curHp - dmg);
 
-      if (skill.type === 'heal') {
-        let finalPower = skill.power;
-        // 陣營生命再生 Buff (+30%)
-        const facs = getFactionsForClass(st.classId);
-        const myFac = facs.find(f => f.id === st.factionId);
-        if (myFac && myFac.buffType === 'heal_boost') {
-          finalPower = Math.round(finalPower * 1.3);
-        }
-        dbRootRef.child(`students/${currentUser.id}/hp`).transaction((hp) => {
-          return Math.min(digi.maxHp, (hp || 100) + finalPower);
-        }, (hErr, hCommitted, hSnap) => {
-          if (hCommitted) {
-            playSound('heal');
-            addBattleLog(`💚 [BLESSING] ${st.name}'s ${digi.name} cast [${skill.name}] and healed +${finalPower} HP!`, "heal", st.classId);
-            showToast("Healed!", `Restored +${finalPower} HP!`, "heal");
-          }
-        });
-      } else {
-        dbRootRef.child(`teachers/${tc.id}/hp`).transaction((bossHp) => {
-          const currentBossHp = (bossHp !== null && bossHp !== undefined) ? bossHp : tc.maxHp;
-          return Math.max(0, currentBossHp - skill.power);
-        }, (bErr, bCommitted, bSnap) => {
-          if (bCommitted) {
-            playSound('attack');
-            addBattleLog(`💥 [BOSS STRIKE] ${st.name}'s ${digi.name} hit ${tc.name}'s ${tcDigi.name} with [${skill.name}] for ${skill.power} DMG! (Remaining HP: ${bSnap.val()})`, "battle", st.classId);
-            showToast("Boss Struck!", `Dealt ${skill.power} DMG to Boss!`, "damage");
-          }
-        });
-      }
-    });
-  } else {
-    // PvP 模式
-    const stClasses = parseStudentClasses(st.classId);
-    if (stClasses.length === 0) {
-      return alert("You are not currently enrolled in any class!");
-    }
-
-    let selectedAttackClass = stClasses[0];
-
-    if (stClasses.length > 1) {
-      let classPrompt = "⚔️ You are enrolled in multiple classes. Choose which class to battle:\n\n";
-      stClasses.forEach((c, idx) => {
-        classPrompt += `${idx + 1}. [Class ${c}]\n`;
+      // 扣除攻擊次數並獎勵命中 EXP
+      const newQuota = Math.max(0, (st.attackQuota || 1) - 1);
+      patchStudentAtomic(currentUser.id, {
+        attackQuota: newQuota,
+        exp: (st.exp || 0) + 15,
+        statPool: (st.statPool || 0) + 15
       });
-      const classChoice = prompt(classPrompt, "1");
-      if (classChoice === null || classChoice.trim() === "") return;
-      const chosenClassIdx = parseInt(classChoice.trim()) - 1;
-      if (isNaN(chosenClassIdx) || chosenClassIdx < 0 || chosenClassIdx >= stClasses.length) {
-        return alert("Invalid class selection!");
+
+      patchTeacherAtomic(tc.id, { hp: nextHp });
+      playSound('attack');
+      addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG! (+15 EXP)`, "battle", st.classId);
+      showToast("Hit Boss / 命中首領", `Dealt ${dmg} DMG to ${tcDigi.name}! (+15 EXP) / 對首領造成 ${dmg} 點傷害！(+15 EXP)`, "damage");
+      updateStudentUI();
+    }
+
+    // ========================================================
+    // 🎯 開啟同學選擇彈窗 (Open PvP Target Picker)
+    // ========================================================
+    function openPvpTargetPicker() {
+      const modal = document.getElementById('modalPvpTargetPicker');
+      if (!modal) return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      const stClasses = parseStudentClasses(st.classId);
+      if (stClasses.length === 0) stClasses.push("ALL");
+
+      if (!pvpPickerActiveTabClass || !stClasses.includes(pvpPickerActiveTabClass)) {
+        pvpPickerActiveTabClass = stClasses[0];
       }
-      selectedAttackClass = stClasses[chosenClassIdx];
+
+      // 渲染班級切換標籤
+      const tabsBox = document.getElementById('pvpPickerClassTabs');
+      if (tabsBox) {
+        tabsBox.innerHTML = '';
+        stClasses.forEach(c => {
+          const tabBtn = document.createElement('button');
+          tabBtn.className = (c === pvpPickerActiveTabClass)
+            ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white font-bold cursor-pointer active:scale-95"
+            : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white font-bold cursor-pointer active:scale-95";
+          tabBtn.textContent = c;
+          tabBtn.onclick = () => {
+            pvpPickerActiveTabClass = c;
+            openPvpTargetPicker();
+          };
+          tabsBox.appendChild(tabBtn);
+        });
+      }
+
+      document.getElementById('pvpPickerClassSubtitle').textContent = `Targeting Classmates in [${pvpPickerActiveTabClass}] / 選擇【${pvpPickerActiveTabClass}】班級目標`;
+      renderPvpTargetsList(pvpPickerActiveTabClass);
+      modal.classList.remove('hidden');
     }
 
-    const classRoster = Object.values(appData.students || {})
-      .filter(s => studentIsInClass(s, selectedAttackClass))
-      .sort((a, b) => (a.username || a.id).localeCompare(b.username || b.id));
-
-    if (classRoster.length <= 1) {
-      return alert(`No other classmates found in [Class ${selectedAttackClass}] to challenge.`);
+    function closePvpTargetModal() {
+      const modal = document.getElementById('modalPvpTargetPicker');
+      if (modal) modal.classList.add('hidden');
+      currentPendingSkillIndex = null;
     }
 
-    const currentBountyTargetId = getEffectiveBountyIdForClass(selectedAttackClass);
+    // ========================================================
+    // 渲染可攻擊的同學列表 (含階級、陣營、預計獲得經驗中英對照)
+    // ========================================================
+    function renderPvpTargetsList(classFilter) {
+      const container = document.getElementById('pvpTargetsListContainer');
+      if (!container || !currentUser) return;
+      container.innerHTML = '';
 
-    let menu = `=== Battle Directory [Class ${selectedAttackClass}] ===\n`;
-    if (st.factionName) {
-      menu += `🛡️ YOUR FACTION: [${st.factionName}] (Allies are protected from attacks)\n`;
+      const me = appData.students[currentUser.id];
+      const myDigi = DIGIMON_DB[me.currentDigiId] || DIGIMON_DB['digitama1'];
+      const myFac = getStudentFactionInClass(me, classFilter);
+
+      // 篩選同班且存活的同學（排除自己）
+      const candidates = Object.values(appData.students || {}).filter(s => {
+        if (s.id === currentUser.id) return false;
+        return studentIsInClass(s, classFilter);
+      });
+
+      if (candidates.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-500 italic text-xs">No other classmates found in [${classFilter}]. / 在 [${classFilter}] 找不到其他同班同學。</div>`;
+        return;
+      }
+
+      const activeBountyTargetId = appData.bounties ? (appData.bounties[sanitizeClassKey(classFilter)] || appData.bounties['ALL']) : null;
+
+      candidates.forEach(target => {
+        const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+        const isFainted = target.isFainted || (target.hp !== undefined && target.hp <= 0);
+        const tgtFac = getStudentFactionInClass(target, classFilter);
+        const isSameFaction = (myFac.factionId && tgtFac.factionId && myFac.factionId === tgtFac.factionId);
+        const isBounty = (activeBountyTargetId === target.id);
+
+        // 計算擊殺經驗值
+        const killExpReward = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
+        const diffRank = (STAGE_ORDER[tgtDigi.stage] || 0) - (STAGE_ORDER[myDigi.stage] || 0);
+
+        let rankDiffLabel = "同級 (Same)";
+        let rankColor = "text-cyan-300";
+        if (diffRank >= 2) { rankDiffLabel = `越兩級+ (+${diffRank} Mega Gap)`; rankColor = "text-amber-400 font-bold"; }
+        else if (diffRank === 1) { rankDiffLabel = "越一級 (+1 Higher)"; rankColor = "text-emerald-400 font-bold"; }
+        else if (diffRank === -1) { rankDiffLabel = "弱一級 (-1 Lower)"; rankColor = "text-slate-400"; }
+        else if (diffRank <= -2) { rankDiffLabel = "弱兩級+ (Weak/No EXP)"; rankColor = "text-purple-400"; }
+
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border ${isBounty ? 'border-rose-500 bg-rose-950/20' : (isSameFaction ? 'border-indigo-600/50 bg-indigo-950/20' : 'border-slate-800 bg-slate-950')} flex items-center justify-between gap-3 transition hover:border-cyan-400/80 cursor-pointer ${isFainted ? 'opacity-40 cursor-not-allowed' : ''}`;
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-12 h-12 bg-slate-900 rounded-xl p-1 border border-slate-800 flex items-center justify-center shrink-0">
+              <img src="${getDigiImgSrc(target.currentDigiId)}" onerror="this.onerror=null;this.src='${tgtDigi.svg}';" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="truncate">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white truncate">${target.name}</span>
+                <span class="text-[10px] font-mono text-slate-400">(${target.username})</span>
+                ${isBounty ? '<span class="px-1.5 py-0.2 rounded bg-rose-900 border border-rose-500 text-rose-300 font-pixel text-[8px] animate-pulse">BOUNTY 懸賞</span>' : ''}
+                ${target.hasShield ? '<span class="text-[10px] text-cyan-400" title="Shield Active 護盾"><i class="fa-solid fa-shield-halved"></i></span>' : ''}
+              </div>
+              <div class="text-[11px] text-slate-300 mt-0.5">
+                ${tgtDigi.name} <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 text-cyan-300">${tgtDigi.stageName}</span>
+                · HP: <b class="text-emerald-400 font-mono">${target.hp !== undefined ? target.hp : tgtDigi.maxHp}</b> / ${tgtDigi.maxHp}
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>陣營 Faction: <b class="${tgtFac.factionName ? 'text-indigo-300' : 'text-slate-500'}">${tgtFac.factionName || '無陣營 (None)'}</b></span>
+                <span>|</span>
+                <span class="${rankColor}">階級: ${rankDiffLabel}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-right shrink-0">
+            <div class="font-pixel text-xs text-amber-300">擊殺: +${killExpReward} EXP</div>
+            <div class="text-[10px] text-slate-400">Kill Reward</div>
+            ${isSameFaction ? '<span class="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-600 block mt-1">同陣營盟友 (免傷)</span>' : ''}
+            ${isFainted ? '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600 block mt-1">已倒下 Fainted</span>' : ''}
+          </div>
+        `;
+
+        if (!isFainted) {
+          card.onclick = () => executePvPAttack(target.id, classFilter);
+        }
+        container.appendChild(card);
+      });
     }
-    if (currentBountyTargetId) {
-      const bTarget = appData.students[currentBountyTargetId];
-      menu += `🎯 BOUNTY TARGET: [${bTarget ? bTarget.name : currentBountyTargetId}]\n`;
-    }
-    menu += `Type the exact class number of your target:\n\n`;
 
-    classRoster.forEach((p, idx) => {
-      const classNum = idx + 1;
-      const pDigi = DIGIMON_DB[p.currentDigiId] || DIGIMON_DB['digitama1'];
-      const bountyMark = (currentBountyTargetId === p.id) ? ' [🎯 BOUNTY]' : '';
-      const isAlly = (st.factionId && p.factionId && st.factionId === p.factionId && st.id !== p.id);
-      const allyMark = isAlly ? ` [🛡️ ALLY: ${p.factionName}]` : (p.factionName ? ` [${p.factionName}]` : ' [No Faction]');
+    // ========================================================
+    // ⚔️ 執行學生對學生攻擊與擊殺結算核心 (PvP Execution & Kill EXP)
+    // ========================================================
+    function executePvPAttack(targetId, targetClass) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const me = appData.students[currentUser.id];
+      const target = appData.students[targetId];
+      if (!me || !target) return;
 
-      if (p.id === st.id) {
-        menu += `[#${classNum}] ${p.name} (YOU) - [Self - Not Selectable]\n`;
+      if ((me.attackQuota || 0) <= 0) {
+        showToast("No Attacks / 攻擊次數不足", "No attack quota left! / 攻擊次數已用盡！", "damage");
+        closePvpTargetModal();
+        return;
+      }
+
+      if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
+        showToast("Already Fainted / 目標已倒下", `${target.name} is already fainted! / ${target.name} 已經倒下，無法再受攻擊！`, "info");
+        return;
+      }
+
+      const myDigi = DIGIMON_DB[me.currentDigiId] || DIGIMON_DB['digitama1'];
+      const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skill = (myDigi.skills && myDigi.skills[currentPendingSkillIndex !== null ? currentPendingSkillIndex : 0]) || { name: "Attack", power: 25 };
+
+      // 1. 同陣營盟友免傷判斷 (Friendly Fire Immunity)
+      const myFac = getStudentFactionInClass(me, targetClass);
+      const tgtFac = getStudentFactionInClass(target, targetClass);
+      if (myFac.factionId && tgtFac.factionId && myFac.factionId === tgtFac.factionId) {
+        playSound('shield');
+        showToast("Faction Ally / 陣營盟友", `${target.name} is in your faction [${myFac.factionName}]! Immune to friendly fire. / 同陣營盟友免疫傷害！`, "info");
+        return;
+      }
+
+      closePvpTargetModal();
+
+      // 2. 計算傷害加成與減免 (Buffs & Debuffs)
+      let dmg = skill.power || 25;
+      const factionsInClass = getFactionsForClass(targetClass);
+
+      // 攻擊方：力量激增 Buff (+20% 傷害)
+      if (myFac.factionId) {
+        const fObj = factionsInClass.find(f => f.id === myFac.factionId);
+        if (fObj && fObj.buffType === 'atk_boost') dmg = Math.round(dmg * 1.2);
+      }
+      // 防禦方：易傷詛咒 (雙倍受傷) 或 鋼鐵要塞 (-20% 受傷)
+      if (tgtFac.factionId) {
+        const fObj = factionsInClass.find(f => f.id === tgtFac.factionId);
+        if (fObj && fObj.buffType === 'vulnerable_debuff') dmg = Math.round(dmg * 2.0);
+        else if (fObj && fObj.buffType === 'def_boost') dmg = Math.max(1, Math.round(dmg * 0.8));
+      }
+
+      // 扣除攻擊次數
+      const newQuota = Math.max(0, (me.attackQuota || 1) - 1);
+      const updates = {};
+      updates[`students/${me.id}/attackQuota`] = newQuota;
+
+      // 3. 護盾抵擋判定 (Shield Block)
+      if (target.hasShield) {
+        updates[`students/${target.id}/hasShield`] = false;
+        executeAtomicMultiPathUpdate(updates).then(() => {
+          playSound('shield');
+          addBattleLog(`🛡️ [SHIELD BLOCK / 護盾格擋] ${target.name}'s Aegis Shield blocked ${me.name}'s [${skill.name}]!`, "battle", targetClass);
+          showToast("Blocked by Shield / 護盾格擋", `${target.name}'s shield blocked your attack! / ${target.name} 的數碼聖盾抵擋了你的攻擊！`, "info");
+          updateStudentUI();
+        });
+        return;
+      }
+
+      // 4. 計算剩餘生命值
+      const curHp = target.hp !== undefined ? target.hp : (tgtDigi.maxHp || 100);
+      const nextHp = Math.max(0, curHp - dmg);
+      updates[`students/${target.id}/hp`] = nextHp;
+
+      // 5. 命中獎勵（懸賞目標每次命中額外 +30 EXP）
+      const activeBountyTargetId = appData.bounties ? (appData.bounties[sanitizeClassKey(targetClass)] || appData.bounties['ALL']) : null;
+      let expGained = 10;
+      let coinsGained = 0;
+
+      if (activeBountyTargetId === target.id) {
+        expGained += 30; // 懸賞命中獎勵
+      }
+
+      // 6. 擊殺判定 (Kill Confirmation)
+      if (nextHp <= 0) {
+        updates[`students/${target.id}/isFainted`] = true;
+
+        // 計算階級差距經驗 (同級 100, 越一級 150, 越兩級 200, 弱一級 50, 弱兩級 0)
+        const baseKillExp = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
+        let killExp = baseKillExp;
+
+        // 陣營 EXP Frenzy 增益 (+25% EXP)
+        if (myFac.factionId) {
+          const fObj = factionsInClass.find(f => f.id === myFac.factionId);
+          if (fObj && fObj.buffType === 'exp_boost') {
+            killExp = Math.round(killExp * 1.25);
+          }
+        }
+
+        expGained += killExp;
+        coinsGained += 10; // 成功擊殺基礎金幣獎勵
+
+        // 懸賞擊殺特別大獎 (Elimination Bounty: +300 EXP, +1 Ticket, +20 Coins)
+        if (activeBountyTargetId === target.id) {
+          expGained += 300;
+          coinsGained += 20;
+          updates[`students/${me.id}/gachaTickets`] = (me.gachaTickets || 0) + 1;
+          updates[`bounties/${sanitizeClassKey(targetClass)}`] = null; // 結算並清除懸賞
+          addBattleLog(`🎯🏆 [BOUNTY CLAIMED / 懸賞達成] ${me.name} eliminated Bounty Target [${target.name}]! Awarded +300 EXP, +1 Ticket & +20 Coins!`, "evolution", targetClass);
+        }
+
+        playSound('faint');
+        addBattleLog(`☠️⚔️ [PVP KILL / 對決擊殺] ${me.name}'s [${myDigi.name}] defeated ${target.name}'s [${tgtDigi.name}]! (Kill EXP: +${killExp}, Total EXP: +${expGained}, +${coinsGained} Coins)`, "battle", targetClass);
+        showToast("Target Defeated! / 擊殺對手！", `Defeated ${target.name}! Gained +${expGained} EXP & +${coinsGained} Coins! / 成功擊殺 ${target.name}！獲得 +${expGained} EXP 與 +${coinsGained} 金幣！`, "evolution");
       } else {
-        menu += `[#${classNum}] ${p.name} (${pDigi.name})${allyMark}${bountyMark} - HP: ${p.hp !== undefined ? p.hp : 100} ${p.isFainted ? '[FAINTED]' : ''}\n`;
+        playSound('attack');
+        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
+        showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
       }
-    });
 
-    const choice = prompt(menu, "");
-    if (choice === null || choice.trim() === "") return;
-
-    const chosenNum = parseInt(choice.trim());
-    const targetIdx = chosenNum - 1;
-
-    if (isNaN(chosenNum) || targetIdx < 0 || targetIdx >= classRoster.length) {
-      return alert("Invalid number selected!");
-    }
-
-    const target = classRoster[targetIdx];
-    if (target.id === st.id) {
-      return alert("You cannot target yourself! Action cancelled.");
-    }
-
-    // 🛡️ 核心判定：以當前戰鬥班別獨立判定同陣營（同班同陣營禁止攻擊）
-    // 取得當前對戰所屬班別（優先採用學生畫面當前選擇的班別，或該學生的所屬班別）
-    const battleClass = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || 'ALL';
-    
-    // 透過第 2 步加入的 getStudentFactionInClass 讀取雙方在該班別的獨立陣營
-    const atkFac = getStudentFactionInClass(st, battleClass);
-    const tgtFac = getStudentFactionInClass(target, battleClass);
-
-    if (atkFac.factionId && tgtFac.factionId && atkFac.factionId === tgtFac.factionId) {
-      playSound('shield');
-      return alert(`❌ 無法攻擊 [${target.name}]！你們在【${battleClass}】皆隸屬於同一個盟友陣營 [${atkFac.factionName}]，同盟成員不可互相攻擊！`);
-    }
-
-    if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
-      return alert(`Classmate [${target.name}] is already FAINTED! Choose an active target.`);
-    }
-
-    // 扣除攻擊次數並發動對決
-    dbRootRef.child(`students/${currentUser.id}/attackQuota`).transaction((quota) => {
-      if (quota === null || quota <= 0) return 0;
-      return quota - 1;
-    }, (err, committed, snap) => {
-      if (!committed || snap.val() < 0) {
-        return showToast("Action Failed", "Attack quota deduction failed!", "info");
+      // 更新攻擊者經驗值、點數池與金幣
+      updates[`students/${me.id}/exp`] = (me.exp || 0) + expGained;
+      updates[`students/${me.id}/statPool`] = (me.statPool || 0) + expGained;
+      if (coinsGained > 0) {
+        updates[`students/${me.id}/coins`] = (me.coins || 0) + coinsGained;
       }
-      applyAttackDamageWithTransaction(st, target, skill, digi, selectedAttackClass);
-    });
-  }
-}
+
+      executeAtomicMultiPathUpdate(updates).then(() => {
+        updateStudentUI();
+      });
+    }
 
     // 取得指定班級中當前有效的 Bounty ID
     function getEffectiveBountyIdForClass(className) {
@@ -7188,18 +9278,25 @@ function logout() {
         if (targetData.hasShield) {
           targetData.hasShield = false;
           targetData._shieldBlocked = true;
+          targetData._tookDamage = 0;
+          targetData._wasKilled = false;
           return targetData;
         }
 
-        const curHp = (targetData.hp !== undefined) ? targetData.hp : 100;
+        const tDigi = DIGIMON_DB[targetData.currentDigiId] || DIGIMON_DB['digitama1'];
+        const maxHp = tDigi.maxHp || 100;
+        const curHp = (targetData.hp !== undefined && targetData.hp !== null) ? Number(targetData.hp) : maxHp;
         const nextHp = Math.max(0, curHp - calcDmg);
+        
         targetData.hp = nextHp;
         targetData._shieldBlocked = false;
         targetData._tookDamage = calcDmg;
+        targetData._wasKilled = (nextHp === 0);
 
         if (nextHp === 0) {
           targetData.isFainted = true;
-          targetData._wasKilled = true;
+        } else {
+          targetData.isFainted = false;
         }
         return targetData;
       }, (err, committed, snap) => {
@@ -7207,77 +9304,89 @@ function logout() {
 
         const updatedTarget = snap.val();
         const tDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+        const maxHp = tDigi.maxHp || 100;
+        const finalHp = (updatedTarget.hp !== undefined && updatedTarget.hp !== null) ? Number(updatedTarget.hp) : 0;
+        const reallyKilled = (finalHp <= 0) || !!updatedTarget.isFainted;
 
         // 護盾格擋處理
         if (updatedTarget._shieldBlocked) {
           playSound('shield');
-          addBattleLog(`🛡️ [PVP BLOCKED] ${target.name}'s Aegis Shield blocked ${st.name}'s attack completely!`, "battle", classContext);
-          showToast("Attack Blocked!", `${target.name}'s shield blocked your attack!`, "info");
+          addBattleLog(`🛡️ [SHIELD BLOCKED] ${target.name}'s Aegis Shield absorbed ${st.name}'s [${skill.name}]!`, "battle", classContext);
+          showToast("Blocked!", `${target.name}'s shield blocked the strike!`, "info");
           return;
         }
 
-        playSound('attack');
+        const actualDamage = updatedTarget._tookDamage || calcDmg;
 
-        // 擊中懸賞對象的即時命中獎勵 (+30 EXP)
+        // 🎯 命中懸賞目標：每次攻擊立即給予攻擊者 +30 EXP 命中獎勵
         if (isTargetingBounty) {
-          dbRootRef.child(`students/${st.id}`).transaction((atkSt) => {
-            if (!atkSt) return atkSt;
-            atkSt.exp = (atkSt.exp || 0) + 30;
-            atkSt.statPool = (atkSt.statPool || 0) + 30;
-            return atkSt;
+          dbRootRef.child(`students/${st.id}`).transaction((curSt) => {
+            if (!curSt) return curSt;
+            curSt.exp = (curSt.exp || 0) + 30;
+            curSt.statPool = (curSt.statPool || 0) + 30;
+            return curSt;
           });
-          showToast("Bounty Strike!", "🎯 Hit bounty target! Instant +30 EXP granted!", "heal");
+          showToast("Bounty Strike!", `Hit Bounty Target! +30 EXP granted!`, "heal");
         }
 
-        // 判定是否成功擊殺
-        if (updatedTarget._wasKilled) {
+        // 判定是否真正擊殺
+        if (reallyKilled) {
           playSound('faint');
-
-          // ⭐ 核心更改位置：
-          // 若是懸賞對象，固定 300 EXP，不受階級等級差距影響（越級不增、殺弱不減）
-          let baseKillExp = 0;
-          if (isTargetingBounty) {
-            baseKillExp = 300; // 固定 300 EXP
-          } else {
-            baseKillExp = calculatePvPBaseKillExp(st.currentDigiId, target.currentDigiId);
+          if (typeof confetti === 'function') {
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 } });
           }
 
-          let finalExp = baseKillExp;
-
-          // 陣營經驗狂熱加乘 (exp_boost: +25% EXP)
-          if (attackerFac && attackerFac.buffType === 'exp_boost' && baseKillExp > 0) {
-            finalExp = Math.round(finalExp * 1.25);
-          }
-
-          // 發放擊殺獎勵給攻擊者
-          dbRootRef.child(`students/${st.id}`).transaction((atkSt) => {
-            if (!atkSt) return atkSt;
-            atkSt.exp = (atkSt.exp || 0) + finalExp;
-            atkSt.statPool = (atkSt.statPool || 0) + finalExp;
-            if (isTargetingBounty) {
-              atkSt.gachaTickets = (atkSt.gachaTickets || 0) + 1; // 額外獲得 1 張抽獎券
-            }
-            return atkSt;
-          });
-
-          // 戰報紀錄與懸賞清理
           if (isTargetingBounty) {
-            addBattleLog(`🎯🏆 [BOUNTY ELIMINATED] ${st.name}'s ${digi.name} defeated Bounty Target [${target.name}]! Fixed Bounty Claimed: +${finalExp} EXP & +1 Gacha Ticket!`, "evolution", classContext);
-            showToast("Bounty Claimed!", `Defeated Bounty Target! Claimed +${finalExp} EXP & +1 Ticket!`, "evolution");
+            // 🎯 擊殺懸賞目標：發放 300 EXP 與 1 張抽獎券
+            dbRootRef.child(`students/${st.id}`).transaction((curSt) => {
+              if (!curSt) return curSt;
+              curSt.exp = (curSt.exp || 0) + 300;
+              curSt.statPool = (curSt.statPool || 0) + 300;
+              curSt.gachaTickets = (curSt.gachaTickets || 0) + 1;
+              return curSt;
+            });
 
-            // 擊殺後自動撤除該班懸賞
+            // 🎯 自動撤銷該班級的懸賞目標
             const tagKey = sanitizeClassKey(classContext);
-            dbRootRef.child(`bounties/${tagKey}`).remove();
-            if (appData.bounties) delete appData.bounties[tagKey];
+            const bountyUpdates = {};
+            bountyUpdates[`bounties/${tagKey}`] = null;
+            if (appData.bounties && appData.bounties['ALL'] === target.id) {
+              bountyUpdates['bounties/ALL'] = null;
+            }
+            executeAtomicMultiPathUpdate(bountyUpdates).then(() => {
+              if (appData.bounties) {
+                delete appData.bounties[tagKey];
+                if (appData.bounties['ALL'] === target.id) delete appData.bounties['ALL'];
+              }
+              renderBountyUI();
+            });
+
+            addBattleLog(`🎯🏆 [BOUNTY CLAIMED] ${st.name}'s ${digi.name} ELIMINATED Bounty Target ${target.name}! Received +300 EXP & +1 Gacha Ticket! Bounty has ended.`, "evolution", classContext);
+            showToast("Bounty Claimed!", `Defeated Bounty Target! +300 EXP & +1 Ticket! Bounty concluded.`, "evolution");
           } else {
-            addBattleLog(`☠️ [PVP KILL] ${st.name}'s ${digi.name} defeated [${target.name}]'s ${tDigi.name}! Earned +${finalExp} EXP!`, "evolution", classContext);
-            showToast("Victory!", `Defeated ${target.name}! Earned +${finalExp} EXP!`, "evolution");
+            // 普通 PvP 擊殺：依階級差距獎勵經驗值
+            const baseKillExp = calculatePvPBaseKillExp(st.currentDigiId, target.currentDigiId);
+            let finalKillExp = baseKillExp;
+            if (attackerFac && attackerFac.buffType === 'exp_boost') {
+              finalKillExp = Math.round(finalKillExp * 1.25);
+            }
+
+            if (finalKillExp > 0) {
+              dbRootRef.child(`students/${st.id}`).transaction((curSt) => {
+                if (!curSt) return curSt;
+                curSt.exp = (curSt.exp || 0) + finalKillExp;
+                curSt.statPool = (curSt.statPool || 0) + finalKillExp;
+                return curSt;
+              });
+            }
+            addBattleLog(`☠️ [PVP KILL] ${st.name}'s ${digi.name} defeated ${target.name}'s ${tDigi.name}! (+${finalKillExp} EXP)`, "battle", classContext);
+            showToast("Victory!", `Defeated ${target.name}! +${finalKillExp} EXP!`, "damage");
           }
         } else {
-          // 一般擊中戰報
-          const leftHp = updatedTarget.hp !== undefined ? updatedTarget.hp : 0;
-          addBattleLog(`⚔️ [PVP STRIKE] ${st.name}'s ${digi.name} struck [${target.name}] for ${calcDmg} DMG! (HP left: ${leftHp})`, "battle", classContext);
-          showToast("Strike Hit!", `Dealt ${calcDmg} DMG to ${target.name}!`, "damage");
+          // 目標未陣亡：正常記錄傷害與剩餘 HP，不發放擊殺獎勵
+          playSound('attack');
+          addBattleLog(`⚔️ [PVP ATTACK] ${st.name}'s ${digi.name} struck ${target.name}'s ${tDigi.name} for ${actualDamage} DMG! (Target HP: ${finalHp}/${maxHp})`, "battle", classContext);
+          showToast("Strike Hit!", `Dealt ${actualDamage} DMG to ${target.name} (HP: ${finalHp})!`, "damage");
         }
       });
     }
