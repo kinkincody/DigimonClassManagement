@@ -167,7 +167,38 @@
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen scanlines relative overflow-x-hidden">
+<!-- 🔄 全域版本強制更新鎖定遮罩 (Force Update Lockdown Overlay) -->
+  <div id="forceUpdateOverlay" class="fixed inset-0 z-[999999] bg-slate-950/98 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center select-none hidden">
+    <div class="relative mb-6">
+      <div class="w-24 h-24 rounded-3xl bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 text-5xl shadow-[0_0_30px_rgba(56,189,248,0.4)]">
+        <i class="fa-solid fa-arrows-rotate animate-spin"></i>
+      </div>
+      <span class="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-rose-600 text-white font-pixel text-[9px] font-bold animate-bounce">NEW</span>
+    </div>
+    
+    <div class="font-pixel text-lg sm:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-amber-300 to-rose-400 tracking-widest">
+      SYSTEM UPDATE REQUIRED
+    </div>
+    <h3 class="text-white font-bold text-base mt-2">系統已發布重要更新，舊版本已停用</h3>
+    
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 my-5 max-w-md w-full text-xs font-mono text-slate-300 space-y-2 text-left">
+      <div class="flex justify-between">
+        <span class="text-slate-500">當前版本 (Your Version):</span>
+        <span id="forceUpdateCurVerText" class="text-rose-400 font-bold">v1.0.0</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-500">伺服器最新版本 (Server Version):</span>
+        <span id="forceUpdateReqVerText" class="text-emerald-400 font-bold">v2.0.0</span>
+      </div>
+      <p class="text-[11px] text-amber-300/80 pt-2 border-t border-slate-800 text-center">
+        為避免戰鬥數據計算衝突與資料庫損毀，系統將於 <span id="forceUpdateCountdown" class="text-white font-black text-sm">3</span> 秒後自動同步最新版本...
+      </p>
+    </div>
 
+    <button onclick="executeForceReload()" class="px-8 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm shadow-lg shadow-cyan-500/40 cursor-pointer active:scale-95 flex items-center gap-2">
+      <i class="fa-solid fa-rotate-right"></i> 立即重新載入更新 (Update Now)
+    </button>
+  </div>
   <!-- ☠️ Hard Death Lockdown Overlay -->
   <div id="deathScreenOverlay" class="fixed inset-0 z-[99999] flex-col items-center justify-center text-rose-500 select-none">
     <div class="w-20 h-20 mb-4 rounded-full bg-rose-950/80 border-2 border-rose-500 flex items-center justify-center text-rose-400 text-4xl animate-bounce">
@@ -1372,6 +1403,81 @@
   <!-- JAVASCRIPT SYSTEM ENGINE (START) -->
   <script>
     const STORAGE_KEY = "DIGIMON_TAMER_LOCAL_CACHE_V4";
+    // ==========================================
+    // ⚙️ 系統版本號管理與自動強制更新機制
+    // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
+    // ==========================================
+    const CURRENT_APP_VERSION = "2.5.0";
+    let isForceUpdating = false;
+
+    // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
+    function compareVersions(v1, v2) {
+      if (!v1 || !v2) return 0;
+      const parts1 = String(v1).replace(/[^0-9.]/g, '').split('.').map(n => parseInt(n) || 0);
+      const parts2 = String(v2).replace(/[^0-9.]/g, '').split('.').map(n => parseInt(n) || 0);
+      const len = Math.max(parts1.length, parts2.length);
+      for (let i = 0; i < len; i++) {
+        const num1 = parts1[i] || 0;
+        const num2 = parts2[i] || 0;
+        if (num1 > num2) return 1;
+        if (num1 < num2) return -1;
+      }
+      return 0;
+    }
+
+    // 執行強力清除快取並重整頁面
+    function executeForceReload() {
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => caches.delete(name));
+        });
+      }
+      // 加入時間戳參數避免被瀏覽器 HTTP 快取攔截
+      const url = new URL(window.location.href);
+      url.searchParams.set('_v_sync', Date.now());
+      window.location.replace(url.href);
+    }
+
+    // 觸發全螢幕強制更新倒數
+    function triggerForceUpdateScreen(reqVersion) {
+      if (isForceUpdating) return;
+      isForceUpdating = true;
+
+      const overlay = document.getElementById('forceUpdateOverlay');
+      const curTxt = document.getElementById('forceUpdateCurVerText');
+      const reqTxt = document.getElementById('forceUpdateReqVerText');
+      const cdTxt = document.getElementById('forceUpdateCountdown');
+
+      if (curTxt) curTxt.textContent = `v${CURRENT_APP_VERSION}`;
+      if (reqTxt) reqTxt.textContent = `v${reqVersion}`;
+      if (overlay) overlay.classList.remove('hidden');
+
+      let remainingSec = 3;
+      const timer = setInterval(() => {
+        remainingSec--;
+        if (cdTxt) cdTxt.textContent = remainingSec;
+        if (remainingSec <= 0) {
+          clearInterval(timer);
+          executeForceReload();
+        }
+      }, 1000);
+    }
+
+    // 老師在後台手動一鍵廣播最新版本
+    function teacherBroadcastLatestVersion() {
+      if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
+      if (!confirm(`確定要將伺服器要求版本更新至【v${CURRENT_APP_VERSION}】嗎？\n所有尚未更新到此版本的學生裝置將被強制鎖定並自動重新整理！`)) return;
+
+      if (dbRootRef) {
+        dbRootRef.child('systemSettings/requiredMinVersion').set(CURRENT_APP_VERSION).then(() => {
+          playSound('evolve');
+          showToast("版本廣播成功", `已將最低要求版本設為 v${CURRENT_APP_VERSION}！`, "heal");
+          addBattleLog(`🚀 [VERSION BROADCAST] 老師廣播了最新版本 v${CURRENT_APP_VERSION}，全體學生將同步更新！`, "evolution", "ALL");
+        }).catch(err => {
+          alert("廣播失敗: " + err.message);
+        });
+      }
+    }
 // 陣營專屬 Buff 字典（包含：攻擊、防禦、經驗、生命回復）
     // Faction Buff & Debuff Dictionary with detailed descriptions
     const FACTION_BUFFS = {
@@ -2788,6 +2894,17 @@ function normalizeStudent(s, keyId) {
           saveLocalCache();
           refreshCurrentView();
         });
+        // 🔄 即時監聽伺服器要求的最低版本
+        dbRootRef.child('systemSettings/requiredMinVersion').on('value', (snap) => {
+          const requiredVer = snap.val();
+          if (!requiredVer) return;
+
+          // 若為學生端（或當前執行的客戶端本機版本低於伺服器要求）
+          if (compareVersions(CURRENT_APP_VERSION, requiredVer) < 0) {
+            console.warn(`[Version Mismatch] Local: v${CURRENT_APP_VERSION}, Server: v${requiredVer}. Enforcing update...`);
+            triggerForceUpdateScreen(requiredVer);
+          }
+        });
 
         dbRootRef.child('activeQuiz').on('value', (snap) => {
           activeQuizInstance = snap.val();
@@ -2876,7 +2993,10 @@ function normalizeStudent(s, keyId) {
         });
       }
     }
-
+    // 更新畫面上所有標註版本的地方
+      document.querySelectorAll('.app-version-badge').forEach(el => {
+        el.textContent = `v${CURRENT_APP_VERSION}`;
+      });
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', startApp);
     } else {
@@ -4472,6 +4592,10 @@ function getTeacherTemplate() {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+          <!-- 🚀 廣播版本強制更新按鈕 -->
+          <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本">
+            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.5.0</span>)
+          </button>
           <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
             <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
           </button>
@@ -5038,7 +5162,7 @@ function logout() {
   const vAdmin = document.getElementById('viewSuperAdmin');
   if (vTeacher) { vTeacher.innerHTML = ''; vTeacher.classList.add('hidden'); }
   if (vAdmin) { vAdmin.innerHTML = ''; vAdmin.classList.add('hidden'); }
-
+  
   document.getElementById('deathScreenOverlay').classList.remove('active');
   document.getElementById('studentBanNoticeOverlay').classList.remove('active');
   document.getElementById('viewLogin').classList.remove('hidden');
