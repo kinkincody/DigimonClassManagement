@@ -825,7 +825,7 @@
             <i class="fa-solid fa-comment-dots text-cyan-400 text-base animate-pulse"></i>
             <h4 class="text-xs font-black text-cyan-300 uppercase tracking-widest font-pixel">Teacher Direct Messages 老師專屬私訊</h4>
           </div>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">1-on-1 (Max 10)</span>5)</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">1-on-1 (Max 5)</span>
         </div>
         <!-- 學生私訊列表 -->
         <div id="studentChatMessagesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1 text-xs">
@@ -2212,37 +2212,20 @@ const DIGIMON_DB = {
     let currentExamQIndex = 0;
     let examStudentCountdownTimer = null;
     let examTeacherCountdownTimer = null;
-    let isExamSubmitting = false;
+let isExamSubmitting = false;
+let currentExamSessionId = null; // 記錄當前進行中考卷 ID，防止重複彈出或中途重置
+let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     // 🥷 老師隱藏模式狀態（true = 不記錄任何 Log）
     let isTeacherStealthMode = false;
-   // === 師生私訊功能核心邏輯 (上限 10 則 & 本地持久化已讀防重彈) ===
+    // === 師生私訊功能核心邏輯 ===
+   // === 師生私訊功能核心邏輯 ===
     let selectedTeacherMsgStudentId = "";
-    
-    // 從 localStorage 載入已讀時間戳，防止重新整理頁面後重複彈出提示
-    function getTeacherReadTimestamps() {
-      try {
-        const raw = localStorage.getItem("TEACHER_CHAT_READ_TIMESTAMPS");
-        return raw ? JSON.parse(raw) : {};
-      } catch(e) {
-        return {};
-      }
-    }
+    let teacherReadMessageTimestamps = {}; // 記錄老師最後已讀時間戳 { studentId: timestamp }
 
-    // 標記特定學生訊息為已讀
-    function markStudentMsgAsRead(studentId) {
-      if (!studentId) return;
-      const reads = getTeacherReadTimestamps();
-      reads[studentId] = Date.now();
-      try {
-        localStorage.setItem("TEACHER_CHAT_READ_TIMESTAMPS", JSON.stringify(reads));
-      } catch(e) {}
-    }
-
-    // 檢查指定學生是否有未讀的新訊息
+   // 檢查指定學生是否有未讀的新訊息
     function hasStudentUnreadMsg(studentId) {
       const studentMsgsObj = (appData.messages && appData.messages[studentId]) || {};
-      const reads = getTeacherReadTimestamps();
-      const lastRead = reads[studentId] || 0;
+      const lastRead = teacherReadMessageTimestamps[studentId] || 0;
       return Object.values(studentMsgsObj).some(m => m.senderRole === 'student' && (m.timestamp || 0) > lastRead);
     }
 
@@ -2264,7 +2247,7 @@ const DIGIMON_DB = {
       }
     }
 
-    // 填充老師端學生選擇清單
+    // 填充老師端學生選擇清單（若有新訊息顯示醒目提示）
     function populateTeacherMsgStudentDropdown() {
       const select = document.getElementById('teacherMsgStudentSelect');
       if (!select) return;
@@ -2292,7 +2275,7 @@ const DIGIMON_DB = {
     function onTeacherSelectMsgStudent(studentId) {
       selectedTeacherMsgStudentId = studentId;
       if (studentId) {
-        markStudentMsgAsRead(studentId);
+        teacherReadMessageTimestamps[studentId] = Date.now();
       }
       renderTeacherChatMessageList();
       populateTeacherMsgStudentDropdown();
@@ -2308,14 +2291,14 @@ const DIGIMON_DB = {
 
       if (!selectedTeacherMsgStudentId) {
         if (titleEl) titleEl.textContent = "請先在上方選擇學生";
-        if (countEl) countEl.textContent = "訊息數：0 / 10";
+        if (countEl) countEl.textContent = "訊息數：0 / 5";
         if (clearBtn) clearBtn.classList.add('hidden');
         container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">請先在上方下拉選單選擇一位學生</div>';
         return;
       }
 
-      // 當開啟或切換到該學生，立即標記已讀並消除紅點
-      markStudentMsgAsRead(selectedTeacherMsgStudentId);
+      // 當切換到該學生，視為已讀
+      teacherReadMessageTimestamps[selectedTeacherMsgStudentId] = Date.now();
       updateTeacherGlobalMsgBadge();
 
       const st = appData.students[selectedTeacherMsgStudentId];
@@ -2325,7 +2308,7 @@ const DIGIMON_DB = {
       const msgList = Object.entries(studentMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
         .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
-      if (countEl) countEl.textContent = `訊息數：${msgList.length} / 10`;
+      if (countEl) countEl.textContent = `訊息數：${msgList.length} / 5`;
 
       if (msgList.length === 0) {
         if (clearBtn) clearBtn.classList.add('hidden');
@@ -2368,7 +2351,6 @@ const DIGIMON_DB = {
         dbRootRef.child(`messages/${selectedTeacherMsgStudentId}`).remove().then(() => {
           playSound('attack');
           showToast("Chat Cleared", `已清空與 ${sName} 的私訊紀錄！`, "damage");
-          markStudentMsgAsRead(selectedTeacherMsgStudentId);
           renderTeacherChatMessageList();
         }).catch(err => {
           alert("清空失敗: " + err.message);
@@ -2393,7 +2375,6 @@ const DIGIMON_DB = {
         text: text
       }, () => {
         input.value = '';
-        markStudentMsgAsRead(selectedTeacherMsgStudentId);
       });
     }
 
@@ -2451,7 +2432,7 @@ const DIGIMON_DB = {
       });
     }
 
-    // 共通寫入函式：保證最多保留 10 則，超額從最舊刪除
+    // 共通寫入函式：保證最多保留 5 則，超額從最舊刪除
     function postMessageDirectly(studentId, msgPayload, callback) {
       if (!dbRootRef) return;
       const studentMsgRef = dbRootRef.child(`messages/${studentId}`);
@@ -2461,9 +2442,9 @@ const DIGIMON_DB = {
         const keys = Object.keys(currentData).sort((a, b) => (currentData[a].timestamp || 0) - (currentData[b].timestamp || 0));
 
         const updates = {};
-        // 若當前已有 10 則以上，先刪除最舊的
-        if (keys.length >= 10) {
-          const deleteCount = keys.length - 9; // 保留 9 個以騰出 1 個新位置
+        // 若當前已有 5 則以上，先刪除最舊的
+        if (keys.length >= 5) {
+          const deleteCount = keys.length - 4; // 保留 4 個以腾出 1 個新位置
           for (let i = 0; i < deleteCount; i++) {
             updates[keys[i]] = null;
           }
@@ -2825,50 +2806,38 @@ function normalizeStudent(s, keyId) {
             renderTeacherExamDashboard();
           }
         });
-      // 💬 私訊即時監聽 (保留最多 10 則 + 精確防重複彈窗)
-      let isFirstMsgSync = true;
-      dbRootRef.child('messages').on('value', (snap) => {
-        const prevMessages = appData.messages || {};
-        appData.messages = snap.val() || {};
+      // 💬 私訊即時監聽 (保留最多 5 則 + 老師醒目通知)
+        let isFirstMsgSync = true;
+        dbRootRef.child('messages').on('value', (snap) => {
+          const prevMessages = appData.messages || {};
+          appData.messages = snap.val() || {};
 
-        if (currentUser && currentUser.role === 'teacher') {
-          if (!isFirstMsgSync) {
-            const reads = getTeacherReadTimestamps();
-            Object.entries(appData.messages).forEach(([studentId, msgs]) => {
-              if (!msgs) return;
-              const newLatest = Object.values(msgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
-              const oldMsgs = prevMessages[studentId] || {};
-              const oldLatest = Object.values(oldMsgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
-              const studentLastRead = reads[studentId] || 0;
+          // 當老師在線且收到學生最新訊息時，發出醒目提示與音效
+          if (currentUser && currentUser.role === 'teacher') {
+            if (!isFirstMsgSync) {
+              Object.entries(appData.messages).forEach(([studentId, msgs]) => {
+                if (!msgs) return;
+                const newLatest = Object.values(msgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
+                const oldMsgs = prevMessages[studentId] || {};
+                const oldLatest = Object.values(oldMsgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
 
-              // 只有當新訊息時間大於已讀時間戳、且大於上一次同步時間、且老師目前沒有正開著該學生對話視窗時才彈出提示
-              if (
-                newLatest &&
-                newLatest.senderRole === 'student' &&
-                newLatest.timestamp > studentLastRead &&
-                (!oldLatest || newLatest.timestamp > oldLatest.timestamp)
-              ) {
-                if (activeTeacherSubTab !== 'msg' || selectedTeacherMsgStudentId !== studentId) {
+                if (newLatest && newLatest.senderRole === 'student' && (!oldLatest || newLatest.timestamp > oldLatest.timestamp)) {
                   playSound('gacha');
                   showToast("💬 收到學生新私訊！", `來自【${newLatest.senderName}】：${newLatest.text}`, "info");
-                } else {
-                  // 若老師正開著該學生視窗，直接標為已讀
-                  markStudentMsgAsRead(studentId);
                 }
-              }
-            });
+              });
+            }
+            updateTeacherGlobalMsgBadge();
+            if (activeTeacherSubTab === 'msg') {
+              populateTeacherMsgStudentDropdown();
+            }
           }
-          updateTeacherGlobalMsgBadge();
-          if (activeTeacherSubTab === 'msg') {
-            populateTeacherMsgStudentDropdown();
-          }
-        }
 
-        if (currentUser && currentUser.role === 'student') {
-          renderStudentChatMessageList();
-        }
-        isFirstMsgSync = false;
-      });
+          if (currentUser && currentUser.role === 'student') {
+            renderStudentChatMessageList();
+          }
+          isFirstMsgSync = false;
+        });
       } catch (err) {
         console.error("Fatal Firebase Init Error:", err);
         updateSyncStatusUI(false, `❌ Init Crash: ${err.message}`);
@@ -4879,11 +4848,11 @@ function getTeacherTemplate() {
             </div>
             <div>
               <h3 class="text-sm sm:text-base font-black text-cyan-300 uppercase tracking-wider font-pixel">師生個別私訊系統 (Direct Messages)</h3>
-              <p class="text-[11px] text-slate-400">僅限老師與個別學生 1 對 1 通訊，自動保留最新 10 則訊息（超過自動刪除最舊）</p>
+              <p class="text-[11px] text-slate-400">僅限老師與個別學生 1 對 1 通訊，自動保留最新 5 則訊息（超過自動刪除最舊）</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：10 則 / 學生</span>
+            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：5 則 / 學生</span>
           </div>
         </div>
 
@@ -5047,6 +5016,8 @@ function getSuperAdminTemplate() {
     populateStudentTeacherBossOptions();
     updateStudentUI();
     updateStudentFactionUI(); // 👈 加入此行：登入進入儀表板後立即刷新陣營資訊
+       // 👈 加入此行：遲到學生登入後，立刻檢查是否有進行中的考卷並彈出
+    onStudentExamStateSync();
   }
 
   document.getElementById('viewLogin').classList.add('hidden');
@@ -7972,164 +7943,132 @@ function teacherPromptClassCoins(mode = 'reward') {
     // ========================================================
 
     // 1. 自訂時間下拉選單聯動
-    function onExamTimePresetChange(val) {
-      const customInput = document.getElementById('teacherExamCustomMinutes');
-      if (!customInput) return;
-      if (val === 'custom') {
-        customInput.classList.remove('hidden');
-        customInput.focus();
-      } else {
-        customInput.classList.add('hidden');
-      }
-    }
+    // ⏱️ 監聽考卷時長下拉選單變更，控制自訂時間輸入框
+function onExamTimePresetChange(val) {
+  const customInput = document.getElementById('teacherExamCustomMinutes');
+  if (!customInput) return;
+  if (val === 'custom') {
+    customInput.classList.remove('hidden');
+    customInput.focus();
+  } else {
+    customInput.classList.add('hidden');
+  }
+}
 
     // 2. Excel 考卷檔案解析
     function handleExamExcelImport(event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file || !currentUser) return;
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-          if (!jsonRows || jsonRows.length <= 1) {
-            alert("考卷 Excel 檔案為空或無有效題目！");
-            event.target.value = '';
-            return;
-          }
+      if (!jsonRows || jsonRows.length <= 1) {
+        alert("Excel 題庫為空！");
+        return;
+      }
 
-          importedExamQuestions = [];
+      importedExamQuestions = [];
+      // 假設 Row 0 為標題欄 (題目, 正確答案, 錯誤選項1, 錯誤選項2, 錯誤選項3, 題型, 題解)
+      for (let i = 1; i < jsonRows.length; i++) {
+        const row = jsonRows[i];
+        if (!row || row[0] === undefined || row[0] === null || String(row[0]).trim() === '') continue;
 
-          // 逐列解析 (第 0 列為標題，第 1 列開始為題目)
-          // Column A (row[0]): 題目 (Question)
-          // Column B (row[1]): 正確答案 (Correct Answer)
-          // Column C-E (row[2]-row[4]): 錯誤選項 (Distractors)
-          // Column F (row[5]): 題型 (Type: 'mcq' 或 'fill' / '填空')
-          // Column G (row[6]): 題解說明 (Explanation)
-          for (let i = 1; i < jsonRows.length; i++) {
-            const row = jsonRows[i];
-            if (!row || row[0] === undefined || row[0] === null || String(row[0]).trim() === '') continue;
+        const qText = String(row[0]).trim();
+        const correctAns = (row[1] !== undefined && row[1] !== null) ? String(row[1]).trim() : "";
+        const opt2 = row[2] !== undefined ? String(row[2]).trim() : "";
+        const opt3 = row[3] !== undefined ? String(row[3]).trim() : "";
+        const opt4 = row[4] !== undefined ? String(row[4]).trim() : "";
+        const qType = row[5] !== undefined ? String(row[5]).trim() : (opt2 ? "選擇題" : "填空題");
+        const explain = row[6] !== undefined ? String(row[6]).trim() : "";
 
-            const qText = String(row[0]).trim();
-            const correctAns = (row[1] !== undefined && row[1] !== null) ? String(row[1]).trim() : '';
+        const options = [correctAns, opt2, opt3, opt4].filter(o => o !== "");
+        // 打散選項順序
+        options.sort(() => Math.random() - 0.5);
 
-            // 題型字串正規化
-            const typeCell = (row[5] !== undefined && row[5] !== null) ? String(row[5]).trim().toLowerCase() : '';
-            const isFillBlank = (
-              typeCell.includes('fill') ||
-              typeCell.includes('填空') ||
-              typeCell === 'text' ||
-              (!row[2] && !row[3] && !row[4]) // 若無干擾選項亦自動辨識為填空
-            );
+        importedExamQuestions.push({
+          question: qText,
+          answer: correctAns,
+          options: options,
+          type: qType,
+          explanation: explain
+        });
+      }
 
-            let options = [];
-            let qType = 'mcq';
-
-            if (isFillBlank) {
-              qType = 'fill';
-              options = []; // 填空題無選項列表
-            } else {
-              qType = 'mcq';
-              const rawOptions = [correctAns];
-              [row[2], row[3], row[4]].forEach(opt => {
-                if (opt !== undefined && opt !== null && String(opt).trim() !== '') {
-                  rawOptions.push(String(opt).trim());
-                }
-              });
-
-              // 隨機打亂選擇題選項順序
-              options = rawOptions.sort(() => Math.random() - 0.5);
-            }
-
-            const explanation = (row[6] !== undefined && row[6] !== null) ? String(row[6]).trim() : '無額外題解說明。';
-
-            importedExamQuestions.push({
-              id: 'q_' + i,
-              type: qType,
-              question: qText,
-              answer: correctAns,
-              options: options,
-              explanation: explanation
-            });
-          }
-
-          if (importedExamQuestions.length === 0) {
-            alert("未成功解析出任何考題，請檢查 Excel 格式！");
-            event.target.value = '';
-            return;
-          }
-
-          // 更新老師端考卷題目計數狀態徽章
-          const statusEl = document.getElementById('examBankStatus');
-          if (statusEl) {
-            statusEl.textContent = `已載入: ${importedExamQuestions.length} 題`;
-            statusEl.className = "text-xs text-emerald-400 font-mono bg-slate-950 px-2.5 py-1 rounded border border-emerald-500/50 font-bold";
-          }
-
-          playSound('evolve');
-          showToast("考卷載入成功", `成功匯入 ${importedExamQuestions.length} 道考題！`, "heal");
-          alert(`✅ 成功匯入 ${importedExamQuestions.length} 道考題！點擊「正式發布考卷」即可同步至學生端。`);
-        } catch (err) {
-          console.error("Exam import error:", err);
-          alert("考卷匯入失敗: " + err.message);
-        } finally {
-          event.target.value = '';
-        }
-      };
-
-      reader.onerror = function() {
-        alert("讀取檔案失敗，請重新嘗試！");
-        event.target.value = '';
-      };
-
-      reader.readAsArrayBuffer(file);
+      const statusEl = document.getElementById('examBankStatus');
+      if (statusEl) statusEl.textContent = `已載入: ${importedExamQuestions.length} 題`;
+      showToast("題庫匯入成功", `成功載入 ${importedExamQuestions.length} 道考卷試題！`, "heal");
+    } catch (err) {
+      alert("考卷匯入失敗: " + err.message);
+    } finally {
+      event.target.value = '';
     }
+  };
+  reader.readAsArrayBuffer(file);
+}
 
     // 3. 老師發布全卷
     function teacherLaunchExam() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      if (importedExamQuestions.length === 0) {
-        return alert("請先點擊「匯入考卷 (Import Excel)」載入試題！");
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  if (!importedExamQuestions || importedExamQuestions.length === 0) {
+    return alert("請先匯入 Excel 考卷題目！(Please import exam questions first)");
+  }
+
+  const titleInput = document.getElementById('teacherExamTitleInput');
+  const title = (titleInput?.value || '').trim() || '課堂測驗 (Class Exam)';
+
+  // 1. 精準計算老師選擇的時長（分鐘）
+  const timePresetSelect = document.getElementById('teacherExamTimeLimitSelect');
+  const customTimeInput = document.getElementById('teacherExamCustomMinutes');
+  let durationMins = 30; // 預設
+
+  if (timePresetSelect) {
+    if (timePresetSelect.value === 'custom') {
+      const customVal = parseInt(customTimeInput?.value || '0', 10);
+      if (isNaN(customVal) || customVal <= 0) {
+        return alert("請輸入有效的自訂考試分鐘數！");
       }
-
-      const title = (document.getElementById('teacherExamTitleInput').value || '').trim() || "數碼綜合評量測驗";
-      const presetVal = document.getElementById('teacherExamTimeLimitSelect').value;
-      let limitMinutes = parseInt(presetVal);
-
-      if (presetVal === 'custom') {
-        const customVal = parseInt(document.getElementById('teacherExamCustomMinutes').value);
-        if (isNaN(customVal) || customVal <= 0) {
-          return alert("請輸入有效的自訂限時分鐘數！");
-        }
-        limitMinutes = customVal;
-      }
-
-      const targetClass = selectedTeacherClass || 'ALL';
-
-      const examPayload = {
-        active: true,
-        title: title,
-        classTag: targetClass,
-        totalQuestions: importedExamQuestions.length,
-        questions: importedExamQuestions,
-        limitMinutes: limitMinutes,
-        limitSeconds: limitMinutes * 60,
-        startTime: Date.now(),
-        submissions: {}
-      };
-
-      if (dbRootRef) {
-        dbRootRef.child('activeExam').set(examPayload).then(() => {
-          addBattleLog(`📝 [EXAM LAUNCHED] 老師發布了考卷【${title}】(共 ${importedExamQuestions.length} 題，限時 ${limitMinutes} 分鐘)！`, "evolution", targetClass);
-          showToast("考卷已發布", `測驗已正式開始，限時 ${limitMinutes} 分鐘！`, "evolution");
-          renderTeacherExamDashboard();
-        });
-      }
+      durationMins = customVal;
+    } else {
+      durationMins = parseInt(timePresetSelect.value, 10) || 30;
     }
+  }
+
+  const targetClass = selectedTeacherClass || 'ALL';
+  const now = Date.now();
+  const durationMs = durationMins * 60 * 1000;
+  const examId = 'exam_' + now;
+
+  const newExamPayload = {
+    examId: examId,
+    title: title,
+    targetClass: targetClass,
+    durationMinutes: durationMins,
+    startTime: now,
+    endTime: now + durationMs,
+    questions: importedExamQuestions,
+    teacherId: currentUser.id,
+    teacherName: (appData.teachers[currentUser.id] || currentUser.data)?.name || 'Teacher',
+    submissions: {},
+    isOpen: true
+  };
+
+  if (dbRootRef) {
+    dbRootRef.child('activeExam').set(newExamPayload).then(() => {
+      playSound('evolve');
+      addBattleLog(`📝 [EXAM LAUNCHED] 老師發布了考卷【${title}】(限時: ${durationMins} 分鐘，班級: ${targetClass})！`, "evolution", targetClass);
+      showToast("考卷發布成功", `【${title}】已開考！時長：${durationMins} 分鐘`, "heal");
+      renderTeacherExamDashboard();
+    }).catch(err => {
+      alert("發布失敗: " + err.message);
+    });
+  }
+}
 
     // 4. 老師強制結束考卷
     function teacherCloseLiveExam() {
@@ -8142,79 +8081,360 @@ function teacherPromptClassCoins(mode = 'reward') {
       }
     }
 
+
+// 老師手動結束/關閉考卷
+function teacherCloseLiveExam() {
+  if (!activeExamInstance || activeExamInstance.status !== 'ACTIVE') {
+    return alert("目前沒有進行中的考卷！");
+  }
+  if (!confirm("確定要強制結束並關閉此考卷嗎？\n尚未交卷的學生將無法繼續作答。")) return;
+
+  if (dbRootRef) {
+    dbRootRef.child('activeExam').update({
+      status: 'CLOSED'
+    }).then(() => {
+      playSound('attack');
+      showToast("考卷已結束", "已收卷並結束測驗！", "damage");
+      addBattleLog(`🛑 [EXAM CLOSED] 老師手動結束了考卷【${activeExamInstance.title || '測驗'}】。`, "battle", selectedTeacherClass);
+      renderTeacherExamDashboard();
+    });
+  }
+}
     // 5. 學生端狀態同步處理
     // ==========================================
     // 📝 學生端考卷同步與作答核心修復版
     // ==========================================
-    function onStudentExamStateSync() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const modal = document.getElementById('modalExamStudent');
-      if (!modal) return;
+    // ⚡ 學生端即時考卷同步：支援遲到登入學生即時後加入，且不影響其他同學
+function onStudentExamStateSync() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  const modal = document.getElementById('modalExamStudent');
+  if (!modal) return;
 
-      const st = appData.students[currentUser.id];
-      if (!st) return;
+  // 1. 若當前沒有正在進行的考試，自動清理狀態並隱藏視窗
+  if (!activeExamInstance || !activeExamInstance.isOpen) {
+    if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+    examStudentCountdownTimer = null;
+    modal.classList.add('hidden');
+    currentExamSessionId = null;
+    studentHasSubmittedCurrentExam = false;
+    return;
+  }
 
-      // 1. 若當前沒有啟動中的考卷，立即關閉並清除定時器
-      if (!activeExamInstance || !activeExamInstance.active) {
-        if (examStudentCountdownTimer) {
-          clearInterval(examStudentCountdownTimer);
-          examStudentCountdownTimer = null;
-        }
-        modal.classList.add('hidden');
-        return;
-      }
+  // 2. 判斷班級是否符合
+  const isTargetClass = studentIsInClass(st, activeExamInstance.targetClass);
+  if (!isTargetClass) {
+    modal.classList.add('hidden');
+    return;
+  }
 
-      // 2. 班級權限比對（支援 'ALL' 或多班級精確比對）
-      const examClass = (activeExamInstance.classTag || 'ALL').trim();
-      const stClasses = parseStudentClasses(st.classId);
-      const isClassAllowed = (examClass === 'ALL') || stClasses.some(c => c.toLowerCase() === examClass.toLowerCase());
+  // 3. 檢查學生是否已經提交過這份考卷
+  const mySubmission = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
+  if (mySubmission) {
+    // 已經交卷，若考卷視窗開著則顯示結果面板，不重新打開作答模式
+    studentHasSubmittedCurrentExam = true;
+    if (!modal.classList.contains('hidden') && currentExamSessionId === activeExamInstance.examId) {
+      renderStudentExamResultUI(mySubmission);
+    }
+    return;
+  }
 
-      if (!isClassAllowed) {
-        modal.classList.add('hidden');
-        return;
-      }
+  // 4. 檢查考試時間是否已經全面結束 (絕對伺服器時間)
+  const now = Date.now();
+  const remainingMs = (activeExamInstance.endTime || 0) - now;
+  if (remainingMs <= 0) {
+    // 考試時間已過且學生未作答，若視窗開著則強制自動交卷
+    if (currentExamSessionId === activeExamInstance.examId && !studentHasSubmittedCurrentExam) {
+      submitExamPaper(true);
+    } else {
+      modal.classList.add('hidden');
+    }
+    return;
+  }
 
-      // 3. 確保題目陣列存在且有題目
-      const questions = activeExamInstance.questions || [];
-      if (questions.length === 0) {
-        console.warn("考卷題目陣列為空！");
-        return;
-      }
+  // 5. 核心：新加入或遲到的同學無縫進入考試！
+  // 若這是一場新考卷，或者遲到同學剛登入，初次初始化該同學的作答面板
+  if (currentExamSessionId !== activeExamInstance.examId) {
+    currentExamSessionId = activeExamInstance.examId;
+    studentHasSubmittedCurrentExam = false;
+    studentExamAnswers = {};
+    currentExamQIndex = 0;
 
-      // 4. 檢查學生是否已經提交過此份考卷
-      const mySubmission = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
+    // 設定考卷標題與時長資訊
+    const titleEl = document.getElementById('examPaperTitle');
+    const subTitleEl = document.getElementById('examPaperSubtitle');
+    if (titleEl) titleEl.textContent = activeExamInstance.title;
+    if (subTitleEl) subTitleEl.textContent = `限時 ${activeExamInstance.durationMinutes} 分鐘 · 遲到加入將同步倒數`;
 
-      // 顯示考卷視窗
-      modal.classList.remove('hidden');
+    // 切換顯示：展示作答區、隱藏結算區
+    document.getElementById('examTakingSection')?.classList.remove('hidden');
+    document.getElementById('examResultSection')?.classList.add('hidden');
 
-      // 更新考卷標題
-      const titleEl = document.getElementById('examPaperTitle');
-      if (titleEl) {
-        titleEl.textContent = activeExamInstance.title || "班級考卷測驗 (Class Exam)";
-      }
+    // 打開視窗並渲染第一題
+    modal.classList.remove('hidden');
+    renderCurrentExamQuestion();
+    playSound('shield');
+    showToast("考卷測驗進行中", `請抓緊時間作答！倒數計時中...`, "info");
+  }
 
-      if (mySubmission) {
-        // 已提交：停止倒數，直接展示成績與題解報告
-        if (examStudentCountdownTimer) {
-          clearInterval(examStudentCountdownTimer);
-          examStudentCountdownTimer = null;
-        }
-        displayExamResultReport(mySubmission);
+  // 6. 動態伺服器絕對時間倒數器（與其他所有人完全同步）
+  if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+  updateStudentExamTimerDisplay();
+  examStudentCountdownTimer = setInterval(updateStudentExamTimerDisplay, 1000);
+}
+
+// 學生端動態時間更新
+function updateStudentExamTimerDisplay() {
+  if (!activeExamInstance || !activeExamInstance.endTime) return;
+  const timerBadge = document.getElementById('examStudentTimerBadge');
+  const now = Date.now();
+  const diffSec = Math.max(0, Math.floor((activeExamInstance.endTime - now) / 1000));
+
+  const mins = Math.floor(diffSec / 60);
+  const secs = diffSec % 60;
+  const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+  if (timerBadge) {
+    timerBadge.textContent = timeStr;
+    if (diffSec <= 60) {
+      timerBadge.className = "font-mono text-xs sm:text-sm px-3 py-1.5 rounded-full bg-red-600 text-white font-black flex items-center gap-1.5 animate-bounce";
+    } else {
+      timerBadge.className = "font-mono text-xs sm:text-sm px-3 py-1.5 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-black flex items-center gap-1.5 animate-pulse";
+    }
+  }
+
+  // 時間到自動交卷
+  if (diffSec <= 0 && !studentHasSubmittedCurrentExam) {
+    clearInterval(examStudentCountdownTimer);
+    examStudentCountdownTimer = null;
+    submitExamPaper(true);
+  }
+}
+
+// ==========================================
+// 📝 學生端考卷題目渲染與切換邏輯修復
+// ==========================================
+
+// 保存當前題目答案到暫存物件
+function saveCurrentQuestionAnswer() {
+  if (!activeExamInstance || !activeExamInstance.questions) return;
+  const qList = activeExamInstance.questions;
+  const q = qList[currentExamQIndex];
+  if (!q) return;
+
+  const isFill = (q.type && (q.type.includes('填空') || q.type.toUpperCase().includes('FILL')));
+  if (isFill) {
+    const inputEl = document.getElementById('examFillInput');
+    if (inputEl) {
+      studentExamAnswers[currentExamQIndex] = inputEl.value.trim();
+    }
+  }
+}
+
+// 切換上一題 / 下一題
+function navigateExamQuestion(delta) {
+  if (!activeExamInstance || !activeExamInstance.questions) return;
+  saveCurrentQuestionAnswer();
+
+  const total = activeExamInstance.questions.length;
+  const nextIdx = currentExamQIndex + delta;
+
+  if (nextIdx >= 0 && nextIdx < total) {
+    currentExamQIndex = nextIdx;
+    renderStudentExamQuestion();
+  }
+}
+
+// 選擇選擇題選項
+function selectExamMCQOption(optValue) {
+  studentExamAnswers[currentExamQIndex] = String(optValue).trim();
+  renderStudentExamQuestion();
+}
+
+// 渲染當前題目的完整內容
+function renderStudentExamQuestion() {
+  if (!activeExamInstance || !activeExamInstance.questions) return;
+  const questions = activeExamInstance.questions;
+  const total = questions.length;
+
+  if (total === 0) {
+    document.getElementById('examQuestionContent').textContent = "考卷題庫為空！";
+    return;
+  }
+
+  // 防呆：確保索引合法
+  if (currentExamQIndex < 0) currentExamQIndex = 0;
+  if (currentExamQIndex >= total) currentExamQIndex = total - 1;
+
+  const q = questions[currentExamQIndex];
+
+  // 1. 更新題號進度與題型標籤
+  const progressText = document.getElementById('examQuestionProgressText');
+  if (progressText) {
+    progressText.textContent = `第 ${currentExamQIndex + 1} / ${total} 題 (Question ${currentExamQIndex + 1} of ${total})`;
+  }
+
+  const isFill = (q.type && (String(q.type).includes('填空') || String(q.type).toUpperCase().includes('FILL')));
+  const typeBadge = document.getElementById('examQuestionTypeBadge');
+  if (typeBadge) {
+    typeBadge.textContent = isFill ? "填空題 (Fill-in)" : "選擇題 (MCQ)";
+  }
+
+  // 2. 顯示題目內容（多重相容欄位名稱：question / text / content / q）
+  const qText = q.question || q.text || q.content || q.title || `題目 ${currentExamQIndex + 1}`;
+  const contentBox = document.getElementById('examQuestionContent');
+  if (contentBox) {
+    contentBox.textContent = qText;
+  }
+
+  // 3. 處理選擇題 vs 填空題容器
+  const optContainer = document.getElementById('examOptionsContainer');
+  const fillContainer = document.getElementById('examFillInputContainer');
+  const fillInput = document.getElementById('examFillInput');
+  const currentSavedAns = studentExamAnswers[currentExamQIndex] !== undefined ? studentExamAnswers[currentExamQIndex] : '';
+
+  if (isFill) {
+    if (optContainer) {
+      optContainer.classList.add('hidden');
+      optContainer.innerHTML = '';
+    }
+    if (fillContainer) {
+      fillContainer.classList.remove('hidden');
+      if (fillInput) fillInput.value = currentSavedAns;
+    }
+  } else {
+    if (fillContainer) fillContainer.classList.add('hidden');
+    if (optContainer) {
+      optContainer.classList.remove('hidden');
+      optContainer.innerHTML = '';
+
+      // 提取選項列表（支援 options 陣列、或 opt1~opt4 / A,B,C,D 欄位）
+      let rawOptions = [];
+      if (Array.isArray(q.options) && q.options.length > 0) {
+        rawOptions = q.options;
       } else {
-        // 進行中：顯示作答區、隱藏結算區
-        document.getElementById('examTakingSection').classList.remove('hidden');
-        document.getElementById('examResultSection').classList.add('hidden');
+        const pool = [q.opt1, q.opt2, q.opt3, q.opt4, q.a, q.b, q.c, q.d, q.answer];
+        rawOptions = pool.filter(o => o !== undefined && o !== null && String(o).trim() !== '');
+      }
 
-        // 初始化作答索引防呆
-        if (typeof currentExamQIndex !== 'number' || currentExamQIndex >= questions.length || currentExamQIndex < 0) {
-          currentExamQIndex = 0;
-        }
+      // 若未打散或為空，預設提供答案選項
+      if (rawOptions.length === 0 && q.answer) {
+        rawOptions = [q.answer];
+      }
 
-        // 啟動倒數計時與渲染目前題目
-        startStudentExamTimer();
-        renderCurrentExamQuestion();
+      // 去重保證選項完整
+      const uniqueOptions = Array.from(new Set(rawOptions.map(o => String(o).trim())));
+
+      uniqueOptions.forEach((opt, idx) => {
+        const isSelected = String(currentSavedAns).trim() === opt;
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.className = `p-3 rounded-2xl text-xs sm:text-sm font-bold border-2 transition text-left flex items-center justify-between cursor-pointer active:scale-95 ${
+          isSelected 
+            ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg shadow-indigo-500/20' 
+            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50'
+        }`;
+        btn.innerHTML = `
+          <span>${String.fromCharCode(65 + idx)}. ${opt}</span>
+          ${isSelected ? '<i class="fa-solid fa-circle-check text-indigo-400 text-sm"></i>' : '<i class="fa-regular fa-circle text-slate-600 text-sm"></i>'}
+        `;
+        btn.onclick = () => selectExamMCQOption(opt);
+        optContainer.appendChild(btn);
+      });
+    }
+  }
+
+  // 4. 更新導航按鈕狀態
+  const btnPrev = document.getElementById('btnExamPrev');
+  const btnNext = document.getElementById('btnExamNext');
+  if (btnPrev) {
+    btnPrev.disabled = (currentExamQIndex === 0);
+    btnPrev.classList.toggle('opacity-40', currentExamQIndex === 0);
+    btnPrev.classList.toggle('cursor-not-allowed', currentExamQIndex === 0);
+  }
+  if (btnNext) {
+    btnNext.disabled = (currentExamQIndex === total - 1);
+    btnNext.classList.toggle('opacity-40', currentExamQIndex === total - 1);
+    btnNext.classList.toggle('cursor-not-allowed', currentExamQIndex === total - 1);
+  }
+}
+
+// 關閉學生考卷彈窗
+function closeStudentExamModal() {
+  const modal = document.getElementById('modalExamStudent');
+  if (modal) modal.classList.add('hidden');
+}
+
+// 渲染考卷成績報告及題解
+function renderStudentExamResultView(sub) {
+  const takingSec = document.getElementById('examTakingSection');
+  const resultSec = document.getElementById('examResultSection');
+  if (takingSec) takingSec.classList.add('hidden');
+  if (resultSec) resultSec.classList.remove('hidden');
+
+  const scoreText = document.getElementById('examResultScoreText');
+  if (scoreText) {
+    scoreText.textContent = `${sub.correctCount} / ${sub.totalQuestions} 題答對 (${sub.scorePct}%)`;
+  }
+
+  const expEl = document.getElementById('examExpRewardText');
+  if (expEl) expEl.textContent = `+${sub.expReward} EXP`;
+  const coinEl = document.getElementById('examCoinRewardText');
+  if (coinEl) coinEl.textContent = `+${sub.coinReward} 金幣 (Coins)`;
+
+  const explanationsList = document.getElementById('examExplanationsList');
+  if (!explanationsList) return;
+  explanationsList.innerHTML = '';
+
+  const details = sub.detailedAnswers || {};
+  Object.keys(details).forEach((idxKey) => {
+    const item = details[idxKey];
+    const qNum = parseInt(idxKey) + 1;
+    const card = document.createElement('div');
+    card.className = `p-3 rounded-xl border ${item.isCorrect ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-rose-950/30 border-rose-500/50'} text-xs space-y-1`;
+    card.innerHTML = `
+      <div class="flex items-center justify-between font-bold">
+        <span class="text-white">第 ${qNum} 題</span>
+        <span class="${item.isCorrect ? 'text-emerald-400' : 'text-rose-400'} font-pixel text-[10px]">
+          ${item.isCorrect ? '✔ 正確 (CORRECT)' : '✘ 錯誤 (INCORRECT)'}
+        </span>
+      </div>
+      <div class="text-slate-300">你的答案: <span class="font-bold ${item.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">${item.userAns || '(未作答)'}</span></div>
+      ${!item.isCorrect ? `<div class="text-emerald-400">正確答案: <span class="font-bold">${item.correctAns}</span></div>` : ''}
+      ${item.explanation ? `<div class="text-slate-400 text-[11px] pt-1 border-t border-slate-800"><i class="fa-solid fa-circle-info mr-1"></i>題解: ${item.explanation}</div>` : ''}
+    `;
+    explanationsList.appendChild(card);
+  });
+}
+
+// 學生端考卷倒數計時器
+function startStudentExamTimer() {
+  if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+  const badge = document.getElementById('examStudentTimerBadge');
+
+  examStudentCountdownTimer = setInterval(() => {
+    if (!activeExamInstance || !activeExamInstance.endTime) {
+      clearInterval(examStudentCountdownTimer);
+      return;
+    }
+
+    const remainingSec = Math.max(0, Math.floor((activeExamInstance.endTime - Date.now()) / 1000));
+    const mins = Math.floor(remainingSec / 60);
+    const secs = remainingSec % 60;
+    if (badge) {
+      badge.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    if (remainingSec <= 0) {
+      clearInterval(examStudentCountdownTimer);
+      examStudentCountdownTimer = null;
+      if (!studentHasSubmittedCurrentExam) {
+        showToast("測驗時間截止", "時間到，系統自動繳交考卷！", "damage");
+        submitExamPaper(true);
       }
     }
+  }, 1000);
+}
 
     // 啟動學生端倒數計時器
     function startStudentExamTimer() {
@@ -8245,334 +8465,206 @@ function teacherPromptClassCoins(mode = 'reward') {
           badge.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
       }
-    // 確保重置作答狀態
-      studentExamAnswers = {};
-      currentExamQIndex = 0;
-      isExamSubmitting = false;
+
       updateTick();
       examStudentCountdownTimer = setInterval(updateTick, 1000);
     }
 
-    
-    // === 📝 學生端渲染當前考題（修復填空題判定與輸入框顯示） ===
+    // 渲染當前題目的完整內容與選項
     function renderCurrentExamQuestion() {
       if (!activeExamInstance || !activeExamInstance.questions) return;
-      const qList = activeExamInstance.questions;
-      if (currentExamQIndex < 0 || currentExamQIndex >= qList.length) return;
+      const questions = activeExamInstance.questions;
+      if (currentExamQIndex >= questions.length) currentExamQIndex = 0;
 
-      const q = qList[currentExamQIndex];
-      const totalQ = qList.length;
+      const q = questions[currentExamQIndex];
+      if (!q) return;
 
-      // 1. 規範化題目類型判斷（支援 fill, fillin, fill-in, 填空）
-      const rawType = String(q.type || '').trim().toLowerCase();
-      const isFillIn = (
-        rawType === 'fill' || 
-        rawType === 'fillin' || 
-        rawType === 'fill-in' || 
-        rawType === 'text' || 
-        rawType.includes('填空') ||
-        (!q.options || q.options.length <= 1) // 若無選項或僅有1個答案則自動識別為填空題
-      );
-
-      // 2. 更新進度與題型徽章
-      const progressEl = document.getElementById('examQuestionProgressText');
-      const badgeEl = document.getElementById('examQuestionTypeBadge');
-      if (progressEl) {
-        progressEl.textContent = `第 ${currentExamQIndex + 1} / ${totalQ} 題 (Question ${currentExamQIndex + 1} of ${totalQ})`;
-      }
-      if (badgeEl) {
-        if (isFillIn) {
-          badgeEl.textContent = "填空題 (Fill-in-the-Blank)";
-          badgeEl.className = "px-2 py-0.5 rounded bg-amber-950 border border-amber-500 text-amber-300 font-pixel text-[10px]";
-        } else {
-          badgeEl.textContent = "選擇題 (MCQ)";
-          badgeEl.className = "px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500 text-indigo-300 font-pixel text-[10px]";
-        }
+      // 1. 進度與題型標籤
+      const progressText = document.getElementById('examQuestionProgressText');
+      const typeBadge = document.getElementById('examQuestionTypeBadge');
+      if (progressText) {
+        progressText.textContent = `第 ${currentExamQIndex + 1} / ${questions.length} 題 (Question ${currentExamQIndex + 1} of ${questions.length})`;
       }
 
-      // 3. 題目內容渲染
-      const contentEl = document.getElementById('examQuestionContent');
-      if (contentEl) {
-        contentEl.innerHTML = `
-          <div class="text-xs text-slate-400 font-mono mb-1">Q${currentExamQIndex + 1}.</div>
-          <div>${escapeHtml(q.question || q.text || '題目載入中...')}</div>
-        `;
+      const qType = (q.type || 'MCQ').toUpperCase();
+      const isFill = (qType === 'FILL' || qType === '填空' || qType === '填空題');
+
+      if (typeBadge) {
+        typeBadge.textContent = isFill ? "填空題 (Fill-in)" : "選擇題 (MCQ)";
       }
 
-      // 4. 控制【選擇題選項】與【填空題輸入框】的顯示與隱藏
-      const optionsBox = document.getElementById('examOptionsContainer');
-      const fillBox = document.getElementById('examFillInputContainer');
+      // 2. 題目內容文字
+      const contentBox = document.getElementById('examQuestionContent');
+      if (contentBox) {
+        contentBox.textContent = q.question || "題目載入異常";
+      }
+
+      // 3. 容器切換與內容載入
+      const optionsContainer = document.getElementById('examOptionsContainer');
+      const fillContainer = document.getElementById('examFillInputContainer');
       const fillInput = document.getElementById('examFillInput');
 
-      if (isFillIn) {
-        // --- 填空題模式 ---
-        if (optionsBox) {
-          optionsBox.classList.add('hidden');
-          optionsBox.innerHTML = '';
-        }
-        if (fillBox) {
-          fillBox.classList.remove('hidden');
-        }
+      const savedAnswer = studentExamAnswers[currentExamQIndex] !== undefined ? studentExamAnswers[currentExamQIndex] : '';
+
+      if (isFill) {
+        optionsContainer.classList.add('hidden');
+        fillContainer.classList.remove('hidden');
         if (fillInput) {
-          // 帶入學生先前填寫的答案，若無則為空字串
-          fillInput.value = studentExamAnswers[currentExamQIndex] !== undefined ? studentExamAnswers[currentExamQIndex] : '';
+          fillInput.value = savedAnswer;
           fillInput.oninput = function() {
             studentExamAnswers[currentExamQIndex] = this.value.trim();
           };
-          setTimeout(() => fillInput.focus(), 50);
         }
       } else {
-        // --- 選擇題 (MCQ) 模式 ---
-        if (fillBox) fillBox.classList.add('hidden');
-        if (optionsBox) {
-          optionsBox.classList.remove('hidden');
-          optionsBox.innerHTML = '';
+        fillContainer.classList.add('hidden');
+        optionsContainer.classList.remove('hidden');
+        optionsContainer.innerHTML = '';
 
-          const opts = q.options || [];
-          opts.forEach((optText, optIdx) => {
-            const isSelected = (studentExamAnswers[currentExamQIndex] === optText);
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = `w-full text-left p-3.5 rounded-2xl border-2 font-bold text-xs sm:text-sm transition cursor-pointer active:scale-95 flex items-center justify-between ${
-              isSelected 
-                ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg shadow-indigo-500/20' 
-                : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50 hover:bg-slate-900'
-            }`;
-            btn.innerHTML = `
-              <span class="flex items-center gap-2">
-                <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'} flex items-center justify-center text-xs font-mono font-black">${String.fromCharCode(65 + optIdx)}</span>
-                <span>${escapeHtml(optText)}</span>
+        // 選項相容性處理：相容 q.options 與 q.choices
+        const optionsList = Array.isArray(q.options) ? q.options : (Array.isArray(q.choices) ? q.choices : []);
+
+        optionsList.forEach((optText, optIdx) => {
+          const btn = document.createElement('button');
+          const isSelected = (savedAnswer === optText);
+
+          btn.className = `w-full text-left p-3.5 rounded-xl border-2 transition font-bold text-xs flex items-center justify-between cursor-pointer active:scale-95 ${
+            isSelected 
+              ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg' 
+              : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50'
+          }`;
+
+          btn.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-indigo-500 text-white' : 'bg-slate-900 text-slate-400'} flex items-center justify-center font-mono text-[11px] font-black">
+                ${String.fromCharCode(65 + optIdx)}
               </span>
-              ${isSelected ? '<i class="fa-solid fa-circle-check text-indigo-400 text-base"></i>' : ''}
-            `;
-            btn.onclick = () => {
-              studentExamAnswers[currentExamQIndex] = optText;
-              renderCurrentExamQuestion();
-            };
-            optionsBox.appendChild(btn);
-          });
-        }
+              <span>${optText}</span>
+            </div>
+            ${isSelected ? '<i class="fa-solid fa-check text-indigo-400"></i>' : ''}
+          `;
+
+          btn.onclick = function() {
+            studentExamAnswers[currentExamQIndex] = optText;
+            renderCurrentExamQuestion();
+            // 選擇題點擊後自動跳往下一題（最後一題除外）
+            if (currentExamQIndex < questions.length - 1) {
+              setTimeout(() => {
+                navigateExamQuestion(1);
+              }, 220);
+            }
+          };
+
+          optionsContainer.appendChild(btn);
+        });
       }
 
-      // 5. 更新 上一題 / 下一題 按鈕狀態
+      // 4. 上一題 / 下一題按鈕控制
       const btnPrev = document.getElementById('btnExamPrev');
       const btnNext = document.getElementById('btnExamNext');
-      if (btnPrev) btnPrev.disabled = (currentExamQIndex === 0);
-      if (btnNext) btnNext.disabled = (currentExamQIndex === totalQ - 1);
+      if (btnPrev) btnPrev.style.visibility = (currentExamQIndex === 0) ? 'hidden' : 'visible';
+      if (btnNext) btnNext.style.visibility = (currentExamQIndex === questions.length - 1) ? 'hidden' : 'visible';
     }
 
     // 題目切換跳轉導航
     function navigateExamQuestion(delta) {
       if (!activeExamInstance || !activeExamInstance.questions) return;
-      
-      // 切換前若為填空題，自動保存當前輸入的內容
-      const fillInput = document.getElementById('examFillInput');
-      const fillBox = document.getElementById('examFillInputContainer');
-      if (fillBox && !fillBox.classList.contains('hidden') && fillInput) {
-        studentExamAnswers[currentExamQIndex] = fillInput.value.trim();
-      }
-
-      const totalQ = activeExamInstance.questions.length;
+      const questions = activeExamInstance.questions;
       const targetIndex = currentExamQIndex + delta;
-      if (targetIndex >= 0 && targetIndex < totalQ) {
+      if (targetIndex >= 0 && targetIndex < questions.length) {
         currentExamQIndex = targetIndex;
         renderCurrentExamQuestion();
       }
     }
 
     // 提交考卷與算分
-    // === 📝 學生考卷提交與精準批改結算（修復未作答判為正確與對答案邏輯） ===
-    function submitExamPaper(isAutoSubmit = false) {
-      if (isExamSubmitting) return;
-      if (!activeExamInstance || !activeExamInstance.questions) return;
+    function submitExamPaper(isAutoTimeout = false) {
+  if (isExamSubmitting || studentHasSubmittedCurrentExam) return;
+  if (!activeExamInstance || !activeExamInstance.questions) return;
 
-      // 若當前停留在填空題，提交前先行保存最後輸入的答案
-      const fillInput = document.getElementById('examFillInput');
-      const fillBox = document.getElementById('examFillInputContainer');
-      if (fillBox && !fillBox.classList.contains('hidden') && fillInput) {
-        studentExamAnswers[currentExamQIndex] = (fillInput.value || '').trim();
-      }
+  saveCurrentQuestionAnswer();
 
-      const qList = activeExamInstance.questions;
-      const totalQ = qList.length;
+  const questions = activeExamInstance.questions;
+  const answeredCount = Object.keys(studentExamAnswers).filter(k => {
+    return studentExamAnswers[k] !== undefined && studentExamAnswers[k] !== null && String(studentExamAnswers[k]).trim() !== '';
+  }).length;
 
-      // 若為主動交卷，檢查是否有未作答題目並給予提醒
-      if (!isAutoSubmit) {
-        let unansweredCount = 0;
-        for (let i = 0; i < totalQ; i++) {
-          const ans = studentExamAnswers[i];
-          if (ans === undefined || ans === null || String(ans).trim() === '') {
-            unansweredCount++;
-          }
-        }
-        if (unansweredCount > 0) {
-          if (!confirm(`尚有 ${unansweredCount} 題尚未作答！\n未作答將直接計為錯誤 (0分)，確定現在提交考卷嗎？`)) {
-            return;
-          }
-        } else {
-          if (!confirm("確定要提交考卷並進行結算嗎？")) return;
-        }
-      }
+  if (!isAutoTimeout && answeredCount < questions.length) {
+    if (!confirm(`尚有 ${questions.length - answeredCount} 題未填寫答案，確定現在交卷嗎？`)) {
+      return;
+    }
+  }
 
-      isExamSubmitting = true;
-      if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+  isExamSubmitting = true;
+  let correctCount = 0;
+  const detailedAnswers = {};
 
-      // 輔助函式：標準化字串以供準確比對
-      function normalizeAnswer(str) {
-        if (str === undefined || str === null) return "";
-        return String(str)
-          .trim()
-          .toLowerCase()
-          .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)) // 全形英數轉半形
-          .replace(/\s+/g, " "); // 多個空白合併為單一空白
-      }
+  questions.forEach((q, idx) => {
+    // 取得學生作答內容
+    const rawStuAns = studentExamAnswers[idx];
+    const stuAns = (rawStuAns !== undefined && rawStuAns !== null) ? String(rawStuAns).trim() : "";
 
-      let correctCount = 0;
-      const detailedResults = [];
+    // 容錯提取正確答案（相容 answer, ans, correct, opt1）
+    let correctAns = "";
+    if (q.answer !== undefined && q.answer !== null) correctAns = String(q.answer).trim();
+    else if (q.ans !== undefined && q.ans !== null) correctAns = String(q.ans).trim();
+    else if (q.correct !== undefined && q.correct !== null) correctAns = String(q.correct).trim();
 
-      qList.forEach((q, idx) => {
-        const rawStudentAns = studentExamAnswers[idx];
-        const studentAnsStr = (rawStudentAns !== undefined && rawStudentAns !== null) ? String(rawStudentAns).trim() : "";
-        const expectedAnsStr = String(q.answer !== undefined ? q.answer : (q.correctAnswer || "")).trim();
+    // 核心判定修復：學生未作答（空白）或題庫無正解時，嚴格判定為錯誤
+    let isCorrect = false;
+    if (stuAns !== "" && correctAns !== "") {
+      isCorrect = (stuAns.toLowerCase() === correctAns.toLowerCase());
+    }
 
-        let isCorrect = false;
+    if (isCorrect) correctCount++;
 
-        // 🚨 核心防護：如果學生根本沒有回答（空字串），直接判定錯誤，絕不判定為正確！
-        if (studentAnsStr !== "") {
-          const normStudent = normalizeAnswer(studentAnsStr);
-          const normExpected = normalizeAnswer(expectedAnsStr);
+    detailedAnswers[idx] = {
+      userAns: stuAns || "(未作答)",
+      correctAns: correctAns || "無設定正解",
+      isCorrect: isCorrect,
+      explanation: q.explanation || q.desc || q.explain || ""
+    };
+  });
 
-          // 1. 直接精確字串比對
-          if (normStudent === normExpected) {
-            isCorrect = true;
-          } else {
-            // 2. 選擇題容錯比對：若題目答案為 "A"、"B"、"C" 等字母索引，比對選項內容
-            if (q.options && Array.isArray(q.options) && q.options.length > 0) {
-              const letterMatch = normExpected.match(/^[a-d]$/);
-              if (letterMatch) {
-                const optIdx = normExpected.charCodeAt(0) - 97; // 'a' -> 0, 'b' -> 1...
-                if (q.options[optIdx] && normalizeAnswer(q.options[optIdx]) === normStudent) {
-                  isCorrect = true;
-                }
-              }
+  const totalQ = questions.length;
+  const scorePct = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
+  const expReward = correctCount * 15;
+  const coinReward = correctCount * 2;
 
-              // 反向比對：若學生輸入的是選項代號 "A"，而正解是選項完整文字
-              const studentLetterMatch = normStudent.match(/^[a-d]$/);
-              if (studentLetterMatch) {
-                const optIdx = normStudent.charCodeAt(0) - 97;
-                if (q.options[optIdx] && normalizeAnswer(q.options[optIdx]) === normExpected) {
-                  isCorrect = true;
-                }
-              }
-            }
-          }
-        }
+  const st = appData.students[currentUser.id];
+  const submissionData = {
+    studentId: currentUser.id,
+    studentName: st ? st.name : currentUser.id,
+    classId: st ? (st.classId || 'ALL') : 'ALL',
+    correctCount: correctCount,
+    totalQuestions: totalQ,
+    scorePct: scorePct,
+    expReward: expReward,
+    coinReward: coinReward,
+    detailedAnswers: detailedAnswers,
+    submittedAt: Date.now(),
+    submitTimeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  };
 
-        if (isCorrect) correctCount++;
+  if (dbRootRef) {
+    const updates = {};
+    updates[`activeExam/submissions/${currentUser.id}`] = submissionData;
+    updates[`students/${currentUser.id}/exp`] = (st.exp || 0) + expReward;
+    updates[`students/${currentUser.id}/statPool`] = (st.statPool || 0) + expReward;
+    updates[`students/${currentUser.id}/coins`] = (st.coins || 0) + coinReward;
 
-        detailedResults.push({
-          questionIndex: idx + 1,
-          question: q.question || q.text || "",
-          type: q.type || "mcq",
-          userAnswer: studentAnsStr || "（未作答 / Unanswered）",
-          correctAnswer: expectedAnsStr,
-          isCorrect: isCorrect,
-          explanation: q.explanation || "無題解說明。"
-        });
-      });
-
-      const accuracy = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
-      // 獎勵計算：每答對 1 題獎勵 10 EXP 與 1 金幣，滿分額外獎勵
-      const rewardExp = correctCount * 10 + (accuracy === 100 ? 50 : 0);
-      const rewardCoins = correctCount * 1 + (accuracy === 100 ? 10 : 0);
-
-      // 更新學生本地與資料庫數值
-      if (currentUser && currentUser.role === 'student') {
-        const st = appData.students[currentUser.id];
-        if (st) {
-          const newExp = (st.exp || 0) + rewardExp;
-          const newPool = (st.statPool || 0) + rewardExp;
-          const newCoins = (st.coins || 0) + rewardCoins;
-
-          patchStudentAtomic(currentUser.id, {
-            exp: newExp,
-            statPool: newPool,
-            coins: newCoins
-          });
-        }
-
-        // 同步成績至 Firebase 考卷作答榜
-        if (dbRootRef) {
-          const studentRecord = {
-            studentId: currentUser.id,
-            studentName: st ? st.name : currentUser.id,
-            classId: st ? st.classId : "",
-            score: correctCount,
-            total: totalQ,
-            accuracy: accuracy,
-            rewardExp: rewardExp,
-            rewardCoins: rewardCoins,
-            submittedAt: Date.now(),
-            submittedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            answers: studentExamAnswers
-          };
-          dbRootRef.child(`activeExam/submissions/${currentUser.id}`).set(studentRecord);
-        }
-
-        addBattleLog(`📜 [EXAM COMPLETED] ${st ? st.name : currentUser.id} 完成考卷！答對 ${correctCount}/${totalQ} 題 (${accuracy}%)，獲 +${rewardExp} EXP 及 +${rewardCoins} 金幣！`, "evolution", st ? st.classId : "ALL");
-      }
-
-      // 渲染學生端報告介面
-      renderExamReportUI(correctCount, totalQ, accuracy, rewardExp, rewardCoins, detailedResults);
-      playSound(accuracy >= 60 ? 'evolve' : 'faint');
+    dbRootRef.update(updates).then(() => {
       isExamSubmitting = false;
-    }
-
-    // === 📊 渲染學生個人考卷成績與題解報告 ===
-    function renderExamReportUI(score, total, accuracy, expGain, coinGain, details) {
-      const takeSection = document.getElementById('examTakingSection');
-      const resultSection = document.getElementById('examResultSection');
-      if (takeSection) takeSection.classList.add('hidden');
-      if (resultSection) resultSection.classList.remove('hidden');
-
-      const scoreEl = document.getElementById('examResultScoreText');
-      if (scoreEl) scoreEl.textContent = `${score} / ${total} 題答對 (${accuracy}%)`;
-
-      const expEl = document.getElementById('examExpRewardText');
-      if (expEl) expEl.textContent = `+${expGain} EXP`;
-
-      const coinEl = document.getElementById('examCoinRewardText');
-      if (coinEl) coinEl.textContent = `+${coinGain} 金幣 (Coins)`;
-
-      const listEl = document.getElementById('examExplanationsList');
-      if (listEl) {
-        let html = '';
-        details.forEach(item => {
-          html += `
-            <div class="p-3.5 rounded-2xl border ${item.isCorrect ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-rose-950/30 border-rose-500/50'} space-y-1.5 text-xs">
-              <div class="flex items-center justify-between font-bold">
-                <span class="text-white">第 ${item.questionIndex} 題：${escapeHtml(item.question)}</span>
-                <span class="px-2 py-0.5 rounded font-pixel text-[10px] ${item.isCorrect ? 'bg-emerald-950 text-emerald-300 border border-emerald-500' : 'bg-rose-950 text-rose-300 border border-rose-500'}">
-                  ${item.isCorrect ? '✓ 正確 (Correct)' : '✗ 錯誤 (Incorrect)'}
-                </span>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-                <div class="${item.isCorrect ? 'text-emerald-400' : 'text-rose-400'}">
-                  你的答案: <b>${escapeHtml(item.userAnswer)}</b>
-                </div>
-                <div class="text-emerald-300">
-                  正確答案: <b>${escapeHtml(item.correctAnswer)}</b>
-                </div>
-              </div>
-              <div class="pt-1.5 border-t border-slate-800/80 text-[11px] text-slate-300">
-                <span class="text-amber-400 font-bold">💡 題解說明:</span> ${escapeHtml(item.explanation)}
-              </div>
-            </div>
-          `;
-        });
-        listEl.innerHTML = html;
-      }
-    }
+      studentHasSubmittedCurrentExam = true;
+      if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
+      playSound('evolve');
+      addBattleLog(`🎓 [EXAM SUBMIT] ${submissionData.studentName} 完成並繳交考卷，成績: ${correctCount}/${totalQ} (${scorePct}%)，獲得 +${expReward} EXP 及 +${coinReward} 金幣！`, "evolution", st ? st.classId : 'ALL');
+      renderStudentExamResultView(submissionData);
+    }).catch(err => {
+      isExamSubmitting = false;
+      alert("繳卷失敗，請重試: " + err.message);
+    });
+  }
+}
 
     // 顯示測驗報告與題解清單
     function displayExamResultReport(sub) {
@@ -8620,137 +8712,131 @@ function teacherPromptClassCoins(mode = 'reward') {
       if (modal) modal.classList.add('hidden');
     }
 
-    // 11. 老師端即時監控面板
-    function renderTeacherExamDashboard() {
-      const tcCountdownWrapper = document.getElementById('tcExamCountdownWrapper');
-      const tcRemainingTime = document.getElementById('tcExamRemainingTime');
-      const progressEl = document.getElementById('examClassProgressText');
-      const tbody = document.getElementById('examStudentsTbody');
-      const targetClassBadge = document.getElementById('teacherExamTargetClassBadge');
+   function renderTeacherExamDashboard() {
+  const tbody = document.getElementById('examStudentsTbody');
+  const progressText = document.getElementById('examClassProgressText');
+  const timerBadgeWrapper = document.getElementById('tcExamCountdownWrapper');
+  const remainingTimeEl = document.getElementById('tcExamRemainingTime');
+  const targetClassBadge = document.getElementById('teacherExamTargetClassBadge');
 
-      if (!tbody) return;
+  const curClass = selectedTeacherClass || 'ALL';
+  if (targetClassBadge) {
+    targetClassBadge.textContent = curClass;
+  }
 
-      const targetClass = selectedTeacherClass || 'ALL';
-      if (targetClassBadge) targetClassBadge.textContent = targetClass;
+  // 1. 取得目標班級的學生名單
+  const allStudents = Object.values(appData.students || {});
+  const classStudents = allStudents.filter(s => studentIsInClass(s, curClass));
 
-      const classStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
+  // 2. 判斷是否有考卷（只要 activeExamInstance 存在且包含 questions 即判定有考卷）
+  const hasActiveExam = (
+    activeExamInstance && 
+    activeExamInstance.questions && 
+    activeExamInstance.questions.length > 0 &&
+    activeExamInstance.status !== 'CLOSED'
+  );
 
-      if (examTeacherCountdownTimer) {
-        clearInterval(examTeacherCountdownTimer);
-        examTeacherCountdownTimer = null;
-      }
+  const submissions = (activeExamInstance && activeExamInstance.submissions) ? activeExamInstance.submissions : {};
 
-      if (!activeExamInstance || !activeExamInstance.active) {
-        if (tcCountdownWrapper) tcCountdownWrapper.classList.add('hidden');
-        if (progressEl) progressEl.textContent = `已繳交：0 / ${classStudents.length}`;
-        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500 italic">目前無進行中的考卷測驗。</td></tr>`;
-        return;
-      }
+  // 3. 計算交卷人數
+  let submittedCount = 0;
+  classStudents.forEach(s => {
+    if (submissions[s.id]) submittedCount++;
+  });
 
-      if (tcCountdownWrapper) tcCountdownWrapper.classList.remove('hidden');
+  if (progressText) {
+    if (hasActiveExam) {
+      progressText.textContent = `已繳交：${submittedCount} / ${classStudents.length} 人 (${classStudents.length > 0 ? Math.round((submittedCount / classStudents.length) * 100) : 0}%)`;
+    } else {
+      progressText.textContent = `名單總數：${classStudents.length} 人 (未發布考卷)`;
+    }
+  }
 
-      const updateTcTimer = () => {
-        const elapsedSec = Math.floor((Date.now() - activeExamInstance.startTime) / 1000);
-        const remainSec = Math.max(0, activeExamInstance.limitSeconds - elapsedSec);
-        const mins = Math.floor(remainSec / 60);
-        const secs = remainSec % 60;
-        if (tcRemainingTime) {
-          tcRemainingTime.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  // 4. 處理倒數計時器
+  if (hasActiveExam && activeExamInstance.endTime) {
+    if (timerBadgeWrapper) timerBadgeWrapper.classList.remove('hidden');
+    if (!examTeacherCountdownTimer) {
+      examTeacherCountdownTimer = setInterval(() => {
+        if (!activeExamInstance || !activeExamInstance.endTime || activeExamInstance.status === 'CLOSED') {
+          clearInterval(examTeacherCountdownTimer);
+          examTeacherCountdownTimer = null;
+          if (timerBadgeWrapper) timerBadgeWrapper.classList.add('hidden');
+          return;
         }
-      };
-      updateTcTimer();
-      examTeacherCountdownTimer = setInterval(updateTcTimer, 1000);
-
-      const submissions = activeExamInstance.submissions || {};
-      let submittedCount = 0;
-      tbody.innerHTML = '';
-
-      classStudents.forEach((st, idx) => {
-        const sub = submissions[st.id];
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-800/40 transition border-b border-slate-900";
-
-        if (sub) {
-          submittedCount++;
-          tr.innerHTML = `
-            <td class="p-2 text-slate-400">${idx + 1}</td>
-            <td class="p-2 font-bold text-white">${st.name} <span class="text-slate-500 text-[10px]">(${st.username})</span></td>
-            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold text-[10px]">已交卷</span></td>
-            <td class="p-2 text-center font-bold text-indigo-300">${sub.score} / ${sub.total}</td>
-            <td class="p-2 text-center font-bold ${sub.accuracyPct >= 60 ? 'text-emerald-400' : 'text-rose-400'}">${sub.accuracyPct}%</td>
-            <td class="p-2 text-center font-mono text-cyan-300">+${sub.earnedExp}</td>
-            <td class="p-2 text-center font-mono text-amber-300">+${sub.earnedCoins}</td>
-            <td class="p-2 text-right font-mono text-slate-400">${sub.timeStr}</td>
-          `;
-        } else {
-          tr.innerHTML = `
-            <td class="p-2 text-slate-400">${idx + 1}</td>
-            <td class="p-2 font-bold text-slate-300">${st.name} <span class="text-slate-500 text-[10px]">(${st.username})</span></td>
-            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-500 text-[10px]">作答中 (In Progress)</span></td>
-            <td class="p-2 text-center text-slate-600">--</td>
-            <td class="p-2 text-center text-slate-600">--</td>
-            <td class="p-2 text-center text-slate-600">--</td>
-            <td class="p-2 text-center text-slate-600">--</td>
-            <td class="p-2 text-right text-slate-600">--</td>
-          `;
+        const leftSec = Math.max(0, Math.floor((activeExamInstance.endTime - Date.now()) / 1000));
+        const m = Math.floor(leftSec / 60);
+        const s = leftSec % 60;
+        if (remainingTimeEl) {
+          remainingTimeEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
-        tbody.appendChild(tr);
-      });
+        if (leftSec <= 0) {
+          clearInterval(examTeacherCountdownTimer);
+          examTeacherCountdownTimer = null;
+        }
+      }, 1000);
+    }
+  } else {
+    if (examTeacherCountdownTimer) {
+      clearInterval(examTeacherCountdownTimer);
+      examTeacherCountdownTimer = null;
+    }
+    if (timerBadgeWrapper) timerBadgeWrapper.classList.add('hidden');
+  }
 
-      if (progressEl) {
-        progressEl.textContent = `已繳交：${submittedCount} / ${classStudents.length}`;
-      }
+  if (!tbody) return;
+
+  // 5. 若無任何學生資料
+  if (classStudents.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500 italic">目前所選班級 [${curClass}] 沒有任何學生。請在上方切換班級或匯入學生名單。</td></tr>`;
+    return;
+  }
+
+  // 6. 徹底渲染全班名單與作答情況（無論發布與否，絕對保證列出所有學生）
+  let html = '';
+  classStudents.forEach((st, idx) => {
+    const sub = submissions[st.id];
+    const isDone = !!sub;
+
+    let statusBadge = '';
+    if (!hasActiveExam) {
+      statusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-800 text-[10px]">未發布 (Standby)</span>`;
+    } else if (isDone) {
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500 font-bold text-[10px] animate-pulse shadow">已交卷 (Submitted)</span>`;
+    } else {
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-600 text-[10px] animate-pulse">作答中 (Answering...)</span>`;
     }
 
-    function autoSubmitTimeoutForStudent() {
-      if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
-      if (!dbRootRef) return;
+    html += `
+      <tr class="border-b border-slate-800/80 hover:bg-slate-900/40 transition">
+        <td class="p-2.5 font-mono text-slate-500">${idx + 1}</td>
+        <td class="p-2.5 font-bold text-white flex items-center gap-2">
+          <span>${escapeHtml(st.name)}</span>
+          <span class="text-[10px] font-mono text-slate-500 font-normal">(${escapeHtml(st.username || st.id)})</span>
+        </td>
+        <td class="p-2.5 text-center">
+          ${statusBadge}
+        </td>
+        <td class="p-2.5 text-center font-mono font-bold ${isDone ? 'text-amber-300 text-sm' : 'text-slate-600'}">
+          ${isDone ? `${sub.correctCount} /${sub.totalQuestions}` : '-- / --'}
+        </td>
+        <td class="p-2.5 text-center font-mono font-bold ${isDone ? 'text-cyan-300' : 'text-slate-600'}">
+          ${isDone ? `${sub.scorePct}%` : '--%'}
+        </td>
+        <td class="p-2.5 text-center font-mono ${isDone ? 'text-emerald-400 font-bold' : 'text-slate-600'}">
+          ${isDone ? `+${sub.expReward}` : '+0'}
+        </td>
+        <td class="p-2.5 text-center font-mono ${isDone ? 'text-yellow-400 font-bold' : 'text-slate-600'}">
+          ${isDone ? `+${sub.coinReward}` : '+0'}
+        </td>
+        <td class="p-2.5 text-right font-mono text-slate-400 text-[11px]">
+          ${isDone ? (sub.submitTimeStr || '已繳交') : '--:--:--'}
+        </td>
+      </tr>
+    `;
+  });
 
-      // 嚴格雙重防抖防護：如果已經在送出逾時、或者資料庫快照中已存在自己的提交，立刻退出
-      if (isQuizTimeoutSubmitting) return;
-      if (activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id]) return;
-
-      isQuizTimeoutSubmitting = true;
-
-      // 停止計時器以杜絕後續重複 tick
-      if (quizStudentCountdownTimer) {
-        clearInterval(quizStudentCountdownTimer);
-        quizStudentCountdownTimer = null;
-      }
-
-      const st = appData.students[currentUser.id] || { name: currentUser.id };
-      const now = Date.now();
-
-      dbRootRef.child('activeQuiz').transaction((quiz) => {
-        if (!quiz || !quiz.active) return quiz;
-        if (!quiz.submissions) quiz.submissions = {};
-        // 若伺服器端已有本學生的提交紀錄（例如已手動作答或已標記逾時），則保持原樣不重複改寫
-        if (quiz.submissions[currentUser.id]) return quiz;
-
-        quiz.submissions[currentUser.id] = {
-          answerIdx: -1,
-          answerText: "【逾時未作答】",
-          isCorrect: false,
-          isTimeout: true,
-          timestamp: now,
-          rank: null
-        };
-        return quiz;
-      }, (err, committed, snap) => {
-        if (committed && snap && snap.exists()) {
-          const finalSub = snap.val()?.submissions?.[currentUser.id];
-          // 只有在本次 transaction 確實是由當前逾時操作寫入時才發送通知，避免伺服器重疊觸發
-          if (finalSub && finalSub.isTimeout && finalSub.timestamp === now) {
-            playSound('faint');
-            showToast("Time's Up!", "作答時間截止！列為未作答錯誤。", "damage");
-            addBattleLog(`⏰ [QUIZ TIMEOUT] ${st.name} 未在限時內回答問題，列為錯誤！`, "battle", st.classId);
-          }
-          renderQuizModalForStudent();
-        } else {
-          isQuizTimeoutSubmitting = false;
-        }
-      });
-    }
+  tbody.innerHTML = html;
+}
 
     function submitStudentQuizAnswer(chosenIdx) {
       if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
