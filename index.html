@@ -1425,17 +1425,36 @@
       return 0;
     }
 
-    // 執行強力清除快取並重整頁面
-    function executeForceReload() {
-      if ('caches' in window) {
-        caches.keys().then(names => {
-          names.forEach(name => caches.delete(name));
-        });
+    async function executeForceReload() {
+      // 1. 強制註銷所有 Service Worker（解決 PWA / 手機應用快取舊版本問題）
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let reg of registrations) {
+            await reg.unregister();
+          }
+        } catch (e) {
+          console.warn("SW unregister error:", e);
+        }
       }
-      // 加入時間戳參數避免被瀏覽器 HTTP 快取攔截
-      const url = new URL(window.location.href);
-      url.searchParams.set('_v_sync', Date.now());
-      window.location.replace(url.href);
+
+      // 2. 清除 CacheStorage
+      if ('caches' in window) {
+        try {
+          const names = await caches.keys();
+          for (let name of names) {
+            await caches.delete(name);
+          }
+        } catch (e) {
+          console.warn("Caches clear error:", e);
+        }
+      }
+
+      // 3. 加上不重複的時間戳與版本 query，強制繞過手機端快取
+      const cleanUrl = window.location.origin + window.location.pathname;
+      const targetUrl = cleanUrl + '?_reload=' + Date.now() + '&v=' + encodeURIComponent(CURRENT_APP_VERSION);
+      
+      window.location.href = targetUrl;
     }
 
     // 觸發全螢幕強制更新倒數
@@ -2905,18 +2924,23 @@ function normalizeStudent(s, keyId) {
           saveLocalCache();
           refreshCurrentView();
         });
-        // 🔄 即時監聽伺服器強制更新信號 (包含版本號與即時重整廣播)
-        let lastHandledReloadTime = Date.now();
+        // 🔄 即時監聽伺服器強制更新信號（支援手機 App / PWA 背景喚醒）
+        let pageLaunchTimestamp = Date.now();
         dbRootRef.child('systemSettings/forceReloadSignal').on('value', (snap) => {
           const signal = snap.val();
           if (!signal || !signal.timestamp) return;
 
-          // 只有在收到廣播的時間晚於本頁面加載時間時才觸發（避免剛開網頁就無限重整）
-          if (signal.timestamp > lastHandledReloadTime) {
-            lastHandledReloadTime = signal.timestamp;
-            // 學生端一律強制彈窗更新；若版本低於要求的最低版本也強制彈窗
-            if (currentUser && currentUser.role === 'student') {
-              triggerForceUpdateScreen(signal.version || CURRENT_APP_VERSION);
+          // 判斷 1：老師在頁面開啟後點擊了廣播（timestamp 較新）
+          const isBroadcastAfterLaunch = (signal.timestamp > pageLaunchTimestamp);
+          
+          // 判斷 2：不管何時廣播，只要本地執行的版本號低於伺服器廣播的版本號，手機端一律攔截
+          const isVersionExpired = compareVersions(CURRENT_APP_VERSION, signal.version) < 0;
+
+          if (isBroadcastAfterLaunch || isVersionExpired) {
+            // 排除老師與管理員（只有非老師/學生身分才彈窗強制更新）
+            const isTeacherOrAdmin = currentUser && (currentUser.role === 'teacher' || currentUser.role === 'superadmin');
+            if (!isTeacherOrAdmin) {
+              triggerForceUpdateScreen(signal.version || "最新版本");
             }
           }
         });
