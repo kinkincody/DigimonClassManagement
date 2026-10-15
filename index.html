@@ -1464,15 +1464,26 @@
     }
 
     // 老師在後台手動一鍵廣播最新版本
+    // 老師在後台手動一鍵廣播強制更新（寫入時間戳與版本號）
     function teacherBroadcastLatestVersion() {
       if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
-      if (!confirm(`確定要將伺服器要求版本更新至【v${CURRENT_APP_VERSION}】嗎？\n所有尚未更新到此版本的學生裝置將被強制鎖定並自動重新整理！`)) return;
+      if (!confirm(`確定要向全班廣播強制更新嗎？\n所有在線學生的螢幕將會立即顯示更新遮罩，並在 3 秒後自動重新整理！`)) return;
 
       if (dbRootRef) {
-        dbRootRef.child('systemSettings/requiredMinVersion').set(CURRENT_APP_VERSION).then(() => {
+        const payload = {
+          version: CURRENT_APP_VERSION,
+          timestamp: Date.now(),
+          by: currentUser.id
+        };
+
+        const updates = {};
+        updates['systemSettings/requiredMinVersion'] = CURRENT_APP_VERSION;
+        updates['systemSettings/forceReloadSignal'] = payload;
+
+        dbRootRef.update(updates).then(() => {
           playSound('evolve');
-          showToast("版本廣播成功", `已將最低要求版本設為 v${CURRENT_APP_VERSION}！`, "heal");
-          addBattleLog(`🚀 [VERSION BROADCAST] 老師廣播了最新版本 v${CURRENT_APP_VERSION}，全體學生將同步更新！`, "evolution", "ALL");
+          showToast("版本廣播成功", `已向所有學生端推送強制更新信號！`, "heal");
+          addBattleLog(`🚀 [VERSION BROADCAST] 老師發送了強制更新指令，全體在線學生端將同步重載！`, "evolution", "ALL");
         }).catch(err => {
           alert("廣播失敗: " + err.message);
         });
@@ -2894,14 +2905,26 @@ function normalizeStudent(s, keyId) {
           saveLocalCache();
           refreshCurrentView();
         });
-        // 🔄 即時監聽伺服器要求的最低版本
+        // 🔄 即時監聽伺服器強制更新信號 (包含版本號與即時重整廣播)
+        let lastHandledReloadTime = Date.now();
+        dbRootRef.child('systemSettings/forceReloadSignal').on('value', (snap) => {
+          const signal = snap.val();
+          if (!signal || !signal.timestamp) return;
+
+          // 只有在收到廣播的時間晚於本頁面加載時間時才觸發（避免剛開網頁就無限重整）
+          if (signal.timestamp > lastHandledReloadTime) {
+            lastHandledReloadTime = signal.timestamp;
+            // 學生端一律強制彈窗更新；若版本低於要求的最低版本也強制彈窗
+            if (currentUser && currentUser.role === 'student') {
+              triggerForceUpdateScreen(signal.version || CURRENT_APP_VERSION);
+            }
+          }
+        });
+
         dbRootRef.child('systemSettings/requiredMinVersion').on('value', (snap) => {
           const requiredVer = snap.val();
           if (!requiredVer) return;
-
-          // 若為學生端（或當前執行的客戶端本機版本低於伺服器要求）
           if (compareVersions(CURRENT_APP_VERSION, requiredVer) < 0) {
-            console.warn(`[Version Mismatch] Local: v${CURRENT_APP_VERSION}, Server: v${requiredVer}. Enforcing update...`);
             triggerForceUpdateScreen(requiredVer);
           }
         });
