@@ -8253,25 +8253,58 @@ function onExamTimePresetChange(val) {
     }
 
 
-// 老師手動結束/關閉考卷
-function teacherCloseLiveExam() {
-  if (!activeExamInstance || activeExamInstance.status !== 'ACTIVE') {
-    return alert("目前沒有進行中的考卷！");
-  }
-  if (!confirm("確定要強制結束並關閉此考卷嗎？\n尚未交卷的學生將無法繼續作答。")) return;
+// 🛑 修復版：老師端強制收卷/結束測驗
+    function teacherCloseLiveExam() {
+      if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
 
-  if (dbRootRef) {
-    dbRootRef.child('activeExam').update({
-      status: 'CLOSED'
-    }).then(() => {
-      playSound('attack');
-      showToast("考卷已結束", "已收卷並結束測驗！", "damage");
-      addBattleLog(`🛑 [EXAM CLOSED] 老師手動結束了考卷【${activeExamInstance.title || '測驗'}】。`, "battle", selectedTeacherClass);
-      renderTeacherExamDashboard();
-    });
-  }
-}
-    // 5. 學生端狀態同步處理
+      if (!dbRootRef) {
+        alert("資料庫尚未連線，無法執行收卷！");
+        return;
+      }
+
+      // 直接向 Firebase 查詢當前考卷真實狀態，防止本地快取不同步
+      dbRootRef.child('activeExam').once('value').then(snap => {
+        const examData = snap.val() || activeExamInstance;
+
+        if (!examData || examData.status === 'closed') {
+          // 若已經是 closed 或殘留節點，直接清空計時器並提示
+          if (examTeacherCountdownTimer) clearInterval(examTeacherCountdownTimer);
+          alert("目前沒有進行中的考卷！");
+          renderTeacherExamDashboard();
+          return;
+        }
+
+        if (!confirm(`確定要【強制收卷】並結束本次測驗【${examData.title || '考卷'}】嗎？\n所有未提交的學生將會強制停止作答！`)) {
+          return;
+        }
+
+        // 清理老師端計時器
+        if (examTeacherCountdownTimer) {
+          clearInterval(examTeacherCountdownTimer);
+          examTeacherCountdownTimer = null;
+        }
+
+        const updates = {};
+        updates['activeExam/status'] = 'closed';
+        updates['activeExam/closedAt'] = Date.now();
+        updates['activeExam/isForceClosed'] = true;
+
+        dbRootRef.update(updates).then(() => {
+          playSound('attack');
+          showToast("考卷已結束", "已成功強制收卷，學生端已停止作答！", "damage");
+          addBattleLog(`🛑 [EXAM CLOSED] 老師強制結束了考卷【${examData.title || '考卷'}】，全班已停止作答並封存！`, "battle", selectedTeacherClass);
+          
+          if (activeExamInstance) {
+            activeExamInstance.status = 'closed';
+          }
+          renderTeacherExamDashboard();
+        }).catch(err => {
+          alert("強制收卷失敗: " + err.message);
+        });
+      }).catch(err => {
+        alert("讀取考卷資料失敗: " + err.message);
+      });
+    }    // 5. 學生端狀態同步處理
     // ==========================================
     // 📝 學生端考卷同步與作答核心修復版
     // ==========================================
@@ -8282,13 +8315,25 @@ function onStudentExamStateSync() {
   const modal = document.getElementById('modalExamStudent');
   if (!modal) return;
 
-  // 1. 若當前沒有正在進行的考試，自動清理狀態並隱藏視窗
-  if (!activeExamInstance || !activeExamInstance.isOpen) {
-    if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
-    examStudentCountdownTimer = null;
-    modal.classList.add('hidden');
-    currentExamSessionId = null;
-    studentHasSubmittedCurrentExam = false;
+  // 1. 核心修復：若考卷已關閉或不存在
+  if (!activeExamInstance || !activeExamInstance.isOpen || activeExamInstance.status === 'closed') {
+    if (examStudentCountdownTimer) {
+      clearInterval(examStudentCountdownTimer);
+      examStudentCountdownTimer = null;
+    }
+
+    // 關鍵修復：如果學生正在作答視窗中且尚未交卷，立刻強制替學生交卷並結算上傳！
+    if (modal && !modal.classList.contains('hidden') && !studentHasSubmittedCurrentExam && currentExamSessionId) {
+      showToast("測驗已結束", "老師已強制收卷，系統正自動為您結算成績！", "damage");
+      submitExamPaper(true); // 強制提交當前答案
+      return;
+    }
+
+    // 若已經提交過或本來就沒在考試，才完全關閉視窗
+    if (!studentHasSubmittedCurrentExam) {
+      modal.classList.add('hidden');
+      currentExamSessionId = null;
+    }
     return;
   }
 
@@ -8302,9 +8347,8 @@ function onStudentExamStateSync() {
   // 3. 檢查學生是否已經提交過這份考卷
   const mySubmission = activeExamInstance.submissions && activeExamInstance.submissions[currentUser.id];
   if (mySubmission) {
-    // 已經交卷，若考卷視窗開著則顯示結果面板，不重新打開作答模式
     studentHasSubmittedCurrentExam = true;
-    if (!modal.classList.contains('hidden') && currentExamSessionId === activeExamInstance.examId) {
+    if (!modal.classList.contains('hidden') && (currentExamSessionId === activeExamInstance.examId || currentExamSessionId === activeExamInstance.sessionId)) {
       renderStudentExamResultUI(mySubmission);
     }
     return;
@@ -8314,8 +8358,7 @@ function onStudentExamStateSync() {
   const now = Date.now();
   const remainingMs = (activeExamInstance.endTime || 0) - now;
   if (remainingMs <= 0) {
-    // 考試時間已過且學生未作答，若視窗開著則強制自動交卷
-    if (currentExamSessionId === activeExamInstance.examId && !studentHasSubmittedCurrentExam) {
+    if (!studentHasSubmittedCurrentExam) {
       submitExamPaper(true);
     } else {
       modal.classList.add('hidden');
@@ -8323,32 +8366,29 @@ function onStudentExamStateSync() {
     return;
   }
 
-  // 5. 核心：新加入或遲到的同學無縫進入考試！
-  // 若這是一場新考卷，或者遲到同學剛登入，初次初始化該同學的作答面板
-  if (currentExamSessionId !== activeExamInstance.examId) {
-    currentExamSessionId = activeExamInstance.examId;
+  // 5. 新加入或遲到的同學無縫進入考試
+  const examId = activeExamInstance.examId || activeExamInstance.sessionId;
+  if (currentExamSessionId !== examId) {
+    currentExamSessionId = examId;
     studentHasSubmittedCurrentExam = false;
     studentExamAnswers = {};
     currentExamQIndex = 0;
 
-    // 設定考卷標題與時長資訊
     const titleEl = document.getElementById('examPaperTitle');
     const subTitleEl = document.getElementById('examPaperSubtitle');
     if (titleEl) titleEl.textContent = activeExamInstance.title;
     if (subTitleEl) subTitleEl.textContent = `限時 ${activeExamInstance.durationMinutes} 分鐘 · 遲到加入將同步倒數`;
 
-    // 切換顯示：展示作答區、隱藏結算區
     document.getElementById('examTakingSection')?.classList.remove('hidden');
     document.getElementById('examResultSection')?.classList.add('hidden');
 
-    // 打開視窗並渲染第一題
     modal.classList.remove('hidden');
     renderCurrentExamQuestion();
     playSound('shield');
     showToast("考卷測驗進行中", `請抓緊時間作答！倒數計時中...`, "info");
   }
 
-  // 6. 動態伺服器絕對時間倒數器（與其他所有人完全同步）
+  // 6. 動態伺服器絕對時間倒數器
   if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
   updateStudentExamTimerDisplay();
   examStudentCountdownTimer = setInterval(updateStudentExamTimerDisplay, 1000);
