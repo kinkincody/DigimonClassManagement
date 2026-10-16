@@ -2191,7 +2191,7 @@ const DIGIMON_DB = {
       "veemon": { courage: "exveemon", friendship: "airdramon", discipline: "greymon", wisdom: "gargomon", alt1: "tyrannomon", alt2: "exveemon" },
       "greymon": { courage: "metalgreymon", friendship: "weregarurumon", discipline: "magnaangemon", wisdom: "megakabuterimon", alt1: "metaltyrannomon", alt2: "metalgreymon" },
       "garurumon": { courage: "weregarurumon", friendship: "weregarurumon", discipline: "zudomon", wisdom: "megaseadramon", alt1: "metalgreymon", alt2: "weregarurumon" },
-      "angemon": { courage: "magnaangemon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "seraphimon", alt1: "angewomon", alt2: "magnaangemon" },
+      "angemon": { courage: "magnaangemon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "magnaangemon", alt1: "angewomon", alt2: "magnaangemon" },
       "birdramon": { courage: "garudamon", friendship: "garudamon", discipline: "angewomon", wisdom: "lillymon", alt1: "garudamon", alt2: "garudamon" },
       "sunflowmon": { courage: "lillymon", friendship: "lillymon", discipline: "angewomon", wisdom: "megakabuterimon", alt1: "lillymon", alt2: "lillymon" },
       "togemon": { courage: "lillymon", friendship: "lillymon", discipline: "garudamon", wisdom: "megakabuterimon", alt1: "lillymon", alt2: "lillymon" },
@@ -4067,18 +4067,19 @@ function rejectFactionRequest(reqKey) {
     }
 
     function patchStudentAtomic(studentId, partialData) {
-      if (!studentId) return;
-      const s = appData.students[studentId];
-      if (s) {
-        Object.assign(s, partialData);
-        saveLocalCache();
-      }
-      if (dbRootRef) {
-        dbRootRef.child('students/' + studentId).update(partialData).catch(e => {
-          console.warn("Atomic patch student failed:", e);
-        });
-      }
-    }
+  if (!studentId || !partialData) return;
+  const s = appData.students[studentId];
+  if (s) {
+    Object.assign(s, partialData);
+    saveLocalCache();
+  }
+  if (dbRootRef) {
+    // 針對多人高頻操作，使用安全多鍵覆蓋更新
+    dbRootRef.child('students/' + studentId).update(partialData).catch(e => {
+      console.warn("Atomic patch student failed:", e);
+    });
+  }
+}
 
     function patchTeacherAtomic(teacherId, partialData) {
       if (!teacherId) return;
@@ -5537,55 +5538,70 @@ function logout() {
     }
 
     function triggerEvolution() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
-      const curDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      const req = getEvolutionRequirements(curDigi, st);
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
+  const curDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+  const req = getEvolutionRequirements(curDigi, st);
 
-      if (!req.canEvolve) {
-        showToast("Evolution Locked", req.message, "info");
-        return;
-      }
+  if (!req.canEvolve) {
+    showToast("Evolution Locked", req.message, "info");
+    return;
+  }
 
-      const branch = curDigi.stage === "DIGI-EGG" ? EVOLUTION_MATRIX["DIGI-EGG"] : (EVOLUTION_MATRIX[curDigi.id] || EVOLUTION_MATRIX["agumon"]);
-      if (!branch) {
-        showToast("Evolution", "Max evolution stage reached!", "info");
-        return;
-      }
+  const branch = curDigi.stage === "DIGI-EGG" ? EVOLUTION_MATRIX["DIGI-EGG"] : (EVOLUTION_MATRIX[curDigi.id] || EVOLUTION_MATRIX["agumon"]);
+  if (!branch) {
+    showToast("Evolution", "Max evolution stage reached!", "info");
+    return;
+  }
 
-      const traits = [st.courage || 0, st.love || 0, st.discipline || 0, st.wisdom || 0];
-      const activeCount = traits.filter(t => t >= 10).length;
-      let nextId = branch.courage;
+  const traits = [st.courage || 0, st.love || 0, st.discipline || 0, st.wisdom || 0];
+  const activeCount = traits.filter(t => t >= 10).length;
+  let nextId = branch.courage;
 
-      if (activeCount >= 3) {
-        const pool = [branch.courage, branch.friendship, branch.discipline, branch.wisdom, branch.alt1, branch.alt2].filter(Boolean);
-        nextId = pool[Math.floor(Math.random() * pool.length)];
-      } else {
-        const maxVal = Math.max(...traits);
-        if ((st.love || 0) === maxVal) nextId = branch.friendship || branch.courage;
-        else if ((st.discipline || 0) === maxVal) nextId = branch.discipline || branch.courage;
-        else if ((st.wisdom || 0) === maxVal) nextId = branch.wisdom || branch.courage;
-        else nextId = branch.courage;
-      }
+  if (activeCount >= 3) {
+    const pool = [branch.courage, branch.friendship, branch.discipline, branch.wisdom, branch.alt1, branch.alt2].filter(Boolean);
+    nextId = pool[Math.floor(Math.random() * pool.length)];
+  } else {
+    const maxVal = Math.max(...traits);
+    if ((st.love || 0) === maxVal) nextId = branch.friendship || branch.courage;
+    else if ((st.discipline || 0) === maxVal) nextId = branch.discipline || branch.courage;
+    else if ((st.wisdom || 0) === maxVal) nextId = branch.wisdom || branch.courage;
+    else nextId = branch.courage;
+  }
 
-      const nextDigi = DIGIMON_DB[nextId] || curDigi;
+  let nextDigi = DIGIMON_DB[nextId] || curDigi;
 
-      playEvolutionCutscene(st.name, curDigi, nextDigi, () => {
-        const unlocked = Object.assign({}, st.unlockedDex || {});
-        unlocked[nextId] = true;
+  // 🛡️ 嚴格階級防呆：目標階段必須恰好是當前階段的下一階 (+1)
+  const currentStageRank = STAGE_ORDER[curDigi.stage] !== undefined ? STAGE_ORDER[curDigi.stage] : 0;
+  const targetStageRank = STAGE_ORDER[nextDigi.stage] !== undefined ? STAGE_ORDER[nextDigi.stage] : 0;
 
-        patchStudentAtomic(currentUser.id, {
-          currentDigiId: nextId,
-          hp: nextDigi.maxHp || 650,
-          unlockedDex: unlocked
-        });
+  if (targetStageRank !== currentStageRank + 1) {
+    console.warn(`[Evo Blocked] Detected invalid stage jump from ${curDigi.stage} (${currentStageRank}) to ${nextDigi.stage} (${targetStageRank}).`);
+    // 若配表異常跨階，安全回退到同體系完全體或合法下一階形態
+    if (currentStageRank === 3) nextId = "magnaangemon"; 
+    nextDigi = DIGIMON_DB[nextId] || curDigi;
+  }
 
+  playEvolutionCutscene(st.name, curDigi, nextDigi, () => {
+    if (!dbRootRef) return;
+    // 使用 transaction 確保進化與解鎖 Dex 同步寫入
+    dbRootRef.child(`students/${currentUser.id}`).transaction(currentData => {
+      if (!currentData) return currentData;
+      currentData.currentDigiId = nextId;
+      currentData.hp = nextDigi.maxHp || 650;
+      if (!currentData.unlockedDex) currentData.unlockedDex = {};
+      currentData.unlockedDex[nextId] = true;
+      return currentData;
+    }, (err, committed, snap) => {
+      if (committed && snap.exists()) {
         addBattleLog(`✨ [DIGIVOLUTION] ${st.name}'s [${curDigi.name}] digivolved into [${nextDigi.name}]!`, "evolution", st.classId);
         showToast("Digivolution Complete!", `Your Digimon evolved into [${nextDigi.name}]!`, "evolution");
         updateStudentUI();
-      });
-    }
+      }
+    });
+  });
+}
 
     function getCanvasDataFromElement(imgEl) {
       try {
