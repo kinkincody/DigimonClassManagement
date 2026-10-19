@@ -1918,111 +1918,138 @@
           playSound('evolve');
           return "LEGENDARY: +500 EXP & +5 Quotas!";
         }
+      },
+      "chip_courage": {
+        id: "chip_courage",
+        name: "勇氣數據晶片",
+        rarity: "Rare",
+        rarityColor: "text-rose-400 border-rose-500 bg-rose-950/50",
+        badgeBg: "bg-rose-800",
+        icon: "🔥",
+        weight: 0,
+        description: "使用後立即增加 +50 EXP 及 +50 勇氣特質點！",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 50;
+          st.courage = (st.courage || 0) + 50;
+          playSound('evolve');
+          return "+50 EXP & +50 Courage 已生效！";
+        }
+      },
+      "chip_love": {
+        id: "chip_love",
+        name: "友情數據晶片",
+        rarity: "Rare",
+        rarityColor: "text-emerald-400 border-emerald-500 bg-emerald-950/50",
+        badgeBg: "bg-emerald-800",
+        icon: "🐺",
+        weight: 0,
+        description: "使用後立即增加 +50 EXP 及 +50 友情特質點！",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 50;
+          st.love = (st.love || 0) + 50;
+          playSound('evolve');
+          return "+50 EXP & +50 Friendship 已生效！";
+        }
+      },
+      "chip_discipline": {
+        id: "chip_discipline",
+        name: "紀律數據晶片",
+        rarity: "Rare",
+        rarityColor: "text-amber-400 border-amber-500 bg-amber-950/50",
+        badgeBg: "bg-amber-800",
+        icon: "🛡️",
+        weight: 0,
+        description: "使用後立即增加 +50 EXP 及 +50 紀律特質點！",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 50;
+          st.discipline = (st.discipline || 0) + 50;
+          playSound('evolve');
+          return "+50 EXP & +50 Discipline 已生效！";
+        }
+      },
+      "chip_wisdom": {
+        id: "chip_wisdom",
+        name: "智慧數據晶片",
+        rarity: "Rare",
+        rarityColor: "text-blue-400 border-blue-500 bg-blue-950/50",
+        badgeBg: "bg-blue-800",
+        icon: "🧠",
+        weight: 0,
+        description: "使用後立即增加 +50 EXP 及 +50 智慧特質點！",
+        effect: (st) => {
+          st.exp = (st.exp || 0) + 50;
+          st.wisdom = (st.wisdom || 0) + 50;
+          playSound('evolve');
+          return "+50 EXP & +50 Wisdom 已生效！";
+        }
       }
     };
 // 🛒 商店商品清單
+// 🛒 商店商品清單（購買後放入背包欄 inventory，方便稍後自行使用）
 const SHOP_CATALOG = [
   {
-    id: "shop_potion_small",
+    id: "potion_small",
     name: "小回復藥水 (Mini Potion)",
     cost: 5,
     icon: "🧪",
-    desc: "立即恢復 50 HP",
-    buy: (st) => {
-      const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      st.hp = Math.min(d.maxHp, (st.hp || 100) + 50);
-      playSound('heal');
-      return "+50 HP 已恢復";
-    }
+    desc: "購買後存入背包，使用可恢復 50 HP"
   },
   {
-    id: "shop_potion_full",
+    id: "potion_full",
     name: "神聖生命精華 (Full Elixir)",
     cost: 15,
     icon: "💊",
-    desc: "立即恢復 100% 全滿 HP",
-    buy: (st) => {
-      const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      st.hp = d.maxHp;
-      playSound('heal');
-      return "生命值已完全恢復滿額！";
-    }
+    desc: "購買後存入背包，使用可完全恢復 100% 全滿 HP"
   },
   {
-    id: "shop_attack_booster",
-    name: "戰意驅動晶片 (Attack Booster)",
+    id: "energy_booster",
+    name: "戰意驅動晶片 (Digi-Battery)",
     cost: 8,
     icon: "🔋",
-    desc: "立即增加 +1 次攻擊次數",
-    buy: (st) => {
-      st.attackQuota = (st.attackQuota || 0) + 1;
-      playSound('shield');
-      return "+1 次攻擊次數已入賬";
-    }
+    desc: "購買後存入背包，使用立即增加 +2 次攻擊次數"
   },
   {
-    id: "shop_chip_courage",
+    id: "chip_courage",
     name: "勇氣數據晶片 (Courage Chip)",
     cost: 20,
     icon: "🔥",
-    desc: "增加 +50 EXP 及 +50 勇氣特質點",
-    buy: (st) => {
-      st.exp = (st.exp || 0) + 50;
-      st.courage = (st.courage || 0) + 50;
-      playSound('evolve');
-      return "+50 EXP & +50 Courage 特質增加";
-    }
+    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 勇氣特質點"
   },
   {
-    id: "shop_chip_love",
+    id: "chip_love",
     name: "友情數據晶片 (Friendship Chip)",
     cost: 20,
     icon: "🐺",
-    desc: "增加 +50 EXP 及 +50 友情特質點",
-    buy: (st) => {
-      st.exp = (st.exp || 0) + 50;
-      st.love = (st.love || 0) + 50;
-      playSound('evolve');
-      return "+50 EXP & +50 Friendship 特質增加";
-    }
+    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 友情特質點"
   },
   {
-    id: "shop_chip_discipline",
+    id: "chip_discipline",
     name: "紀律數據晶片 (Discipline Chip)",
     cost: 20,
     icon: "🛡️",
-    desc: "增加 +50 EXP 及 +50 紀律特質點",
-    buy: (st) => {
-      st.exp = (st.exp || 0) + 50;
-      st.discipline = (st.discipline || 0) + 50;
-      playSound('evolve');
-      return "+50 EXP & +50 Discipline 特質增加";
-    }
+    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 紀律特質點"
   },
   {
-    id: "shop_chip_wisdom",
+    id: "chip_wisdom",
     name: "智慧數據晶片 (Wisdom Chip)",
     cost: 20,
     icon: "🧠",
-    desc: "增加 +50 EXP 及 +50 智慧特質點",
-    buy: (st) => {
-      st.exp = (st.exp || 0) + 50;
-      st.wisdom = (st.wisdom || 0) + 50;
-      playSound('evolve');
-      return "+50 EXP & +50 Wisdom 特質增加";
-    }
+    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 智慧特質點"
+  },
+  {
+    id: "item_shield",
+    name: "神聖數碼聖盾 (Aegis Shield)",
+    cost: 25,
+    icon: "🛡️",
+    desc: "購買後存入背包，使用可完全抵擋一次即將到來的攻擊"
   },
   {
     id: "shop_incentive_point",
     name: "校園獎勵計劃積分券 (Incentive Scheme)",
     cost: 1000,
     icon: "🎖️",
-    desc: "以 1000:1 匯率兌換 1 點實質激勵計劃分數",
-    buy: (st) => {
-      st.incentivePoints = (st.incentivePoints || 0) + 1;
-      playSound('evolve');
-      return "+1 點校園激勵計劃積分成功入賬！";
-    }
+    desc: "以 1000:1 匯率直接兌換 1 點實質激勵計劃分數（即時入賬）",
+    isDirect: true
   }
 ];
 
@@ -2080,27 +2107,32 @@ function buyShopItem(shopItemId) {
     if (currentCoins < item.cost) return cur; // 攔截餘額不足
 
     cur.coins = currentCoins - item.cost;
+
+    if (item.isDirect) {
+      cur.incentivePoints = (cur.incentivePoints || 0) + 1;
+    } else {
+      // 放入背包
+      if (!cur.inventory) cur.inventory = {};
+      cur.inventory[item.id] = (cur.inventory[item.id] || 0) + 1;
+    }
     return cur;
   }, (err, committed, snap) => {
     if (committed && snap.exists()) {
+      const updatedVal = snap.val();
       const st = appData.students[currentUser.id];
-      st.coins = snap.val().coins;
-      const resMsg = item.buy(st);
+      if (st) {
+        st.coins = updatedVal.coins;
+        st.inventory = updatedVal.inventory || {};
+        st.incentivePoints = updatedVal.incentivePoints || 0;
+      }
 
-      // 同步回寫道具產生的數值效果
-      patchStudentAtomic(currentUser.id, {
-        hp: st.hp,
-        exp: st.exp,
-        attackQuota: st.attackQuota,
-        courage: st.courage,
-        love: st.love,
-        discipline: st.discipline,
-        wisdom: st.wisdom,
-        incentivePoints: st.incentivePoints
-      });
-
-      addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]: ${resMsg}`, "normal", st.classId);
-      showToast("購買成功！", resMsg, "heal");
+      if (item.isDirect) {
+        addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣兌換了 1 點校園激勵計劃積分！`, "normal", st.classId);
+        showToast("兌換成功！", "+1 點校園激勵計劃積分成功入賬！", "heal");
+      } else {
+        addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]，已存入背包！`, "normal", st.classId);
+        showToast("購買成功！", `[${item.name}] 已放入道具背包，可隨時使用！`, "heal");
+      }
       updateStudentUI();
       renderShopItems();
     } else {
@@ -5794,7 +5826,9 @@ function logout() {
         skinId: st.skinId,
         attackQuota: st.attackQuota,
         courage: st.courage,
-        love: st.love
+        love: st.love,
+        discipline: st.discipline,
+        wisdom: st.wisdom
       });
 
       updateStudentUI();
@@ -8171,9 +8205,11 @@ function onExamTimePresetChange(val) {
         const opt2 = row[2] !== undefined ? String(row[2]).trim() : "";
         const opt3 = row[3] !== undefined ? String(row[3]).trim() : "";
         const opt4 = row[4] !== undefined ? String(row[4]).trim() : "";
-        const qType = row[5] !== undefined ? String(row[5]).trim() : (opt2 ? "選擇題" : "填空題");
-        const explain = row[6] !== undefined ? String(row[6]).trim() : "";
-
+                const explain = row[6] !== undefined ? String(row[6]).trim() : "";
+        // 讀取題型 (Column F) - 智慧辨識 fill, fill-in, fillin, 填空, 填寫 等字眼
+            const rawTypeStr = String(row[5] || '').trim().toLowerCase();
+            const isFillType = /fill|fill-in|fill_in|fillin|填空|填寫|填充/.test(rawTypeStr);
+            const qType = isFillType ? 'FILL' : 'MCQ';
         const options = [correctAns, opt2, opt3, opt4].filter(o => o !== "");
         // 打散選項順序
         options.sort(() => Math.random() - 0.5);
