@@ -715,6 +715,9 @@
             <button id="btnEvolve" onclick="triggerEvolution()" class="hidden w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-amber-500/30 animate-bounce cursor-pointer active:scale-95">
               <i class="fa-solid fa-bolt mr-1"></i> Digivolution Ready! Click to EVOLVE / 進化就緒！點擊進化
             </button>
+            <button id="btnMegaRebirth" onclick="openMegaRebirthPrompt()" class="hidden w-full py-2.5 rounded-full font-black text-sm bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:from-purple-500 hover:to-amber-400 text-white shadow-xl shadow-purple-500/40 animate-pulse cursor-pointer active:scale-95 border-2 border-amber-300">
+              <i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 究極轉生 (Mega Rebirth) - 換取 30 抽獎券 & 永久 +10% 攻擊力
+            </button>
             
             <div id="stSkillsGrid" class="grid grid-cols-2 gap-2 w-full"></div>
 
@@ -1054,13 +1057,13 @@
       <div class="flex items-center gap-2">
         <i class="fa-solid fa-coins text-amber-400 text-2xl"></i>
         <div>
-          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">當前持有數碼幣</span>
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">當前持有數碼幣 (Current Balance)</span>
           <span id="shopUserCoins" class="text-xl font-pixel text-yellow-300">0</span> <span class="text-xs text-amber-400">Coins</span>
         </div>
       </div>
       <div class="text-right">
-        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Incentive Scheme 分數</span>
-        <span id="shopUserIncentivePts" class="text-lg font-pixel text-emerald-400">0</span> <span class="text-xs text-emerald-400">Pts</span>
+        <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">背包道具格 (Tamer Backpack)</span>
+        <span class="text-xs text-slate-400 font-mono">即買即入背包 (Direct to Bag)</span>
       </div>
     </div>
 
@@ -1682,6 +1685,55 @@
 };
 
     const ITEMS_DB = {
+      "item_mega_shield": {
+        id: "item_mega_shield",
+        name: "超能數碼聖盾 (Giga Aegis Shield)",
+        rarity: "Legendary",
+        rarityColor: "text-amber-400 border-amber-500 bg-amber-950/60 shadow-lg shadow-amber-500/20",
+        badgeBg: "bg-amber-600",
+        icon: "🔰",
+        weight: 0,
+        description: "極高能防護壁！完全抵擋接下來的 10 次攻擊！\n(Deploys an ultimate energy barrier that blocks up to 10 incoming attacks!)",
+        effect: (st) => {
+          st.shieldCharges = (st.shieldCharges || 0) + 10;
+          st.hasShield = true;
+          playSound('shield');
+          return "超能聖盾已啟動！剩餘 10 次防禦 (Giga Shield Active! 10 Blocks)!";
+        }
+      },
+      "potion_large": {
+        id: "potion_large",
+        name: "大生命藥水 (Large Recovery Potion)",
+        rarity: "Uncommon",
+        rarityColor: "text-emerald-400 border-emerald-600 bg-emerald-950/40",
+        badgeBg: "bg-emerald-800",
+        icon: "🧴",
+        weight: 0,
+        description: "高濃度生命補劑！立即回復 150 點 HP。\n(High-concentration medicine that recovers +150 HP immediately.)",
+        effect: (st) => {
+          const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+          st.hp = Math.min(d.maxHp, (st.hp || 100) + 150);
+          playSound('heal');
+          return "+150 HP 回復生效 (+150 HP Restored)";
+        }
+      },
+      "item_shield": {
+        id: "item_shield",
+        name: "神聖數碼聖盾 (Aegis Digital Shield)",
+        rarity: "Rare",
+        rarityColor: "text-cyan-400 border-cyan-500 bg-cyan-950/50",
+        badgeBg: "bg-cyan-800",
+        icon: "🛡️",
+        weight: 120,
+        description: "抵擋一次傷害！\n(Creates a digital forcefield that immunizes from 1 incoming attack!)",
+        effect: (st) => {
+          st.shieldCharges = Math.max(st.shieldCharges || 0, 1);
+          st.hasShield = true;
+          playSound('shield');
+          return "聖盾已啟動，抵擋下一次攻擊！(Aegis Shield deployed!)";
+        }
+      },
+
       "item_shield": {
         id: "item_shield",
         name: "Aegis Digital Shield",
@@ -1984,72 +2036,78 @@
         }
       }
     };
-// 🛒 商店商品清單
-// 🛒 商店商品清單（購買後放入背包欄 inventory，方便稍後自行使用）
+
+// 🛒 商店商品清單（10款商品，價格加倍，雙語對照，移除 incentive scheme）
 const SHOP_CATALOG = [
   {
     id: "potion_small",
-    name: "小回復藥水 (Mini Potion)",
-    cost: 5,
+    name: "小回復藥水 (Mini Recovery Potion)",
+    cost: 10, // 原價 5 的兩倍
     icon: "🧪",
-    desc: "購買後存入背包，使用可恢復 50 HP"
+    desc: "購買後存入背包，使用可恢復 50 HP (Recovers +50 HP on use)"
+  },
+  {
+    id: "potion_large",
+    name: "大生命藥水 (Large Recovery Potion)",
+    cost: 20, // 新增
+    icon: "🧴",
+    desc: "購買後存入背包，使用可恢復 150 HP (Recovers +150 HP on use)"
   },
   {
     id: "potion_full",
-    name: "神聖生命精華 (Full Elixir)",
-    cost: 15,
+    name: "全滿生命精華 (Full Recovery Elixir)",
+    cost: 30, // 原價 15 的兩倍
     icon: "💊",
-    desc: "購買後存入背包，使用可完全恢復 100% 全滿 HP"
+    desc: "購買後存入背包，使用可完全恢復 100% 全滿 HP (Restores HP to 100% full capacity)"
   },
   {
     id: "energy_booster",
     name: "戰意驅動晶片 (Digi-Battery)",
-    cost: 8,
+    cost: 16, // 原價 8 的兩倍
     icon: "🔋",
-    desc: "購買後存入背包，使用立即增加 +2 次攻擊次數"
-  },
-  {
-    id: "chip_courage",
-    name: "勇氣數據晶片 (Courage Chip)",
-    cost: 20,
-    icon: "🔥",
-    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 勇氣特質點"
-  },
-  {
-    id: "chip_love",
-    name: "友情數據晶片 (Friendship Chip)",
-    cost: 20,
-    icon: "🐺",
-    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 友情特質點"
-  },
-  {
-    id: "chip_discipline",
-    name: "紀律數據晶片 (Discipline Chip)",
-    cost: 20,
-    icon: "🛡️",
-    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 紀律特質點"
-  },
-  {
-    id: "chip_wisdom",
-    name: "智慧數據晶片 (Wisdom Chip)",
-    cost: 20,
-    icon: "🧠",
-    desc: "購買後存入背包，使用增加 +50 EXP 及 +50 智慧特質點"
+    desc: "購買後存入背包，使用立即增加 +2 次攻擊次數 (Grants +2 Attack Quotas)"
   },
   {
     id: "item_shield",
-    name: "神聖數碼聖盾 (Aegis Shield)",
-    cost: 25,
+    name: "單次防禦聖盾 (Aegis Shield)",
+    cost: 50, // 原價 25 的兩倍
     icon: "🛡️",
-    desc: "購買後存入背包，使用可完全抵擋一次即將到來的攻擊"
+    desc: "購買後存入背包，使用可抵擋 1 次攻擊 (Blocks 1 incoming attack)"
   },
   {
-    id: "shop_incentive_point",
-    name: "校園獎勵計劃積分券 (Incentive Scheme)",
-    cost: 1000,
-    icon: "🎖️",
-    desc: "以 1000:1 匯率直接兌換 1 點實質激勵計劃分數（即時入賬）",
-    isDirect: true
+    id: "item_mega_shield",
+    name: "十次超能聖盾 (Giga Aegis 10x Shield)",
+    cost: 160, // 抵擋 10 次，性價比極高
+    icon: "🔰",
+    desc: "購買後存入背包，使用可連續抵擋 10 次攻擊 (Blocks 10 incoming attacks)"
+  },
+  {
+    id: "chip_courage",
+    name: "勇氣數據晶片 (Courage Trait Chip)",
+    cost: 40, // 原價 20 的兩倍
+    icon: "🔥",
+    desc: "使用增加 +50 EXP 及 +50 勇氣特質 (+50 EXP & +50 Courage Trait)"
+  },
+  {
+    id: "chip_love",
+    name: "友情數據晶片 (Friendship Trait Chip)",
+    cost: 40, // 原價 20 的兩倍
+    icon: "🐺",
+    desc: "使用增加 +50 EXP 及 +50 友情特質 (+50 EXP & +50 Friendship Trait)"
+  },
+  {
+    id: "chip_discipline",
+    name: "紀律數據晶片 (Discipline Trait Chip)",
+    cost: 40, // 原價 20 的兩倍
+    icon: "🛡️",
+    desc: "使用增加 +50 EXP 及 +50 紀律特質 (+50 EXP & +50 Discipline Trait)"
+  },
+  {
+    id: "chip_wisdom",
+    name: "智慧數據晶片 (Wisdom Trait Chip)",
+    cost: 40, // 原價 20 的兩倍
+    icon: "🧠",
+    desc: "使用增加 +50 EXP 及 +50 智慧特質 (+50 EXP & +50 Wisdom Trait)"
   }
 ];
 
@@ -2065,8 +2123,8 @@ function renderShopItems() {
   const st = appData.students[currentUser.id];
   if (!st) return;
 
-  document.getElementById('shopUserCoins').textContent = st.coins || 0;
-  document.getElementById('shopUserIncentivePts').textContent = st.incentivePoints || 0;
+  const coinsEl = document.getElementById('shopUserCoins');
+  if (coinsEl) coinsEl.textContent = st.coins || 0;
 
   const container = document.getElementById('shopItemsContainer');
   if (!container) return;
@@ -2085,9 +2143,9 @@ function renderShopItems() {
         </div>
       </div>
       <div class="flex items-center gap-3 shrink-0">
-        <span class="font-pixel text-xs text-amber-400 font-bold">${item.cost} 幣</span>
+        <span class="font-pixel text-xs text-amber-400 font-bold">${item.cost} Coins</span>
         <button onclick="buyShopItem('${item.id}')" ${!canAfford ? 'disabled' : ''} class="px-3.5 py-1.5 rounded-xl font-bold text-xs ${canAfford ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 cursor-pointer active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed'} shadow">
-          購買
+          購買 (Buy)
         </button>
       </div>
     `;
@@ -2108,13 +2166,9 @@ function buyShopItem(shopItemId) {
 
     cur.coins = currentCoins - item.cost;
 
-    if (item.isDirect) {
-      cur.incentivePoints = (cur.incentivePoints || 0) + 1;
-    } else {
-      // 放入背包
-      if (!cur.inventory) cur.inventory = {};
-      cur.inventory[item.id] = (cur.inventory[item.id] || 0) + 1;
-    }
+    // 存入背包
+    if (!cur.inventory) cur.inventory = {};
+    cur.inventory[item.id] = (cur.inventory[item.id] || 0) + 1;
     return cur;
   }, (err, committed, snap) => {
     if (committed && snap.exists()) {
@@ -2123,23 +2177,19 @@ function buyShopItem(shopItemId) {
       if (st) {
         st.coins = updatedVal.coins;
         st.inventory = updatedVal.inventory || {};
-        st.incentivePoints = updatedVal.incentivePoints || 0;
       }
 
-      if (item.isDirect) {
-        addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣兌換了 1 點校園激勵計劃積分！`, "normal", st.classId);
-        showToast("兌換成功！", "+1 點校園激勵計劃積分成功入賬！", "heal");
-      } else {
-        addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]，已存入背包！`, "normal", st.classId);
-        showToast("購買成功！", `[${item.name}] 已放入道具背包，可隨時使用！`, "heal");
-      }
+      addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]，已存入背包！`, "normal", st.classId);
+      showToast("購買成功！", `[${item.name}] 已放入道具背包，可隨時使用！`, "heal");
+      
       updateStudentUI();
       renderShopItems();
     } else {
-      showToast("購買失敗", "數碼幣餘額不足！", "damage");
+      showToast("購買失敗", "數碼幣餘額不足！(Insufficient Coins)", "damage");
     }
   });
 }
+
 const DIGIMON_DB = {
       "digitama1": { id: "digitama1", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama I", title: "White mysterious egg", img: "./images/digitama1.png", svg: makeBadgeSvg("Digitama I", "#0284c7", "#38bdf8", "🥚", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Egg Shell Armor", power: 10, type: "damage", icon: "fa-shield" }] },
       "digitama2": { id: "digitama2", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama II", title: "Blazing red egg", img: "./images/digitama2.png", svg: makeBadgeSvg("Digitama II", "#e11d48", "#fb7185", "🔥", "EGG"), nextExp: 100, maxHp: 100, skills: [{ name: "Ember Spark", power: 12, type: "damage", icon: "fa-fire" }] },
@@ -2316,6 +2366,22 @@ const DIGIMON_DB = {
       if (diff === 0) return 100;      // 平級 (Same rank): 100 EXP
       if (diff === -1) return 50;      // 弱一級 (-1 rank lower): 50 EXP
       return 0;                        // 弱兩級或以下 (-2 ranks or lower): 0 EXP (無經驗 No EXP)
+    }
+
+// ⚔️ 計算擊殺階級差距之金幣獎勵 (PvP Kill Coins Calculator)
+    // 越級或同階級: $10 | 低一階 (成熟期殺成長期): $5 | 低兩階或以上 (成熟期殺幼年/蛋): $0
+    function calculatePvPBaseKillCoins(attackerDigiId, targetDigiId) {
+      const atkDigi = DIGIMON_DB[attackerDigiId] || DIGIMON_DB['digitama1'];
+      const tgtDigi = DIGIMON_DB[targetDigiId] || DIGIMON_DB['digitama1'];
+
+      const atkStageRank = STAGE_ORDER[atkDigi.stage] !== undefined ? STAGE_ORDER[atkDigi.stage] : 0;
+      const tgtStageRank = STAGE_ORDER[tgtDigi.stage] !== undefined ? STAGE_ORDER[tgtDigi.stage] : 0;
+
+      const diff = tgtStageRank - atkStageRank; // 目標階級 - 攻擊者階級
+
+      if (diff >= 0) return 10;   // 同級或越級擊殺：得 10 金幣
+      if (diff === -1) return 5;  // 低一階對手：只能獲得 5 金幣
+      return 0;                   // 低兩階或以上對手 (例：成熟期擊殺幼年期/蛋)：獲得 0 金幣
     }
 
     // 取得前一階段數碼暴龍形態
@@ -2734,7 +2800,8 @@ function normalizeStudent(s, keyId) {
     discipline: Number(s.discipline) || 0,
     coins: Number(s.coins) || 0,
     incentivePoints: Number(s.incentivePoints) || 0,
-    wisdom: Number(s.wisdom) || 0
+    wisdom: Number(s.wisdom) || 0,
+    rebirthCount: Number(s.rebirthCount) || 0 // 轉生次數（每轉生一次永久攻擊+10%）
     
   };
 }
@@ -5459,6 +5526,18 @@ function logout() {
       if (req.canEvolve && !isDead && !banned) btnEvolve.classList.remove('hidden');
       else btnEvolve.classList.add('hidden');
 
+      // 究極體專屬轉生按鈕判定
+      const btnRebirth = document.getElementById('btnMegaRebirth');
+      if (btnRebirth) {
+        if (digi.stage === 'MEGA' && !isDead && !banned) {
+          btnRebirth.classList.remove('hidden');
+          const currentBonus = (st.rebirthCount || 0) * 10;
+          btnRebirth.innerHTML = `<i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 究極轉生 (第 ${(st.rebirthCount || 0) + 1} 次) - 獲 30 抽獎券 & 永久攻擊升至 +${currentBonus + 10}%`;
+        } else {
+          btnRebirth.classList.add('hidden');
+        }
+      }
+
       const maxTrait = Math.max(10, st.courage || 0, st.love || 0, st.discipline || 0, st.wisdom || 0);
       document.getElementById('stValCourage').textContent = st.courage || 0;
       document.getElementById('stBarCourage').style.width = `${((st.courage || 0)/maxTrait)*100}%`;
@@ -5801,6 +5880,65 @@ function logout() {
       });
     }
 
+// ==========================================
+    // 🥚 究極體轉生核心邏輯 (Mega Stage Rebirth)
+    // ==========================================
+    function openMegaRebirthPrompt() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
+      const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+
+      if (digi.stage !== 'MEGA') {
+        alert("只有進化至究極體 (Mega) 的數碼暴龍才能進行究極轉生！");
+        return;
+      }
+
+      const nextRebirthCount = (st.rebirthCount || 0) + 1;
+      const nextAtkBonusPct = nextRebirthCount * 10;
+
+      const confirmText = 
+        `★【數碼暴龍 究極轉生契約 (Mega Rebirth)】★\n\n` +
+        `當前數碼暴龍：${digi.name} (究極體)\n` +
+        `轉生歷史：已轉生 ${st.rebirthCount || 0} 次 (當前攻擊加成: +${(st.rebirthCount || 0) * 10}%)\n\n` +
+        `【轉生獎勵與代價】：\n` +
+        `1. 退化回隨機數碼蛋 (等級重回 Digi-Egg，EXP 與特質數值歸零)\n` +
+        `2. 立即獲贈 🎁 30 張抽獎券 (Gacha Tickets)！\n` +
+        `3. 獲得第 ${nextRebirthCount} 層永久攻擊祝福：所有技能傷害永久提升至 +${nextAtkBonusPct}%！\n\n` +
+        `請問你是否願意退化回數碼蛋，進行究極轉生？`;
+
+      if (!confirm(confirmText)) return;
+
+      const randomEgg = getRandomEggId();
+      const eggDigi = DIGIMON_DB[randomEgg];
+
+      const updates = {
+        currentDigiId: randomEgg,
+        hp: 100,
+        isFainted: false,
+        exp: 0,
+        statPool: 0,
+        courage: 0,
+        love: 0,
+        discipline: 0,
+        wisdom: 0,
+        rebirthCount: nextRebirthCount,
+        gachaTickets: (st.gachaTickets || 0) + 30
+      };
+
+      patchStudentAtomic(currentUser.id, updates);
+      playSound('evolve');
+
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
+      }
+
+      addBattleLog(`🌟🥚 [MEGA REBIRTH] 學生【${st.name}】完成了第 ${nextRebirthCount} 次究極轉生！獲得 30 張抽獎券，並獲得永久 +${nextAtkBonusPct}% 攻擊力加成！`, "evolution", st.classId);
+      showToast("轉生成功！", `已轉生為數碼蛋！獲得 +30 張抽獎券，永久攻擊力提升至 +${nextAtkBonusPct}%！`, "evolution");
+
+      updateStudentUI();
+    }
+
     function useItem(itemId) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -5831,6 +5969,235 @@ function logout() {
         wisdom: st.wisdom
       });
 
+      updateStudentUI();
+    }
+
+    // ==========================================
+    // ⚔️ 學生發動技能核心邏輯 (Boss 戰與 PvP 對決)
+    // ==========================================
+    let currentSelectedSkillIdx = 0;
+
+    function castStudentSkill(skillIdx, mode) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
+        showToast("無法行動", "當前處於倒下或鎖定狀態，無法發動技能！", "damage");
+        return;
+      }
+
+      if ((st.attackQuota || 0) <= 0) {
+        showToast("次數不足", "攻擊次數 (Attack Quotas) 不足，請等待老師發放或透過抽籤獲得！", "damage");
+        return;
+      }
+
+     const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skills = digi.skills || [{ name: "Tackle Strike", power: 20, type: "damage" }];
+      const sk = skills[skillIdx] || skills[0];
+
+      // 計算永久轉生攻擊加成 (每次轉生 +10%)
+      const rebirthMultiplier = 1 + ((st.rebirthCount || 0) * 0.1);
+
+      if (mode === 'boss') {
+        // --- 對決老師夥伴 (Teacher Partner Boss) ---
+        const tc = appData.teachers[studentTargetTeacherId] || Object.values(appData.teachers || {})[0];
+        if (!tc) return alert("目前無可攻擊的老師夥伴！");
+
+        const curHp = Math.max(0, tc.hp !== undefined ? tc.hp : tc.maxHp);
+        if (curHp <= 0) return alert("老師夥伴已倒下！");
+
+        const baseDmg = sk.power || 20;
+        const dmg = Math.round(baseDmg * rebirthMultiplier);
+        const nextHp = Math.max(0, curHp - dmg);
+
+        // 💥 計算反擊傷害：造成傷害的 15% (最低 3 點，自身 HP 最多扣至 1 點)
+        const recoilDmg = Math.max(3, Math.round(dmg * 0.15));
+        const selfCurrentHp = st.hp !== undefined ? st.hp : 100;
+        const selfNextHp = Math.max(1, selfCurrentHp - recoilDmg);
+
+        // 扣除攻擊次數、扣減自身反擊 HP，並同步更新 Boss HP
+        patchStudentAtomic(currentUser.id, { 
+          attackQuota: Math.max(0, (st.attackQuota || 0) - 1),
+          hp: selfNextHp
+        });
+        patchTeacherAtomic(tc.id, { hp: nextHp });
+
+        playSound('attack');
+        addBattleLog(`⚔️💥 [BOSS BATTLE] ${st.name} 使用【${sk.name}】造成 ${dmg} 傷害，但受到 Boss 氣場反震扣除 -${recoilDmg} HP！(剩餘 HP: ${selfNextHp})`, "battle", st.classId);
+        showToast("反擊觸發！", `造成 ${dmg} 傷害，自身受到 ${recoilDmg} 點反擊傷害！`, "damage");
+        renderStudentBossBar();
+        updateStudentUI();
+
+      } else if (mode === 'pvp') {
+        // --- 點擊同學對決：打開目標選擇視窗 ---
+        currentSelectedSkillIdx = skillIdx;
+        openPvpTargetModal();
+      }
+    }
+
+    // 打開同學目標選擇清單
+    function openPvpTargetModal() {
+      const modal = document.getElementById('modalPvpTargetPicker');
+      const container = document.getElementById('pvpTargetsListContainer');
+      if (!modal || !container || !currentUser) return;
+
+      const st = appData.students[currentUser.id];
+      const myClasses = parseStudentClasses(st.classId);
+      container.innerHTML = '';
+
+      // 篩選同班同學（排除自己）
+      const classmates = Object.values(appData.students || {}).filter(s => {
+        if (s.id === currentUser.id) return false;
+        return myClasses.some(c => studentIsInClass(s, c));
+      });
+
+      if (classmates.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-slate-500 text-xs italic">班級中尚無其他可攻擊的同學。</div>';
+      } else {
+        classmates.forEach(target => {
+          const tDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+          const tMaxHp = tDigi.maxHp || 100;
+          const tCurHp = target.hp !== undefined ? target.hp : tMaxHp;
+          const isDead = target.isFainted || tCurHp <= 0;
+
+          // 陣營判定（同陣營免疫）
+          const myFac = getStudentFactionInClass(st, myClasses[0]);
+          const tgtFac = getStudentFactionInClass(target, myClasses[0]);
+          const isAlly = myFac.factionId && tgtFac.factionId && (myFac.factionId === tgtFac.factionId);
+
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-xl border flex items-center justify-between gap-3 transition ${isDead ? 'bg-slate-950/60 border-slate-800 opacity-50 cursor-not-allowed' : (isAlly ? 'bg-indigo-950/30 border-indigo-500/40' : 'bg-slate-950 border-cyan-500/40 hover:border-cyan-400 cursor-pointer')}`;
+          
+          card.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-slate-900 rounded-lg p-1 border border-slate-700 flex items-center justify-center shrink-0">
+                <img src="${getDigiImgSrc(target.currentDigiId)}" class="max-w-full max-h-full object-contain">
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-white">${target.name}</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">${tDigi.stageName}</span>
+                  ${isAlly ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 border border-indigo-400 text-indigo-300 font-bold">同陣營盟友</span>' : ''}
+                </div>
+                <div class="text-[11px] font-mono text-emerald-400 mt-0.5">
+                  HP: ${tCurHp} / ${tMaxHp} ${target.hasShield ? '🛡️ (聖盾防禦中)' : ''}
+                </div>
+              </div>
+            </div>
+            <div>
+              <button ${isDead || isAlly ? 'disabled' : ''} class="px-3.5 py-1.5 rounded-xl font-bold text-xs ${isDead || isAlly ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow cursor-pointer active:scale-95'}">
+                ${isDead ? '已倒下' : (isAlly ? '免疫' : '攻擊鎖定')}
+              </button>
+            </div>
+          `;
+
+          if (!isDead && !isAlly) {
+            card.onclick = () => executePvPStrike(target.id);
+          }
+          container.appendChild(card);
+        });
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closePvpTargetModal() {
+      const modal = document.getElementById('modalPvpTargetPicker');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // 真正執行同學擊打與結算 (包含階級金幣 $5 / $0 與懸賞結算)
+    function executePvPStrike(targetStudentId) {
+      closePvpTargetModal();
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      const target = appData.students[targetStudentId];
+      if (!st || !target) return;
+
+      if ((st.attackQuota || 0) <= 0) {
+        showToast("次數不足", "攻擊次數不足！", "damage");
+        return;
+      }
+
+      const myDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+      const skills = myDigi.skills || [{ name: "Tackle Strike", power: 20 }];
+      const sk = skills[currentSelectedSkillIdx] || skills[0];
+      // 計算永久轉生攻擊加成 (每次轉生 +10%)
+      const rebirthMultiplier = 1 + ((st.rebirthCount || 0) * 0.1);
+      const dmg = Math.round((sk.power || 20) * rebirthMultiplier);
+
+      // 💥 計算反擊傷害：造成傷害的 15% (最低 3 點，自身 HP 最多扣至 1 點)
+      const recoilDmg = Math.max(3, Math.round(dmg * 0.15));
+      const selfCurrentHp = st.hp !== undefined ? st.hp : 100;
+      const selfNextHp = Math.max(1, selfCurrentHp - recoilDmg);
+
+      // 扣除攻擊者 1 次攻擊額度，並扣除反擊 HP
+      const attackerUpdates = { 
+        attackQuota: Math.max(0, (st.attackQuota || 0) - 1),
+        hp: selfNextHp
+      };
+
+      // 1. 若對方有護盾（支援 10 次聖盾與單次聖盾）
+      if (target.hasShield) {
+        let leftCharges = (target.shieldCharges !== undefined ? target.shieldCharges : 1) - 1;
+        let stillHasShield = leftCharges > 0;
+        
+        patchStudentAtomic(currentUser.id, attackerUpdates);
+        patchStudentAtomic(target.id, {
+          shieldCharges: leftCharges,
+          hasShield: stillHasShield
+        });
+
+        playSound('shield');
+        addBattleLog(`🛡️ [PVP BLOCKED] ${target.name} 的聖盾抵擋了 ${st.name} 的【${sk.name}】！(護盾剩餘抵擋次數: ${leftCharges})`, "battle", st.classId);
+        showToast("被護盾抵擋！", `${target.name} 聖盾抵擋了你的攻擊！(對方剩餘 ${leftCharges} 次防禦)`, "info");
+        return;
+      }
+
+      // 2. 實質扣血計算
+      const curHp = target.hp !== undefined ? target.hp : (tgtDigi.maxHp || 100);
+      const nextHp = Math.max(0, curHp - dmg);
+      const isKill = nextHp === 0;
+
+      const targetUpdates = {
+        hp: nextHp,
+        isFainted: isKill
+      };
+
+      // 3. 擊殺結算（階級判定金幣與經驗）
+      if (isKill) {
+        playSound('faint');
+        
+        // 階級金幣：越級/同級 $10，低一階 $5，低兩階或以上 $0
+        const earnedCoins = calculatePvPBaseKillCoins(st.currentDigiId, target.currentDigiId);
+        const earnedExp = calculatePvPBaseKillExp(st.currentDigiId, target.currentDigiId);
+
+        // 懸賞目標額外加成判定
+        const targetClass = parseStudentClasses(target.classId)[0] || 'ALL';
+        const tagKey = sanitizeClassKey(targetClass);
+        const isBounty = (appData.bounties && (appData.bounties[tagKey] === target.id || appData.bounties['ALL'] === target.id));
+
+        const bountyBonusExp = isBounty ? 300 : 0;
+        const bountyBonusTickets = isBounty ? 1 : 0;
+        const totalExp = earnedExp + bountyBonusExp;
+
+        attackerUpdates.coins = (st.coins || 0) + earnedCoins;
+        attackerUpdates.exp = (st.exp || 0) + totalExp;
+        attackerUpdates.statPool = (st.statPool || 0) + totalExp;
+        if (bountyBonusTickets > 0) {
+          attackerUpdates.gachaTickets = (st.gachaTickets || 0) + bountyBonusTickets;
+        }
+
+        addBattleLog(`☠️💥 [PVP KILL] ${st.name} 使用【${sk.name}】擊敗了 ${target.name}！自身受反擊 -${recoilDmg} HP，獲得 +${totalExp} EXP 與 +${earnedCoins} 金幣${isBounty ? ' (+1 懸賞抽獎券)' : ''}！`, "battle", st.classId);
+        showToast("擊敗對手！", `擊殺 ${target.name}！(受反彈 -${recoilDmg} HP)，獲 +${totalExp} EXP 及 +${earnedCoins} 金幣！`, "heal");
+      } else {
+        playSound('attack');
+        addBattleLog(`⚔️💥 [PVP ATTACK] ${st.name} 使用【${sk.name}】對 ${target.name} 造成 ${dmg} 傷害，受到對手反擊扣除 -${recoilDmg} HP！(自身剩餘 HP: ${selfNextHp})`, "battle", st.classId);
+        showToast("命中同學！", `造成 ${dmg} 傷害，自身受到 ${recoilDmg} 點反擊傷害！`, "damage");
+      }
+
+      patchStudentAtomic(currentUser.id, attackerUpdates);
+      patchStudentAtomic(target.id, targetUpdates);
       updateStudentUI();
     }
 
@@ -9481,14 +9848,17 @@ function startStudentExamTimer() {
 
       // 3. 護盾抵擋判定 (Shield Block)
       if (target.hasShield) {
-        updates[`students/${target.id}/hasShield`] = false;
-        executeAtomicMultiPathUpdate(updates).then(() => {
-          playSound('shield');
-          addBattleLog(`🛡️ [SHIELD BLOCK / 護盾格擋] ${target.name}'s Aegis Shield blocked ${me.name}'s [${skill.name}]!`, "battle", targetClass);
-          showToast("Blocked by Shield / 護盾格擋", `${target.name}'s shield blocked your attack! / ${target.name} 的數碼聖盾抵擋了你的攻擊！`, "info");
-          updateStudentUI();
-        });
-        return;
+            let leftCharges = (target.shieldCharges !== undefined ? target.shieldCharges : 1) - 1;
+            let stillHasShield = leftCharges > 0;
+            patchStudentAtomic(target.id, { 
+              shieldCharges: leftCharges,
+              hasShield: stillHasShield 
+            });
+            addBattleLog(`🛡️ [BLOCKED] ${target.name} 聖盾抵擋了攻擊！(護盾剩餘抵擋次數: ${leftCharges})`, "battle", target.classId);
+            showToast("Blocked!", `防禦成功！護盾剩餘 ${leftCharges} 次抵擋。`, "info");
+            playSound('shield');
+            return;
+          
       }
 
       // 4. 計算剩餘生命值
