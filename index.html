@@ -2042,70 +2042,70 @@ const SHOP_CATALOG = [
   {
     id: "potion_small",
     name: "小回復藥水 (Mini Recovery Potion)",
-    cost: 10, // 原價 5 的兩倍
+    cost: 15, // 原價 5 的兩倍
     icon: "🧪",
     desc: "購買後存入背包，使用可恢復 50 HP (Recovers +50 HP on use)"
   },
   {
     id: "potion_large",
     name: "大生命藥水 (Large Recovery Potion)",
-    cost: 20, // 新增
+    cost: 30, // 新增
     icon: "🧴",
     desc: "購買後存入背包，使用可恢復 150 HP (Recovers +150 HP on use)"
   },
   {
     id: "potion_full",
     name: "全滿生命精華 (Full Recovery Elixir)",
-    cost: 30, // 原價 15 的兩倍
+    cost: 45, // 原價 15 的兩倍
     icon: "💊",
     desc: "購買後存入背包，使用可完全恢復 100% 全滿 HP (Restores HP to 100% full capacity)"
   },
   {
     id: "energy_booster",
     name: "戰意驅動晶片 (Digi-Battery)",
-    cost: 16, // 原價 8 的兩倍
+    cost: 24, // 原價 8 的兩倍
     icon: "🔋",
     desc: "購買後存入背包，使用立即增加 +2 次攻擊次數 (Grants +2 Attack Quotas)"
   },
   {
     id: "item_shield",
     name: "單次防禦聖盾 (Aegis Shield)",
-    cost: 50, // 原價 25 的兩倍
+    cost: 75, // 原價 25 的兩倍
     icon: "🛡️",
     desc: "購買後存入背包，使用可抵擋 1 次攻擊 (Blocks 1 incoming attack)"
   },
   {
     id: "item_mega_shield",
     name: "十次超能聖盾 (Giga Aegis 10x Shield)",
-    cost: 160, // 抵擋 10 次，性價比極高
+    cost: 250, // 抵擋 10 次，性價比極高
     icon: "🔰",
     desc: "購買後存入背包，使用可連續抵擋 10 次攻擊 (Blocks 10 incoming attacks)"
   },
   {
     id: "chip_courage",
     name: "勇氣數據晶片 (Courage Trait Chip)",
-    cost: 40, // 原價 20 的兩倍
+    cost: 60, // 原價 20 的兩倍
     icon: "🔥",
     desc: "使用增加 +50 EXP 及 +50 勇氣特質 (+50 EXP & +50 Courage Trait)"
   },
   {
     id: "chip_love",
     name: "友情數據晶片 (Friendship Trait Chip)",
-    cost: 40, // 原價 20 的兩倍
+    cost: 60, // 原價 20 的兩倍
     icon: "🐺",
     desc: "使用增加 +50 EXP 及 +50 友情特質 (+50 EXP & +50 Friendship Trait)"
   },
   {
     id: "chip_discipline",
     name: "紀律數據晶片 (Discipline Trait Chip)",
-    cost: 40, // 原價 20 的兩倍
+    cost: 60, // 原價 20 的兩倍
     icon: "🛡️",
     desc: "使用增加 +50 EXP 及 +50 紀律特質 (+50 EXP & +50 Discipline Trait)"
   },
   {
     id: "chip_wisdom",
     name: "智慧數據晶片 (Wisdom Trait Chip)",
-    cost: 40, // 原價 20 的兩倍
+    cost: 60, // 原價 20 的兩倍
     icon: "🧠",
     desc: "使用增加 +50 EXP 及 +50 智慧特質 (+50 EXP & +50 Wisdom Trait)"
   }
@@ -2368,20 +2368,42 @@ const DIGIMON_DB = {
       return 0;                        // 弱兩級或以下 (-2 ranks or lower): 0 EXP (無經驗 No EXP)
     }
 
-// ⚔️ 計算擊殺階級差距之金幣獎勵 (PvP Kill Coins Calculator)
-    // 越級或同階級: $10 | 低一階 (成熟期殺成長期): $5 | 低兩階或以上 (成熟期殺幼年/蛋): $0
+// ⚔️ 嚴格計算擊殺階級差距之金幣獎勵 (PvP Kill Coins Calculator)
     function calculatePvPBaseKillCoins(attackerDigiId, targetDigiId) {
-      const atkDigi = DIGIMON_DB[attackerDigiId] || DIGIMON_DB['digitama1'];
-      const tgtDigi = DIGIMON_DB[targetDigiId] || DIGIMON_DB['digitama1'];
+      // 輔助函式：取得數碼獸的階級數字 (0: 蛋, 1: 幼年, 2: 成長, 3: 成熟, 4: 完全, 5: 究極)
+      function getDigiRank(id) {
+        if (!id) return 2;
+        const cleanId = String(id).toLowerCase().trim();
+        const d = DIGIMON_DB[cleanId];
+        if (!d || !d.stage) return 2; // 找不到預設為成長期
+        const s = String(d.stage).toUpperCase().trim();
+        if (s.includes('EGG')) return 0;
+        if (s.includes('IN-TRAINING') || s.includes('BABY')) return 1;
+        if (s.includes('ROOKIE')) return 2;
+        if (s.includes('CHAMPION')) return 3;
+        if (s.includes('ULTIMATE')) return 4;
+        if (s.includes('MEGA')) return 5;
+        return 2;
+      }
 
-      const atkStageRank = STAGE_ORDER[atkDigi.stage] !== undefined ? STAGE_ORDER[atkDigi.stage] : 0;
-      const tgtStageRank = STAGE_ORDER[tgtDigi.stage] !== undefined ? STAGE_ORDER[tgtDigi.stage] : 0;
+      const atkRank = getDigiRank(attackerDigiId);
+      const tgtRank = getDigiRank(targetDigiId);
+      const diff = tgtRank - atkRank; // 目標 - 攻擊者
 
-      const diff = tgtStageRank - atkStageRank; // 目標階級 - 攻擊者階級
+      console.log(`[金幣階級結算] 攻擊者Rank: ${atkRank}, 目標Rank: ${tgtRank}, 差距: ${diff}`);
 
-      if (diff >= 0) return 10;   // 同級或越級擊殺：得 10 金幣
-      if (diff === -1) return 5;  // 低一階對手：只能獲得 5 金幣
-      return 0;                   // 低兩階或以上對手 (例：成熟期擊殺幼年期/蛋)：獲得 0 金幣
+      // 完全體(4) 殺 成長期(2) => diff = 2 - 4 = -2 (低兩階或以上 => 0 金幣)
+      // 成熟期(3) 殺 幼年期(1) => diff = 1 - 3 = -2 (低兩階或以上 => 0 金幣)
+      if (diff <= -2) {
+        return 0;
+      }
+      // 完全體(4) 殺 成熟期(3) => diff = 3 - 4 = -1 (低一階 => 5 金幣)
+      // 成熟期(3) 殺 成長期(2) => diff = 2 - 3 = -1 (低一階 => 5 金幣)
+      if (diff === -1) {
+        return 5;
+      }
+      // 同階級(0) 或 越級(>=1) => 10 金幣
+      return 10;
     }
 
     // 取得前一階段數碼暴龍形態
@@ -6011,23 +6033,30 @@ function logout() {
 
         // 💥 計算反擊傷害：造成傷害的 15% (最低 3 點，自身 HP 最多扣至 1 點)
         const recoilDmg = Math.max(3, Math.round(dmg * 0.15));
-        const selfCurrentHp = st.hp !== undefined ? st.hp : 100;
+        const selfCurrentHp = (st.hp !== undefined && st.hp !== null) ? Number(st.hp) : 100;
         const selfNextHp = Math.max(1, selfCurrentHp - recoilDmg);
+        const newQuota = Math.max(0, (st.attackQuota || 0) - 1);
 
-        // 扣除攻擊次數、扣減自身反擊 HP，並同步更新 Boss HP
+        // 1. 本地實體立即更新
+        st.hp = selfNextHp;
+        st.attackQuota = newQuota;
+
+        // 2. 雲端同步
         patchStudentAtomic(currentUser.id, { 
-          attackQuota: Math.max(0, (st.attackQuota || 0) - 1),
+          attackQuota: newQuota,
           hp: selfNextHp
         });
         patchTeacherAtomic(tc.id, { hp: nextHp });
 
         playSound('attack');
-        addBattleLog(`⚔️💥 [BOSS BATTLE] ${st.name} 使用【${sk.name}】造成 ${dmg} 傷害，但受到 Boss 氣場反震扣除 -${recoilDmg} HP！(剩餘 HP: ${selfNextHp})`, "battle", st.classId);
-        showToast("反擊觸發！", `造成 ${dmg} 傷害，自身受到 ${recoilDmg} 點反擊傷害！`, "damage");
+        addBattleLog(`⚔️💥 [BOSS BATTLE] ${st.name} 使用【${sk.name}】造成 ${dmg} 傷害，受到反震扣除 -${recoilDmg} HP！(自身剩餘 HP: ${selfNextHp})`, "battle", st.classId);
+        showToast("受到反彈傷害！", `造成 ${dmg} 傷害，自身受到 ${recoilDmg} 點反傷！`, "damage");
+        
         renderStudentBossBar();
         updateStudentUI();
+      }
 
-      } else if (mode === 'pvp') {
+else if (mode === 'pvp') {
         // --- 點擊同學對決：打開目標選擇視窗 ---
         currentSelectedSkillIdx = skillIdx;
         openPvpTargetModal();
@@ -6105,7 +6134,7 @@ function logout() {
       if (modal) modal.classList.add('hidden');
     }
 
-    // 真正執行同學擊打與結算 (包含階級金幣 $5 / $0 與懸賞結算)
+    // 真正執行同學擊打與結算 (反傷本機立即硬鎖定 + 階級金幣強校驗)
     function executePvPStrike(targetStudentId) {
       closePvpTargetModal();
       if (!currentUser || currentUser.role !== 'student') return;
@@ -6113,91 +6142,157 @@ function logout() {
       const target = appData.students[targetStudentId];
       if (!st || !target) return;
 
+      // 檢查是否處於倒下或無攻擊配額
+      if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
+        showToast("無法行動", "你的數碼暴龍已經倒下！", "damage");
+        return;
+      }
       if ((st.attackQuota || 0) <= 0) {
-        showToast("次數不足", "攻擊次數不足！", "damage");
+        showToast("次數不足", "攻擊次數 (Attack Quotas) 不足！", "damage");
         return;
       }
 
-      const myDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-      const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+      // 1. 抓取雙方攻擊前的數碼獸 ID
+      const atkDigiId = String(st.currentDigiId || 'digitama1').toLowerCase().trim();
+      const tgtDigiId = String(target.currentDigiId || 'digitama1').toLowerCase().trim();
+      const myDigi = DIGIMON_DB[atkDigiId] || DIGIMON_DB['digitama1'];
+      const tgtDigi = DIGIMON_DB[tgtDigiId] || DIGIMON_DB['digitama1'];
+
+      // 目標已經倒下防呆
+      const curTargetHp = (target.hp !== undefined && target.hp !== null) ? Math.floor(Number(target.hp)) : (tgtDigi.maxHp || 100);
+      if (target.isFainted || curTargetHp <= 0) {
+        showToast("無效目標", "該同學已經倒下！", "info");
+        return;
+      }
+
       const skills = myDigi.skills || [{ name: "Tackle Strike", power: 20 }];
       const sk = skills[currentSelectedSkillIdx] || skills[0];
-      // 計算永久轉生攻擊加成 (每次轉生 +10%)
+
+      // 2. 傷害計算（包含轉生加成與陣營增減傷）
       const rebirthMultiplier = 1 + ((st.rebirthCount || 0) * 0.1);
-      const dmg = Math.round((sk.power || 20) * rebirthMultiplier);
+      let calculatedDmg = Math.round((sk.power || 20) * rebirthMultiplier);
 
-      // 💥 計算反擊傷害：造成傷害的 15% (最低 3 點，自身 HP 最多扣至 1 點)
-      const recoilDmg = Math.max(3, Math.round(dmg * 0.15));
-      const selfCurrentHp = st.hp !== undefined ? st.hp : 100;
-      const selfNextHp = Math.max(1, selfCurrentHp - recoilDmg);
+      const myClasses = parseStudentClasses(st.classId);
+      const targetFac = getStudentFactionInClass(target, myClasses[0]);
+      const factions = getFactionsForClass(myClasses[0]);
+      const facData = factions.find(f => f.id === targetFac.factionId);
+      if (facData && facData.buffType === 'vulnerable_debuff') {
+        calculatedDmg = Math.round(calculatedDmg * 2.0);
+      } else if (facData && facData.buffType === 'def_boost') {
+        calculatedDmg = Math.max(1, Math.round(calculatedDmg * 0.8));
+      }
 
-      // 扣除攻擊者 1 次攻擊額度，並扣除反擊 HP
-      const attackerUpdates = { 
-        attackQuota: Math.max(0, (st.attackQuota || 0) - 1),
-        hp: selfNextHp
-      };
+      // 扣除攻擊次數
+      const newQuota = Math.max(0, (st.attackQuota || 0) - 1);
+      st.attackQuota = newQuota;
 
-      // 1. 若對方有護盾（支援 10 次聖盾與單次聖盾）
+      // 3. 聖盾抵擋判定
       if (target.hasShield) {
         let leftCharges = (target.shieldCharges !== undefined ? target.shieldCharges : 1) - 1;
         let stillHasShield = leftCharges > 0;
-        
-        patchStudentAtomic(currentUser.id, attackerUpdates);
+        target.shieldCharges = leftCharges;
+        target.hasShield = stillHasShield;
+
+        patchStudentAtomic(currentUser.id, { attackQuota: newQuota });
         patchStudentAtomic(target.id, {
           shieldCharges: leftCharges,
           hasShield: stillHasShield
         });
 
         playSound('shield');
-        addBattleLog(`🛡️ [PVP BLOCKED] ${target.name} 的聖盾抵擋了 ${st.name} 的【${sk.name}】！(護盾剩餘抵擋次數: ${leftCharges})`, "battle", st.classId);
-        showToast("被護盾抵擋！", `${target.name} 聖盾抵擋了你的攻擊！(對方剩餘 ${leftCharges} 次防禦)`, "info");
+        addBattleLog(`🛡️ [PVP BLOCKED] ${target.name} 的聖盾抵擋了 ${st.name} 的【${sk.name}】！(剩餘盾防: ${leftCharges})`, "battle", st.classId);
+        showToast("被護盾抵擋！", `${target.name} 聖盾抵擋了你的攻擊！`, "info");
+        updateStudentUI();
         return;
       }
 
-      // 2. 實質扣血計算
-      const curHp = target.hp !== undefined ? target.hp : (tgtDigi.maxHp || 100);
-      const nextHp = Math.max(0, curHp - dmg);
-      const isKill = nextHp === 0;
+      // 4. 💥【反噬傷害計算】：取整數，最低 3 點，自身最多扣到剩 1 HP
+      const recoilDmg = Math.max(3, Math.floor(calculatedDmg * 0.15));
+      const curSelfHp = (st.hp !== undefined && st.hp !== null) ? Math.floor(Number(st.hp)) : (myDigi.maxHp || 100);
+      const finalSelfHp = Math.max(1, curSelfHp - recoilDmg);
 
-      const targetUpdates = {
-        hp: nextHp,
-        isFainted: isKill
-      };
+      // 🔥 本地物件與暫存立即強制鎖死新血量
+      st.hp = finalSelfHp;
+      if (appData.students[currentUser.id]) {
+        appData.students[currentUser.id].hp = finalSelfHp;
+      }
 
-      // 3. 擊殺結算（階級判定金幣與經驗）
+      // 5. 對手扣血與擊殺判定
+      const finalTargetHp = Math.max(0, curTargetHp - calculatedDmg);
+      const isKill = (finalTargetHp === 0);
+      target.hp = finalTargetHp;
+      target.isFainted = isKill;
+
+      // 6. 擊殺獎勵判定（直接傳入攻擊前的真實 ID）
+      let earnedCoins = 0;
+      let earnedExp = 0;
+      let bountyBonusExp = 0;
+      let bountyBonusTickets = 0;
+
       if (isKill) {
-        playSound('faint');
-        
-        // 階級金幣：越級/同級 $10，低一階 $5，低兩階或以上 $0
-        const earnedCoins = calculatePvPBaseKillCoins(st.currentDigiId, target.currentDigiId);
-        const earnedExp = calculatePvPBaseKillExp(st.currentDigiId, target.currentDigiId);
+        earnedCoins = Number(calculatePvPBaseKillCoins(atkDigiId, tgtDigiId));
+        earnedExp = Number(calculatePvPBaseKillExp(atkDigiId, tgtDigiId));
 
-        // 懸賞目標額外加成判定
         const targetClass = parseStudentClasses(target.classId)[0] || 'ALL';
         const tagKey = sanitizeClassKey(targetClass);
         const isBounty = (appData.bounties && (appData.bounties[tagKey] === target.id || appData.bounties['ALL'] === target.id));
 
-        const bountyBonusExp = isBounty ? 300 : 0;
-        const bountyBonusTickets = isBounty ? 1 : 0;
-        const totalExp = earnedExp + bountyBonusExp;
-
-        attackerUpdates.coins = (st.coins || 0) + earnedCoins;
-        attackerUpdates.exp = (st.exp || 0) + totalExp;
-        attackerUpdates.statPool = (st.statPool || 0) + totalExp;
-        if (bountyBonusTickets > 0) {
-          attackerUpdates.gachaTickets = (st.gachaTickets || 0) + bountyBonusTickets;
+        if (isBounty) {
+          bountyBonusExp = 300;
+          bountyBonusTickets = 1;
         }
 
-        addBattleLog(`☠️💥 [PVP KILL] ${st.name} 使用【${sk.name}】擊敗了 ${target.name}！自身受反擊 -${recoilDmg} HP，獲得 +${totalExp} EXP 與 +${earnedCoins} 金幣${isBounty ? ' (+1 懸賞抽獎券)' : ''}！`, "battle", st.classId);
-        showToast("擊敗對手！", `擊殺 ${target.name}！(受反彈 -${recoilDmg} HP)，獲 +${totalExp} EXP 及 +${earnedCoins} 金幣！`, "heal");
+        const totalExpAward = earnedExp + bountyBonusExp;
+
+        // 本地立即累加數值（嚴格按照 earnedCoins 增加）
+        st.coins = (st.coins || 0) + earnedCoins;
+        st.exp = (st.exp || 0) + totalExpAward;
+        st.statPool = (st.statPool || 0) + totalExpAward;
+        if (bountyBonusTickets > 0) {
+          st.gachaTickets = (st.gachaTickets || 0) + bountyBonusTickets;
+        }
+
+        playSound('faint');
+        addBattleLog(`☠️💥 [PVP KILL] ${st.name} 擊敗了 ${target.name}！自身受反傷 -${recoilDmg} HP，獲得 +${totalExpAward} EXP 與 +${earnedCoins} 金幣！`, "battle", st.classId);
+        showToast("擊敗對手！", `擊殺成功！獲得 +${earnedCoins} 金幣，自身受反傷 -${recoilDmg} HP (剩餘 ${finalSelfHp})`, "heal");
       } else {
         playSound('attack');
-        addBattleLog(`⚔️💥 [PVP ATTACK] ${st.name} 使用【${sk.name}】對 ${target.name} 造成 ${dmg} 傷害，受到對手反擊扣除 -${recoilDmg} HP！(自身剩餘 HP: ${selfNextHp})`, "battle", st.classId);
-        showToast("命中同學！", `造成 ${dmg} 傷害，自身受到 ${recoilDmg} 點反擊傷害！`, "damage");
+        addBattleLog(`⚔️💥 [PVP ATTACK] ${st.name} 對 ${target.name} 造成 ${calculatedDmg} 傷害，受到反傷扣除 -${recoilDmg} HP！(剩餘 HP: ${finalSelfHp})`, "battle", st.classId);
+        showToast("命中並受反傷！", `造成 ${calculatedDmg} 傷害，受到反傷 -${recoilDmg} HP (剩餘 HP: ${finalSelfHp})！`, "damage");
       }
 
-      patchStudentAtomic(currentUser.id, attackerUpdates);
-      patchStudentAtomic(target.id, targetUpdates);
+      // 7. 🔥【分開獨立更新，保證不被回滾】：先更新自己，再更新對手
+      const myUpdates = {
+        hp: finalSelfHp,
+        attackQuota: newQuota
+      };
+      if (isKill) {
+        myUpdates.coins = st.coins;
+        myUpdates.exp = st.exp;
+        myUpdates.statPool = st.statPool;
+        if (bountyBonusTickets > 0) {
+          myUpdates.gachaTickets = st.gachaTickets;
+        }
+      }
+
+      patchStudentAtomic(currentUser.id, myUpdates);
+      patchStudentAtomic(target.id, {
+        hp: finalTargetHp,
+        isFainted: isKill
+      });
+
+      // 8. 🔥【直接在 DOM 上重繪血條】：不等待非同步網路回呼
+      const myMaxHp = myDigi.maxHp || 100;
+      const hpBar = document.getElementById('stHpBar');
+      const hpText = document.getElementById('stHpText');
+      if (hpBar) {
+        const pct = Math.max(0, Math.min(100, Math.round((finalSelfHp / myMaxHp) * 100)));
+        hpBar.style.width = `${pct}%`;
+      }
+      if (hpText) {
+        hpText.textContent = `${finalSelfHp} / ${myMaxHp} HP`;
+      }
+
       updateStudentUI();
     }
 
