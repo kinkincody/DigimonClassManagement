@@ -565,6 +565,13 @@
 <!-- 1. Student / Tamer View -->
     <!-- 1. Student / Tamer View -->
     <div id="viewStudent" class="space-y-6 hidden">
+      <button id="studentChatNotifyBanner" type="button" onclick="openStudentClassChatFromBanner()" class="hidden w-full text-left bg-rose-950/80 border border-rose-500 rounded-2xl px-4 py-3 shadow-lg flex items-center justify-between gap-3 cursor-pointer">
+        <span class="flex items-center gap-2 text-rose-100 text-xs font-bold">
+          <i class="fa-solid fa-comment-dots text-rose-300"></i>
+          <span id="studentChatNotifyText">老師有新回覆</span>
+        </span>
+        <span id="studentChatNotifyCount" class="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-mono font-bold">0</span>
+      </button>
       <!-- 🛡️ Student Faction Info & Transfer Request Card (Multi-Class Support) -->
       <div id="studentFactionCard" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -884,24 +891,30 @@
           </div>
         </div>
       </div>
-      <!-- 💬 學生端：與老師的專屬私訊卡片 (Student Direct Message with Teacher) -->
-      <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl space-y-3">
-        <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-comment-dots text-cyan-400 text-base animate-pulse"></i>
-            <h4 class="text-xs font-black text-cyan-300 uppercase tracking-widest font-pixel">Teacher Direct Messages 老師專屬私訊</h4>
+      <!-- 💬 學生端：只傳給獲准老師，同學之間看不到 -->
+      <div id="studentClassChatCard" class="bg-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2 gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <i class="fa-solid fa-comment-dots text-cyan-400 text-base"></i>
+            <h4 class="text-xs font-black text-cyan-300 uppercase tracking-widest font-pixel truncate">Message Teachers 傳訊給老師</h4>
+            <span id="studentChatUnreadBadge" class="hidden px-1.5 py-0.5 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold">0</span>
           </div>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">1-on-1 (Max 5)</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold shrink-0">Teachers only</span>
         </div>
-        <!-- 學生私訊列表 -->
-        <div id="studentChatMessagesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1 text-xs">
-          <div class="text-slate-500 italic text-center py-4">目前尚無與老師的私訊記錄。</div>
+        <div id="studentChatClassRow" class="flex items-center gap-2">
+          <label for="studentChatClassSelect" class="text-[11px] font-bold text-cyan-300 shrink-0">傳給班級</label>
+          <select id="studentChatClassSelect" onchange="onStudentSelectClassChat(this.value)" class="flex-1 bg-slate-950 border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-cyan-400">
+            <option value="">-- 沒有可傳訊的班級 --</option>
+          </select>
         </div>
-        <!-- 學生回覆輸入框 -->
+        <p id="studentChatRoomMeta" class="text-[10px] text-slate-500">只會送給這個班獲准的老師。同學看不到，也不能回你。</p>
+        <div id="studentChatMessagesList" onclick="acknowledgeStudentClassChat()" class="space-y-2 max-h-52 overflow-y-auto custom-scrollbar pr-1 text-xs">
+          <div class="text-slate-500 italic text-center py-4">選擇班級後即可查看聊天室。</div>
+        </div>
         <div class="pt-2 border-t border-slate-800 flex gap-2">
-          <input type="text" id="studentMsgInput" placeholder="輸入回覆給老師的訊息..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
-          <button onclick="sendStudentMessage()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1 shrink-0">
-            <i class="fa-solid fa-paper-plane"></i> 回覆
+          <input type="text" id="studentMsgInput" placeholder="輸入要傳給老師的訊息..." onfocus="acknowledgeStudentClassChat()" onkeydown="if(event.key==='Enter'){event.preventDefault();sendStudentClassMessage();}" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+          <button onclick="sendStudentClassMessage()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1 shrink-0">
+            <i class="fa-solid fa-paper-plane"></i> 送出
           </button>
         </div>
       </div>
@@ -1445,7 +1458,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.5.3";
+    const CURRENT_APP_VERSION = "2.6.2";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -1717,6 +1730,9 @@
   bounties: {},
   factions: {},
   factionRequests: {},
+  classMessageAccess: {},
+  messages: {},
+  messageReads: {},
   systemSettings: { bannedClasses: {} }
 };
 
@@ -2511,256 +2527,791 @@ let currentExamSessionId = null; // 記錄當前進行中考卷 ID，防止重�
 let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     // 🥷 老師隱藏模式狀態（true = 不記錄任何 Log）
     let isTeacherStealthMode = false;
-    // === 師生私訊功能核心邏輯 ===
-   // === 師生私訊功能核心邏輯 ===
-    let selectedTeacherMsgStudentId = "";
-    let teacherReadMessageTimestamps = {}; // 記錄老師最後已讀時間戳 { studentId: timestamp }
+    // === 學生個別私訊：只傳給獲准老師。同學之間不能互看。同一班獲准的老師看同一位學生的同一串對話。 ===
+    const CLASS_CHAT_MAX_MESSAGES = 100;
+    const CLASS_CHAT_READ_STORAGE_KEY = "DIGIMON_CLASS_CHAT_READS_V1";
+    let selectedTeacherChatClass = "";
+    let selectedTeacherChatStudent = "";
+    let selectedStudentChatClass = "";
+    const chatRenderSignatures = {};
 
-   // 檢查指定學生是否有未讀的新訊息
-    function hasStudentUnreadMsg(studentId) {
-      const studentMsgsObj = (appData.messages && appData.messages[studentId]) || {};
-      const lastRead = teacherReadMessageTimestamps[studentId] || 0;
-      return Object.values(studentMsgsObj).some(m => m.senderRole === 'student' && (m.timestamp || 0) > lastRead);
-    }
-
-    // 更新老師分頁按鈕上的紅點通知總數
-    function updateTeacherGlobalMsgBadge() {
-      const badge = document.getElementById('teacherTabMsgUnreadBadge');
-      if (!badge || !currentUser || currentUser.role !== 'teacher') return;
-
-      let unreadTotal = 0;
-      Object.keys(appData.students || {}).forEach(sId => {
-        if (hasStudentUnreadMsg(sId)) unreadTotal++;
+    function collectKnownClassNames() {
+      const seen = new Map();
+      const add = (name) => {
+        const raw = String(name || '').trim();
+        if (!raw || raw.toUpperCase() === 'ALL') return;
+        const key = raw.toLowerCase();
+        if (!seen.has(key)) seen.set(key, raw);
+      };
+      Object.keys(appData.classes || {}).forEach(add);
+      Object.values(appData.classRegistry || {}).forEach(entry => {
+        const id = entry && typeof entry === 'object' ? (entry.id || entry.name) : entry;
+        add(id);
       });
-
-      if (unreadTotal > 0) {
-        badge.textContent = unreadTotal;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
-    }
-
-    // 填充老師端學生選擇清單（若有新訊息顯示醒目提示）
-    function populateTeacherMsgStudentDropdown() {
-      const select = document.getElementById('teacherMsgStudentSelect');
-      if (!select) return;
-      const curVal = select.value;
-      select.innerHTML = '<option value="">-- 請選擇學生 (Select Student) --</option>';
-
-      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
-      myStudents.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        const isUnread = hasStudentUnreadMsg(s.id);
-        opt.textContent = `${isUnread ? '🔴 [NEW] ' : ''}${s.name} (${s.username || s.id}) - 班級: ${formatStudentClassesDisplay(s)}`;
-        if (isUnread) opt.className = "text-rose-400 font-bold bg-slate-900";
-        if (s.id === curVal || s.id === selectedTeacherMsgStudentId) opt.selected = true;
-        select.appendChild(opt);
+      Object.values(appData.students || {}).forEach(s => {
+        parseStudentClasses(s.classId || s.classes).forEach(add);
       });
-
-      if (!selectedTeacherMsgStudentId && myStudents.length > 0) {
-        selectedTeacherMsgStudentId = select.value;
-      }
-      renderTeacherChatMessageList();
-      updateTeacherGlobalMsgBadge();
-    }
-
-    function onTeacherSelectMsgStudent(studentId) {
-      selectedTeacherMsgStudentId = studentId;
-      if (studentId) {
-        teacherReadMessageTimestamps[studentId] = Date.now();
-      }
-      renderTeacherChatMessageList();
-      populateTeacherMsgStudentDropdown();
-    }
-
-    // 渲染老師端的私訊內容
-    function renderTeacherChatMessageList() {
-      const container = document.getElementById('teacherChatMessagesList');
-      const titleEl = document.getElementById('teacherMsgTargetTitle');
-      const countEl = document.getElementById('teacherMsgCountBadge');
-      const clearBtn = document.getElementById('btnTeacherClearChat');
-      if (!container) return;
-
-      if (!selectedTeacherMsgStudentId) {
-        if (titleEl) titleEl.textContent = "請先在上方選擇學生";
-        if (countEl) countEl.textContent = "訊息數：0 / 5";
-        if (clearBtn) clearBtn.classList.add('hidden');
-        container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">請先在上方下拉選單選擇一位學生</div>';
-        return;
-      }
-
-      // 當切換到該學生，視為已讀
-      teacherReadMessageTimestamps[selectedTeacherMsgStudentId] = Date.now();
-      updateTeacherGlobalMsgBadge();
-
-      const st = appData.students[selectedTeacherMsgStudentId];
-      if (titleEl) titleEl.textContent = `與 ${st ? st.name : selectedTeacherMsgStudentId} 的 1 對 1 私訊`;
-
-      const studentMsgsObj = (appData.messages && appData.messages[selectedTeacherMsgStudentId]) || {};
-      const msgList = Object.entries(studentMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
-        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-
-      if (countEl) countEl.textContent = `訊息數：${msgList.length} / 5`;
-
-      if (msgList.length === 0) {
-        if (clearBtn) clearBtn.classList.add('hidden');
-        container.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-10">尚無訊息記錄。在下方輸入即可開始對話！</div>';
-        return;
-      }
-
-      if (clearBtn) clearBtn.classList.remove('hidden');
-
-      let html = '';
-      msgList.forEach(m => {
-        const isTeacher = m.senderRole === 'teacher';
-        html += `
-          <div class="flex flex-col ${isTeacher ? 'items-end' : 'items-start'}">
-            <div class="flex items-center gap-1.5 mb-0.5">
-              <span class="text-[10px] font-bold ${isTeacher ? 'text-amber-400' : 'text-cyan-400'}">${escapeHtml(m.senderName)}</span>
-              <span class="text-[9px] text-slate-500 font-mono">${m.time || ''}</span>
-            </div>
-            <div class="max-w-[75%] px-3 py-2 rounded-2xl text-xs break-words shadow ${isTeacher ? 'bg-amber-500/20 border border-amber-400/60 text-amber-100 rounded-tr-none' : 'bg-slate-900 border border-cyan-500/50 text-slate-100 rounded-tl-none'}">
-              ${escapeHtml(m.text)}
-            </div>
-          </div>
-        `;
+      Object.values(appData.classMessageAccess || {}).forEach(entry => {
+        if (entry && entry.className) add(entry.className);
       });
-      container.innerHTML = html;
-      container.scrollTop = container.scrollHeight;
+      return Array.from(seen.values()).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
     }
 
-    // 🗑️ 老師清空當前選取學生的私訊歷史
-    function clearTeacherCurrentChatHistory() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      if (!selectedTeacherMsgStudentId) return alert("請先選擇一位學生！");
+    function canonicalClassName(className) {
+      const raw = String(className || '').trim();
+      if (!raw || raw.toUpperCase() === 'ALL') return '';
+      const known = collectKnownClassNames();
+      const match = known.find(c => c.toLowerCase() === raw.toLowerCase());
+      return match || raw;
+    }
 
-      const st = appData.students[selectedTeacherMsgStudentId];
-      const sName = st ? st.name : selectedTeacherMsgStudentId;
+    function classChatKey(className) {
+      const name = canonicalClassName(className);
+      if (!name) return '';
+      return sanitizeClassKey(name).toLowerCase();
+    }
 
-      if (!confirm(`確定要完全清除與學生【${sName}】的所有私訊對話記錄嗎？\n(清除後無法復原)`)) return;
+    function messageReadUserKey(userId) {
+      return sanitizeClassKey(String(userId || 'unknown'));
+    }
 
+    function getClassAccessEntry(className) {
+      const key = classChatKey(className);
+      if (!key) return null;
+      const access = appData.classMessageAccess || {};
+      if (access[key]) return access[key];
+      const foundKey = Object.keys(access).find(k => String(k).toLowerCase() === key);
+      return foundKey ? access[foundKey] : null;
+    }
+
+    function teacherCanAccessClassChat(teacherId, className) {
+      const entry = getClassAccessEntry(className);
+      const ids = entry && entry.teacherIds;
+      return !!(teacherId && ids && ids[teacherId]);
+    }
+
+    function teacherIdsForClass(className) {
+      const entry = getClassAccessEntry(className);
+      const ids = entry && entry.teacherIds && typeof entry.teacherIds === 'object' ? entry.teacherIds : {};
+      return Object.keys(ids).filter(id => ids[id]);
+    }
+
+    function getTeacherPermittedClasses(teacherId) {
+      return collectKnownClassNames().filter(c => teacherCanAccessClassChat(teacherId, c));
+    }
+
+    function getStudentChatClasses(student) {
+      const names = parseStudentClasses(student && (student.classId || student.classes));
+      const known = collectKnownClassNames();
+      const result = [];
+      names.forEach(n => {
+        if (!n || String(n).toUpperCase() === 'ALL') return;
+        const match = known.find(c => c.toLowerCase() === String(n).toLowerCase()) || String(n).trim();
+        if (!result.some(c => c.toLowerCase() === match.toLowerCase())) result.push(match);
+      });
+      return result;
+    }
+
+    function getMyChatClassNames() {
+      if (!currentUser) return [];
+      if (currentUser.role === 'teacher') return getTeacherPermittedClasses(currentUser.id);
+      if (currentUser.role === 'student') {
+        const st = (appData.students && appData.students[currentUser.id]) || currentUser.data;
+        return getStudentChatClasses(st);
+      }
+      return [];
+    }
+
+    function studentThreadKey(studentId) {
+      const raw = String(studentId || '').trim();
+      if (!raw) return '';
+      return sanitizeClassKey(raw).toLowerCase();
+    }
+
+    function threadReadKey(className, studentId) {
+      const classKey = classChatKey(className);
+      const studentKey = studentThreadKey(studentId);
+      if (!classKey || !studentKey) return '';
+      return classKey + '__' + studentKey;
+    }
+
+    function studentsInClassChat(className) {
+      return Object.values(appData.students || {})
+        .filter(s => s && studentIsInClass(s, className))
+        .sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), 'zh-Hant'));
+    }
+
+    function messageNodeForStudent(store, studentId) {
+      if (!store || typeof store !== 'object' || !studentId) return {};
+      const key = studentThreadKey(studentId);
+      const raw = String(studentId);
+      const merged = {};
+      Object.keys(store).forEach(k => {
+        if (k === raw || k === key || studentThreadKey(k) === key) {
+          const node = store[k];
+          if (node && typeof node === 'object') Object.assign(merged, node);
+        }
+      });
+      return merged;
+    }
+
+    function threadMessageMap(store, className, studentId) {
+      const classKey = classChatKey(className);
+      const node = messageNodeForStudent(store, studentId);
+      const out = {};
+      if (!classKey) return out;
+      Object.entries(node).forEach(([k, v]) => {
+        if (!v || typeof v !== 'object' || typeof v.text !== 'string' || !v.text) return;
+        if (classChatKey(v.className) !== classKey) return;
+        out[k] = v;
+      });
+      return out;
+    }
+
+    function getStudentThreadBucket(className, studentId) {
+      const messages = threadMessageMap(appData.messages, className, studentId);
+      if (!Object.keys(messages).length) return null;
+      return { messages: messages };
+    }
+
+    function getStudentThreadMessages(className, studentId) {
+      const bucket = getStudentThreadBucket(className, studentId);
+      if (!bucket || !bucket.messages || typeof bucket.messages !== 'object') return [];
+      return Object.entries(bucket.messages)
+        .map(([k, v]) => Object.assign({ _key: k }, v || {}))
+        .sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
+    }
+
+    function loadClassChatReadStore() {
+      try {
+        const raw = localStorage.getItem(CLASS_CHAT_READ_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveClassChatReadStore(store) {
+      try {
+        localStorage.setItem(CLASS_CHAT_READ_STORAGE_KEY, JSON.stringify(store || {}));
+      } catch (e) {}
+    }
+
+    function getThreadLastRead(userId, className, studentId) {
+      const uid = messageReadUserKey(userId);
+      const key = threadReadKey(className, studentId);
+      if (!uid || !key) return 0;
+      const mem = appData.messageReads && appData.messageReads[uid] && appData.messageReads[uid][key];
+      const local = loadClassChatReadStore();
+      const loc = local[uid] && local[uid][key];
+      return Math.max(Number(mem) || 0, Number(loc) || 0);
+    }
+
+    function markThreadRead(className, studentId) {
+      if (!currentUser || !className || !studentId) return 0;
+      const list = getStudentThreadMessages(className, studentId);
+      const latest = list.reduce((m, x) => Math.max(m, Number(x.timestamp) || 0), 0);
+      if (!latest) return 0;
+      const uid = messageReadUserKey(currentUser.id);
+      const key = threadReadKey(className, studentId);
+      const prev = getThreadLastRead(currentUser.id, className, studentId);
+      if (latest <= prev) return prev;
+      if (!appData.messageReads) appData.messageReads = {};
+      if (!appData.messageReads[uid]) appData.messageReads[uid] = {};
+      appData.messageReads[uid][key] = latest;
+      const store = loadClassChatReadStore();
+      if (!store[uid]) store[uid] = {};
+      store[uid][key] = Math.max(Number(store[uid][key]) || 0, latest);
+      saveClassChatReadStore(store);
       if (dbRootRef) {
-        dbRootRef.child(`messages/${selectedTeacherMsgStudentId}`).remove().then(() => {
-          playSound('attack');
-          showToast("Chat Cleared", `已清空與 ${sName} 的私訊紀錄！`, "damage");
-          renderTeacherChatMessageList();
-        }).catch(err => {
-          alert("清空失敗: " + err.message);
+        dbRootRef.child(`systemSettings/classMessageReads/${uid}/${key}`).set(latest).catch(() => {});
+      }
+      return latest;
+    }
+
+    function mergeServerClassChatReads(serverVal) {
+      const server = serverVal && typeof serverVal === 'object' ? serverVal : {};
+      const store = loadClassChatReadStore();
+      const mem = appData.messageReads || {};
+      const uids = new Set([...Object.keys(server), ...Object.keys(store), ...Object.keys(mem)]);
+      const merged = {};
+      uids.forEach(uid => {
+        const fromServer = server[uid] && typeof server[uid] === 'object' ? server[uid] : {};
+        const fromStore = store[uid] && typeof store[uid] === 'object' ? store[uid] : {};
+        const fromMem = mem[uid] && typeof mem[uid] === 'object' ? mem[uid] : {};
+        const keys = new Set([...Object.keys(fromServer), ...Object.keys(fromStore), ...Object.keys(fromMem)]);
+        const row = {};
+        keys.forEach(k => {
+          const max = Math.max(Number(fromServer[k]) || 0, Number(fromStore[k]) || 0, Number(fromMem[k]) || 0);
+          if (max > 0) row[k] = max;
+        });
+        if (Object.keys(row).length) merged[uid] = row;
+      });
+      appData.messageReads = merged;
+      saveClassChatReadStore(merged);
+      if (currentUser && dbRootRef) {
+        const uid = messageReadUserKey(currentUser.id);
+        Object.keys(merged[uid] || {}).forEach(k => {
+          const localTs = Number(merged[uid][k]) || 0;
+          const serverRow = server[uid] && typeof server[uid] === 'object' ? server[uid] : {};
+          const serverTs = Number(serverRow[k]) || 0;
+          if (localTs > serverTs) {
+            dbRootRef.child(`systemSettings/classMessageReads/${uid}/${k}`).set(localTs).catch(() => {});
+          }
         });
       }
     }
 
-    // 老師發送訊息
-    function sendTeacherMessage() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      if (!selectedTeacherMsgStudentId) return alert("請先選擇一位學生！");
-
-      const input = document.getElementById('teacherMsgInput');
-      const text = (input.value || '').trim();
-      if (!text) return;
-
-      const tc = appData.teachers[currentUser.id] || currentUser.data;
-      postMessageDirectly(selectedTeacherMsgStudentId, {
-        senderRole: 'teacher',
-        senderId: currentUser.id,
-        senderName: tc.name || '老師 (Teacher)',
-        text: text
-      }, () => {
-        input.value = '';
-      });
+    function countUnreadThread(className, studentId, userId) {
+      const last = getThreadLastRead(userId, className, studentId);
+      return getStudentThreadMessages(className, studentId).filter(m => {
+        if (!m || m.senderId === userId) return false;
+        return (Number(m.timestamp) || 0) > last;
+      }).length;
     }
 
-    // 學生端渲染專屬私訊
-    function renderStudentChatMessageList() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const container = document.getElementById('studentChatMessagesList');
-      if (!container) return;
+    function countTeacherUnreadThreads(teacherId) {
+      let total = 0;
+      getTeacherPermittedClasses(teacherId).forEach(className => {
+        studentsInClassChat(className).forEach(s => {
+          if (countUnreadThread(className, s.id, teacherId) > 0) total++;
+        });
+      });
+      return total;
+    }
 
-      const myMsgsObj = (appData.messages && appData.messages[currentUser.id]) || {};
-      const msgList = Object.entries(myMsgsObj).map(([k, v]) => Object.assign({ _key: k }, v))
-        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    function isClassBannedForChat(className) {
+      const banned = (appData.systemSettings && appData.systemSettings.bannedClasses) || {};
+      if (banned.ALL) return true;
+      const canonical = canonicalClassName(className);
+      return !!(banned[sanitizeClassKey(className)] || banned[sanitizeClassKey(canonical)] || banned[classChatKey(className)]);
+    }
 
-      if (msgList.length === 0) {
-        container.innerHTML = '<div class="text-slate-500 italic text-center py-4">目前尚無與老師的私訊記錄。可以在下方發送訊息給老師！</div>';
-        return;
+    function describeStudentTeacherThread(className) {
+      const names = teacherIdsForClass(className).map(id => {
+        const t = appData.teachers && appData.teachers[id];
+        return t ? (t.name || id) : id;
+      });
+      const teacherText = names.length ? names.join('、') : '尚未授權老師';
+      return `只傳給老師：${teacherText}。同學看不到這串對話。`;
+    }
+
+    function renderClassChatBubbles(msgList, emptyText) {
+      if (!msgList.length) {
+        return `<div class="text-slate-500 text-xs italic text-center py-8">${emptyText || '還沒有訊息。'}</div>`;
       }
-
-      let html = '';
-      msgList.forEach(m => {
-        const isMe = m.senderRole === 'student';
-        html += `
-          <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+      return msgList.map(m => {
+        const mine = !!(currentUser && m.senderId === currentUser.id);
+        const isTeacher = m.senderRole === 'teacher';
+        const nameColor = isTeacher ? 'text-amber-400' : 'text-cyan-300';
+        const bubble = mine
+          ? 'bg-cyan-600 text-white rounded-tr-none'
+          : (isTeacher
+            ? 'bg-amber-500/20 border border-amber-400/60 text-amber-100 rounded-tl-none'
+            : 'bg-slate-900 border border-slate-600 text-slate-100 rounded-tl-none');
+        const roleLabel = isTeacher ? '老師' : '學生';
+        return `
+          <div class="flex flex-col ${mine ? 'items-end' : 'items-start'}">
             <div class="flex items-center gap-1.5 mb-0.5">
-              <span class="text-[10px] font-bold ${isMe ? 'text-cyan-400' : 'text-amber-400'}">${escapeHtml(m.senderName)}</span>
-              <span class="text-[9px] text-slate-500 font-mono">${m.time || ''}</span>
+              <span class="text-[10px] font-bold ${nameColor}">${escapeHtml(m.senderName || roleLabel)}</span>
+              <span class="text-[9px] px-1 rounded ${isTeacher ? 'bg-amber-950 text-amber-300' : 'bg-slate-800 text-slate-400'}">${roleLabel}</span>
+              <span class="text-[9px] text-slate-500 font-mono">${escapeHtml(m.time || '')}</span>
             </div>
-            <div class="max-w-[80%] px-3 py-1.5 rounded-xl text-xs break-words shadow ${isMe ? 'bg-cyan-600 text-white rounded-tr-none' : 'bg-slate-950 border border-amber-500/50 text-amber-200 rounded-tl-none'}">
+            <div class="max-w-[80%] px-3 py-1.5 rounded-xl text-xs break-words shadow ${bubble}">
               ${escapeHtml(m.text)}
             </div>
           </div>
         `;
-      });
-      container.innerHTML = html;
-      container.scrollTop = container.scrollHeight;
+      }).join('');
     }
 
-    // 學生發送訊息給老師
-    function sendStudentMessage() {
+    function fillChatContainer(container, html) {
+      if (!container) return;
+      const id = container.id || 'chat';
+      const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 96;
+      if (chatRenderSignatures[id] === html) return;
+      const firstPaint = !chatRenderSignatures[id];
+      chatRenderSignatures[id] = html;
+      container.innerHTML = html;
+      if (firstPaint || nearBottom) container.scrollTop = container.scrollHeight;
+    }
+
+    function setSelectIfChanged(select, options, selectedValue, emptyLabel) {
+      if (!select) return;
+      const sig = options.map(o => o.value + '=' + o.label).join('|') + '#' + (selectedValue || '') + '#' + emptyLabel;
+      if (select.dataset.sig === sig) return;
+      select.dataset.sig = sig;
+      select.innerHTML = options.length
+        ? options.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('')
+        : `<option value="">${escapeHtml(emptyLabel)}</option>`;
+      if (selectedValue) select.value = selectedValue;
+    }
+
+    function updateClassChatUnreadBadge() {
+      if (!currentUser) return;
+      if (currentUser.role === 'teacher') {
+        const badge = document.getElementById('teacherTabMsgUnreadBadge');
+        if (!badge) return;
+        const unreadThreads = countTeacherUnreadThreads(currentUser.id);
+        if (unreadThreads > 0) {
+          badge.textContent = String(unreadThreads);
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+      if (currentUser.role === 'student') {
+        const badge = document.getElementById('studentChatUnreadBadge');
+        const banner = document.getElementById('studentChatNotifyBanner');
+        const bannerText = document.getElementById('studentChatNotifyText');
+        const bannerCount = document.getElementById('studentChatNotifyCount');
+        const unreadClasses = getMyChatClassNames().filter(c => countUnreadThread(c, currentUser.id, currentUser.id) > 0);
+        if (badge) {
+          if (unreadClasses.length > 0) {
+            badge.textContent = String(unreadClasses.length);
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+        }
+        if (banner) {
+          if (unreadClasses.length > 0) {
+            if (bannerText) bannerText.textContent = `老師有新回覆：${unreadClasses.join('、')}`;
+            if (bannerCount) bannerCount.textContent = String(unreadClasses.length);
+            banner.classList.remove('hidden');
+          } else {
+            banner.classList.add('hidden');
+          }
+        }
+      }
+    }
+
+    function refreshClassChatUI() {
+      if (!currentUser) return;
+      if (currentUser.role === 'teacher') {
+        if (activeTeacherSubTab === 'msg') renderTeacherClassChat();
+        else updateClassChatUnreadBadge();
+      } else if (currentUser.role === 'student') {
+        renderStudentClassChat();
+      } else if (currentUser.role === 'superadmin') {
+        renderClassMessageAccessPanel();
+      }
+    }
+
+    function onTeacherSelectClassChat(className) {
+      selectedTeacherChatClass = canonicalClassName(className);
+      selectedTeacherChatStudent = '';
+      chatRenderSignatures.teacherChatMessagesList = '';
+      const classSelect = document.getElementById('teacherChatClassSelect');
+      const studentSelect = document.getElementById('teacherChatStudentSelect');
+      if (classSelect) classSelect.dataset.sig = '';
+      if (studentSelect) studentSelect.dataset.sig = '';
+      renderTeacherClassChat();
+    }
+
+    function onTeacherSelectStudentChat(studentId) {
+      selectedTeacherChatStudent = String(studentId || '');
+      chatRenderSignatures.teacherChatMessagesList = '';
+      const studentSelect = document.getElementById('teacherChatStudentSelect');
+      if (studentSelect) studentSelect.dataset.sig = '';
+      renderTeacherClassChat();
+    }
+
+    function onStudentSelectClassChat(className) {
+      selectedStudentChatClass = canonicalClassName(className);
+      if (selectedStudentChatClass && currentUser) markThreadRead(selectedStudentChatClass, currentUser.id);
+      chatRenderSignatures.studentChatMessagesList = '';
+      const select = document.getElementById('studentChatClassSelect');
+      if (select) select.dataset.sig = '';
+      renderStudentClassChat();
+    }
+
+    function acknowledgeStudentClassChat() {
+      if (!currentUser || currentUser.role !== 'student' || !selectedStudentChatClass) return;
+      const before = getThreadLastRead(currentUser.id, selectedStudentChatClass, currentUser.id);
+      const marked = markThreadRead(selectedStudentChatClass, currentUser.id);
+      if (marked && marked !== before) {
+        const select = document.getElementById('studentChatClassSelect');
+        if (select) select.dataset.sig = '';
+        chatRenderSignatures.studentChatMessagesList = '';
+        renderStudentClassChat();
+      } else {
+        updateClassChatUnreadBadge();
+      }
+    }
+
+    function openStudentClassChatFromBanner() {
+      const card = document.getElementById('studentClassChatCard');
+      if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      acknowledgeStudentClassChat();
+    }
+
+    function renderTeacherClassChat() {
+      const classSelect = document.getElementById('teacherChatClassSelect');
+      const studentSelect = document.getElementById('teacherChatStudentSelect');
+      const container = document.getElementById('teacherChatMessagesList');
+      const titleEl = document.getElementById('teacherMsgTargetTitle');
+      const countEl = document.getElementById('teacherMsgCountBadge');
+      const metaEl = document.getElementById('teacherChatRoomMeta');
+      const clearBtn = document.getElementById('btnTeacherClearChat');
+      const input = document.getElementById('teacherMsgInput');
+      if (!container || !currentUser || currentUser.role !== 'teacher') return;
+
+      const rooms = getTeacherPermittedClasses(currentUser.id);
+      if (!selectedTeacherChatClass || !rooms.some(c => c.toLowerCase() === selectedTeacherChatClass.toLowerCase())) {
+        const unreadRoom = rooms.find(c => studentsInClassChat(c).some(s => countUnreadThread(c, s.id, currentUser.id) > 0));
+        selectedTeacherChatClass = unreadRoom || rooms[0] || '';
+      } else {
+        selectedTeacherChatClass = rooms.find(c => c.toLowerCase() === selectedTeacherChatClass.toLowerCase()) || '';
+      }
+
+      const students = selectedTeacherChatClass ? studentsInClassChat(selectedTeacherChatClass) : [];
+      if (!selectedTeacherChatStudent || !students.some(s => s.id === selectedTeacherChatStudent)) {
+        const unreadStudent = students.find(s => countUnreadThread(selectedTeacherChatClass, s.id, currentUser.id) > 0);
+        selectedTeacherChatStudent = (unreadStudent || students[0] || {}).id || '';
+      }
+      if (selectedTeacherChatClass && selectedTeacherChatStudent) {
+        markThreadRead(selectedTeacherChatClass, selectedTeacherChatStudent);
+      }
+
+      setSelectIfChanged(classSelect, rooms.map(c => {
+        const unreadStudents = studentsInClassChat(c).filter(s => countUnreadThread(c, s.id, currentUser.id) > 0).length;
+        return { value: c, label: `${unreadStudents ? '🔴 ' + unreadStudents + ' ' : ''}${c}` };
+      }), selectedTeacherChatClass, '-- 尚未獲授權的班級 --');
+
+      setSelectIfChanged(studentSelect, students.map(s => {
+        const unread = countUnreadThread(selectedTeacherChatClass, s.id, currentUser.id);
+        return { value: s.id, label: `${unread ? '🔴 ' + unread + ' ' : ''}${s.name || s.id}` };
+      }), selectedTeacherChatStudent, '-- 這個班沒有學生 --');
+
+      if (!selectedTeacherChatClass) {
+        if (titleEl) titleEl.textContent = '尚未獲授權';
+        if (countEl) countEl.textContent = '訊息數：0';
+        if (metaEl) metaEl.textContent = '請超級管理員勾選你可以查看哪些班的學生私訊。';
+        if (clearBtn) clearBtn.classList.add('hidden');
+        if (input) input.disabled = true;
+        fillChatContainer(container, '<div class="text-slate-500 text-xs italic text-center py-10">超級管理員尚未授權你查看任何班級的學生私訊。</div>');
+        updateClassChatUnreadBadge();
+        return;
+      }
+
+      if (!selectedTeacherChatStudent) {
+        if (titleEl) titleEl.textContent = `${selectedTeacherChatClass} 沒有學生`;
+        if (countEl) countEl.textContent = '訊息數：0';
+        if (metaEl) metaEl.textContent = '這個班目前沒有學生。';
+        if (clearBtn) clearBtn.classList.add('hidden');
+        if (input) input.disabled = true;
+        fillChatContainer(container, '<div class="text-slate-500 text-xs italic text-center py-10">這個班沒有學生可以傳訊。</div>');
+        updateClassChatUnreadBadge();
+        return;
+      }
+
+      const student = students.find(s => s.id === selectedTeacherChatStudent);
+      const msgList = getStudentThreadMessages(selectedTeacherChatClass, selectedTeacherChatStudent);
+      if (input) input.disabled = false;
+      if (titleEl) titleEl.textContent = `${student ? student.name : selectedTeacherChatStudent} · ${selectedTeacherChatClass}`;
+      if (countEl) countEl.textContent = `訊息數：${msgList.length} / ${CLASS_CHAT_MAX_MESSAGES}`;
+      if (metaEl) metaEl.textContent = describeStudentTeacherThread(selectedTeacherChatClass);
+      if (clearBtn) clearBtn.classList.remove('hidden');
+      fillChatContainer(container, renderClassChatBubbles(msgList, '這位學生還沒有傳訊息。回覆只會給這位學生和獲准的老師看到。'));
+      updateClassChatUnreadBadge();
+    }
+
+    function renderStudentClassChat() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const select = document.getElementById('studentChatClassSelect');
+      const container = document.getElementById('studentChatMessagesList');
+      const metaEl = document.getElementById('studentChatRoomMeta');
+      const input = document.getElementById('studentMsgInput');
+      if (!container) return;
+
+      const st = (appData.students && appData.students[currentUser.id]) || currentUser.data;
+      const rooms = getStudentChatClasses(st);
+      if (!selectedStudentChatClass || !rooms.some(c => c.toLowerCase() === selectedStudentChatClass.toLowerCase())) {
+        const unreadRoom = rooms.find(c => countUnreadThread(c, currentUser.id, currentUser.id) > 0);
+        selectedStudentChatClass = unreadRoom || rooms[0] || '';
+      } else {
+        selectedStudentChatClass = rooms.find(c => c.toLowerCase() === selectedStudentChatClass.toLowerCase()) || '';
+      }
+
+      setSelectIfChanged(select, rooms.map(c => {
+        const unread = countUnreadThread(c, currentUser.id, currentUser.id);
+        return { value: c, label: `${unread ? '🔴 ' + unread + ' ' : ''}${c}` };
+      }), selectedStudentChatClass, '-- 尚未分配班級 --');
+
+      if (!selectedStudentChatClass) {
+        if (metaEl) metaEl.textContent = '你還沒有被分配班級，因此不能傳訊給老師。';
+        if (input) input.disabled = true;
+        fillChatContainer(container, '<div class="text-slate-500 italic text-center py-4">尚未分配班級。</div>');
+        updateClassChatUnreadBadge();
+        return;
+      }
+
+      const canSend = !!(st && studentIsInClass(st, selectedStudentChatClass) && !st.isBanned && !isClassBannedForChat(selectedStudentChatClass));
+      if (input) {
+        input.disabled = !canSend;
+        input.placeholder = canSend ? '輸入要傳給老師的訊息...' : '目前為唯讀，無法送出訊息';
+      }
+      if (metaEl) metaEl.textContent = describeStudentTeacherThread(selectedStudentChatClass);
+      fillChatContainer(container, renderClassChatBubbles(
+        getStudentThreadMessages(selectedStudentChatClass, currentUser.id),
+        '還沒有訊息。傳出去之後，只有這個班獲准的老師看得到。'
+      ));
+      updateClassChatUnreadBadge();
+    }
+
+    function clearTeacherClassChatHistory() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const className = selectedTeacherChatClass;
+      const studentId = selectedTeacherChatStudent;
+      if (!className || !studentId) return alert('請先選擇一位學生。');
+      if (!teacherCanAccessClassChat(currentUser.id, className)) return alert('你沒有這個班的私訊權限。');
+      const student = (appData.students && appData.students[studentId]) || {};
+      const sName = student.name || studentId;
+      if (!confirm(`確定要清空與【${sName}】在【${className}】的私訊嗎？\n只有這位學生和獲准的老師會看到已清空的對話。`)) return;
+      if (!dbRootRef) return;
+      const classKey = classChatKey(className);
+      const nodeKeys = [];
+      const safeKey = studentThreadKey(studentId);
+      const rawKey = String(studentId || '').trim();
+      if (safeKey) nodeKeys.push(safeKey);
+      if (rawKey && rawKey !== safeKey && !/[.#$[\]/]/.test(rawKey)) nodeKeys.push(rawKey);
+      Promise.all(nodeKeys.map(nodeKey => {
+        const msgRef = dbRootRef.child(`messages/${nodeKey}`);
+        return msgRef.once('value').then(snap => {
+          const data = snap.val() || {};
+          const updates = {};
+          Object.entries(data).forEach(([id, row]) => {
+            if (row && typeof row === 'object' && classChatKey(row.className) === classKey) updates[id] = null;
+          });
+          if (!Object.keys(updates).length) return null;
+          return msgRef.update(updates);
+        });
+      })).then(() => {
+        playSound('attack');
+        showToast('Chat Cleared', `已清空與 ${sName} 的對話紀錄。`, 'damage');
+        chatRenderSignatures.teacherChatMessagesList = '';
+        renderTeacherClassChat();
+      }).catch(err => {
+        alert('清空失敗: ' + (err && err.message ? err.message : err));
+      });
+    }
+
+    function sendTeacherClassMessage() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const className = selectedTeacherChatClass;
+      const studentId = selectedTeacherChatStudent;
+      if (!className || !studentId) return alert('請先選擇一位學生。');
+      if (!teacherCanAccessClassChat(currentUser.id, className)) return alert('你沒有這個班的私訊權限。');
+      const student = appData.students && appData.students[studentId];
+      if (!student || !studentIsInClass(student, className)) return alert('這位學生不在這個班。');
+      const input = document.getElementById('teacherMsgInput');
+      const text = (input && input.value ? input.value : '').trim();
+      if (!text) return;
+      const tc = (appData.teachers && appData.teachers[currentUser.id]) || currentUser.data || {};
+      postStudentThreadMessage(className, studentId, {
+        senderRole: 'teacher',
+        senderId: currentUser.id,
+        senderName: tc.name || '老師',
+        text: text
+      }, () => {
+        if (input) input.value = '';
+      });
+    }
+
+    function sendStudentClassMessage() {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
-      if (isStudentBanned(st)) return alert("你的帳號已被老師設定為唯讀，無法傳送訊息！");
-
+      const className = selectedStudentChatClass;
+      if (!st || !className) return alert('請先選擇要傳訊的班級。');
+      if (!studentIsInClass(st, className)) return alert('你不屬於這個班級。');
+      if (st.isBanned || isClassBannedForChat(className)) return alert('你的帳號或這個班級目前為唯讀，無法傳送訊息。');
       const input = document.getElementById('studentMsgInput');
-      const text = (input.value || '').trim();
+      const text = (input && input.value ? input.value : '').trim();
       if (!text) return;
-
-      postMessageDirectly(currentUser.id, {
+      postStudentThreadMessage(className, currentUser.id, {
         senderRole: 'student',
         senderId: currentUser.id,
         senderName: st.name || currentUser.id,
         text: text
       }, () => {
-        input.value = '';
+        if (input) input.value = '';
       });
     }
 
-    // 共通寫入函式：保證最多保留 5 則，超額從最舊刪除
-    function postMessageDirectly(studentId, msgPayload, callback) {
-      if (!dbRootRef) return;
-      const studentMsgRef = dbRootRef.child(`messages/${studentId}`);
-
-      studentMsgRef.once('value').then(snap => {
+    function postStudentThreadMessage(className, studentId, msgPayload, callback) {
+      if (!dbRootRef) return alert('尚未連上資料庫，請稍後再試。');
+      const classKey = classChatKey(className);
+      const studentKey = studentThreadKey(studentId);
+      if (!classKey || !studentKey) return;
+      if (msgPayload.senderRole === 'student' && msgPayload.senderId !== studentId) {
+        return alert('學生只能傳訊給老師，不能傳給其他同學。');
+      }
+      const canonical = canonicalClassName(className);
+      // classChats 沒有寫入權限。沿用原本已允許的 messages/{學生}，用 className 把不同班的私訊分開。
+      const msgRef = dbRootRef.child(`messages/${studentKey}`);
+      msgRef.once('value').then(snap => {
         const currentData = snap.val() || {};
-        const keys = Object.keys(currentData).sort((a, b) => (currentData[a].timestamp || 0) - (currentData[b].timestamp || 0));
-
+        const keys = Object.keys(currentData).filter(k => {
+          const row = currentData[k];
+          return row && typeof row === 'object' && classChatKey(row.className) === classKey;
+        }).sort((a, b) => (Number(currentData[a].timestamp) || 0) - (Number(currentData[b].timestamp) || 0));
         const updates = {};
-        // 若當前已有 5 則以上，先刪除最舊的
-        if (keys.length >= 5) {
-          const deleteCount = keys.length - 4; // 保留 4 個以腾出 1 個新位置
-          for (let i = 0; i < deleteCount; i++) {
-            updates[keys[i]] = null;
-          }
+        if (keys.length >= CLASS_CHAT_MAX_MESSAGES) {
+          const deleteCount = keys.length - (CLASS_CHAT_MAX_MESSAGES - 1);
+          for (let i = 0; i < deleteCount; i++) updates[keys[i]] = null;
         }
-
-        const newKey = studentMsgRef.push().key;
+        const newKey = msgRef.push().key;
+        const maxTs = keys.reduce((m, k) => Math.max(m, Number(currentData[k] && currentData[k].timestamp) || 0), 0);
         updates[newKey] = {
           senderRole: msgPayload.senderRole,
           senderId: msgPayload.senderId,
           senderName: msgPayload.senderName,
-          text: msgPayload.text,
-          timestamp: Date.now(),
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          studentId: studentId,
+          text: String(msgPayload.text || '').slice(0, 500),
+          timestamp: Math.max(Date.now(), maxTs + 1),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          className: canonical
         };
-
-        studentMsgRef.update(updates).then(() => {
-          playSound('shield');
-          if (callback) callback();
-        }).catch(err => {
-          alert("訊息發送失敗: " + err.message);
-        });
+        return msgRef.update(updates);
+      }).then(() => {
+        playSound('shield');
+        if (callback) callback();
+      }).catch(err => {
+        alert('訊息發送失敗: ' + (err && err.message ? err.message : err));
       });
+    }
+
+    function notifyNewClassChatMessages(prev, next) {
+      if (!currentUser || currentUser.role === 'superadmin') return;
+      const threads = [];
+      if (currentUser.role === 'teacher') {
+        getTeacherPermittedClasses(currentUser.id).forEach(className => {
+          studentsInClassChat(className).forEach(s => threads.push({ className, studentId: s.id, label: s.name || s.id }));
+        });
+      } else if (currentUser.role === 'student') {
+        getMyChatClassNames().forEach(className => threads.push({ className, studentId: currentUser.id, label: className }));
+      }
+      threads.forEach(thread => {
+        const prevBucket = threadMessageMap(prev, thread.className, thread.studentId);
+        const nextBucket = threadMessageMap(next, thread.className, thread.studentId);
+        let newest = null;
+        Object.entries(nextBucket).forEach(([k, v]) => {
+          if (!v) return;
+          const ts = Number(v.timestamp) || 0;
+          if (!newest || ts >= newest.ts) newest = { key: k, ts, msg: v };
+        });
+        if (!newest || newest.msg.senderId === currentUser.id) return;
+        const prevMsg = prevBucket[newest.key];
+        if (prevMsg && (Number(prevMsg.timestamp) || 0) === newest.ts) return;
+        if (isViewingThread(thread.className, thread.studentId)) return;
+        const preview = String(newest.msg.text || '').slice(0, 80);
+        playSound('gacha');
+        showToast('學生私訊', `【${thread.label}】${newest.msg.senderName || ''}：${preview}`, 'info');
+      });
+    }
+
+    function isViewingThread(className, studentId) {
+      if (!currentUser || !className || !studentId) return false;
+      if (currentUser.role === 'teacher') {
+        return activeTeacherSubTab === 'msg'
+          && selectedTeacherChatClass && selectedTeacherChatClass.toLowerCase() === className.toLowerCase()
+          && selectedTeacherChatStudent === studentId;
+      }
+      if (currentUser.role === 'student') {
+        return currentUser.id === studentId
+          && !!(selectedStudentChatClass && selectedStudentChatClass.toLowerCase() === className.toLowerCase());
+      }
+      return false;
+    }
+
+    function writeClassChatAccess(className, teacherIds) {
+      if (!currentUser || currentUser.role !== 'superadmin') return;
+      const key = classChatKey(className);
+      const canonical = canonicalClassName(className);
+      if (!key || !canonical) return;
+      const cleanIds = {};
+      Object.keys(teacherIds || {}).forEach(id => {
+        if (teacherIds[id]) cleanIds[id] = true;
+      });
+      const entry = { className: canonical, teacherIds: Object.keys(cleanIds).length ? cleanIds : null };
+      if (!appData.classMessageAccess) appData.classMessageAccess = {};
+      appData.classMessageAccess[key] = entry;
+      if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+      appData.systemSettings.classMessageAccess = appData.classMessageAccess;
+      saveLocalCache();
+      renderClassMessageAccessPanel();
+      if (dbRootRef) {
+        dbRootRef.child(`systemSettings/classMessageAccess/${key}`).set(entry).catch(err => {
+          alert('儲存班級聊天權限失敗: ' + (err && err.message ? err.message : err));
+        });
+      }
+    }
+
+    function toggleTeacherClassChatAccess(encClass, encTeacher, allowed) {
+      const className = decodeURIComponent(encClass);
+      const teacherId = decodeURIComponent(encTeacher);
+      const teacherIds = {};
+      teacherIdsForClass(className).forEach(id => { teacherIds[id] = true; });
+      if (allowed) teacherIds[teacherId] = true;
+      else delete teacherIds[teacherId];
+      writeClassChatAccess(className, teacherIds);
+    }
+
+    function setClassChatTeacherAccess(encClass, mode) {
+      const className = decodeURIComponent(encClass);
+      const teacherIds = {};
+      if (mode === 'all') {
+        Object.keys(appData.teachers || {}).forEach(id => { teacherIds[id] = true; });
+      }
+      writeClassChatAccess(className, teacherIds);
+    }
+
+    function renderClassMessageAccessPanel() {
+      const box = document.getElementById('superAdminClassChatAccess');
+      if (!box || !currentUser || currentUser.role !== 'superadmin') return;
+      const classes = collectKnownClassNames();
+      const teachers = Object.values(appData.teachers || {});
+      if (!classes.length) {
+        box.innerHTML = '<div class="text-slate-500 italic text-xs py-4 text-center">尚未找到班級。匯入學生或建立班級後即可設定聊天室權限。</div>';
+        return;
+      }
+      if (!teachers.length) {
+        box.innerHTML = '<div class="text-slate-500 italic text-xs py-4 text-center">尚未有老師帳號，請先新增老師。</div>';
+        return;
+      }
+      box.innerHTML = classes.map(className => {
+        const permitted = teacherIdsForClass(className);
+        const encClass = encodeURIComponent(className);
+        const checks = teachers.map(t => {
+          const on = permitted.indexOf(t.id) !== -1;
+          const encT = encodeURIComponent(t.id);
+          return `<label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${on ? 'border-cyan-500/70 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-slate-950 text-slate-400'} cursor-pointer select-none">
+            <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleTeacherClassChatAccess('${encClass}', '${encT}', this.checked)" class="accent-cyan-500 cursor-pointer">
+            <span class="font-bold">${escapeHtml(t.name)}</span>
+            <span class="font-mono text-[10px] text-slate-500">${escapeHtml(t.username || t.id)}</span>
+          </label>`;
+        }).join('');
+        return `<div class="border border-slate-800 rounded-xl p-3 bg-slate-950/60">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div>
+              <div class="font-bold text-cyan-300 text-sm">${escapeHtml(className)}</div>
+              <div class="text-[10px] text-slate-500">已授權 ${permitted.length} / ${teachers.length} 位老師 · 可查看該班每一位學生的個別私訊</div>
+            </div>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="setClassChatTeacherAccess('${encClass}', 'all')" class="px-2 py-1 rounded bg-slate-800 text-[10px] font-bold text-cyan-300 cursor-pointer">全選</button>
+              <button type="button" onclick="setClassChatTeacherAccess('${encClass}', 'none')" class="px-2 py-1 rounded bg-slate-800 text-[10px] font-bold text-slate-400 cursor-pointer">清除</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">${checks}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function teacherChatAccessSummary(teacherId) {
+      const classes = collectKnownClassNames().filter(c => teacherCanAccessClassChat(teacherId, c));
+      return classes.length ? classes.join(', ') : '未授權';
     }
     // 搶答動態倒數計時器變數
     let quizStudentCountdownTimer = null;
@@ -2901,7 +3452,12 @@ function normalizeStudent(s, keyId) {
             if (Array.isArray(parsed.battleLogs)) appData.battleLogs = parsed.battleLogs;
             if (parsed.announcements && typeof parsed.announcements === 'object') appData.announcements = parsed.announcements;
             if (parsed.bounties && typeof parsed.bounties === 'object') appData.bounties = parsed.bounties;
+            if (parsed.classMessageAccess && typeof parsed.classMessageAccess === 'object') appData.classMessageAccess = parsed.classMessageAccess;
+            if (parsed.messages && typeof parsed.messages === 'object') appData.messages = parsed.messages;
             if (parsed.systemSettings && typeof parsed.systemSettings === 'object') appData.systemSettings = parsed.systemSettings;
+            if (!Object.keys(appData.classMessageAccess || {}).length && appData.systemSettings && appData.systemSettings.classMessageAccess) {
+              appData.classMessageAccess = appData.systemSettings.classMessageAccess;
+            }
           }
         }
       } catch (e) {
@@ -2950,7 +3506,8 @@ function normalizeStudent(s, keyId) {
       } else if (tabName === 'msg') {
         if (btnMsg) btnMsg.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-cyan-600 to-blue-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
         if (viewMsg) viewMsg.classList.remove('hidden');
-        populateTeacherMsgStudentDropdown();
+        chatRenderSignatures.teacherChatMessagesList = '';
+        renderTeacherClassChat();
       }
     }
 
@@ -3063,12 +3620,23 @@ function normalizeStudent(s, keyId) {
           appData.classes = snap.val() || {};
           saveLocalCache();
           if (currentUser && currentUser.role === 'teacher') populateClassDropdown();
+          refreshClassChatUI();
         });
 
         dbRootRef.child('systemSettings/classRegistry').on('value', (snap) => {
           appData.classRegistry = snap.val() || {};
           saveLocalCache();
           if (currentUser && currentUser.role === 'teacher') populateClassDropdown();
+          refreshClassChatUI();
+        });
+
+        dbRootRef.child('systemSettings/classMessageAccess').on('value', (snap) => {
+          appData.classMessageAccess = snap.val() || {};
+          if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+          appData.systemSettings.classMessageAccess = appData.classMessageAccess;
+          saveLocalCache();
+          if (currentUser && currentUser.role === 'superadmin') renderSuperAdminDashboard();
+          else refreshClassChatUI();
         });
 
         
@@ -3158,38 +3726,20 @@ function normalizeStudent(s, keyId) {
             handleIncomingAttackAlerts();
           }
         });
-      // 💬 私訊即時監聽 (保留最多 5 則 + 老師醒目通知)
-        let isFirstMsgSync = true;
+      // 💬 學生個別私訊寫在 messages。已讀時間寫在 systemSettings/classMessageReads，重新整理後不會再把讀過的訊息標成紅點。
+        let classChatSnapshotReady = false;
         dbRootRef.child('messages').on('value', (snap) => {
           const prevMessages = appData.messages || {};
           appData.messages = snap.val() || {};
-
-          // 當老師在線且收到學生最新訊息時，發出醒目提示與音效
-          if (currentUser && currentUser.role === 'teacher') {
-            if (!isFirstMsgSync) {
-              Object.entries(appData.messages).forEach(([studentId, msgs]) => {
-                if (!msgs) return;
-                const newLatest = Object.values(msgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
-                const oldMsgs = prevMessages[studentId] || {};
-                const oldLatest = Object.values(oldMsgs).sort((a,b) => (b.timestamp||0) - (a.timestamp||0))[0];
-
-                if (newLatest && newLatest.senderRole === 'student' && (!oldLatest || newLatest.timestamp > oldLatest.timestamp)) {
-                  playSound('gacha');
-                  showToast("💬 收到學生新私訊！", `來自【${newLatest.senderName}】：${newLatest.text}`, "info");
-                }
-              });
-            }
-            updateTeacherGlobalMsgBadge();
-            if (activeTeacherSubTab === 'msg') {
-              populateTeacherMsgStudentDropdown();
-            }
-          }
-
-          if (currentUser && currentUser.role === 'student') {
-            renderStudentChatMessageList();
-          }
-          isFirstMsgSync = false;
-        });
+          saveLocalCache();
+          if (classChatSnapshotReady) notifyNewClassChatMessages(prevMessages, appData.messages);
+          classChatSnapshotReady = true;
+          refreshClassChatUI();
+        }, () => {});
+        dbRootRef.child('systemSettings/classMessageReads').on('value', (snap) => {
+          mergeServerClassChatReads(snap.val() || {});
+          refreshClassChatUI();
+        }, () => {});
       } catch (err) {
         console.error("Fatal Firebase Init Error:", err);
         updateSyncStatusUI(false, `❌ Init Crash: ${err.message}`);
@@ -4856,8 +5406,8 @@ function getTeacherTemplate() {
       </button>
 <button id="btnTeacherTabMsg" onclick="switchTeacherSubTab('msg')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 relative">
   <i class="fa-solid fa-comments text-cyan-400"></i> 
-  <span>師生私訊中心 (Messages)</span>
-  <span id="teacherTabMsgUnreadBadge" class="hidden px-1.5 py-0.2 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold animate-pulse">0</span>
+  <span>學生私訊 (Messages)</span>
+  <span id="teacherTabMsgUnreadBadge" class="hidden px-1.5 py-0.2 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold">0</span>
 </button>
     </div>
 
@@ -4880,7 +5430,7 @@ function getTeacherTemplate() {
         <div class="flex flex-wrap items-center gap-2">
           <!-- 🚀 廣播版本強制更新按鈕 -->
           <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本">
-            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.5.3</span>)
+            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.6.2</span>)
           </button>
           <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
             <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
@@ -5249,55 +5799,55 @@ function getTeacherTemplate() {
         </div>
       </div>
     </div>
-  <!-- 💬 老師與個別學生私訊子分頁 -->
+  <!-- 💬 老師查看個別學生私訊。獲准老師看同一位學生的同一串對話，學生之間互不可見。 -->
     <div id="teacherSubViewMessage" class="space-y-6 hidden">
       <div class="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border-2 border-cyan-500/60 rounded-2xl p-5 shadow-2xl space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-500/30 pb-3">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-lg">
-              <i class="fa-solid fa-comments"></i>
+              <i class="fa-solid fa-comment-dots"></i>
             </div>
             <div>
-              <h3 class="text-sm sm:text-base font-black text-cyan-300 uppercase tracking-wider font-pixel">師生個別私訊系統 (Direct Messages)</h3>
-              <p class="text-[11px] text-slate-400">僅限老師與個別學生 1 對 1 通訊，自動保留最新 5 則訊息（超過自動刪除最舊）</p>
+              <h3 class="text-sm sm:text-base font-black text-cyan-300 uppercase tracking-wider font-pixel">學生個別私訊 (Student Messages)</h3>
+              <p class="text-[11px] text-slate-400">每位學生各自傳給獲准的老師。同學之間看不到、也不能互傳。同一班獲准的老師看同一位學生的同一串對話。</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：5 則 / 學生</span>
+            <span class="text-xs text-amber-300 font-mono bg-slate-950 px-2.5 py-1 rounded border border-amber-500/40">上限：100 則 / 學生</span>
           </div>
         </div>
 
-        <!-- 選擇學生區塊 -->
-        <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-          <label class="text-xs font-bold text-cyan-300 shrink-0"><i class="fa-solid fa-user mr-1"></i> 選擇私訊學生：</label>
-          <select id="teacherMsgStudentSelect" onchange="onTeacherSelectMsgStudent(this.value)" class="flex-1 bg-slate-900 border border-cyan-500/60 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
-            <option value="">-- 請選擇學生 (Select Student) --</option>
+        <div class="flex flex-wrap items-center gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+          <label for="teacherChatClassSelect" class="text-xs font-bold text-cyan-300 shrink-0"><i class="fa-solid fa-chalkboard mr-1"></i> 班級：</label>
+          <select id="teacherChatClassSelect" onchange="onTeacherSelectClassChat(this.value)" class="flex-1 min-w-[140px] bg-slate-900 border border-cyan-500/60 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
+            <option value="">-- 尚未獲授權的班級 --</option>
+          </select>
+          <label for="teacherChatStudentSelect" class="text-xs font-bold text-cyan-300 shrink-0"><i class="fa-solid fa-user mr-1"></i> 學生：</label>
+          <select id="teacherChatStudentSelect" onchange="onTeacherSelectStudentChat(this.value)" class="flex-1 min-w-[160px] bg-slate-900 border border-cyan-500/60 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
+            <option value="">-- 請選擇學生 --</option>
           </select>
         </div>
+        <p id="teacherChatRoomMeta" class="text-[11px] text-slate-400">只有獲准的老師看得到這位學生的訊息。</p>
 
-        <!-- 私訊對話框體 -->
-        <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col h-[380px]">
+        <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col h-[420px]">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-300" id="teacherMsgTargetTitle">請先在上方選擇學生</span>
-              <span class="text-[10px] text-slate-500 font-mono" id="teacherMsgCountBadge">訊息數：0 / 5</span>
+              <span class="text-xs font-bold text-slate-300" id="teacherMsgTargetTitle">請先選擇學生</span>
+              <span class="text-[10px] text-slate-500 font-mono" id="teacherMsgCountBadge">訊息數：0</span>
             </div>
-            <!-- 🗑️ 老師清空當前對話按鈕 -->
-            <button id="btnTeacherClearChat" onclick="clearTeacherCurrentChatHistory()" class="hidden px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-300 text-[11px] font-bold cursor-pointer transition active:scale-95 flex items-center gap-1.5">
-              <i class="fa-solid fa-trash-can"></i> 清空對話 (Clear History)
+            <button id="btnTeacherClearChat" onclick="clearTeacherClassChatHistory()" class="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-300 text-[11px] font-bold cursor-pointer transition active:scale-95 flex items-center gap-1.5">
+              <i class="fa-solid fa-trash-can"></i> 清空對話紀錄
             </button>
           </div>
 
-          <!-- 訊息列表 -->
           <div id="teacherChatMessagesList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-            <div class="text-slate-500 text-xs italic text-center py-10">尚無訊息或未選擇學生</div>
+            <div class="text-slate-500 text-xs italic text-center py-10">尚未選擇學生</div>
           </div>
 
-          <!-- 訊息輸入與發送 -->
           <div class="pt-3 border-t border-slate-800 flex gap-2">
-            <input type="text" id="teacherMsgInput" placeholder="輸入要傳送給該學生的訊息..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
-            <button onclick="sendTeacherMessage()" class="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0">
-              <i class="fa-solid fa-paper-plane"></i> 發送
+            <input type="text" id="teacherMsgInput" placeholder="回覆這位學生，其他同學看不到..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendTeacherClassMessage();}" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+            <button onclick="sendTeacherClassMessage()" class="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-paper-plane"></i> 回覆
             </button>
           </div>
         </div>
@@ -5329,6 +5879,15 @@ function getSuperAdminTemplate() {
         <button onclick="openCreateTeacherModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs cursor-pointer transition active:scale-95">Add Teacher</button>
       </div>
       <div id="superAdminTeacherGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </div>
+    <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-lg">
+      <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-4 mb-4 gap-3">
+        <div>
+          <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-comments mr-2"></i>Class Message Access 班級私訊權限</h2>
+          <p class="text-xs text-slate-400 mt-1">勾選可以查看該班學生私訊的老師。獲准的老師看同一位學生的同一串對話。學生只能傳給老師，同學之間不能互看或互傳。</p>
+        </div>
+      </div>
+      <div id="superAdminClassChatAccess" class="space-y-3"></div>
     </div>
     <div class="bg-slate-900 border border-cyan-500/30 rounded-xl p-5 shadow-lg">
       <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-4 mb-4 gap-3">
@@ -5413,6 +5972,7 @@ function getSuperAdminTemplate() {
     populateTeacherBountySelect();
     updateClassBanButtonUI();
     renderTeacherGrid();
+    updateClassChatUnreadBadge();
 
   } else {
     // 學生端：銷毀所有管理員與教師的 DOM 內容
@@ -5443,6 +6003,7 @@ function getSuperAdminTemplate() {
     populateStudentTeacherBossOptions();
     updateStudentUI();
     updateStudentFactionUI(); // 👈 加入此行：登入進入儀表板後立即刷新陣營資訊
+    renderStudentClassChat();
        // 👈 加入此行：遲到學生登入後，立刻檢查是否有進行中的考卷並彈出
     onStudentExamStateSync();
   }
@@ -5457,6 +6018,9 @@ function getSuperAdminTemplate() {
 
 function logout() {
   currentUser = null;
+  selectedTeacherChatClass = "";
+  selectedTeacherChatStudent = "";
+  selectedStudentChatClass = "";
   document.getElementById('mainHeader').classList.add('hidden');
   document.getElementById('viewStudent').classList.add('hidden');
   
@@ -5498,6 +6062,7 @@ function logout() {
   }
   renderAnnouncementsUI();
   renderBountyUI();
+  refreshClassChatUI();
 }
 
     function populateStudentTeacherBossOptions() {
@@ -8305,6 +8870,7 @@ function teacherPromptClassCoins(mode = 'reward') {
                 <div class="font-bold text-amber-300 text-sm">${t.name} <span class="text-slate-400 font-mono text-[11px]">(${t.username})</span></div>
                 <div class="text-slate-300 text-[11px]">Partner: <b class="text-cyan-300">${digi.name}</b> (${digi.stageName})</div>
                 <div class="text-slate-400 font-mono text-[10px] mt-0.5">HP: ${t.maxHp} | Special: ${t.skillPower || 220} | Sig: ${t.techPower || 120}</div>
+                <div class="text-[10px] text-cyan-400 mt-0.5">可看私訊：${escapeHtml(teacherChatAccessSummary(t.id))}</div>
               </div>
             </div>
             <div class="flex items-center gap-1.5">
@@ -8328,6 +8894,7 @@ function teacherPromptClassCoins(mode = 'reward') {
 
       if (studentsList.length === 0) {
         stBox.innerHTML = '<div class="col-span-full py-10 text-center text-slate-500 italic text-xs">No student accounts found.</div>';
+        renderClassMessageAccessPanel();
         return;
       }
 
@@ -8367,11 +8934,20 @@ function teacherPromptClassCoins(mode = 'reward') {
         `;
         stBox.appendChild(card);
       });
+      renderClassMessageAccessPanel();
     }
 
     function deleteTeacher(id) {
       if (!confirm("Delete this teacher account?")) return;
-      if (dbRootRef) dbRootRef.child('teachers/' + id).remove();
+      const updates = {};
+      updates['teachers/' + id] = null;
+      Object.keys(appData.classMessageAccess || {}).forEach(key => {
+        const entry = appData.classMessageAccess[key];
+        if (entry && entry.teacherIds && entry.teacherIds[id]) {
+          updates[`systemSettings/classMessageAccess/${key}/teacherIds/${id}`] = null;
+        }
+      });
+      executeAtomicMultiPathUpdate(updates);
     }
 
     function deleteStudent(id) {
