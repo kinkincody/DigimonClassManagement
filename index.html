@@ -1445,7 +1445,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.5.1";
+    const CURRENT_APP_VERSION = "2.5.3";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -1710,6 +1710,7 @@
   superAdmins: {},
   teachers: {},
   classes: {},
+  classRegistry: {},
   students: {},
   battleLogs: [],
   announcements: {},
@@ -2485,6 +2486,8 @@ const DIGIMON_DB = {
 
     let currentUser = null;
     let selectedTeacherClass = "ALL";
+    let mgrSearchQuery = "";
+    let pendingClassMembership = {};
     let activeLoginTab = 'student';
     let dbRootRef = null;
     let pickerInterval = null;
@@ -2893,6 +2896,7 @@ function normalizeStudent(s, keyId) {
             if (parsed.superAdmins && Object.keys(parsed.superAdmins).length > 0) appData.superAdmins = parsed.superAdmins;
             if (parsed.teachers && Object.keys(parsed.teachers).length > 0) appData.teachers = parsed.teachers;
             if (parsed.classes) appData.classes = parsed.classes;
+            if (parsed.classRegistry && typeof parsed.classRegistry === 'object') appData.classRegistry = parsed.classRegistry;
             if (parsed.students) appData.students = parsed.students;
             if (Array.isArray(parsed.battleLogs)) appData.battleLogs = parsed.battleLogs;
             if (parsed.announcements && typeof parsed.announcements === 'object') appData.announcements = parsed.announcements;
@@ -3003,9 +3007,20 @@ function normalizeStudent(s, keyId) {
             const norm = normalizeStudent(val[k], k);
             if (norm) cleanStudents[norm.id] = norm;
           });
+          Object.keys(pendingClassMembership).forEach(id => {
+            const pending = pendingClassMembership[id];
+            if (!pending || !cleanStudents[id]) return;
+            if ((cleanStudents[id].classId || '') === pending.classId) {
+              delete pendingClassMembership[id];
+            } else {
+              cleanStudents[id].classId = pending.classId;
+            }
+          });
           appData.students = cleanStudents;
           saveLocalCache();
           refreshCurrentView();
+          const mgrModal = document.getElementById('modalClassStudentsManager');
+          if (mgrModal && !mgrModal.classList.contains('hidden')) renderManagerStudentsList();
           if (activeTeacherSubTab === 'quiz') renderTeacherQuizLiveDashboard();
         }, (err) => {
           console.error("Students read permission error:", err);
@@ -3050,6 +3065,12 @@ function normalizeStudent(s, keyId) {
           if (currentUser && currentUser.role === 'teacher') populateClassDropdown();
         });
 
+        dbRootRef.child('systemSettings/classRegistry').on('value', (snap) => {
+          appData.classRegistry = snap.val() || {};
+          saveLocalCache();
+          if (currentUser && currentUser.role === 'teacher') populateClassDropdown();
+        });
+
         
 
         dbRootRef.child('battleLogs').limitToLast(50).on('value', (snap) => {
@@ -3064,10 +3085,12 @@ function normalizeStudent(s, keyId) {
           renderBattleLogs();
         });
 
-        dbRootRef.child('announcements').on('value', (snap) => {
+        dbRootRef.child('systemSettings/announcements').on('value', (snap) => {
           appData.announcements = snap.val() || {};
           saveLocalCache();
           renderAnnouncementsUI();
+        }, (err) => {
+          console.warn("Announcement sync error:", err);
         });
 
         dbRootRef.child('bounties').on('value', (snap) => {
@@ -4083,6 +4106,10 @@ function rejectFactionRequest(reqKey) {
       }).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     }
 
+    function announcementListRef(tagKey) {
+      return dbRootRef.child(`systemSettings/announcements/${tagKey}`);
+    }
+
     function publishTeacherAnnouncement() {
       if (!currentUser || currentUser.role !== 'teacher') return;
       const inputEl = document.getElementById('teacherAnnouncementInput');
@@ -4106,25 +4133,58 @@ function rejectFactionRequest(reqKey) {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      if (dbRootRef) {
-        dbRootRef.child(`announcements/${tagKey}`).push(newAnnouncement).then(() => {
-          inputEl.value = '';
-          playSound('shield');
-          showToast("Announcement Posted", `Pinned announcement to [${targetClass === 'ALL' ? 'All Classes' : targetClass}]!`, "info");
-        }).catch(err => {
-          alert("Failed to publish announcement: " + err.message);
-        });
+      if (!appData.announcements) appData.announcements = {};
+      if (!appData.announcements[tagKey]) appData.announcements[tagKey] = {};
+
+      if (!dbRootRef) {
+        const localId = 'local_' + Date.now();
+        appData.announcements[tagKey][localId] = newAnnouncement;
+        saveLocalCache();
+        inputEl.value = '';
+        renderAnnouncementsUI();
+        return;
       }
+
+      const newRef = announcementListRef(tagKey).push();
+      const annId = newRef.key;
+      appData.announcements[tagKey][annId] = newAnnouncement;
+      saveLocalCache();
+      inputEl.value = '';
+      renderAnnouncementsUI();
+
+      newRef.set(newAnnouncement).then(() => {
+        playSound('shield');
+        showToast("Announcement Posted", `Pinned announcement to [${targetClass === 'ALL' ? 'All Classes' : targetClass}]!`, "info");
+      }).catch(err => {
+        if (appData.announcements[tagKey]) delete appData.announcements[tagKey][annId];
+        saveLocalCache();
+        renderAnnouncementsUI();
+        alert("Failed to publish announcement: " + (err && err.message ? err.message : err));
+      });
     }
 
     function deleteSingleAnnouncement(annId, classTag) {
       if (!confirm("Are you sure you want to remove this pinned announcement?")) return;
       const tagKey = sanitizeClassKey(classTag || selectedTeacherClass || 'ALL');
-      if (dbRootRef) {
-        dbRootRef.child(`announcements/${tagKey}/${annId}`).remove().then(() => {
-          showToast("Announcement Removed", "Pinned notice deleted.", "info");
-        });
+      const bucket = (appData.announcements && appData.announcements[tagKey]) || {};
+      const previous = bucket[annId];
+      if (previous) {
+        delete bucket[annId];
+        saveLocalCache();
+        renderAnnouncementsUI();
       }
+      if (!dbRootRef) return;
+      dbRootRef.child(`systemSettings/announcements/${tagKey}/${annId}`).remove().then(() => {
+        showToast("Announcement Removed", "Pinned notice deleted.", "info");
+      }).catch(err => {
+        if (previous) {
+          if (!appData.announcements[tagKey]) appData.announcements[tagKey] = {};
+          appData.announcements[tagKey][annId] = previous;
+          saveLocalCache();
+          renderAnnouncementsUI();
+        }
+        alert("Failed to delete announcement: " + (err && err.message ? err.message : err));
+      });
     }
 
     function clearCurrentClassAnnouncements() {
@@ -4138,12 +4198,25 @@ function rejectFactionRequest(reqKey) {
 
       if (!confirm(`Are you sure you want to CLEAR ALL pinned announcements for [${targetClass === 'ALL' ? 'All Classes' : targetClass}]?`)) return;
 
-      if (dbRootRef) {
-        dbRootRef.child(`announcements/${tagKey}`).remove().then(() => {
-          playSound('attack');
-          showToast("Announcements Cleared", `All notices for [${targetClass}] have been cleared!`, "damage");
-        });
+      const previous = appData.announcements ? appData.announcements[tagKey] : null;
+      if (appData.announcements) {
+        delete appData.announcements[tagKey];
+        saveLocalCache();
+        renderAnnouncementsUI();
       }
+      if (!dbRootRef) return;
+      announcementListRef(tagKey).remove().then(() => {
+        playSound('attack');
+        showToast("Announcements Cleared", `All notices for [${targetClass}] have been cleared!`, "damage");
+      }).catch(err => {
+        if (previous) {
+          if (!appData.announcements) appData.announcements = {};
+          appData.announcements[tagKey] = previous;
+          saveLocalCache();
+          renderAnnouncementsUI();
+        }
+        alert("Failed to clear announcements: " + (err && err.message ? err.message : err));
+      });
     }
 
     function renderAnnouncementsUI() {
@@ -4807,7 +4880,7 @@ function getTeacherTemplate() {
         <div class="flex flex-wrap items-center gap-2">
           <!-- 🚀 廣播版本強制更新按鈕 -->
           <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本">
-            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.5.1</span>)
+            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.5.3</span>)
           </button>
           <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
             <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
@@ -6839,6 +6912,10 @@ else if (mode === 'pvp') {
       
       const allClassesSet = new Set();
       Object.keys(appData.classes || {}).forEach(cId => allClassesSet.add(cId));
+      Object.values(appData.classRegistry || {}).forEach(entry => {
+        const id = entry && typeof entry === 'object' ? entry.id : entry;
+        if (id) allClassesSet.add(String(id));
+      });
       Object.values(appData.students || {}).forEach(s => {
         parseStudentClasses(s.classId).forEach(c => allClassesSet.add(c));
       });
@@ -7691,16 +7768,20 @@ function teacherPromptClassCoins(mode = 'reward') {
         item.className = `p-2.5 rounded-xl border flex items-center justify-between transition ${isIn ? 'bg-cyan-950/40 border-cyan-500/50' : 'bg-slate-950 border-slate-800'}`;
         item.innerHTML = `
           <div class="flex items-center gap-3">
-            <input type="checkbox" ${isIn ? 'checked' : ''} onchange="toggleStudentClassMembership('${s.id}', '${targetClass}', this.checked)" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
+            <input type="checkbox" ${isIn ? 'checked' : ''} class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
             <div>
-              <span class="font-bold text-xs ${isIn ? 'text-cyan-300' : 'text-slate-300'}">${s.name} (${s.username})</span>
-              <span class="text-[10px] text-slate-500 block">Classes: ${formatStudentClassesDisplay(s)}</span>
+              <span class="font-bold text-xs ${isIn ? 'text-cyan-300' : 'text-slate-300'}">${escapeHtml(s.name)} (${escapeHtml(s.username)})</span>
+              <span class="text-[10px] text-slate-500 block">Classes: ${escapeHtml(formatStudentClassesDisplay(s))}</span>
             </div>
           </div>
           <span class="text-[10px] px-2 py-0.5 rounded font-bold ${isIn ? 'bg-cyan-900 text-cyan-200' : 'bg-slate-900 text-slate-500'}">
             ${isIn ? 'Enrolled' : 'Not in Class'}
           </span>
         `;
+        const checkbox = item.querySelector('input');
+        checkbox.addEventListener('change', () => {
+          toggleStudentClassMembership(s.id, targetClass, checkbox.checked);
+        });
         container.appendChild(item);
       });
     }
@@ -7708,28 +7789,54 @@ function teacherPromptClassCoins(mode = 'reward') {
     function toggleStudentClassMembership(studentId, classId, add) {
       const s = appData.students[studentId];
       if (!s) return;
+      const targetClass = String(classId || '').trim();
+      if (!targetClass || targetClass === 'ALL') return;
 
+      const shouldAdd = add === true || add === 'true';
       let classes = parseStudentClasses(s.classId);
-      const targetClass = classId.trim();
-      const updates = {};
-
-      if (add) {
-        if (!classes.some(c => c.toLowerCase() === targetClass.toLowerCase())) {
-          classes.push(targetClass);
-        }
-        updates[`classes/${targetClass}`] = { id: targetClass, name: targetClass, teacherId: currentUser.id };
-        addBattleLog(`➕ Student [${s.name}] joined [${targetClass}].`, "normal", targetClass);
-        showToast("Class Enrollment", `Added ${s.name} to ${targetClass}!`, "info");
+      if (shouldAdd) {
+        if (!classes.some(c => c.toLowerCase() === targetClass.toLowerCase())) classes.push(targetClass);
       } else {
         classes = classes.filter(c => c.toLowerCase() !== targetClass.toLowerCase());
-        addBattleLog(`➖ Student [${s.name}] left [${targetClass}].`, "normal", targetClass);
-        showToast("Class Enrollment", `Removed ${s.name} from ${targetClass}!`, "info");
       }
 
-      updates[`students/${studentId}/classId`] = classes.join(', ');
-      executeAtomicMultiPathUpdate(updates).then(() => {
+      const nextClassId = classes.join(', ');
+      const previousClassId = s.classId || '';
+      if (nextClassId === previousClassId) {
+        renderManagerStudentsList();
+        return;
+      }
+
+      s.classId = nextClassId;
+      pendingClassMembership[studentId] = { classId: nextClassId };
+      saveLocalCache();
+      renderManagerStudentsList();
+      populateTeacherBountySelect();
+      renderTeacherGrid();
+
+      const writePromise = dbRootRef
+        ? dbRootRef.child('students/' + studentId).update({ classId: nextClassId })
+        : Promise.resolve();
+
+      writePromise.then(() => {
+        if (shouldAdd) {
+          addBattleLog(`➕ Student [${s.name}] joined [${targetClass}].`, "normal", targetClass);
+          showToast("Class Enrollment", `Added ${s.name} to ${targetClass}!`, "info");
+        } else {
+          addBattleLog(`➖ Student [${s.name}] left [${targetClass}].`, "normal", targetClass);
+          showToast("Class Enrollment", `Removed ${s.name} from ${targetClass}!`, "info");
+        }
+      }).catch((err) => {
+        if (pendingClassMembership[studentId] && pendingClassMembership[studentId].classId === nextClassId) {
+          delete pendingClassMembership[studentId];
+        }
+        if (appData.students[studentId]) appData.students[studentId].classId = previousClassId;
+        saveLocalCache();
         renderManagerStudentsList();
         populateTeacherBountySelect();
+        renderTeacherGrid();
+        console.warn("Class membership update failed:", err);
+        showToast("Enrollment Failed", `Could not update ${s.name}. The class list was not changed.`, "damage");
       });
     }
 
@@ -7737,12 +7844,15 @@ function teacherPromptClassCoins(mode = 'reward') {
       const code = prompt("Enter Class Name/Code (e.g. Class-3A):");
       if (!code || !code.trim()) return;
       const cleanCode = code.trim();
-      
-      const updates = {};
-      updates[`classes/${cleanCode}`] = { id: cleanCode, name: cleanCode, teacherId: currentUser.id };
-      selectedTeacherClass = cleanCode;
+      if (cleanCode.toUpperCase() === 'ALL') return alert("That class name is reserved.");
 
-      executeAtomicMultiPathUpdate(updates).then(() => {
+      const safeKey = sanitizeClassKey(cleanCode);
+      if (!appData.classRegistry) appData.classRegistry = {};
+      appData.classRegistry[safeKey] = { id: cleanCode, name: cleanCode, teacherId: currentUser ? currentUser.id : 'teacher1' };
+      selectedTeacherClass = cleanCode;
+      saveLocalCache();
+
+      const finish = () => {
         populateClassDropdown();
         populateTeacherBountySelect();
         renderTeacherGrid();
@@ -7750,42 +7860,75 @@ function teacherPromptClassCoins(mode = 'reward') {
         renderAnnouncementsUI();
         renderBountyUI();
         showToast("Class Created", `Class [${cleanCode}] created!`, "info");
+      };
+
+      if (!dbRootRef) return finish();
+      dbRootRef.child('systemSettings/classRegistry/' + safeKey).set({
+        id: cleanCode,
+        name: cleanCode,
+        teacherId: currentUser ? currentUser.id : 'teacher1'
+      }).then(finish).catch((err) => {
+        console.warn("Class registry write failed:", err);
+        finish();
+        showToast("Saved On This Device", `Class [${cleanCode}] is ready here, but the server did not store the class list.`, "info");
       });
     }
 
-   function promptDeleteCurrentClass() {
-  if (selectedTeacherClass === 'ALL') return alert("Select a specific class to delete.");
-  const target = selectedTeacherClass;
-  if (!confirm(`Delete class [${target}]? Students and factions belonging to this class will be cleared.`)) return;
+    function promptDeleteCurrentClass() {
+      if (selectedTeacherClass === 'ALL') return alert("Select a specific class to delete.");
+      const target = selectedTeacherClass;
+      if (!confirm(`Delete class [${target}]? Students in this class will be removed from it.`)) return;
 
-  const targetKey = sanitizeClassKey(target);
-  const updates = {};
-  updates[`classes/${target}`] = null;
-  updates[`bounties/${targetKey}`] = null;
-  updates[`factions/${targetKey}`] = null; // 👈 同步刪除該班陣營資料，避免殘留
+      const targetKey = sanitizeClassKey(target);
+      const studentUpdates = {};
+      Object.values(appData.students || {}).forEach(s => {
+        let classes = parseStudentClasses(s.classId);
+        const prevLen = classes.length;
+        classes = classes.filter(c => c.toLowerCase() !== target.toLowerCase());
+        if (classes.length !== prevLen) {
+          const next = classes.join(', ');
+          s.classId = next;
+          studentUpdates[`students/${s.id}/classId`] = next;
+        }
+      });
+      if (appData.classRegistry) {
+        Object.keys(appData.classRegistry).forEach(k => {
+          const entry = appData.classRegistry[k];
+          const id = entry && entry.id ? entry.id : k;
+          if (String(id).toLowerCase() === target.toLowerCase()) delete appData.classRegistry[k];
+        });
+      }
+      if (appData.classes && appData.classes[target]) delete appData.classes[target];
+      saveLocalCache();
 
-  Object.values(appData.students || {}).forEach(s => {
-    let classes = parseStudentClasses(s.classId);
-    const prevLen = classes.length;
-    classes = classes.filter(c => c.toLowerCase() !== target.toLowerCase());
-    if (classes.length !== prevLen) {
-      updates[`students/${s.id}/classId`] = classes.join(', ');
+      const studentPromise = (dbRootRef && Object.keys(studentUpdates).length > 0)
+        ? dbRootRef.update(studentUpdates)
+        : Promise.resolve();
+
+      studentPromise.then(() => {
+        if (dbRootRef) {
+          dbRootRef.update({
+            [`systemSettings/classRegistry/${targetKey}`]: null,
+            [`bounties/${targetKey}`]: null,
+            [`factions/${targetKey}`]: null
+          }).catch(err => console.warn("Class extra cleanup:", err));
+          dbRootRef.child('classes/' + target).remove().catch(err => console.warn("Classes node cleanup skipped:", err));
+        }
+        selectedTeacherClass = 'ALL';
+        populateClassDropdown();
+        populateTeacherBountySelect();
+        renderTeacherFactionPanel();
+        renderTeacherGrid();
+        renderBattleLogs();
+        renderAnnouncementsUI();
+        renderBountyUI();
+        addBattleLog(`🗑️ Teacher deleted class [${target}].`, "battle", "ALL");
+        showToast("Class Deleted", `Removed students from [${target}].`, "info");
+      }).catch((err) => {
+        console.warn("Class delete failed:", err);
+        showToast("Class Delete Failed", "Students could not be removed from this class.", "damage");
+      });
     }
-  });
-
-  executeAtomicMultiPathUpdate(updates).then(() => {
-    selectedTeacherClass = 'ALL';
-    populateClassDropdown();
-    populateTeacherBountySelect();
-    renderTeacherFactionPanel();
-    renderTeacherGrid();
-    renderBattleLogs();
-    renderAnnouncementsUI();
-    renderBountyUI();
-    addBattleLog(`🗑️ Teacher deleted class [${target}].`, "battle", "ALL");
-    showToast("Class Deleted", `Deleted [${target}].`, "info");
-  });
-}
 
     function resetPickerRoundPool() {
       pickedStudentsPool.all.clear();
