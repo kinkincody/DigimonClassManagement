@@ -1473,7 +1473,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.6.6";
+    const CURRENT_APP_VERSION = "2.6.7";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -3355,6 +3355,9 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     // 搶答動態倒數計時器變數
     let quizStudentCountdownTimer = null;
     let quizTeacherCountdownTimer = null;
+    let firebaseServerTimeOffset = 0;
+    let firebaseServerTimeOffsetReady = false;
+    let quizSeenAnchor = null;
     // 老師端答案隱藏/顯示控制旗標（true = 遮蔽答案以防課堂抄襲，false = 顯示）
     let isQuizAnswerHiddenByTeacher = true;
 
@@ -3632,6 +3635,15 @@ function normalizeStudent(s, keyId) {
           } else {
             isFirebaseConnected = false;
             updateSyncStatusUI(false, "⚠️ Offline / Disconnected");
+          }
+        });
+
+        firebase.database().ref('.info/serverTimeOffset').on('value', (snap) => {
+          if (!snap.exists()) return;
+          noteFirebaseServerTimeOffset(snap.val());
+          if (activeQuizInstance && activeQuizInstance.active) {
+            renderQuizModalForStudent();
+            if (currentUser && currentUser.role === 'teacher') renderTeacherQuizLiveDashboard();
           }
         });
 
@@ -5525,7 +5537,7 @@ function getTeacherTemplate() {
         <div class="flex flex-wrap items-center gap-2">
           <!-- 🚀 廣播版本強制更新按鈕 -->
           <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本">
-            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.6.6</span>)
+            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.6.7</span>)
           </button>
           <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
             <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
@@ -6118,6 +6130,7 @@ function getSuperAdminTemplate() {
     renderStudentClassChat();
        // 👈 加入此行：遲到學生登入後，立刻檢查是否有進行中的考卷並彈出
     onStudentExamStateSync();
+    renderQuizModalForStudent();
   }
 
   document.getElementById('viewLogin').classList.add('hidden');
@@ -9844,6 +9857,51 @@ function teacherPromptClassCoins(mode = 'reward') {
       document.getElementById('teacherQuizOpt4').value = item.wrongs[2] || '';
     }
 
+    function noteFirebaseServerTimeOffset(offset) {
+      firebaseServerTimeOffset = Number(offset) || 0;
+      firebaseServerTimeOffsetReady = true;
+    }
+
+    function syncedNow() {
+      return Date.now() + (firebaseServerTimeOffsetReady ? firebaseServerTimeOffset : 0);
+    }
+
+    function liveQuizServerStamp() {
+      if (typeof firebase !== 'undefined' && firebase.database && firebase.database.ServerValue) {
+        return firebase.database.ServerValue.TIMESTAMP;
+      }
+      return syncedNow();
+    }
+
+    function quizLimitMs(quiz) {
+      if (!quiz || quiz.timeLimit === undefined || quiz.timeLimit === null) return 30000;
+      const sec = Number(quiz.timeLimit);
+      if (!Number.isFinite(sec) || sec <= 0) return Infinity;
+      return sec * 1000;
+    }
+
+    function quizSessionKey(quiz) {
+      if (quiz && quiz.quizId) return String(quiz.quizId);
+      const start = Number(quiz && quiz.timestamp);
+      const startOk = Number.isFinite(start) && start > 0;
+      return (startOk ? String(Math.round(start / 1000)) : 'pending') + '|' + String(quiz && quiz.timeLimit) + '|' + String(quiz && quiz.question || '');
+    }
+
+    function quizRemainingMs(quiz) {
+      const limitMs = quizLimitMs(quiz);
+      if (!Number.isFinite(limitMs)) return Infinity;
+      const start = Number(quiz && quiz.timestamp);
+      const startOk = Number.isFinite(start) && start > 0;
+      const key = quizSessionKey(quiz);
+      if (!quizSeenAnchor || quizSeenAnchor.key !== key) {
+        quizSeenAnchor = { key: key, seenAt: Date.now() };
+      }
+      if (!firebaseServerTimeOffsetReady || !startOk) {
+        return limitMs - (Date.now() - quizSeenAnchor.seenAt);
+      }
+      return limitMs - (syncedNow() - start);
+    }
+
     function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
 
@@ -9881,6 +9939,7 @@ function teacherPromptClassCoins(mode = 'reward') {
 
       const quizData = {
         active: true,
+        quizId: 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
         question: q,
         options: shuffledTexts,
         correctIndex: correctIndex,
@@ -9888,7 +9947,7 @@ function teacherPromptClassCoins(mode = 'reward') {
         timeLimit: timeLimitSec,
         winners: {},
         submissions: {},
-        timestamp: Date.now()
+        timestamp: liveQuizServerStamp()
       };
 
       if (dbRootRef) {
@@ -9953,16 +10012,16 @@ function teacherPromptClassCoins(mode = 'reward') {
         statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400";
         if (countdownBadge) countdownBadge.classList.add('hidden');
         if (qSnippet) qSnippet.textContent = "目前問題: 尚未發布";
-        w1Name.textContent = "等待答對者..."; w1Time.textContent = "--:--:--";
-        w2Name.textContent = "等待答對者..."; w2Time.textContent = "--:--:--";
-        w3Name.textContent = "等待答對者..."; w3Time.textContent = "--:--:--";
-        countEl.textContent = "0";
-        accEl.textContent = "0%";
-        avgTimeEl.textContent = "--s";
+        if (w1Name) w1Name.textContent = "等待答對者..."; if (w1Time) w1Time.textContent = "--:--:--";
+        if (w2Name) w2Name.textContent = "等待答對者..."; if (w2Time) w2Time.textContent = "--:--:--";
+        if (w3Name) w3Name.textContent = "等待答對者..."; if (w3Time) w3Time.textContent = "--:--:--";
+        if (countEl) countEl.textContent = "0";
+        if (accEl) accEl.textContent = "0%";
+        if (avgTimeEl) avgTimeEl.textContent = "--s";
         if (badgeCorrect) badgeCorrect.textContent = "✔ 0 答對";
         if (badgeWrong) badgeWrong.textContent = "✖ 0 答錯";
         if (badgeTimeout) badgeTimeout.textContent = "⏰ 0 逾時";
-        progressEl.textContent = `作答進度: 0 / ${classStudents.length}`;
+        if (progressEl) progressEl.textContent = `作答進度: 0 / ${classStudents.length}`;
         tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500 italic">尚未發布搶答題目。請於上方輸入題目並點擊發布。</td></tr>`;
         return;
       }
@@ -9974,14 +10033,17 @@ function teacherPromptClassCoins(mode = 'reward') {
         if (countdownBadge) countdownBadge.classList.remove('hidden');
         
         const updateTcTimer = () => {
-          const elapsedSec = Math.floor((Date.now() - (activeQuizInstance.timestamp || Date.now())) / 1000);
-          
+          const start = Number(activeQuizInstance.timestamp);
+          const elapsedSec = (Number.isFinite(start) && start > 0)
+            ? Math.max(0, Math.floor((syncedNow() - start) / 1000))
+            : 0;
+
           if (timeLimitSec > 0) {
-            // 有限時間：倒數模式
-            const remaining = Math.max(0, timeLimitSec - elapsedSec);
+            const remainingMs = quizRemainingMs(activeQuizInstance);
+            const remaining = Math.min(Number(timeLimitSec) || 0, Math.max(0, Math.ceil(remainingMs / 1000)));
             if (tcCountdownSec) tcCountdownSec.textContent = `${remaining}s`;
 
-            if (remaining <= 0) {
+            if (remainingMs <= 0) {
               clearInterval(quizTeacherCountdownTimer);
               quizTeacherCountdownTimer = null;
               if (statusBadge) {
@@ -9990,7 +10052,6 @@ function teacherPromptClassCoins(mode = 'reward') {
               }
             }
           } else {
-            // 無限時間：顯示累計作答時間
             if (tcCountdownSec) tcCountdownSec.textContent = `∞ (${elapsedSec}s)`;
           }
         };
@@ -10116,11 +10177,11 @@ function teacherPromptClassCoins(mode = 'reward') {
       }
 
       // 更新進度與統計數字（答對率、平均耗時、各分類人數）
-      progressEl.textContent = `作答進度: ${answeredCount} / ${classStudents.length}`;
-      countEl.textContent = `${answeredCount}`;
+      if (progressEl) progressEl.textContent = `作答進度: ${answeredCount} / ${classStudents.length}`;
+      if (countEl) countEl.textContent = `${answeredCount}`;
       const accuracyPct = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
-      accEl.textContent = `${accuracyPct}%`;
-      avgTimeEl.textContent = answeredCount > 0 ? `${(totalElapsed / answeredCount).toFixed(1)}s` : `--s`;
+      if (accEl) accEl.textContent = `${accuracyPct}%`;
+      if (avgTimeEl) avgTimeEl.textContent = answeredCount > 0 ? `${(totalElapsed / answeredCount).toFixed(1)}s` : `--s`;
 
       if (badgeCorrect) badgeCorrect.textContent = `✔ ${correctCount} 答對`;
       if (badgeWrong) badgeWrong.textContent = `✖ ${wrongCount} 答錯`;
@@ -10173,8 +10234,10 @@ function teacherPromptClassCoins(mode = 'reward') {
         const isUnlimited = (timeLimitSec <= 0);
 
         if (!mySub) {
-          // 學生尚未提交作答
-          isQuizTimeoutSubmitting = false;
+          // 學生尚未提交作答。換題才重置逾時旗標，避免同一題在時限內被重複判定逾時。
+          if (!quizSeenAnchor || quizSeenAnchor.key !== quizSessionKey(activeQuizInstance)) {
+            isQuizTimeoutSubmitting = false;
+          }
           feedbackBox.classList.add('hidden');
           grid.innerHTML = '';
 
@@ -10196,24 +10259,23 @@ function teacherPromptClassCoins(mode = 'reward') {
             }
 
             const updateCountdownUI = () => {
-              const quizStartMs = activeQuizInstance.timestamp || Date.now();
-              const elapsedSec = Math.floor((Date.now() - quizStartMs) / 1000);
-              const remaining = Math.max(0, timeLimitSec - elapsedSec);
+              const remainingMs = quizRemainingMs(activeQuizInstance);
+              const shown = Math.min(timeLimitSec, Math.max(0, Math.ceil(remainingMs / 1000)));
 
-              if (timerSecText) timerSecText.textContent = `${remaining}s`;
+              if (timerSecText) timerSecText.textContent = `${shown}s`;
 
               if (barFill) {
-                const pct = Math.max(0, Math.min(100, (remaining / timeLimitSec) * 100));
+                const pct = Math.max(0, Math.min(100, (remainingMs / (timeLimitSec * 1000)) * 100));
                 barFill.style.width = `${pct}%`;
               }
 
-              // 只有在明確設定有限時間且剩餘時間歸零時，才判定為逾時
-              if (remaining <= 0) {
+              // 用伺服器時間判斷。學生電腦快了，也不能在時限還沒到時被當成逾時。
+              if (remainingMs <= 0) {
                 clearInterval(quizStudentCountdownTimer);
                 quizStudentCountdownTimer = null;
                 if (!isQuizTimeoutSubmitting) {
                   isQuizTimeoutSubmitting = true;
-                  submitQuizAnswer(null, true); // 自動提交逾時
+                  submitQuizAnswer(null, true);
                 }
               }
             };
@@ -10245,7 +10307,7 @@ function teacherPromptClassCoins(mode = 'reward') {
           feedbackBox.classList.remove('hidden');
 
           if (mySub.isTimeout) {
-            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-clock mr-1"></i>回答時間已過！(判定逾時未答)</span>`;
+            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-clock mr-1"></i>回答時間已過！(判定逾時未答) / Time is up.</span>`;
           } else if (mySub.isCorrect) {
             let rankText = "";
             if (mySub.rank === 1) rankText = "🥇 第一名神速答對！獎勵：+2 次攻擊！";
@@ -10281,6 +10343,12 @@ function teacherPromptClassCoins(mode = 'reward') {
       const st = appData.students[currentUser.id];
       if (!st) return;
 
+      if (isTimeout && quizRemainingMs(activeQuizInstance) > 0) {
+        isQuizTimeoutSubmitting = false;
+        renderQuizModalForStudent();
+        return;
+      }
+
       if (quizStudentCountdownTimer) {
         clearInterval(quizStudentCountdownTimer);
         quizStudentCountdownTimer = null;
@@ -10289,17 +10357,18 @@ function teacherPromptClassCoins(mode = 'reward') {
       const isCorrect = !isTimeout && (chosenIndex === activeQuizInstance.correctIndex);
       const chosenText = (!isTimeout && activeQuizInstance.options && activeQuizInstance.options[chosenIndex])
         ? activeQuizInstance.options[chosenIndex]
-        : (isTimeout ? '⏰ 逾時未答' : '未作答');
+        : (isTimeout ? '⏰ 逾時未答 / Time is up' : '未作答');
 
-      const submitTime = Date.now();
+      const submitTime = syncedNow();
       const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
       // 使用 Firebase Transaction 決定搶答名次與核發獎勵
       if (dbRootRef) {
         dbRootRef.child('activeQuiz').transaction((cur) => {
-          if (!cur || !cur.active) return cur;
+          if (!cur || !cur.active) return;
           if (!cur.submissions) cur.submissions = {};
-          if (cur.submissions[currentUser.id]) return cur; // 避免重複作答
+          if (cur.submissions[currentUser.id]) return cur;
+          if (isTimeout && quizRemainingMs(cur) > 0) return;
 
           if (!cur.winners) cur.winners = {};
 
@@ -10330,6 +10399,11 @@ function teacherPromptClassCoins(mode = 'reward') {
 
           return cur;
         }, (err, committed, snap) => {
+          if (!committed || !snap || !snap.exists()) {
+            isQuizTimeoutSubmitting = false;
+            if (!activeQuizInstance || quizRemainingMs(activeQuizInstance) > 0) renderQuizModalForStudent();
+            return;
+          }
           if (committed && snap.exists()) {
             const finalQuiz = snap.val();
             const myFinalSub = finalQuiz.submissions && finalQuiz.submissions[currentUser.id];
@@ -10356,7 +10430,7 @@ function teacherPromptClassCoins(mode = 'reward') {
               }
             } else if (isTimeout) {
               playSound('faint');
-              showToast("逾時", "回答時間已結束！", "damage");
+              showToast("逾時 / Time's Up", "回答時間已結束！ / Time is up.", "damage");
             } else {
               playSound('attack');
               showToast("回答錯誤", "下次再接再厲！", "damage");
