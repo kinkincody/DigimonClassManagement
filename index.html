@@ -207,9 +207,24 @@
     <div id="deathKillerBanner" class="mt-3 px-4 py-1.5 rounded-xl bg-rose-950/90 border border-rose-500/80 text-rose-200 font-bold text-xs sm:text-sm shadow-lg">
       擊殺者 (Defeated By): <span id="deathKillerNameText" class="text-amber-300 font-black">未知 (Unknown)</span>
     </div>
-    <p class="text-xs text-rose-300 font-pixel mt-4 tracking-widest text-center px-4">HP Reduced to Zero. In Stasis Mode.</p>
+    <p class="text-xs text-rose-300 font-pixel mt-4 tracking-widest text-center px-4">HP 降到 0，進入靜止狀態。<br>HP Reduced to Zero. In Stasis Mode.</p>
+    <div id="deathReviveHint" class="text-amber-200 text-xs mt-3 max-w-md text-center leading-relaxed px-6"></div>
     <div class="text-slate-400 text-xs mt-3 max-w-md text-center leading-relaxed px-6">
-      All battle actions, gacha draws, traits allocation, and evolutions are locked!<br>Please stay focused in class and await teacher's revival or de-evolution...
+      所有戰鬥、抽卡、特質分配和進化都已鎖定！請專心上課，等候老師復活或退化。<br>All battle actions, gacha draws, traits allocation, and evolutions are locked! Please stay focused in class and await the teacher's revival or de-evolution.
+    </div>
+  </div>
+
+  <!-- 自動復活答題：被擊敗且班級已開啟時弹出，答對立即滿血 -->
+  <div id="modalReviveQuiz" class="fixed inset-0 z-[100000] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-emerald-400 rounded-3xl max-w-lg w-full p-6 text-center shadow-2xl">
+      <div class="flex items-center justify-center gap-2 mb-2">
+        <i class="fa-solid fa-heart-pulse text-emerald-400 text-2xl"></i>
+        <h3 class="font-pixel text-sm sm:text-base text-emerald-300">自動復活答題 / Auto Revive Quiz</h3>
+      </div>
+      <p id="reviveQuizQuotaText" class="text-[11px] text-amber-300 font-mono mb-3">今日還可復活 3 / 3 次<br>Revives left today: 3 / 3</p>
+      <div id="reviveQuizQuestion" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm font-bold text-white mb-5 shadow-inner leading-relaxed">Loading question...</div>
+      <div id="reviveQuizOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+      <p class="text-[11px] text-slate-400 mt-4">答對會立刻滿血復活，並用掉今日 1 次。答錯這次不能再答。每日最多復活 3 次，用完要等老師，明天重新計算。<br>A correct answer revives you to full HP and uses 1 of today's 3 revives. A wrong answer cannot be tried again for this defeat. After 3 revives today, wait for the teacher. The count resets tomorrow.</p>
     </div>
   </div>
 
@@ -223,7 +238,7 @@
           </div>
           <div>
             <h3 class="font-black text-base text-rose-400 uppercase tracking-wider font-pixel">⚠️ 遭受攻擊警報 (Under Attack!)</h3>
-            <p class="text-[11px] text-slate-400">反擊不消耗攻擊次數！每筆攻擊限反擊一次，若死亡將立即鎖定並清空。</p>
+            <p class="text-[11px] text-slate-400">反擊不消耗攻擊次數！每筆攻擊限反擊一次，若死亡將立即鎖定並清空。<br>A counter does not use an attack. Each hit can be countered once. If you faint, this list locks and clears.</p>
           </div>
         </div>
         <button onclick="closeCounterAttackModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -902,19 +917,19 @@
           <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold shrink-0">Teachers only</span>
         </div>
         <div id="studentChatClassRow" class="flex items-center gap-2">
-          <label for="studentChatClassSelect" class="text-[11px] font-bold text-cyan-300 shrink-0">傳給班級</label>
+          <label for="studentChatClassSelect" class="text-[11px] font-bold text-cyan-300 shrink-0">傳給班級 / Class</label>
           <select id="studentChatClassSelect" onchange="onStudentSelectClassChat(this.value)" class="flex-1 bg-slate-950 border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-cyan-400">
             <option value="">-- 沒有可傳訊的班級 --</option>
           </select>
         </div>
-        <p id="studentChatRoomMeta" class="text-[10px] text-slate-500">只會送給這個班獲准的老師。同學看不到，也不能回你。</p>
+        <p id="studentChatRoomMeta" class="text-[10px] text-slate-500">只會送給這個班獲准的老師。同學看不到，也不能回你。 / Only the teachers allowed for this class can see this. Classmates cannot see it or reply.</p>
         <div id="studentChatMessagesList" onclick="acknowledgeStudentClassChat()" class="space-y-2 max-h-52 overflow-y-auto custom-scrollbar pr-1 text-xs">
-          <div class="text-slate-500 italic text-center py-4">選擇班級後即可查看聊天室。</div>
+          <div class="text-slate-500 italic text-center py-4">選擇班級後即可查看聊天室。 / Select a class to open the messages.</div>
         </div>
         <div class="pt-2 border-t border-slate-800 flex gap-2">
-          <input type="text" id="studentMsgInput" placeholder="輸入要傳給老師的訊息..." onfocus="acknowledgeStudentClassChat()" onkeydown="if(event.key==='Enter'){event.preventDefault();sendStudentClassMessage();}" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+          <input type="text" id="studentMsgInput" placeholder="輸入要傳給老師的訊息... / Message your teachers..." onfocus="acknowledgeStudentClassChat()" onkeydown="if(event.key==='Enter'){event.preventDefault();sendStudentClassMessage();}" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
           <button onclick="sendStudentClassMessage()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1 shrink-0">
-            <i class="fa-solid fa-paper-plane"></i> 送出
+            <i class="fa-solid fa-paper-plane"></i> 送出 / Send
           </button>
         </div>
       </div>
@@ -972,8 +987,8 @@
       <div class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2 pr-1" id="pvpTargetsListContainer"></div>
 
       <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
-        <span>★ 點擊卡片即可鎖定目標並發動攻擊</span>
-        <button onclick="closePvpTargetModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">取消</button>
+        <span>★ 點擊卡片即可鎖定目標並發動攻擊 / Tap a card to lock the target and attack</span>
+        <button onclick="closePvpTargetModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">取消 / Cancel</button>
       </div>
     </div>
   </div>
@@ -985,14 +1000,14 @@
           <i class="fa-solid fa-user-group text-cyan-400 text-xl"></i>
           <div>
             <h3 class="font-bold text-base text-cyan-300" id="mgrModalClassTitle">Manage Class Students</h3>
-            <p class="text-[11px] text-slate-400">Add or remove students from this class.</p>
+            <p class="text-[11px] text-slate-400">加入或移出這個班的學生。 / Add or remove students from this class.</p>
           </div>
         </div>
         <button onclick="closeManageClassStudentsModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
       
       <div class="my-3">
-        <input type="text" id="mgrStudentSearch" oninput="filterManagerStudents(this.value)" placeholder="Search student by name or ID..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
+        <input type="text" id="mgrStudentSearch" oninput="filterManagerStudents(this.value)" placeholder="以姓名或學號搜尋... / Search by name or ID..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
       </div>
 
       <div class="flex-1 overflow-y-auto custom-scrollbar my-2 space-y-2 pr-1" id="mgrStudentsList"></div>
@@ -1094,7 +1109,7 @@
         </div>
         <div>
           <h3 class="font-black text-base text-amber-300">DIGITAL MARKET 數碼商店</h3>
-          <p class="text-[11px] text-slate-400">購買戰鬥道具、特質數據晶片與激勵計劃 (Incentive) 積分！</p>
+          <p class="text-[11px] text-slate-400">購買戰鬥道具、特質數據晶片與激勵計劃積分！ / Buy battle items, trait chips, and incentive points!</p>
         </div>
       </div>
       <button onclick="toggleShopModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -1133,7 +1148,7 @@
           </div>
           <div>
             <h3 class="font-black text-base text-amber-300">DIGITAL CAPSULE GACHA</h3>
-            <p class="text-[11px] text-slate-400">Unlock Digimon meats, protective shields, and exclusive Digivice Skins!</p>
+            <p class="text-[11px] text-slate-400">抽取數碼肉、防護盾和專屬暴龍機外觀！ / Unlock Digimon meats, protective shields, and exclusive Digivice skins!</p>
           </div>
         </div>
         <button onclick="closeGachaModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -1281,7 +1296,7 @@
             <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center text-base"><i class="fa-solid fa-fire"></i></div>
             <div>
               <div class="font-bold text-rose-300 text-xs">🔥 ATK Surge (力量激增)</div>
-              <div class="text-[11px] text-slate-400">發動技能攻擊同學或老師夥伴時，<b>攻擊傷害 +20%</b>。</div>
+              <div class="text-[11px] text-slate-400">發動技能攻擊同學或老師夥伴時，<b>攻擊傷害 +20%</b>。<br>Skill attacks against classmates or the teacher deal <b>+20% damage</b>.</div>
             </div>
           </div>
           <span class="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600 font-bold text-[10px]">DMG +20%</span>
@@ -1293,7 +1308,7 @@
             <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/40 flex items-center justify-center text-base"><i class="fa-solid fa-shield-halved"></i></div>
             <div>
               <div class="font-bold text-blue-300 text-xs">🛡️ Iron Fortress (鋼鐵要塞)</div>
-              <div class="text-[11px] text-slate-400">受到其他陣營或首領攻擊時，<b>減免 20% 受到的傷害</b>。</div>
+              <div class="text-[11px] text-slate-400">受到其他陣營或首領攻擊時，<b>減免 20% 受到的傷害</b>。<br>Damage from other factions or the boss is <b>reduced by 20%</b>.</div>
             </div>
           </div>
           <span class="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-600 font-bold text-[10px]">DMG -20%</span>
@@ -1305,7 +1320,7 @@
             <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-base"><i class="fa-solid fa-bolt"></i></div>
             <div>
               <div class="font-bold text-amber-300 text-xs">⚡ EXP Frenzy (經驗狂熱)</div>
-              <div class="text-[11px] text-slate-400">對決擊殺敵對陣營或命中懸賞目標時，<b>額外獲得 +25% EXP</b>。</div>
+              <div class="text-[11px] text-slate-400">對決擊殺敵對陣營或命中懸賞目標時，<b>額外獲得 +25% EXP</b>。<br>Defeating another faction or hitting the bounty target grants <b>+25% EXP</b>.</div>
             </div>
           </div>
           <span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-600 font-bold text-[10px]">EXP +25%</span>
@@ -1317,7 +1332,7 @@
             <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-base"><i class="fa-solid fa-heart-pulse"></i></div>
             <div>
               <div class="font-bold text-emerald-300 text-xs">💚 Holy Blessing (聖光祝福)</div>
-              <div class="text-[11px] text-slate-400">使用回復類技能時，<b>HP 回復效果額外提升 +30%</b>。</div>
+              <div class="text-[11px] text-slate-400">使用回復類技能時，<b>HP 回復效果額外提升 +30%</b>。<br>Healing skills restore <b>+30% more HP</b>.</div>
             </div>
           </div>
           <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-600 font-bold text-[10px]">HEAL +30%</span>
@@ -1333,7 +1348,7 @@
             <div class="w-8 h-8 rounded-lg bg-rose-950 text-rose-300 border border-rose-600 flex items-center justify-center text-base"><i class="fa-solid fa-skull-crossbones"></i></div>
             <div>
               <div class="font-bold text-rose-400 text-xs">💀 Vulnerability Curse (易傷詛咒)</div>
-              <div class="text-[11px] text-slate-400">陣營陷入破甲狀態，<b>遭受所有攻擊時承受 2.0 倍 (雙倍) 傷害！</b></div>
+              <div class="text-[11px] text-slate-400">陣營陷入破甲狀態，<b>遭受所有攻擊時承受 2.0 倍 (雙倍) 傷害！</b><br>This faction takes <b>2.0x damage from every attack</b>.</div>
             </div>
           </div>
           <span class="px-2 py-0.5 rounded bg-rose-900 text-rose-200 border border-rose-500 font-bold text-[10px] animate-pulse">受到 2.0x 傷害</span>
@@ -1458,7 +1473,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.6.2";
+    const CURRENT_APP_VERSION = "2.6.5";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -2086,11 +2101,31 @@
           playSound('evolve');
           return "+50 EXP & +50 Wisdom 已生效！";
         }
+      },
+      "item_auto_revive": {
+        id: "item_auto_revive",
+        name: "自動復活核心 (Auto Revive Core)",
+        rarity: "Legendary",
+        rarityColor: "text-emerald-300 border-emerald-400 bg-emerald-950/60 shadow-lg shadow-emerald-500/20",
+        badgeBg: "bg-emerald-600",
+        icon: "💖",
+        weight: 0,
+        description: "被擊敗時自動使用，立刻滿血復活一次。不需要自己按。\n(Used automatically when you are defeated. Revives to full HP once. No button required.)",
+        effect: (st) => {
+          return "這個核心會在被擊敗時自動使用。 / Used automatically when you are defeated.";
+        }
       }
     };
 
-// 🛒 商店商品清單（10款商品，價格加倍，雙語對照，移除 incentive scheme）
+// 🛒 商店商品清單
 const SHOP_CATALOG = [
+  {
+    id: "item_auto_revive",
+    name: "自動復活核心 (Auto Revive Core)",
+    cost: 500,
+    icon: "💖",
+    desc: "被擊敗時自動使用，立刻滿血復活一次。不用自己按 (Auto-uses on defeat, full HP revive, once per core)"
+  },
   {
     id: "potion_small",
     name: "小回復藥水 (Mini Recovery Potion)",
@@ -2232,7 +2267,10 @@ function buyShopItem(shopItemId) {
       }
 
       addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]，已存入背包！`, "normal", st.classId);
-      showToast("購買成功！", `[${item.name}] 已放入道具背包，可隨時使用！`, "heal");
+      const boughtMsg = item.id === 'item_auto_revive'
+        ? `[${item.name}] 已放入背包。被擊敗時會自動使用，立刻滿血復活。 / Added to your bag. It is used automatically on defeat and restores full HP.`
+        : `[${item.name}] 已放入道具背包，可隨時使用！`;
+      showToast("購買成功！", boughtMsg, "heal");
       
       updateStudentUI();
       renderShopItems();
@@ -2793,8 +2831,9 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
         const t = appData.teachers && appData.teachers[id];
         return t ? (t.name || id) : id;
       });
-      const teacherText = names.length ? names.join('、') : '尚未授權老師';
-      return `只傳給老師：${teacherText}。同學看不到這串對話。`;
+      const teacherTextZh = names.length ? names.join('、') : '尚未授權老師';
+      const teacherTextEn = names.length ? names.join(', ') : 'no teacher yet';
+      return `只傳給老師：${teacherTextZh}。同學看不到這串對話。 / Only these teachers can see it: ${teacherTextEn}. Classmates cannot see this thread.`;
     }
 
     function renderClassChatBubbles(msgList, emptyText) {
@@ -2978,31 +3017,31 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       setSelectIfChanged(classSelect, rooms.map(c => {
         const unreadStudents = studentsInClassChat(c).filter(s => countUnreadThread(c, s.id, currentUser.id) > 0).length;
         return { value: c, label: `${unreadStudents ? '🔴 ' + unreadStudents + ' ' : ''}${c}` };
-      }), selectedTeacherChatClass, '-- 尚未獲授權的班級 --');
+      }), selectedTeacherChatClass, '-- 尚未獲授權的班級 / No class allowed --');
 
       setSelectIfChanged(studentSelect, students.map(s => {
         const unread = countUnreadThread(selectedTeacherChatClass, s.id, currentUser.id);
         return { value: s.id, label: `${unread ? '🔴 ' + unread + ' ' : ''}${s.name || s.id}` };
-      }), selectedTeacherChatStudent, '-- 這個班沒有學生 --');
+      }), selectedTeacherChatStudent, '-- 這個班沒有學生 / No students --');
 
       if (!selectedTeacherChatClass) {
-        if (titleEl) titleEl.textContent = '尚未獲授權';
-        if (countEl) countEl.textContent = '訊息數：0';
-        if (metaEl) metaEl.textContent = '請超級管理員勾選你可以查看哪些班的學生私訊。';
+        if (titleEl) titleEl.textContent = '尚未獲授權 / Not allowed yet';
+        if (countEl) countEl.textContent = '訊息數 Messages：0';
+        if (metaEl) metaEl.textContent = '請超級管理員勾選你可以查看哪些班的學生私訊。 / Ask the superadmin to allow you to read student messages for a class.';
         if (clearBtn) clearBtn.classList.add('hidden');
         if (input) input.disabled = true;
-        fillChatContainer(container, '<div class="text-slate-500 text-xs italic text-center py-10">超級管理員尚未授權你查看任何班級的學生私訊。</div>');
+        fillChatContainer(container, '<div class="text-slate-500 text-xs italic text-center py-10">超級管理員尚未授權你查看任何班級的學生私訊。<br>The superadmin has not allowed you to read any class messages.</div>');
         updateClassChatUnreadBadge();
         return;
       }
 
       if (!selectedTeacherChatStudent) {
-        if (titleEl) titleEl.textContent = `${selectedTeacherChatClass} 沒有學生`;
-        if (countEl) countEl.textContent = '訊息數：0';
-        if (metaEl) metaEl.textContent = '這個班目前沒有學生。';
+        if (titleEl) titleEl.textContent = `${selectedTeacherChatClass} 沒有學生 / No students`;
+        if (countEl) countEl.textContent = '訊息數 Messages：0';
+        if (metaEl) metaEl.textContent = '這個班目前沒有學生。 / This class has no students yet.';
         if (clearBtn) clearBtn.classList.add('hidden');
         if (input) input.disabled = true;
-        fillChatContainer(container, '<div class="text-slate-500 text-xs italic text-center py-10">這個班沒有學生可以傳訊。</div>');
+        fillChatContainer(container, '<div class="text-slate-500 text-xs italic text-center py-10">這個班沒有學生可以傳訊。<br>There is no student to message in this class.</div>');
         updateClassChatUnreadBadge();
         return;
       }
@@ -3011,10 +3050,10 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       const msgList = getStudentThreadMessages(selectedTeacherChatClass, selectedTeacherChatStudent);
       if (input) input.disabled = false;
       if (titleEl) titleEl.textContent = `${student ? student.name : selectedTeacherChatStudent} · ${selectedTeacherChatClass}`;
-      if (countEl) countEl.textContent = `訊息數：${msgList.length} / ${CLASS_CHAT_MAX_MESSAGES}`;
+      if (countEl) countEl.textContent = `訊息數 Messages：${msgList.length} / ${CLASS_CHAT_MAX_MESSAGES}`;
       if (metaEl) metaEl.textContent = describeStudentTeacherThread(selectedTeacherChatClass);
       if (clearBtn) clearBtn.classList.remove('hidden');
-      fillChatContainer(container, renderClassChatBubbles(msgList, '這位學生還沒有傳訊息。回覆只會給這位學生和獲准的老師看到。'));
+      fillChatContainer(container, renderClassChatBubbles(msgList, '這位學生還沒有傳訊息。回覆只會給這位學生和獲准的老師看到。 / No messages yet. A reply is visible only to this student and the allowed teachers.'));
       updateClassChatUnreadBadge();
     }
 
@@ -3038,12 +3077,12 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       setSelectIfChanged(select, rooms.map(c => {
         const unread = countUnreadThread(c, currentUser.id, currentUser.id);
         return { value: c, label: `${unread ? '🔴 ' + unread + ' ' : ''}${c}` };
-      }), selectedStudentChatClass, '-- 尚未分配班級 --');
+      }), selectedStudentChatClass, '-- 尚未分配班級 / No class yet --');
 
       if (!selectedStudentChatClass) {
-        if (metaEl) metaEl.textContent = '你還沒有被分配班級，因此不能傳訊給老師。';
+        if (metaEl) metaEl.textContent = '你還沒有被分配班級，因此不能傳訊給老師。 / You have no class yet, so you cannot message a teacher.';
         if (input) input.disabled = true;
-        fillChatContainer(container, '<div class="text-slate-500 italic text-center py-4">尚未分配班級。</div>');
+        fillChatContainer(container, '<div class="text-slate-500 italic text-center py-4">尚未分配班級。 / No class assigned yet.</div>');
         updateClassChatUnreadBadge();
         return;
       }
@@ -3051,12 +3090,12 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       const canSend = !!(st && studentIsInClass(st, selectedStudentChatClass) && !st.isBanned && !isClassBannedForChat(selectedStudentChatClass));
       if (input) {
         input.disabled = !canSend;
-        input.placeholder = canSend ? '輸入要傳給老師的訊息...' : '目前為唯讀，無法送出訊息';
+        input.placeholder = canSend ? '輸入要傳給老師的訊息... / Message your teachers...' : '目前為唯讀，無法送出訊息 / Read only. You cannot send.';
       }
       if (metaEl) metaEl.textContent = describeStudentTeacherThread(selectedStudentChatClass);
       fillChatContainer(container, renderClassChatBubbles(
         getStudentThreadMessages(selectedStudentChatClass, currentUser.id),
-        '還沒有訊息。傳出去之後，只有這個班獲准的老師看得到。'
+        '還沒有訊息。傳出去之後，只有這個班獲准的老師看得到。 / No messages yet. After you send one, only the teachers allowed for this class can see it.'
       ));
       updateClassChatUnreadBadge();
     }
@@ -3065,8 +3104,8 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       if (!currentUser || currentUser.role !== 'teacher') return;
       const className = selectedTeacherChatClass;
       const studentId = selectedTeacherChatStudent;
-      if (!className || !studentId) return alert('請先選擇一位學生。');
-      if (!teacherCanAccessClassChat(currentUser.id, className)) return alert('你沒有這個班的私訊權限。');
+      if (!className || !studentId) return alert('請先選擇一位學生。 / Select a student first.');
+      if (!teacherCanAccessClassChat(currentUser.id, className)) return alert('你沒有這個班的私訊權限。 / You cannot read messages for this class.');
       const student = (appData.students && appData.students[studentId]) || {};
       const sName = student.name || studentId;
       if (!confirm(`確定要清空與【${sName}】在【${className}】的私訊嗎？\n只有這位學生和獲准的老師會看到已清空的對話。`)) return;
@@ -3102,8 +3141,8 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       if (!currentUser || currentUser.role !== 'teacher') return;
       const className = selectedTeacherChatClass;
       const studentId = selectedTeacherChatStudent;
-      if (!className || !studentId) return alert('請先選擇一位學生。');
-      if (!teacherCanAccessClassChat(currentUser.id, className)) return alert('你沒有這個班的私訊權限。');
+      if (!className || !studentId) return alert('請先選擇一位學生。 / Select a student first.');
+      if (!teacherCanAccessClassChat(currentUser.id, className)) return alert('你沒有這個班的私訊權限。 / You cannot read messages for this class.');
       const student = appData.students && appData.students[studentId];
       if (!student || !studentIsInClass(student, className)) return alert('這位學生不在這個班。');
       const input = document.getElementById('teacherMsgInput');
@@ -3124,7 +3163,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
       const className = selectedStudentChatClass;
-      if (!st || !className) return alert('請先選擇要傳訊的班級。');
+      if (!st || !className) return alert('請先選擇要傳訊的班級。 / Select a class to message first.');
       if (!studentIsInClass(st, className)) return alert('你不屬於這個班級。');
       if (st.isBanned || isClassBannedForChat(className)) return alert('你的帳號或這個班級目前為唯讀，無法傳送訊息。');
       const input = document.getElementById('studentMsgInput');
@@ -3362,6 +3401,18 @@ function getStudentFactionInClass(student, className) {
   return { factionId: null, factionName: null };
 }
 
+function reviveOptionList(options) {
+  if (!options) return [];
+  const list = Array.isArray(options)
+    ? options
+    : (typeof options === 'object'
+      ? Object.keys(options).sort((a, b) => Number(a) - Number(b)).map(k => options[k])
+      : []);
+  return list
+    .filter(opt => opt && opt.text !== undefined && opt.text !== null && String(opt.text).trim())
+    .map(opt => ({ text: String(opt.text), correct: !!opt.correct }));
+}
+
 function normalizeStudent(s, keyId) {
   if (!s || typeof s !== 'object') return null;
   const id = String(s.id || s.username || keyId || '').toLowerCase();
@@ -3414,7 +3465,13 @@ function normalizeStudent(s, keyId) {
     wisdom: Number(s.wisdom) || 0,
     rebirthCount: Number(s.rebirthCount) || 0, // 轉生次數（每轉生一次永久攻擊+10%）
     killedByName: s.killedByName || null,
-    killedById: s.killedById || null
+    killedById: s.killedById || null,
+    reviveDailyDay: s.reviveDailyDay ? String(s.reviveDailyDay) : '',
+    reviveDailyUsed: Math.max(0, Number(s.reviveDailyUsed) || 0),
+    reviveQuizPending: (s.reviveQuizPending && typeof s.reviveQuizPending === 'object' && s.reviveQuizPending.question)
+      ? { className: s.reviveQuizPending.className ? String(s.reviveQuizPending.className) : '', question: String(s.reviveQuizPending.question), options: reviveOptionList(s.reviveQuizPending.options) }
+      : null,
+    reviveQuizClosed: !!s.reviveQuizClosed
     
   };
 }
@@ -3666,6 +3723,22 @@ function normalizeStudent(s, keyId) {
           saveLocalCache();
           renderBountyUI();
         });
+
+        dbRootRef.child('systemSettings/reviveQuizEnabled').on('value', (snap) => {
+          if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+          appData.systemSettings.reviveQuizEnabled = snap.val() || {};
+          saveLocalCache();
+          if (currentUser && currentUser.role === 'teacher') updateReviveQuizTeacherPanel();
+          if (currentUser && currentUser.role === 'student') offerReviveQuizIfNeeded();
+        }, () => {});
+
+        dbRootRef.child('systemSettings/reviveQuestions').on('value', (snap) => {
+          if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+          appData.systemSettings.reviveQuestions = snap.val() || {};
+          saveLocalCache();
+          if (currentUser && currentUser.role === 'teacher') updateReviveQuizTeacherPanel();
+          if (currentUser && currentUser.role === 'student') offerReviveQuizIfNeeded();
+        }, () => {});
 
         dbRootRef.child('systemSettings/bannedClasses').on('value', (snap) => {
           if (!appData.systemSettings) appData.systemSettings = {};
@@ -4066,7 +4139,7 @@ function teacherRewardFactionPrompt(rewardType) {
   const factionId = targetSelect ? targetSelect.value : null;
 
   if (!factionId) {
-    return alert("請先於左側下拉選單中選擇目標陣營！");
+    return alert("請先於左側下拉選單中選擇目標陣營！ / Select a target faction from the list first.");
   }
 
   const targetClass = selectedTeacherClass || 'ALL';
@@ -4159,7 +4232,7 @@ function teacherAttackFactionPrompt() {
   const factionId = targetSelect ? targetSelect.value : null;
 
   if (!factionId) {
-    return alert("請先於左側下拉選單中選擇要打擊的目標陣營！");
+    return alert("請先於左側下拉選單中選擇要打擊的目標陣營！ / Select the faction you want to strike first.");
   }
 
   const targetClass = selectedTeacherClass || 'ALL';
@@ -4298,7 +4371,7 @@ function renderTeacherFactionPanel() {
   // 2. 填入「目標陣營」下拉選單
   if (targetSelect) {
     const curVal = targetSelect.value;
-    targetSelect.innerHTML = '<option value="">-- 請選擇陣營 --</option>';
+    targetSelect.innerHTML = '<option value="">-- 請選擇陣營 / Select a faction --</option>';
     factions.forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.id;
@@ -5430,7 +5503,7 @@ function getTeacherTemplate() {
         <div class="flex flex-wrap items-center gap-2">
           <!-- 🚀 廣播版本強制更新按鈕 -->
           <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本">
-            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.6.2</span>)
+            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.6.5</span>)
           </button>
           <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
             <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
@@ -5509,7 +5582,7 @@ function getTeacherTemplate() {
             <div class="flex items-center gap-2">
               <label class="text-xs font-bold text-slate-300 shrink-0">選擇目標陣營：</label>
               <select id="teacherTargetFactionSelect" class="flex-1 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-xs text-indigo-200 outline-none">
-                <option value="">-- 請選擇陣營 --</option>
+                <option value="">-- 請選擇陣營 / Select a faction --</option>
               </select>
             </div>
             <div class="flex flex-wrap items-center gap-1.5 justify-start md:justify-end">
@@ -5582,13 +5655,30 @@ function getTeacherTemplate() {
           </div>
         </div>
         <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-          <input type="text" id="teacherAnnouncementInput" placeholder="Enter notice..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+          <input type="text" id="teacherAnnouncementInput" placeholder="輸入公告... / Enter notice..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
           <button onclick="publishTeacherAnnouncement()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
             <i class="fa-solid fa-bullhorn"></i> Post
           </button>
         </div>
         <div class="mt-3">
           <div id="teacherAnnouncementList" class="space-y-1.5"></div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-emerald-500/40 rounded-xl p-4 shadow-lg space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <div>
+            <h4 class="text-xs font-black text-emerald-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-heart-pulse mr-1"></i>自動復活答題 (Auto Revive Quiz)</h4>
+            <p class="text-[11px] text-slate-400 mt-1">這個班的學生被擊敗時，會隨機跳出一題。答對立刻滿血復活。每位學生每日最多復活 3 次，超過就要等老師復活，明天重新計算。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的題庫。<br>When a student in this class is defeated, one random question pops up. A correct answer revives them to full HP. Each student can revive this way 3 times a day. After that, wait for the teacher. The count resets tomorrow. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's questions.</p>
+          </div>
+          <span id="reviveQuizBankStatus" class="text-[11px] text-emerald-200 font-mono">請先選擇一個班級。 / Select a class first.</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnToggleReviveQuiz" type="button" onclick="toggleClassReviveQuiz()" class="px-3 py-1.5 rounded bg-slate-800 border border-emerald-600 text-emerald-300 text-xs font-bold cursor-pointer active:scale-95">開啟這個班的復活答題 / Turn On</button>
+          <label for="reviveQuizExcelInput" class="cursor-pointer px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-file-excel"></i> 上傳復活題庫 / Upload Questions
+          </label>
+          <input id="reviveQuizExcelInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleReviveQuizExcelImport(event)" class="hidden">
         </div>
       </div>
 
@@ -5643,7 +5733,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex items-center gap-2">
             <label for="excelQuizFileInput" class="cursor-pointer px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95 shadow">
-              <i class="fa-solid fa-file-excel"></i> 匯入 Excel 題庫
+              <i class="fa-solid fa-file-excel"></i> 匯入 Excel 題庫 / Import Excel
             </label>
             <input id="excelQuizFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleQuizExcelImport(event)" class="hidden">
             <span id="quizBankStatus" class="text-xs text-slate-400 font-mono bg-slate-950 px-2.5 py-1 rounded border border-slate-800">題庫: 0 題</span>
@@ -5657,13 +5747,13 @@ function getTeacherTemplate() {
         <div class="space-y-3 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1">搶答問題：</label>
-            <input type="text" id="teacherQuizQuestionInput" placeholder="輸入題目..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+            <input type="text" id="teacherQuizQuestionInput" placeholder="輸入題目... / Type the question..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-400">
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-            <div><input type="text" id="teacherQuizOpt1" placeholder="正確答案" value="Agumon" class="w-full bg-slate-900 border border-emerald-500/60 rounded-lg px-2.5 py-1.5 text-xs text-emerald-300 outline-none"></div>
-            <div><input type="text" id="teacherQuizOpt2" placeholder="錯誤選項 1" value="Gabumon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
-            <div><input type="text" id="teacherQuizOpt3" placeholder="錯誤選項 2" value="Patamon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
-            <div><input type="text" id="teacherQuizOpt4" placeholder="錯誤選項 3" value="Palmon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
+            <div><input type="text" id="teacherQuizOpt1" placeholder="正確答案 / Correct" value="Agumon" class="w-full bg-slate-900 border border-emerald-500/60 rounded-lg px-2.5 py-1.5 text-xs text-emerald-300 outline-none"></div>
+            <div><input type="text" id="teacherQuizOpt2" placeholder="錯誤選項 1 / Wrong 1" value="Gabumon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
+            <div><input type="text" id="teacherQuizOpt3" placeholder="錯誤選項 2 / Wrong 2" value="Patamon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
+            <div><input type="text" id="teacherQuizOpt4" placeholder="錯誤選項 3 / Wrong 3" value="Palmon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"></div>
           </div>
           <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
             <div class="flex items-center gap-3">
@@ -5724,7 +5814,7 @@ function getTeacherTemplate() {
             </div>
             <div>
               <h3 class="text-sm sm:text-base font-black text-indigo-300 uppercase tracking-wider font-pixel">考卷測驗發布中心 (Exam Management)</h3>
-              <p class="text-[11px] text-slate-400">匯入 Excel (Column A:題目, B:正解, C-E:錯選, F:題型, G:題解)</p>
+              <p class="text-[11px] text-slate-400">匯入 Excel：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解。<br>Import Excel: A question, B correct answer, C-E wrong answers, F type, G explanation.</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -5809,7 +5899,7 @@ function getTeacherTemplate() {
             </div>
             <div>
               <h3 class="text-sm sm:text-base font-black text-cyan-300 uppercase tracking-wider font-pixel">學生個別私訊 (Student Messages)</h3>
-              <p class="text-[11px] text-slate-400">每位學生各自傳給獲准的老師。同學之間看不到、也不能互傳。同一班獲准的老師看同一位學生的同一串對話。</p>
+              <p class="text-[11px] text-slate-400">每位學生各自傳給獲准的老師。同學之間看不到、也不能互傳。同一班獲准的老師看同一位學生的同一串對話。<br>Each student messages only the allowed teachers. Classmates cannot see or send those messages. Allowed teachers for that class share one thread per student.</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -5820,32 +5910,32 @@ function getTeacherTemplate() {
         <div class="flex flex-wrap items-center gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
           <label for="teacherChatClassSelect" class="text-xs font-bold text-cyan-300 shrink-0"><i class="fa-solid fa-chalkboard mr-1"></i> 班級：</label>
           <select id="teacherChatClassSelect" onchange="onTeacherSelectClassChat(this.value)" class="flex-1 min-w-[140px] bg-slate-900 border border-cyan-500/60 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
-            <option value="">-- 尚未獲授權的班級 --</option>
+            <option value="">-- 尚未獲授權的班級 / No class allowed --</option>
           </select>
           <label for="teacherChatStudentSelect" class="text-xs font-bold text-cyan-300 shrink-0"><i class="fa-solid fa-user mr-1"></i> 學生：</label>
           <select id="teacherChatStudentSelect" onchange="onTeacherSelectStudentChat(this.value)" class="flex-1 min-w-[160px] bg-slate-900 border border-cyan-500/60 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400">
-            <option value="">-- 請選擇學生 --</option>
+            <option value="">-- 請選擇學生 / Select a student --</option>
           </select>
         </div>
-        <p id="teacherChatRoomMeta" class="text-[11px] text-slate-400">只有獲准的老師看得到這位學生的訊息。</p>
+        <p id="teacherChatRoomMeta" class="text-[11px] text-slate-400">只有獲准的老師看得到這位學生的訊息。 / Only the allowed teachers can see this student's messages.</p>
 
         <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col h-[420px]">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-300" id="teacherMsgTargetTitle">請先選擇學生</span>
+              <span class="text-xs font-bold text-slate-300" id="teacherMsgTargetTitle">請先選擇學生 / Select a student</span>
               <span class="text-[10px] text-slate-500 font-mono" id="teacherMsgCountBadge">訊息數：0</span>
             </div>
             <button id="btnTeacherClearChat" onclick="clearTeacherClassChatHistory()" class="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-300 text-[11px] font-bold cursor-pointer transition active:scale-95 flex items-center gap-1.5">
-              <i class="fa-solid fa-trash-can"></i> 清空對話紀錄
+              <i class="fa-solid fa-trash-can"></i> 清空對話紀錄 / Clear History
             </button>
           </div>
 
           <div id="teacherChatMessagesList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-            <div class="text-slate-500 text-xs italic text-center py-10">尚未選擇學生</div>
+            <div class="text-slate-500 text-xs italic text-center py-10">尚未選擇學生 / No student selected</div>
           </div>
 
           <div class="pt-3 border-t border-slate-800 flex gap-2">
-            <input type="text" id="teacherMsgInput" placeholder="回覆這位學生，其他同學看不到..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendTeacherClassMessage();}" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
+            <input type="text" id="teacherMsgInput" placeholder="回覆這位學生，其他同學看不到... / Reply to this student. Classmates cannot see it..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendTeacherClassMessage();}" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400">
             <button onclick="sendTeacherClassMessage()" class="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0">
               <i class="fa-solid fa-paper-plane"></i> 回覆
             </button>
@@ -5884,7 +5974,7 @@ function getSuperAdminTemplate() {
       <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-4 mb-4 gap-3">
         <div>
           <h2 class="text-base font-bold text-cyan-300"><i class="fa-solid fa-comments mr-2"></i>Class Message Access 班級私訊權限</h2>
-          <p class="text-xs text-slate-400 mt-1">勾選可以查看該班學生私訊的老師。獲准的老師看同一位學生的同一串對話。學生只能傳給老師，同學之間不能互看或互傳。</p>
+          <p class="text-xs text-slate-400 mt-1">勾選可以查看該班學生私訊的老師。獲准的老師看同一位學生的同一串對話。學生只能傳給老師，同學之間不能互看或互傳。<br>Check the teachers who may read that class's student messages. Allowed teachers share one thread per student. Students message teachers only. Classmates cannot see or message each other.</p>
         </div>
       </div>
       <div id="superAdminClassChatAccess" class="space-y-3"></div>
@@ -6185,6 +6275,7 @@ function logout() {
       }
 
       if (isDead) {
+        offerReviveQuizIfNeeded();
         deathOverlay.classList.add('active');
         if (rightPanel) rightPanel.style.pointerEvents = 'none';
         if (digiviceCardElem) digiviceCardElem.style.pointerEvents = 'none';
@@ -6201,7 +6292,7 @@ function logout() {
           dbRootRef.child(`attackAlerts/${currentUser.id}`).remove().catch(() => {});
         }
       } else {
-
+        offerReviveQuizIfNeeded();
         deathOverlay.classList.remove('active');
         if (!banned) {
           if (rightPanel) rightPanel.style.pointerEvents = 'auto';
@@ -6634,7 +6725,7 @@ function logout() {
             </div>
           </div>
           <button onclick="useItem('${itemId}')" ${banned ? 'disabled' : ''} class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 active:scale-95">
-            Use
+            ${itemId === 'item_auto_revive' ? '自動 / Auto' : 'Use'}
           </button>
         `;
         invList.appendChild(card);
@@ -6722,6 +6813,10 @@ function openMegaRebirthPrompt() {
 
     function useItem(itemId) {
       if (!currentUser || currentUser.role !== 'student') return;
+      if (itemId === 'item_auto_revive') {
+        showToast("自動使用 / Auto Use", "自動復活核心會在你被擊敗時直接用掉，並立刻滿血復活。不用自己按。 / This core is used automatically when you are defeated and restores full HP. No button needed.", "info");
+        return;
+      }
       const st = appData.students[currentUser.id];
       if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st) || !st.inventory || !st.inventory[itemId] || st.inventory[itemId] <= 0) {
         showToast("Use Item", "Action unavailable!", "info");
@@ -6996,12 +7091,6 @@ else if (mode === 'pvp') {
       // 5. 對手扣血與擊殺判定
       const finalTargetHp = Math.max(0, curTargetHp - calculatedDmg);
       const isKill = (finalTargetHp === 0);
-      target.hp = finalTargetHp;
-      target.isFainted = isKill;
-      if (isKill) {
-        target.killedByName = `${st.name} (${myDigi.name})`;
-        target.killedById = st.id;
-      }
 
       // 6. 擊殺獎勵判定
       let earnedCoins = 0;
@@ -7054,21 +7143,16 @@ else if (mode === 'pvp') {
         }
       }
 
-      const targetUpdates = {
-        hp: finalTargetHp,
-        isFainted: isKill
-      };
-      // 若擊殺對方，寫入擊殺者資訊並清空對方的反擊列表
-      if (isKill) {
-        targetUpdates.killedByName = `${st.name} (${myDigi.name})`;
-        targetUpdates.killedById = st.id;
-        if (dbRootRef) {
+      patchStudentAtomic(currentUser.id, myUpdates);
+      applyDamageToStudent(target.id, calculatedDmg, { name: `${st.name} (${myDigi.name})`, id: st.id }).then(result => {
+        if (result && result.itemUsed) {
+          logAutoRevive(target, st.classId, result.charges);
+          showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
+        }
+        if (result && (result.fainted || result.itemUsed) && dbRootRef) {
           dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
         }
-      }
-
-      patchStudentAtomic(currentUser.id, myUpdates);
-      patchStudentAtomic(target.id, targetUpdates);
+      });
 
       // 8. 🔔 若對手未死亡，且這是「主動攻擊 (非反擊)」，發送被攻擊警報給對手，讓在線的對手彈出視窗反擊！
       if (!isKill && !isCounterAttack && dbRootRef) {
@@ -7500,6 +7584,7 @@ else if (mode === 'pvp') {
         sel.value = 'ALL';
       }
       updateClassBanButtonUI();
+      updateReviveQuizTeacherPanel();
 
       const quizClassBadge = document.getElementById('teacherQuizTargetClassBadge');
       if (quizClassBadge) {
@@ -7518,6 +7603,7 @@ else if (mode === 'pvp') {
       renderBattleLogs();
       renderAnnouncementsUI();
       renderBountyUI();
+      updateReviveQuizTeacherPanel();
 
       const quizClassBadge = document.getElementById('teacherQuizTargetClassBadge');
       if (quizClassBadge) {
@@ -7593,6 +7679,391 @@ else if (mode === 'pvp') {
       showToast("Deducted Tickets", `Deducted ${amount} Ticket from all students!`, "damage");
     }
 
+    const REVIVE_QUIZ_QUOTA = 3;
+
+    function autoReviveItemCount(student) {
+      const inv = student && student.inventory;
+      const n = inv && Number(inv.item_auto_revive);
+      return n > 0 ? n : 0;
+    }
+
+    function fullHpOfStudent(student) {
+      const digi = DIGIMON_DB[(student && student.currentDigiId) || 'digitama1'] || DIGIMON_DB['digitama1'];
+      return digi.maxHp || 100;
+    }
+
+    function hongKongDateKey(date) {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date || new Date());
+    }
+
+    function reviveDailyUsed(student) {
+      if (!student || String(student.reviveDailyDay || '') !== hongKongDateKey()) return 0;
+      return Math.max(0, Number(student.reviveDailyUsed) || 0);
+    }
+
+    function reviveQuizLeft(student) {
+      return Math.max(0, REVIVE_QUIZ_QUOTA - reviveDailyUsed(student));
+    }
+
+    function reviveSettingKey(className) {
+      return sanitizeClassKey(String(className || '').trim());
+    }
+
+    function reviveBucketValue(map, className) {
+      if (!map || typeof map !== 'object') return null;
+      const key = reviveSettingKey(className);
+      if (Object.prototype.hasOwnProperty.call(map, key)) return map[key];
+      const found = Object.keys(map).find(k => String(k).toLowerCase() === String(key).toLowerCase());
+      return found ? map[found] : null;
+    }
+
+    function classReviveQuizEnabled(className) {
+      const enabled = appData.systemSettings && appData.systemSettings.reviveQuizEnabled;
+      return !!reviveBucketValue(enabled, className);
+    }
+
+    function normalizeWrongAnswers(wrongs) {
+      if (Array.isArray(wrongs)) return wrongs.map(w => String(w || '').trim()).filter(Boolean);
+      if (wrongs && typeof wrongs === 'object') {
+        return Object.keys(wrongs).sort().map(k => String(wrongs[k] || '').trim()).filter(Boolean);
+      }
+      return [];
+    }
+
+    function classReviveQuestions(className) {
+      const bank = appData.systemSettings && appData.systemSettings.reviveQuestions;
+      const raw = reviveBucketValue(bank, className);
+      if (!raw) return [];
+      const rows = Array.isArray(raw) ? raw : Object.keys(raw).sort().map(k => raw[k]);
+      return rows.filter(q => q && q.question && q.correct).map(q => ({
+        question: String(q.question),
+        correct: String(q.correct),
+        wrongs: normalizeWrongAnswers(q.wrongs)
+      }));
+    }
+
+    function shuffleReviveOptions(question) {
+      const options = [{ text: String(question.correct), correct: true }];
+      normalizeWrongAnswers(question.wrongs).forEach(w => options.push({ text: w, correct: false }));
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const swap = options[i];
+        options[i] = options[j];
+        options[j] = swap;
+      }
+      return options;
+    }
+
+    function reviveQuizClassFor(student) {
+      const classes = parseStudentClasses(student && student.classId);
+      const killer = student && student.killedById && appData.students[student.killedById];
+      const killerClasses = killer ? parseStudentClasses(killer.classId) : [];
+      const ordered = classes.slice().sort((a, b) => {
+        const aShare = killerClasses.some(c => c.toLowerCase() === String(a).toLowerCase()) ? 0 : 1;
+        const bShare = killerClasses.some(c => c.toLowerCase() === String(b).toLowerCase()) ? 0 : 1;
+        return aShare - bShare;
+      });
+      return ordered.find(c => classReviveQuizEnabled(c) && classReviveQuestions(c).length > 0) || '';
+    }
+
+    function logAutoRevive(student, className, chargesLeft) {
+      addBattleLog(`✨ [AUTO REVIVE] ${student.name} 的自動復活核心已自動使用，被擊敗後立刻滿血復活！剩餘 ${chargesLeft} 個。 / Auto revive core used. Full HP restored. ${chargesLeft} left.`, "heal", className || student.classId);
+    }
+
+    function applyDamageToStudent(studentId, damage, killer) {
+      const local = appData.students[studentId];
+      if (!local) return Promise.resolve({ committed: false });
+      const beforeCharges = autoReviveItemCount(local);
+      const applyLocal = (nextHp) => {
+        const lethal = nextHp <= 0;
+        const charges = autoReviveItemCount(local);
+        if (lethal && charges > 0) {
+          if (!local.inventory) local.inventory = {};
+          if (charges - 1 <= 0) delete local.inventory.item_auto_revive;
+          else local.inventory.item_auto_revive = charges - 1;
+          local.hp = fullHpOfStudent(local);
+          local.isFainted = false;
+          local.killedByName = null;
+          local.killedById = null;
+          return { committed: true, fainted: false, itemUsed: true, hp: local.hp, charges: charges - 1, patch: { hp: local.hp, isFainted: false, killedByName: null, killedById: null, inventory: local.inventory } };
+        }
+        local.hp = nextHp;
+        local.isFainted = lethal;
+        if (lethal) {
+          local.reviveQuizClosed = false;
+          local.reviveQuizPending = null;
+          if (killer) {
+            if (killer.name) local.killedByName = killer.name;
+            if (killer.id) local.killedById = killer.id;
+          }
+        }
+        const patch = { hp: nextHp, isFainted: lethal };
+        if (lethal) {
+          patch.reviveQuizClosed = null;
+          patch.reviveQuizPending = null;
+          if (killer) {
+            if (killer.name) patch.killedByName = killer.name;
+            if (killer.id) patch.killedById = killer.id;
+          }
+        }
+        return { committed: true, fainted: lethal, itemUsed: false, hp: nextHp, charges: charges, patch: patch };
+      };
+
+      const curHp = (local.hp !== undefined && local.hp !== null) ? Number(local.hp) : fullHpOfStudent(local);
+      if (local.isFainted || curHp <= 0) return Promise.resolve({ committed: false, alreadyDown: true });
+      const nextHp = Math.max(0, curHp - Number(damage || 0));
+
+      if (!dbRootRef) return Promise.resolve(applyLocal(nextHp));
+
+      return new Promise(resolve => {
+        dbRootRef.child('students/' + studentId).transaction(cur => {
+          if (!cur) return;
+          const maxHp = fullHpOfStudent(cur);
+          const hpNow = (cur.hp !== undefined && cur.hp !== null) ? Number(cur.hp) : maxHp;
+          if (cur.isFainted || hpNow <= 0) return;
+          const next = Math.max(0, hpNow - Number(damage || 0));
+          const charges = (cur.inventory && Number(cur.inventory.item_auto_revive)) || 0;
+          if (next <= 0 && charges > 0) {
+            if (!cur.inventory) cur.inventory = {};
+            if (charges - 1 <= 0) delete cur.inventory.item_auto_revive;
+            else cur.inventory.item_auto_revive = charges - 1;
+            cur.hp = maxHp;
+            cur.isFainted = false;
+            cur.killedByName = null;
+            cur.killedById = null;
+          } else {
+            cur.hp = next;
+            cur.isFainted = next <= 0;
+            if (next <= 0) {
+              delete cur.reviveQuizClosed;
+              delete cur.reviveQuizPending;
+              if (killer) {
+                cur.killedByName = killer.name || null;
+                cur.killedById = killer.id || null;
+              }
+            }
+          }
+          return cur;
+        }, (err, committed, snap) => {
+          if (err || !committed || !snap || !snap.exists()) {
+            resolve({ committed: false, error: err, alreadyDown: true });
+            return;
+          }
+          const val = snap.val() || {};
+          local.hp = (val.hp !== undefined && val.hp !== null) ? Number(val.hp) : 0;
+          local.isFainted = !!val.isFainted;
+          local.inventory = (val.inventory && typeof val.inventory === 'object') ? val.inventory : (local.inventory || {});
+          local.killedByName = val.killedByName || null;
+          local.killedById = val.killedById || null;
+          const afterCharges = autoReviveItemCount(local);
+          resolve({
+            committed: true,
+            fainted: !!local.isFainted || local.hp <= 0,
+            itemUsed: beforeCharges > afterCharges && !local.isFainted,
+            hp: local.hp,
+            charges: afterCharges
+          });
+        });
+      });
+    }
+
+    function offerReviveQuizIfNeeded() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      const modal = document.getElementById('modalReviveQuiz');
+      const hint = document.getElementById('deathReviveHint');
+      if (!st || !modal) return;
+      const dead = (Number(st.hp) <= 0) || !!st.isFainted;
+      if (!dead) {
+        modal.classList.add('hidden');
+        const clear = {};
+        if (st.reviveQuizPending && st.reviveQuizPending.question) {
+          st.reviveQuizPending = null;
+          clear.reviveQuizPending = null;
+        }
+        if (st.reviveQuizClosed) {
+          st.reviveQuizClosed = false;
+          clear.reviveQuizClosed = null;
+        }
+        if (Object.keys(clear).length) patchStudentAtomic(st.id, clear);
+        if (hint) hint.textContent = '';
+        return;
+      }
+      if (st.reviveQuizClosed && !(st.reviveQuizPending && st.reviveQuizPending.question)) {
+        modal.classList.add('hidden');
+        if (hint) hint.textContent = `這次倒下已經答過。今日還可復活 ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA} 次。請等老師復活。 / This defeat was already answered. Revives left today: ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA}. Wait for the teacher.`;
+        return;
+      }
+
+      const className = reviveQuizClassFor(st);
+      const left = reviveQuizLeft(st);
+      if (!className || left <= 0) {
+        modal.classList.add('hidden');
+        if (hint) {
+          const anyOn = parseStudentClasses(st.classId).some(c => classReviveQuizEnabled(c));
+          if (anyOn && left <= 0) hint.textContent = '今日已經復活 3 次。請等老師復活，明天才可以再答。 / You already revived 3 times today. Wait for the teacher. You can answer again tomorrow.';
+          else if (anyOn && !className) hint.textContent = '這個班的復活答題已開啟，但老師還沒有上傳題目。 / Revive quiz is on for this class, but the teacher has not uploaded questions yet.';
+          else hint.textContent = '';
+        }
+        return;
+      }
+
+      let pending = st.reviveQuizPending;
+      if (pending && !Array.isArray(pending.options)) pending.options = reviveOptionList(pending.options);
+      if (!pending || !pending.question || !pending.options || !pending.options.length) {
+        const questions = classReviveQuestions(className);
+        const picked = questions[Math.floor(Math.random() * questions.length)];
+        pending = { className: className, question: picked.question, options: shuffleReviveOptions(picked) };
+        st.reviveQuizPending = pending;
+        patchStudentAtomic(st.id, { reviveQuizPending: pending });
+      }
+      if (hint) hint.textContent = '復活答題視窗已打開。答對會立刻滿血復活。 / The revive question is open. A correct answer restores full HP.';
+      const quotaEl = document.getElementById('reviveQuizQuotaText');
+      const questionEl = document.getElementById('reviveQuizQuestion');
+      const optionsEl = document.getElementById('reviveQuizOptions');
+      if (quotaEl) quotaEl.textContent = `今日還可復活 ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA} 次 / Revives left today: ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA}`;
+      if (questionEl) questionEl.textContent = pending.question;
+      if (optionsEl) {
+        optionsEl.innerHTML = '';
+        pending.options.forEach((opt, index) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'px-3 py-3 rounded-xl bg-slate-950 border border-emerald-500/50 text-emerald-100 text-xs font-bold hover:bg-emerald-950 cursor-pointer active:scale-95';
+          btn.textContent = opt.text;
+          btn.onclick = () => submitReviveQuizAnswer(index);
+          optionsEl.appendChild(btn);
+        });
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function submitReviveQuizAnswer(index) {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      const pending = st && st.reviveQuizPending;
+      if (!st || !pending || !pending.options || !pending.options[index]) return;
+      const chosen = pending.options[index];
+      const buttons = document.querySelectorAll('#reviveQuizOptions button');
+      buttons.forEach(btn => { btn.disabled = true; });
+      st.reviveQuizPending = null;
+      st.reviveQuizClosed = true;
+      if (chosen.correct) {
+        const hp = fullHpOfStudent(st);
+        st.hp = hp;
+        st.isFainted = false;
+        st.killedByName = null;
+        st.killedById = null;
+        st.reviveQuizClosed = false;
+        const day = hongKongDateKey();
+        const used = reviveDailyUsed(st) + 1;
+        st.reviveDailyDay = day;
+        st.reviveDailyUsed = used;
+        patchStudentAtomic(st.id, { hp: hp, isFainted: false, killedByName: null, killedById: null, reviveQuizPending: null, reviveQuizClosed: null, reviveDailyDay: day, reviveDailyUsed: used });
+        playSound('heal');
+        const leftNow = reviveQuizLeft(st);
+        addBattleLog(`✨ [REVIVE QUIZ] ${st.name} 答對復活題，立刻滿血復活！今日還可復活 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Revives left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "heal", pending.className || st.classId);
+        showToast("復活成功 / Revived", leftNow > 0 ? `答對了，立刻滿血復活。今日還可復活 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Revives left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.` : "答對了，立刻滿血復活。今日 3 次已經用完，下次要等老師。 / Correct. Full HP restored. All 3 revives for today are used. Wait for the teacher next time.", "heal");
+      } else {
+        patchStudentAtomic(st.id, { reviveQuizPending: null, reviveQuizClosed: true });
+        playSound('faint');
+        addBattleLog(`✖ [REVIVE QUIZ] ${st.name} 答錯復活題，維持倒下。今日還可復活 ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. Still down. Revives left today: ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA}.`, "battle", pending.className || st.classId);
+        showToast("復活失敗 / Not Revived", `答錯了，這次要等老師復活。今日還可復活 ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. Wait for the teacher this time. Revives left today: ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA}.`, "damage");
+      }
+      const modal = document.getElementById('modalReviveQuiz');
+      if (modal) modal.classList.add('hidden');
+      updateStudentUI();
+    }
+
+    function updateReviveQuizTeacherPanel() {
+      const status = document.getElementById('reviveQuizBankStatus');
+      const toggle = document.getElementById('btnToggleReviveQuiz');
+      if (!status || !toggle) return;
+      if (!selectedTeacherClass || selectedTeacherClass === 'ALL') {
+        status.textContent = '請先選擇一個班級，再開關復活答題或上傳題庫。 / Select a class before turning the quiz on or uploading questions.';
+        toggle.textContent = '選擇班級後可開關 / Select a class';
+        toggle.disabled = true;
+        return;
+      }
+      toggle.disabled = false;
+      const on = classReviveQuizEnabled(selectedTeacherClass);
+      const count = classReviveQuestions(selectedTeacherClass).length;
+      const questionWord = count === 1 ? 'question' : 'questions';
+      status.textContent = `${selectedTeacherClass}：題庫 ${count} 題 · ${on ? '已開啟' : '已關閉'} · 每日最多復活 3 次 / ${count} ${questionWord} · ${on ? 'On' : 'Off'} · up to 3 revives a day`;
+      toggle.textContent = on ? '關閉這個班的復活答題 / Turn Off' : '開啟這個班的復活答題 / Turn On';
+      toggle.className = on
+        ? 'px-3 py-1.5 rounded bg-emerald-600 text-slate-950 text-xs font-black cursor-pointer active:scale-95'
+        : 'px-3 py-1.5 rounded bg-slate-800 border border-emerald-600 text-emerald-300 text-xs font-bold cursor-pointer active:scale-95';
+    }
+
+    function toggleClassReviveQuiz() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherClass || selectedTeacherClass === 'ALL') return alert('請先在 Current Class 選擇一個班級。 / Select one class in Current Class first.');
+      const key = reviveSettingKey(selectedTeacherClass);
+      const next = !classReviveQuizEnabled(selectedTeacherClass);
+      if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+      if (!appData.systemSettings.reviveQuizEnabled) appData.systemSettings.reviveQuizEnabled = {};
+      if (next) appData.systemSettings.reviveQuizEnabled[key] = true;
+      else delete appData.systemSettings.reviveQuizEnabled[key];
+      updateReviveQuizTeacherPanel();
+      if (dbRootRef) {
+        dbRootRef.child(`systemSettings/reviveQuizEnabled/${key}`).set(next ? true : null).catch(err => {
+          alert('無法儲存復活答題開關 / Could not save the revive quiz switch: ' + (err && err.message ? err.message : err));
+        });
+      }
+      showToast(next ? '復活答題已開啟 / Quiz On' : '復活答題已關閉 / Quiz Off', selectedTeacherClass, 'info');
+    }
+
+    function handleReviveQuizExcelImport(event) {
+      const input = event.target;
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file || !currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherClass || selectedTeacherClass === 'ALL') return alert('請先在 Current Class 選擇一個班級，再上傳復活題庫。 / Select one class in Current Class before uploading questions.');
+      if (typeof XLSX === 'undefined') return alert('Excel 讀取工具尚未載入，請重新整理後再試。 / The Excel reader is not loaded yet. Refresh and try again.');
+      const existing = classReviveQuestions(selectedTeacherClass).length;
+      if (existing > 0 && !confirm(`上傳會取代【${selectedTeacherClass}】目前的 ${existing} 題復活題庫。確定取代？\nThis replaces the ${existing} revive questions for [${selectedTeacherClass}]. Replace them?`)) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          const questions = [];
+          for (let i = 1; i < jsonRows.length; i++) {
+            const row = jsonRows[i];
+            if (!row || row[0] === undefined || row[0] === null || row[1] === undefined || row[1] === null) continue;
+            const questionText = String(row[0]).trim();
+            const correctOpt = String(row[1]).trim();
+            if (!questionText || !correctOpt) continue;
+            const wrongs = [];
+            [2, 3, 4].forEach(col => {
+              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(String(row[col]).trim());
+            });
+            questions.push({ question: questionText, correct: correctOpt, wrongs: wrongs });
+          }
+          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header.');
+          const key = reviveSettingKey(selectedTeacherClass);
+          const payload = {};
+          questions.forEach((q, i) => { payload['q' + i] = q; });
+          if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+          if (!appData.systemSettings.reviveQuestions) appData.systemSettings.reviveQuestions = {};
+          appData.systemSettings.reviveQuestions[key] = payload;
+          updateReviveQuizTeacherPanel();
+          const write = dbRootRef ? dbRootRef.child(`systemSettings/reviveQuestions/${key}`).set(payload) : Promise.resolve();
+          write.then(() => {
+            showToast('復活題庫已更新 / Questions Updated', `${selectedTeacherClass} 已換成 ${questions.length} 題。 / ${selectedTeacherClass} now has ${questions.length} questions.`, 'evolution');
+          }).catch(err => {
+            alert('題庫儲存失敗 / Could not save the questions: ' + (err && err.message ? err.message : err));
+          });
+        } catch (err) {
+          alert('復活題庫讀取失敗 / Could not read the file: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
     function penalizeAllHp(amount = 30) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Class Damage", "No students in this class.", "info");
@@ -7604,17 +8075,11 @@ else if (mode === 'pvp') {
 
       if (!confirm(`Inflict -${amount} HP to all active students in [${selectedTeacherClass}]? (Fainted tamers will be skipped)`)) return;
 
-      const updates = {};
-      activeStudents.forEach(s => {
-        const cur = (s.hp !== undefined) ? s.hp : 100;
-        const nextHp = Math.max(0, cur - amount);
-        updates[`students/${s.id}/hp`] = nextHp;
-        if (nextHp <= 0) {
-          updates[`students/${s.id}/isFainted`] = true;
-        }
+      Promise.all(activeStudents.map(s => applyDamageToStudent(s.id, amount, { name: 'Teacher', id: currentUser.id }).then(result => {
+        if (result && result.itemUsed) logAutoRevive(s, selectedTeacherClass, result.charges);
+      }))).then(() => {
+        renderTeacherGrid();
       });
-
-      executeAtomicMultiPathUpdate(updates);
       playSound('attack');
       addBattleLog(`💥⚠️ [CLASS PENALTY] Teacher inflicted -${amount} HP to active students!`, "battle", selectedTeacherClass);
       showToast("Class Penalty", `Inflicted -${amount} HP to ${activeStudents.length} active students!`, "damage");
@@ -7660,17 +8125,19 @@ else if (mode === 'pvp') {
       if (mode.startsWith('aoe_')) {
         if (!confirm(`💥 Strike entire class with [${moveName}] (${pwr} DMG)?`)) return;
         const updates = {};
+        const damageJobs = [];
         myStudents.forEach(s => {
           if (s.isFainted || (s.hp !== undefined && s.hp <= 0)) return;
           if (s.hasShield) {
             updates[`students/${s.id}/hasShield`] = false;
           } else {
-            const nextHp = Math.max(0, (s.hp || 100) - pwr);
-            updates[`students/${s.id}/hp`] = nextHp;
-            if (nextHp === 0) updates[`students/${s.id}/isFainted`] = true;
+            damageJobs.push(applyDamageToStudent(s.id, pwr, { name: digi.name, id: currentUser.id }).then(result => {
+              if (result && result.itemUsed) logAutoRevive(s, selectedTeacherClass, result.charges);
+            }));
           }
         });
-        executeAtomicMultiPathUpdate(updates);
+        if (Object.keys(updates).length) executeAtomicMultiPathUpdate(updates);
+        Promise.all(damageJobs).then(() => renderTeacherGrid());
         playSound('attack');
         addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck class with [${moveName}] for ${pwr} DMG!`, "battle", selectedTeacherClass);
         showToast("Class AOE Strike", `Active students struck!`, "damage");
@@ -7695,14 +8162,21 @@ else if (mode === 'pvp') {
             showToast("Blocked!", `${target.name}'s shield absorbed the damage!`, "info");
             playSound('shield');
           } else {
-            const nextHp = Math.max(0, (target.hp || 100) - pwr);
-            patchStudentAtomic(target.id, {
-              hp: nextHp,
-              isFainted: nextHp === 0
+            applyDamageToStudent(target.id, pwr, { name: digi.name, id: currentUser.id }).then(result => {
+              if (result && result.itemUsed) {
+                logAutoRevive(target, target.classId, result.charges);
+                showToast("自動復活 / Auto Revive", `${target.name} 的復活核心已自動使用。 / ${target.name}'s revive core was used automatically.`, "heal");
+                playSound('heal');
+              } else if (result && result.fainted) {
+                playSound('faint');
+                showToast("Digimon Fainted!", `${target.name} 已被擊倒。`, "damage");
+              } else {
+                playSound('attack');
+                showToast("Single Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
+              }
+              addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] for ${pwr} DMG!`, "battle", target.classId);
+              renderTeacherGrid();
             });
-            playSound('attack');
-            addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] for ${pwr} DMG!`, "battle", target.classId);
-            showToast("Single Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
           }
         }
       }
@@ -7792,6 +8266,7 @@ else if (mode === 'pvp') {
             <div class="text-slate-400 font-mono text-[11px]">
               EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span> | 金幣: <span class="text-yellow-400 font-bold">${s.coins || 0}</span>
             </div>
+            <div class="text-emerald-300 font-mono text-[11px]">今日復活 Today ${reviveQuizLeft(s)} / 3${autoReviveItemCount(s) ? ` · 自動復活核心 Auto Revive x${autoReviveItemCount(s)}` : ''}</div>
           </div>
         </div>
       </div>
@@ -8028,22 +8503,22 @@ function teacherPromptClassCoins(mode = 'reward') {
         return;
       }
 
-      const nextHp = Math.max(0, (s.hp || 100) - amount);
-      const isDead = nextHp === 0;
-
-      patchStudentAtomic(id, {
-        hp: nextHp,
-        isFainted: isDead
+      applyDamageToStudent(id, amount, { name: 'Teacher', id: currentUser && currentUser.id }).then(result => {
+        if (!result || !result.committed) return;
+        if (result.itemUsed) {
+          playSound('heal');
+          logAutoRevive(s, s.classId, result.charges);
+          showToast("自動復活 / Auto Revive", `${s.name} 的復活核心已自動使用，立刻滿血。 / ${s.name}'s revive core was used and HP is full.`, "heal");
+        } else if (result.fainted) {
+          playSound('faint');
+          addBattleLog(`☠️ [DEFEATED] ${s.name}'s Digimon HP reached 0 and FAINTED!`, "battle", s.classId);
+          showToast("Digimon Fainted!", `${s.name}'s Digimon HP dropped to 0!`, "damage");
+        } else {
+          playSound('attack');
+          addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP. (Remaining: ${result.hp})`, "battle", s.classId);
+        }
+        renderTeacherGrid();
       });
-
-      playSound('attack');
-      if (isDead) {
-        playSound('faint');
-        addBattleLog(`☠️ [DEFEATED] ${s.name}'s Digimon HP reached 0 and FAINTED!`, "battle", s.classId);
-        showToast("Digimon Fainted!", `${s.name}'s Digimon HP dropped to 0!`, "damage");
-      } else {
-        addBattleLog(`⚠️ Teacher penalized ${s.name} for -${amount} HP. (Remaining: ${nextHp})`, "battle", s.classId);
-      }
     }
 
     function teacherHealAll() {
@@ -8640,6 +9115,7 @@ function teacherPromptClassCoins(mode = 'reward') {
 
       const totalWeight = Object.values(ITEMS_DB).reduce((acc, cur) => acc + cur.weight, 0);
       Object.values(ITEMS_DB).forEach(item => {
+        if (!item.weight) return;
         const pct = ((item.weight / totalWeight) * 100).toFixed(1);
         dropBox.innerHTML += `
           <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800">
@@ -11083,7 +11559,6 @@ function startStudentExamTimer() {
       // 4. 計算剩餘生命值
       const curHp = target.hp !== undefined ? target.hp : (tgtDigi.maxHp || 100);
       const nextHp = Math.max(0, curHp - dmg);
-      updates[`students/${target.id}/hp`] = nextHp;
 
       // 5. 命中獎勵（懸賞目標每次命中額外 +30 EXP）
       const activeBountyTargetId = appData.bounties ? (appData.bounties[sanitizeClassKey(targetClass)] || appData.bounties['ALL']) : null;
@@ -11096,9 +11571,6 @@ function startStudentExamTimer() {
 
       // 6. 擊殺判定 (Kill Confirmation)
       if (nextHp <= 0) {
-        updates[`students/${target.id}/isFainted`] = true;
-        updates[`students/${target.id}/killedByName`] = `${me.name} (${myDigi.name})`;
-        updates[`students/${target.id}/killedById`] = me.id;
         if (dbRootRef) {
           dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
         }
@@ -11146,6 +11618,12 @@ function startStudentExamTimer() {
 
       executeAtomicMultiPathUpdate(updates).then(() => {
         updateStudentUI();
+      });
+      applyDamageToStudent(target.id, dmg, { name: `${me.name} (${myDigi.name})`, id: me.id }).then(result => {
+        if (result && result.itemUsed) {
+          logAutoRevive(target, targetClass, result.charges);
+          showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
+        }
       });
     }
 
