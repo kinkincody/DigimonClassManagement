@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-  <!-- PWA Web App Manifest -->
-  <link rel="manifest" href="manifest.json?v=2">
   <title>DigimonClass - Battle & Management System PRO</title>
   <meta name="apple-mobile-web-app-title" content="DigimonClass">
   <meta name="application-name" content="DigimonClass">
   <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="DigimonTamer">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAACUUlEQVR42u3ToRGAUAxEwS9xSHrAYGmBoukLBz0wDDPJrXgNXLJj2o5bSm0YQQBIAEgASABIAEgASOEA5mWVygaAAABAAAAgAAAQAAAIAAAEAAACAAABAIAAAEAAACAAABAAAAgAIwoACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACYD37efVJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgZwAA8AmAqlABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIDfH6tKAAAQBSD1hgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAABAAAAgAIwoACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQABAIAAAEAAACAAABAAAAgAAAQAAAIAAAEAgACQogJAAEgASABIAEgASABIzXsA2J24YjfILmYAAAAASUVORK5CYII=">
+  <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAACUUlEQVR42u3ToRGAUAxEwS9xSHrAYGmBoukLBz0wDDPJrXgNXLJj2o5bSm0YQQBIAEgASABIAEgASOEA5mWVygaAAABAAAAgAAAQAAAIAAAEAAACAAABAIAAAEAAACAAABAAAAgAIwoACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACYD37efVJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgZwAA8AmAqlABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIDfH6tKAAAQBSD1hgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAABAAAAgAIwoACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQABAIAAAEAAACAAABAAAAgAAAQAAAIAAAEAgACQogJAAEgASABIAEgASABIzXsA2J24YjfILmYAAAAASUVORK5CYII=">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
@@ -199,15 +197,49 @@
       <i class="fa-solid fa-rotate-right"></i> 立即重新載入更新 (Update Now)
     </button>
   </div>
-  <!-- ☠️ Hard Death Lockdown Overlay -->
+  <!-- ☠️ Hard Death Lockdown Overlay (新增擊殺者顯示) -->
   <div id="deathScreenOverlay" class="fixed inset-0 z-[99999] flex-col items-center justify-center text-rose-500 select-none">
     <div class="w-20 h-20 mb-4 rounded-full bg-rose-950/80 border-2 border-rose-500 flex items-center justify-center text-rose-400 text-4xl animate-bounce">
       <i class="fa-solid fa-skull-crossbones"></i>
     </div>
     <div class="font-pixel text-xl sm:text-2xl text-center px-4 tracking-widest text-rose-500">DIGIMON FAINTED</div>
+    <!-- 👇 新增：顯示擊殺者資訊 -->
+    <div id="deathKillerBanner" class="mt-3 px-4 py-1.5 rounded-xl bg-rose-950/90 border border-rose-500/80 text-rose-200 font-bold text-xs sm:text-sm shadow-lg">
+      擊殺者 (Defeated By): <span id="deathKillerNameText" class="text-amber-300 font-black">未知 (Unknown)</span>
+    </div>
     <p class="text-xs text-rose-300 font-pixel mt-4 tracking-widest text-center px-4">HP Reduced to Zero. In Stasis Mode.</p>
     <div class="text-slate-400 text-xs mt-3 max-w-md text-center leading-relaxed px-6">
       All battle actions, gacha draws, traits allocation, and evolutions are locked!<br>Please stay focused in class and await teacher's revival or de-evolution...
+    </div>
+  </div>
+
+  <!-- 🛡️ 學生在線被攻擊通知與反擊列表視窗 (Counter-Attack Alert Modal) -->
+  <div id="modalCounterAttack" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[10050] flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-rose-500 rounded-3xl max-w-lg w-full max-h-[80vh] flex flex-col p-5 text-slate-200 shadow-[0_0_35px_rgba(244,63,94,0.4)] relative">
+      <div class="flex justify-between items-center border-b border-rose-500/30 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500 flex items-center justify-center text-rose-400 text-lg animate-bounce">
+            <i class="fa-solid fa-shield-virus"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-base text-rose-400 uppercase tracking-wider font-pixel">⚠️ 遭受攻擊警報 (Under Attack!)</h3>
+            <p class="text-[11px] text-slate-400">反擊不消耗攻擊次數！每筆攻擊限反擊一次，若死亡將立即鎖定並清空。</p>
+          </div>
+        </div>
+        <button onclick="closeCounterAttackModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- 複數攻擊者列表容器 -->
+      <div id="counterAttackListContainer" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2.5 pr-1"></div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+        <button onclick="clearAllMyAttackAlerts()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950 hover:text-rose-300 text-slate-400 font-bold cursor-pointer transition">
+          <i class="fa-solid fa-trash-can mr-1"></i> 忽略並清空全部
+        </button>
+        <button onclick="closeCounterAttackModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95">
+          暫時關閉 (稍後反擊)
+        </button>
+      </div>
     </div>
   </div>
 
@@ -880,6 +912,9 @@
             <i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Battle Logs 戰報日誌 (Max 50)
           </h4>
           <div class="flex items-center gap-2">
+            <button id="btnPendingCounter" onclick="reopenCounterAttackModal()" class="hidden px-2.5 py-1 rounded-lg bg-rose-950 border border-rose-500 text-rose-200 text-[10px] font-black cursor-pointer active:scale-95 animate-pulse">
+              <i class="fa-solid fa-shield-virus mr-1"></i>反擊 <span id="pendingCounterCount">0</span>
+            </button>
             <select id="studentLogFactionFilter" onchange="renderBattleLogs()" class="bg-slate-950 border border-cyan-500/40 text-[10px] rounded px-2 py-1 text-cyan-200 outline-none">
               <option value="ALL">All Logs 全部戰報</option>
               <option value="FACTION_ONLY">⚔️ Faction Battles 陣營交戰</option>
@@ -1410,7 +1445,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.5.0";
+    const CURRENT_APP_VERSION = "2.5.1";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -2823,7 +2858,9 @@ function normalizeStudent(s, keyId) {
     coins: Number(s.coins) || 0,
     incentivePoints: Number(s.incentivePoints) || 0,
     wisdom: Number(s.wisdom) || 0,
-    rebirthCount: Number(s.rebirthCount) || 0 // 轉生次數（每轉生一次永久攻擊+10%）
+    rebirthCount: Number(s.rebirthCount) || 0, // 轉生次數（每轉生一次永久攻擊+10%）
+    killedByName: s.killedByName || null,
+    killedById: s.killedById || null
     
   };
 }
@@ -3089,6 +3126,13 @@ function normalizeStudent(s, keyId) {
           }
           if (currentUser && currentUser.role === 'teacher') {
             renderTeacherExamDashboard();
+          }
+        });
+      // 🛡️ 在線被攻擊與反擊通知即時監聽 (attackAlerts)
+        dbRootRef.child('attackAlerts').on('value', (snap) => {
+          appData.attackAlerts = snap.val() || {};
+          if (currentUser && currentUser.role === 'student') {
+            handleIncomingAttackAlerts();
           }
         });
       // 💬 私訊即時監聽 (保留最多 5 則 + 老師醒目通知)
@@ -4763,7 +4807,7 @@ function getTeacherTemplate() {
         <div class="flex flex-wrap items-center gap-2">
           <!-- 🚀 廣播版本強制更新按鈕 -->
           <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本">
-            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.5.0</span>)
+            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.5.1</span>)
           </button>
           <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
             <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
@@ -5307,6 +5351,22 @@ function getSuperAdminTemplate() {
     const st = appData.students[currentUser.id] || currentUser.data;
     document.getElementById('headerUserInfo').textContent = `Tamer: ${st.name} (${formatStudentClassesDisplay(st)})`;
     document.getElementById('viewStudent').classList.remove('hidden');
+    window.studentLoginSessionTime = Date.now();
+    counterAlertsArmed = false;
+    lastKnownAlertCount = 0;
+    attackAlertBaselineKeys = {};
+    const existingAlerts = (appData.attackAlerts && appData.attackAlerts[currentUser.id]) || {};
+    Object.keys(existingAlerts).forEach(k => { attackAlertBaselineKeys[k] = true; });
+    const staleAlertKeys = Object.keys(attackAlertBaselineKeys);
+    if (dbRootRef && staleAlertKeys.length > 0) {
+      // 只刪登入前已存在的警報，避免整節點 remove 把登入當下的新攻擊一併清掉。
+      const clearOldAlerts = {};
+      staleAlertKeys.forEach(k => { clearOldAlerts[k] = null; });
+      dbRootRef.child(`attackAlerts/${currentUser.id}`).update(clearOldAlerts).finally(armCounterAlertsOnce);
+      setTimeout(armCounterAlertsOnce, 2000);
+    } else {
+      armCounterAlertsOnce();
+    }
     populateStudentTeacherBossOptions();
     updateStudentUI();
     updateStudentFactionUI(); // 👈 加入此行：登入進入儀表板後立即刷新陣營資訊
@@ -5335,6 +5395,13 @@ function logout() {
   
   document.getElementById('deathScreenOverlay').classList.remove('active');
   document.getElementById('studentBanNoticeOverlay').classList.remove('active');
+  counterAlertsArmed = false;
+  lastKnownAlertCount = 0;
+  attackAlertBaselineKeys = {};
+  const counterModalOnLogout = document.getElementById('modalCounterAttack');
+  if (counterModalOnLogout) counterModalOnLogout.classList.add('hidden');
+  const pendingCounterBtn = document.getElementById('btnPendingCounter');
+  if (pendingCounterBtn) pendingCounterBtn.classList.add('hidden');
   document.getElementById('viewLogin').classList.remove('hidden');
   document.getElementById('loginUsername').value = "";
   document.getElementById('loginPassword').value = "";
@@ -5483,7 +5550,20 @@ function logout() {
         deathOverlay.classList.add('active');
         if (rightPanel) rightPanel.style.pointerEvents = 'none';
         if (digiviceCardElem) digiviceCardElem.style.pointerEvents = 'none';
+        
+        // 👇 顯示是誰擊殺自己
+        const killerNameEl = document.getElementById('deathKillerNameText');
+        if (killerNameEl) {
+          killerNameEl.textContent = st.killedByName ? st.killedByName : '未知 / 系統懲罰 (Unknown)';
+        }
+        // 👇 死亡時立即關閉反擊視窗並清空所有待反擊列表
+        const counterModal = document.getElementById('modalCounterAttack');
+        if (counterModal) counterModal.classList.add('hidden');
+        if (dbRootRef && appData.attackAlerts && appData.attackAlerts[currentUser.id]) {
+          dbRootRef.child(`attackAlerts/${currentUser.id}`).remove().catch(() => {});
+        }
       } else {
+
         deathOverlay.classList.remove('active');
         if (!banned) {
           if (rightPanel) rightPanel.style.pointerEvents = 'auto';
@@ -6175,22 +6255,34 @@ else if (mode === 'pvp') {
       if (modal) modal.classList.add('hidden');
     }
 
-    // 真正執行同學擊打與結算 (反傷本機立即硬鎖定 + 階級金幣強校驗)
-    function executePvPStrike(targetStudentId) {
-      closePvpTargetModal();
+  // 真正執行同學擊打與結算 (支援主動攻擊與免費反擊 isCounterAttack + 擊殺者顯示 + 警報推送)
+    function executePvPStrike(targetStudentId, isCounterAttack = false, alertKeyToClear = null) {
+      if (!isCounterAttack) {
+        closePvpTargetModal();
+      }
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
       const target = appData.students[targetStudentId];
       if (!st || !target) return;
 
-      // 檢查是否處於倒下或無攻擊配額
+      // 檢查自己是否處於倒下狀態
       if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
-        showToast("無法行動", "你的數碼暴龍已經倒下！", "damage");
+        showToast("無法行動", "你的數碼暴龍已經倒下，無法攻擊或反擊！", "damage");
         return;
       }
-      if ((st.attackQuota || 0) <= 0) {
+
+      // 若為一般主動攻擊，需檢查攻擊次數；若為「反擊 (isCounterAttack = true)」則不佔用攻擊次數！
+      if (!isCounterAttack && (st.attackQuota || 0) <= 0) {
         showToast("次數不足", "攻擊次數 (Attack Quotas) 不足！", "damage");
         return;
+      }
+
+      // 若是反擊，立即從雲端與本地移除該筆警報（確保只能反擊一次）
+      if (isCounterAttack && alertKeyToClear && dbRootRef) {
+        if (appData.attackAlerts && appData.attackAlerts[currentUser.id]) {
+          delete appData.attackAlerts[currentUser.id][alertKeyToClear];
+        }
+        dbRootRef.child(`attackAlerts/${currentUser.id}/${alertKeyToClear}`).remove().catch(() => {});
       }
 
       // 1. 抓取雙方攻擊前的數碼獸 ID
@@ -6202,12 +6294,13 @@ else if (mode === 'pvp') {
       // 目標已經倒下防呆
       const curTargetHp = (target.hp !== undefined && target.hp !== null) ? Math.floor(Number(target.hp)) : (tgtDigi.maxHp || 100);
       if (target.isFainted || curTargetHp <= 0) {
-        showToast("無效目標", "該同學已經倒下！", "info");
+        showToast("無效目標", `${target.name} 已經倒下，無法對其發動攻擊！`, "info");
+        if (isCounterAttack) renderCounterAttackModalList();
         return;
       }
 
       const skills = myDigi.skills || [{ name: "Tackle Strike", power: 20 }];
-      const sk = skills[currentSelectedSkillIdx] || skills[0];
+      const sk = isCounterAttack ? skills[0] : (skills[currentSelectedSkillIdx] || skills[0]);
 
       // 2. 傷害計算（包含轉生加成與陣營增減傷）
       const rebirthMultiplier = 1 + ((st.rebirthCount || 0) * 0.1);
@@ -6223,9 +6316,11 @@ else if (mode === 'pvp') {
         calculatedDmg = Math.max(1, Math.round(calculatedDmg * 0.8));
       }
 
-      // 扣除攻擊次數
-      const newQuota = Math.max(0, (st.attackQuota || 0) - 1);
+      // 扣除攻擊次數（僅主動攻擊扣除，反擊不扣）
+      const newQuota = isCounterAttack ? (st.attackQuota || 0) : Math.max(0, (st.attackQuota || 0) - 1);
       st.attackQuota = newQuota;
+
+      const actionTag = isCounterAttack ? "⚡[反擊 COUNTER]" : "⚔️[PVP ATTACK]";
 
       // 3. 聖盾抵擋判定
       if (target.hasShield) {
@@ -6234,16 +6329,19 @@ else if (mode === 'pvp') {
         target.shieldCharges = leftCharges;
         target.hasShield = stillHasShield;
 
-        patchStudentAtomic(currentUser.id, { attackQuota: newQuota });
+        if (!isCounterAttack) {
+          patchStudentAtomic(currentUser.id, { attackQuota: newQuota });
+        }
         patchStudentAtomic(target.id, {
           shieldCharges: leftCharges,
           hasShield: stillHasShield
         });
 
         playSound('shield');
-        addBattleLog(`🛡️ [PVP BLOCKED] ${target.name} 的聖盾抵擋了 ${st.name} 的【${sk.name}】！(剩餘盾防: ${leftCharges})`, "battle", st.classId);
-        showToast("被護盾抵擋！", `${target.name} 聖盾抵擋了你的攻擊！`, "info");
+        addBattleLog(`🛡️ [PVP BLOCKED] ${target.name} 的聖盾抵擋了 ${st.name} 的 ${actionTag}【${sk.name}】！(剩餘盾防: ${leftCharges})`, "battle", st.classId);
+        showToast("被護盾抵擋！", `${target.name} 聖盾抵擋了你的${isCounterAttack ? '反擊' : '攻擊'}！`, "info");
         updateStudentUI();
+        if (isCounterAttack) renderCounterAttackModalList();
         return;
       }
 
@@ -6252,7 +6350,6 @@ else if (mode === 'pvp') {
       const curSelfHp = (st.hp !== undefined && st.hp !== null) ? Math.floor(Number(st.hp)) : (myDigi.maxHp || 100);
       const finalSelfHp = Math.max(1, curSelfHp - recoilDmg);
 
-      // 🔥 本地物件與暫存立即強制鎖死新血量
       st.hp = finalSelfHp;
       if (appData.students[currentUser.id]) {
         appData.students[currentUser.id].hp = finalSelfHp;
@@ -6263,8 +6360,12 @@ else if (mode === 'pvp') {
       const isKill = (finalTargetHp === 0);
       target.hp = finalTargetHp;
       target.isFainted = isKill;
+      if (isKill) {
+        target.killedByName = `${st.name} (${myDigi.name})`;
+        target.killedById = st.id;
+      }
 
-      // 6. 擊殺獎勵判定（直接傳入攻擊前的真實 ID）
+      // 6. 擊殺獎勵判定
       let earnedCoins = 0;
       let earnedExp = 0;
       let bountyBonusExp = 0;
@@ -6285,7 +6386,6 @@ else if (mode === 'pvp') {
 
         const totalExpAward = earnedExp + bountyBonusExp;
 
-        // 本地立即累加數值（嚴格按照 earnedCoins 增加）
         st.coins = (st.coins || 0) + earnedCoins;
         st.exp = (st.exp || 0) + totalExpAward;
         st.statPool = (st.statPool || 0) + totalExpAward;
@@ -6294,15 +6394,15 @@ else if (mode === 'pvp') {
         }
 
         playSound('faint');
-        addBattleLog(`☠️💥 [PVP KILL] ${st.name} 擊敗了 ${target.name}！自身受反傷 -${recoilDmg} HP，獲得 +${totalExpAward} EXP 與 +${earnedCoins} 金幣！`, "battle", st.classId);
-        showToast("擊敗對手！", `擊殺成功！獲得 +${earnedCoins} 金幣，自身受反傷 -${recoilDmg} HP (剩餘 ${finalSelfHp})`, "heal");
+        addBattleLog(`☠️💥 ${actionTag} ${st.name} 擊敗了 ${target.name}！自身受反傷 -${recoilDmg} HP，獲得 +${totalExpAward} EXP 與 +${earnedCoins} 金幣！`, "battle", st.classId);
+        showToast("擊敗對手！", `${isCounterAttack ? '反擊' : '擊殺'}成功！獲得 +${earnedCoins} 金幣，自身受反傷 -${recoilDmg} HP`, "heal");
       } else {
         playSound('attack');
-        addBattleLog(`⚔️💥 [PVP ATTACK] ${st.name} 對 ${target.name} 造成 ${calculatedDmg} 傷害，受到反傷扣除 -${recoilDmg} HP！(剩餘 HP: ${finalSelfHp})`, "battle", st.classId);
-        showToast("命中並受反傷！", `造成 ${calculatedDmg} 傷害，受到反傷 -${recoilDmg} HP (剩餘 HP: ${finalSelfHp})！`, "damage");
+        addBattleLog(`${actionTag} ${st.name} 對 ${target.name} 使用【${sk.name}】造成 ${calculatedDmg} 傷害，自身受反傷 -${recoilDmg} HP！`, "battle", st.classId);
+        showToast(isCounterAttack ? "反擊命中！" : "命中並受反傷！", `造成 ${calculatedDmg} 傷害，自身受反傷 -${recoilDmg} HP (剩餘 ${finalSelfHp})！`, "damage");
       }
 
-      // 7. 🔥【分開獨立更新，保證不被回滾】：先更新自己，再更新對手
+      // 7. 分開獨立更新自己與對手
       const myUpdates = {
         hp: finalSelfHp,
         attackQuota: newQuota
@@ -6316,13 +6416,38 @@ else if (mode === 'pvp') {
         }
       }
 
-      patchStudentAtomic(currentUser.id, myUpdates);
-      patchStudentAtomic(target.id, {
+      const targetUpdates = {
         hp: finalTargetHp,
         isFainted: isKill
-      });
+      };
+      // 若擊殺對方，寫入擊殺者資訊並清空對方的反擊列表
+      if (isKill) {
+        targetUpdates.killedByName = `${st.name} (${myDigi.name})`;
+        targetUpdates.killedById = st.id;
+        if (dbRootRef) {
+          dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
+        }
+      }
 
-      // 8. 🔥【直接在 DOM 上重繪血條】：不等待非同步網路回呼
+      patchStudentAtomic(currentUser.id, myUpdates);
+      patchStudentAtomic(target.id, targetUpdates);
+
+      // 8. 🔔 若對手未死亡，且這是「主動攻擊 (非反擊)」，發送被攻擊警報給對手，讓在線的對手彈出視窗反擊！
+      if (!isKill && !isCounterAttack && dbRootRef) {
+        const alertObj = {
+          attackerId: st.id,
+          attackerName: st.name,
+          attackerDigiId: atkDigiId,
+          attackerDigiName: myDigi.name,
+          skillName: sk.name,
+          damage: calculatedDmg,
+          timestamp: Date.now(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        };
+        dbRootRef.child(`attackAlerts/${target.id}`).push(alertObj).catch(e => console.warn("Alert push error:", e));
+      }
+
+      // 9. 直接在 DOM 上重繪血條
       const myMaxHp = myDigi.maxHp || 100;
       const hpBar = document.getElementById('stHpBar');
       const hpText = document.getElementById('stHpText');
@@ -6335,6 +6460,204 @@ else if (mode === 'pvp') {
       }
 
       updateStudentUI();
+      if (isCounterAttack) {
+        renderCounterAttackModalList();
+      }
+    }
+
+    // ==========================================
+    // 🛡️ 被攻擊即時通知與反擊列表管理函式
+    // ==========================================
+    let lastKnownAlertCount = 0;
+    let counterAlertsArmed = false;
+    let attackAlertBaselineKeys = {};
+
+    function armCounterAlertsOnce() {
+      if (counterAlertsArmed || !currentUser || currentUser.role !== 'student') return;
+      counterAlertsArmed = true;
+      handleIncomingAttackAlerts();
+    }
+
+    function isFreshAttackAlert(key) {
+      if (!counterAlertsArmed) return false;
+      if (attackAlertBaselineKeys && attackAlertBaselineKeys[key]) return false;
+      return true;
+    }
+
+    function collectMyActionableAlerts() {
+      const myAlertsObj = (appData.attackAlerts && currentUser && appData.attackAlerts[currentUser.id]) || {};
+      return Object.entries(myAlertsObj)
+        .map(([k, v]) => Object.assign({ _key: k }, v || {}))
+        .filter(item => item && isFreshAttackAlert(item._key))
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
+
+    function updatePendingCounterButton(count) {
+      const btn = document.getElementById('btnPendingCounter');
+      const label = document.getElementById('pendingCounterCount');
+      if (!btn) return;
+      if (count > 0) {
+        btn.classList.remove('hidden');
+        if (label) label.textContent = String(count);
+      } else {
+        btn.classList.add('hidden');
+      }
+    }
+
+    function reopenCounterAttackModal() {
+      renderCounterAttackModalList();
+      const modal = document.getElementById('modalCounterAttack');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function notifyTargetOfAttack(targetStudentId, damage, skillName) {
+      if (!currentUser || currentUser.role !== 'student' || !dbRootRef) return;
+      const st = appData.students[currentUser.id];
+      if (!st || !targetStudentId || targetStudentId === st.id) return;
+      const myDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const alertObj = {
+        attackerId: st.id,
+        attackerName: st.name,
+        attackerDigiId: st.currentDigiId,
+        attackerDigiName: myDigi.name,
+        skillName: skillName || '攻擊',
+        damage: Number(damage) || 0,
+        timestamp: Date.now(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+      dbRootRef.child('attackAlerts/' + targetStudentId).push(alertObj).catch(e => console.warn('Alert push error:', e));
+    }
+
+    function handleIncomingAttackAlerts() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+
+      const isDead = (st.hp !== undefined && st.hp <= 0) || !!st.isFainted;
+      const modal = document.getElementById('modalCounterAttack');
+
+      // 如死亡，不能再反擊並立即清空所有反擊列表
+      if (isDead) {
+        if (modal) modal.classList.add('hidden');
+        updatePendingCounterButton(0);
+        if (dbRootRef && appData.attackAlerts && appData.attackAlerts[currentUser.id]) {
+          dbRootRef.child(`attackAlerts/${currentUser.id}`).remove().catch(() => {});
+        }
+        lastKnownAlertCount = 0;
+        return;
+      }
+
+      if (!counterAlertsArmed) return;
+
+      const validAlerts = collectMyActionableAlerts();
+
+      if (validAlerts.length === 0) {
+        if (modal) modal.classList.add('hidden');
+        lastKnownAlertCount = 0;
+        updatePendingCounterButton(0);
+        return;
+      }
+
+      // 當有新攻擊進來時，自動彈出視窗並播放音效
+      if (validAlerts.length > lastKnownAlertCount) {
+        playSound('attack');
+        if (modal) modal.classList.remove('hidden');
+      }
+      lastKnownAlertCount = validAlerts.length;
+      updatePendingCounterButton(validAlerts.length);
+
+      renderCounterAttackModalList();
+    }
+
+    function renderCounterAttackModalList() {
+      const container = document.getElementById('counterAttackListContainer');
+      const modal = document.getElementById('modalCounterAttack');
+      if (!container || !currentUser || currentUser.role !== 'student') return;
+
+      const st = appData.students[currentUser.id];
+      const isDead = !st || (st.hp !== undefined && st.hp <= 0) || !!st.isFainted;
+      if (isDead) {
+        if (modal) modal.classList.add('hidden');
+        return;
+      }
+
+      const validAlerts = collectMyActionableAlerts();
+
+      if (validAlerts.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs italic">目前沒有待反擊的攻擊紀錄。</div>';
+        if (modal) modal.classList.add('hidden');
+        updatePendingCounterButton(0);
+        return;
+      }
+      updatePendingCounterButton(validAlerts.length);
+
+      let html = '';
+      validAlerts.forEach(alertItem => {
+        const attacker = appData.students[alertItem.attackerId];
+        const atkDigiId = attacker ? attacker.currentDigiId : (alertItem.attackerDigiId || 'digitama1');
+        const atkDigi = DIGIMON_DB[atkDigiId] || DIGIMON_DB['digitama1'];
+        const atkCurHp = attacker && attacker.hp !== undefined ? attacker.hp : atkDigi.maxHp;
+        const isAttackerDead = !attacker || attacker.isFainted || atkCurHp <= 0;
+
+        html += `
+          <div class="p-3 bg-slate-950 border border-rose-500/50 rounded-2xl flex items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-11 h-11 bg-slate-900 rounded-xl p-1 border border-rose-500/40 flex items-center justify-center shrink-0">
+                <img src="${getDigiImgSrc(atkDigiId)}" class="max-w-full max-h-full object-contain">
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-black text-xs text-rose-300 truncate">${escapeHtml(alertItem.attackerName)}</span>
+                  <span class="text-[10px] text-slate-400 font-mono">(${escapeHtml(atkDigi.name)})</span>
+                  <span class="text-[9px] text-slate-500 font-mono">[${alertItem.time || ''}]</span>
+                </div>
+                <div class="text-[11px] text-slate-300 mt-0.5">
+                  使用 <span class="text-amber-300 font-bold">【${escapeHtml(alertItem.skillName || '攻擊')}】</span> 對你造成了 <span class="text-rose-400 font-black">-${alertItem.damage || 0} HP</span>！
+                </div>
+                <div class="text-[10px] font-mono ${isAttackerDead ? 'text-slate-500' : 'text-emerald-400'} mt-0.5">
+                  對手當前 HP: ${isAttackerDead ? '已倒下 (FAINTED)' : `${atkCurHp} / ${atkDigi.maxHp}`}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="executePvPStrike('${alertItem.attackerId}', true, '${alertItem._key}')" ${isAttackerDead ? 'disabled' : ''} class="px-3 py-2 rounded-xl font-black text-xs ${isAttackerDead ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer active:scale-95'} flex items-center gap-1">
+                <i class="fa-solid fa-bolt"></i> ${isAttackerDead ? '對手已倒下' : '立即反擊'}
+              </button>
+              <button onclick="dismissSingleAttackAlert('${alertItem._key}')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs cursor-pointer" title="忽略此筆">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function dismissSingleAttackAlert(alertKey) {
+      if (!currentUser || !dbRootRef) return;
+      if (appData.attackAlerts && appData.attackAlerts[currentUser.id]) {
+        delete appData.attackAlerts[currentUser.id][alertKey];
+      }
+      dbRootRef.child(`attackAlerts/${currentUser.id}/${alertKey}`).remove().then(() => {
+        renderCounterAttackModalList();
+      });
+    }
+
+    function clearAllMyAttackAlerts() {
+      if (!currentUser || !dbRootRef) return;
+      if (appData.attackAlerts) {
+        delete appData.attackAlerts[currentUser.id];
+      }
+      dbRootRef.child(`attackAlerts/${currentUser.id}`).remove().then(() => {
+        closeCounterAttackModal();
+      });
+    }
+
+    function closeCounterAttackModal() {
+      const modal = document.getElementById('modalCounterAttack');
+      if (modal) modal.classList.add('hidden');
+      updatePendingCounterButton(collectMyActionableAlerts().length);
     }
 
     function toggleStudentStarMark(studentId, e) {
@@ -10025,10 +10348,12 @@ function startStudentExamTimer() {
       if (target.hasShield) {
             let leftCharges = (target.shieldCharges !== undefined ? target.shieldCharges : 1) - 1;
             let stillHasShield = leftCharges > 0;
+            patchStudentAtomic(me.id, { attackQuota: newQuota });
             patchStudentAtomic(target.id, { 
               shieldCharges: leftCharges,
               hasShield: stillHasShield 
             });
+            notifyTargetOfAttack(target.id, 0, `${skill.name}（聖盾抵擋）`);
             addBattleLog(`🛡️ [BLOCKED] ${target.name} 聖盾抵擋了攻擊！(護盾剩餘抵擋次數: ${leftCharges})`, "battle", target.classId);
             showToast("Blocked!", `防禦成功！護盾剩餘 ${leftCharges} 次抵擋。`, "info");
             playSound('shield');
@@ -10053,6 +10378,11 @@ function startStudentExamTimer() {
       // 6. 擊殺判定 (Kill Confirmation)
       if (nextHp <= 0) {
         updates[`students/${target.id}/isFainted`] = true;
+        updates[`students/${target.id}/killedByName`] = `${me.name} (${myDigi.name})`;
+        updates[`students/${target.id}/killedById`] = me.id;
+        if (dbRootRef) {
+          dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
+        }
 
         // 計算階級差距經驗 (同級 100, 越一級 150, 越兩級 200, 弱一級 50, 弱兩級 0)
         const baseKillExp = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
@@ -10083,6 +10413,7 @@ function startStudentExamTimer() {
         showToast("Target Defeated! / 擊殺對手！", `Defeated ${target.name}! Gained +${expGained} EXP & +${coinsGained} Coins! / 成功擊殺 ${target.name}！獲得 +${expGained} EXP 與 +${coinsGained} 金幣！`, "evolution");
       } else {
         playSound('attack');
+        notifyTargetOfAttack(target.id, dmg, skill.name);
         addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
         showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
       }
@@ -10261,20 +10592,6 @@ function startStudentExamTimer() {
         });
       }
     });
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./pwabuilder-sw.js')
-          .then((reg) => {
-            console.log('Service Worker registered successfully:', reg.scope);
-          })
-          .catch((err) => {
-            console.error('Service Worker registration failed:', err);
-          });
-      });
-    }
   </script>
 </body>
 </html>
