@@ -992,6 +992,28 @@
       </div>
     </div>
   </div>
+  <!-- Teacher single-target picker. Same tap-a-card flow as the student picker. -->
+  <div id="modalTeacherTargetPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[1001] flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-rose-500/60 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col p-5 text-slate-200 shadow-2xl relative">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-400 flex items-center justify-center text-rose-300 text-lg">
+            <i class="fa-solid fa-crosshairs animate-pulse"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-base text-rose-300 uppercase tracking-wider font-pixel">選擇攻擊對象 (Select Target)</h3>
+            <p class="text-[11px] text-slate-400" id="teacherTargetPickerSubtitle">Boss Strike</p>
+          </div>
+        </div>
+        <button onclick="closeTeacherTargetPicker()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2 pr-1" id="teacherTargetListContainer"></div>
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center gap-3 text-xs text-slate-400">
+        <span>點一下學生卡片就發動攻擊。倒下的學生不能選。 / Tap a card to attack. Fainted students cannot be selected.</span>
+        <button onclick="closeTeacherTargetPicker()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95 shrink-0">取消 / Cancel</button>
+      </div>
+    </div>
+  </div>
   <!-- Manage Class Students Modal -->
   <div id="modalClassStudentsManager" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 text-slate-200 shadow-2xl">
@@ -1473,7 +1495,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.6.7";
+    const CURRENT_APP_VERSION = "2.6.8";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -3568,25 +3590,25 @@ function normalizeStudent(s, keyId) {
 
       // 重置所有樣式
       [btnMain, btnQuiz, btnExam, btnMsg].forEach(b => {
-        if (b) b.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (b) b.className = "w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
       });
       [viewMain, viewQuiz, viewExam, viewMsg].forEach(v => {
         if (v) v.classList.add('hidden');
       });
 
       if (tabName === 'main') {
-        if (btnMain) btnMain.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (btnMain) btnMain.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
         if (viewMain) viewMain.classList.remove('hidden');
       } else if (tabName === 'quiz') {
-        if (btnQuiz) btnQuiz.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-amber-600 to-yellow-600 text-slate-950 cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (btnQuiz) btnQuiz.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-amber-600 to-yellow-600 text-slate-950 cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
         if (viewQuiz) viewQuiz.classList.remove('hidden');
         renderTeacherQuizLiveDashboard();
       } else if (tabName === 'exam') {
-        if (btnExam) btnExam.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-indigo-600 to-purple-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (btnExam) btnExam.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-indigo-600 to-purple-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
         if (viewExam) viewExam.classList.remove('hidden');
         renderTeacherExamDashboard();
       } else if (tabName === 'msg') {
-        if (btnMsg) btnMsg.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-cyan-600 to-blue-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2";
+        if (btnMsg) btnMsg.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-cyan-600 to-blue-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
         if (viewMsg) viewMsg.classList.remove('hidden');
         chatRenderSignatures.teacherChatMessagesList = '';
         renderTeacherClassChat();
@@ -3908,12 +3930,12 @@ function sanitizeClassKey(cls) {
       if (btn && lbl) {
         if (isTeacherStealthMode) {
           btn.className = "px-3 py-1.5 rounded-lg bg-amber-500/20 border-2 border-amber-400 text-amber-300 text-xs font-black shadow-lg shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer active:scale-95 animate-pulse";
-          lbl.textContent = "隱藏模式: 已開啟 (無Log)";
+          lbl.textContent = "隱藏模式：開啟 / Stealth On";
           btn.querySelector('i').className = "fa-solid fa-user-ninja text-amber-400";
           showToast("Stealth Mode Active", "🥷 隱藏模式已開啟！老師後續所有操作將不記錄任何 Log！", "info");
         } else {
           btn.className = "px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95";
-          lbl.textContent = "隱藏模式: 關閉";
+          lbl.textContent = "隱藏模式：關閉 / Stealth Off";
           btn.querySelector('i').className = "fa-solid fa-user-ninja text-slate-400";
           showToast("Stealth Mode Disabled", "隱藏模式已關閉，操作將恢復記錄 Log。", "info");
         }
@@ -3983,11 +4005,11 @@ function sanitizeClassKey(cls) {
 
       if (isBanned) {
         btn.className = "px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95 animate-pulse";
-        lbl.textContent = `Unlock Class (${targetClass})`;
+        lbl.textContent = `解鎖班級 / Unlock (${targetClass})`;
         btn.querySelector('i').className = "fa-solid fa-lock-open";
       } else {
         btn.className = "px-3 py-1.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95";
-        lbl.textContent = `Ban Entire Class (Lock)`;
+        lbl.textContent = `鎖定全班 / Lock Class`;
         btn.querySelector('i').className = "fa-solid fa-lock";
       }
     }
@@ -5314,7 +5336,7 @@ function toggleFactionBuffModal() {
           badgeEl.textContent = targetClass === 'ALL' ? 'Viewing: All Classes' : `Viewing Class: ${targetClass}`;
         }
         if (clearBtnLbl) {
-          clearBtnLbl.textContent = targetClass === 'ALL' ? 'Clear All Logs' : `Clear [${targetClass}] Logs Only`;
+          clearBtnLbl.textContent = targetClass === 'ALL' ? '清空全部紀錄 / Clear All' : `只清空 ${targetClass} / Clear Class`;
         }
 
         const filteredLogs = allLogs.filter(l => {
@@ -5501,90 +5523,109 @@ function toggleFactionBuffModal() {
 
 function getTeacherTemplate() {
   return `
-    <div class="flex rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
-      <button id="btnTeacherTabMain" onclick="switchTeacherSubTab('main')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
-        <i class="fa-solid fa-chalkboard"></i> 課堂主控台 (Classroom Dashboard)
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
+      <button id="btnTeacherTabMain" onclick="switchTeacherSubTab('main')" class="w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
+        <i class="fa-solid fa-chalkboard"></i> 課堂主控台 (Dashboard)
       </button>
-      <button id="btnTeacherTabQuiz" onclick="switchTeacherSubTab('quiz')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
-        <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> 搶答即時監控中心 (Pop-up Quiz Live)
+      <button id="btnTeacherTabQuiz" onclick="switchTeacherSubTab('quiz')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
+        <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> 搶答 (Pop-up Quiz)
       </button>
-<button id="btnTeacherTabExam" onclick="switchTeacherSubTab('exam')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
-        <i class="fa-solid fa-file-excel text-emerald-400"></i> 考卷系統中心 (Exam Paper Hub)
+      <button id="btnTeacherTabExam" onclick="switchTeacherSubTab('exam')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
+        <i class="fa-solid fa-file-excel text-emerald-400"></i> 考卷 (Exam Hub)
       </button>
-<button id="btnTeacherTabMsg" onclick="switchTeacherSubTab('msg')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 relative">
-  <i class="fa-solid fa-comments text-cyan-400"></i> 
-  <span>學生私訊 (Messages)</span>
-  <span id="teacherTabMsgUnreadBadge" class="hidden px-1.5 py-0.2 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold">0</span>
-</button>
+      <button id="btnTeacherTabMsg" onclick="switchTeacherSubTab('msg')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center relative">
+        <i class="fa-solid fa-comments text-cyan-400"></i>
+        <span>學生私訊 (Messages)</span>
+        <span id="teacherTabMsgUnreadBadge" class="hidden px-1.5 py-0.2 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold">0</span>
+      </button>
     </div>
 
     <div id="teacherSubViewMain" class="space-y-6">
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
-            <img id="tcBossImg" src="" class="max-w-full max-h-full object-contain">
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-amber-300 font-pixel uppercase">Teacher Mega Partner</span>
-              <span id="tcBossStage" class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold">MEGA</span>
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
+              <img id="tcBossImg" src="" class="max-w-full max-h-full object-contain">
             </div>
-            <h3 id="tcBossName" class="text-lg font-black text-white mt-0.5">WarGreymon (Partner)</h3>
-            <div class="text-xs text-emerald-400 font-mono font-bold mt-0.5" id="tcBossHp">HP: 2000 / 2000</div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-amber-300 font-pixel uppercase">教師夥伴 / Teacher Partner</span>
+                <span id="tcBossStage" class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold">MEGA</span>
+              </div>
+              <h3 id="tcBossName" class="text-lg font-black text-white mt-0.5">WarGreymon (Partner)</h3>
+              <div class="text-xs text-emerald-400 font-mono font-bold mt-0.5" id="tcBossHp">HP: 2000 / 2000</div>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.6.8</span>)
+            </button>
+            <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
+              <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
+            </button>
+            <div class="relative inline-flex rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 overflow-hidden select-none active:scale-95">
+              <div class="px-3.5 py-2 flex items-center gap-1.5 pointer-events-none">
+                <i class="fa-solid fa-dice text-sm"></i> 幸運抽學生 / Lucky Draw
+              </div>
+              <button onclick="startRandomPicker(false, false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="公平抽選 / Fair Draw"></button>
+              <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="收藏優先 / Favorite Draw"></button>
+            </div>
+            <button id="btnToggleClassBan" onclick="toggleCurrentClassBan()" class="px-3 py-1.5 rounded-lg bg-rose-950 border border-rose-500 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95">
+              <i class="fa-solid fa-lock"></i> <span id="lblToggleClassBan">鎖定全班 / Lock Class</span>
+            </button>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- 🚀 廣播版本強制更新按鈕 -->
-          <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本">
-            <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 廣播版本強制更新 (<span class="app-version-badge font-mono">v2.6.7</span>)
-          </button>
-          <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
-            <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式: 關閉</span>
-          </button>
-          <div class="relative inline-flex rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/30 overflow-hidden select-none active:scale-95">
-            <div class="px-3.5 py-2 flex items-center gap-1.5 pointer-events-none">
-              <i class="fa-solid fa-dice text-sm"></i> Lucky Student Picker
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <section class="rounded-xl border border-emerald-500/30 bg-slate-950/60 p-3 space-y-2">
+            <div class="text-[11px] font-black uppercase tracking-wider text-emerald-300">全班獎勵 / Class Rewards</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="rewardAllAttackQuota(1)" class="px-2.5 py-1.5 rounded-lg bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-bolt"></i> +1 攻擊 / Attack
+              </button>
+              <button onclick="rewardAllGachaTickets(1)" class="px-2.5 py-1.5 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-ticket"></i> +1 抽獎券 / Gacha
+              </button>
+              <button onclick="teacherPromptClassCoins('reward')" class="px-2.5 py-1.5 rounded-lg bg-yellow-950 border border-yellow-500 text-yellow-300 text-xs font-bold hover:bg-yellow-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-coins text-amber-400"></i> +金幣 / Coins
+              </button>
+              <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded-lg bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-hand-holding-heart"></i> 回復 HP / Restore HP
+              </button>
             </div>
-            <button onclick="startRandomPicker(false, false)" class="absolute top-0 left-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Fair Draw"></button>
-            <button onclick="startRandomPicker(true, false)" class="absolute top-0 right-0 w-1/2 h-full opacity-0 cursor-pointer z-10" title="Favorite Draw"></button>
-          </div>
-          <button id="btnToggleClassBan" onclick="toggleCurrentClassBan()" class="px-3 py-1.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95">
-            <i class="fa-solid fa-lock"></i> <span id="lblToggleClassBan">Ban Entire Class (Lock)</span>
-          </button>
-          <button onclick="rewardAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-bolt"></i> Class +1 Attack
-          </button>
-          <button onclick="deductAllAttackQuota(1)" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-bolt-slash"></i> Class -1 Attack
-          </button>
-          <button onclick="rewardAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-ticket"></i> Class +1 Gacha
-          </button>
-<button onclick="teacherPromptClassCoins('reward')" class="px-2.5 py-1.5 rounded bg-yellow-950 border border-yellow-500 text-yellow-300 text-xs font-bold hover:bg-yellow-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-  <i class="fa-solid fa-coins text-amber-400"></i> Class +金幣
-</button>
-<button onclick="teacherPromptClassCoins('deduct')" class="px-2.5 py-1.5 rounded bg-slate-900 border border-yellow-800 text-yellow-500 text-xs font-bold hover:bg-yellow-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
-  <i class="fa-solid fa-circle-minus text-yellow-600"></i> Class -金幣
-</button>
-          <button onclick="deductAllGachaTickets(1)" class="px-2.5 py-1.5 rounded bg-slate-900 border border-purple-800 text-purple-300 text-xs font-bold hover:bg-purple-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-ticket-simple"></i> Class -1 Gacha
-          </button>
-          <button onclick="penalizeAllHp(30)" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-heart-crack"></i> Class -30 HP
-          </button>
-          <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-hand-holding-heart"></i> Restore Class HP Only
-          </button>
-          <button onclick="teacherCastSkill('single_ult')" class="px-2.5 py-1.5 rounded bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-crosshairs"></i> Target 1 (Special)
-          </button>
-          <button onclick="teacherCastSkill('aoe_ult')" class="px-2.5 py-1.5 rounded bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-burst"></i> Full Class (Special)
-          </button>
-          <button onclick="teacherHealSelf()" class="px-2.5 py-1.5 rounded bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
-            <i class="fa-solid fa-heart-pulse"></i> Restore Boss HP
-          </button>
+          </section>
+          <section class="rounded-xl border border-rose-500/30 bg-slate-950/60 p-3 space-y-2">
+            <div class="text-[11px] font-black uppercase tracking-wider text-rose-300">全班扣除 / Class Penalties</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="deductAllAttackQuota(1)" class="px-2.5 py-1.5 rounded-lg bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold hover:bg-rose-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-bolt-slash"></i> -1 攻擊 / Attack
+              </button>
+              <button onclick="deductAllGachaTickets(1)" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-purple-800 text-purple-300 text-xs font-bold hover:bg-purple-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-ticket-simple"></i> -1 抽獎券 / Gacha
+              </button>
+              <button onclick="teacherPromptClassCoins('deduct')" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-yellow-800 text-yellow-500 text-xs font-bold hover:bg-yellow-950 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-circle-minus text-yellow-600"></i> -金幣 / Coins
+              </button>
+              <button onclick="penalizeAllHp(30)" class="px-2.5 py-1.5 rounded-lg bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-heart-crack"></i> -30 HP
+              </button>
+            </div>
+          </section>
+          <section class="rounded-xl border border-amber-500/40 bg-slate-950/60 p-3 space-y-2">
+            <div class="text-[11px] font-black uppercase tracking-wider text-amber-300">首領攻擊 / Boss Attack</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="teacherCastSkill('single_ult')" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-black transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-md shadow-rose-900/40">
+                <i class="fa-solid fa-crosshairs"></i> 點選 1 人 / Target 1
+              </button>
+              <button onclick="teacherCastSkill('aoe_ult')" class="px-2.5 py-1.5 rounded-lg bg-purple-950 border border-purple-600 text-purple-300 text-xs font-bold hover:bg-purple-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-burst"></i> 全班必殺 / Full Class
+              </button>
+              <button onclick="teacherHealSelf()" class="px-2.5 py-1.5 rounded-lg bg-teal-950 border border-teal-500 text-teal-300 text-xs font-bold hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-heart-pulse"></i> 回復首領 / Boss HP
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">單人攻擊改為點學生卡片，不用輸入號碼。 / Single attack: tap a student card. No number to type.</p>
+          </section>
         </div>
       </div>
 
@@ -5716,31 +5757,31 @@ function getTeacherTemplate() {
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          <div class="flex items-center gap-3">
-            <label class="text-xs font-bold text-cyan-400"><i class="fa-solid fa-school mr-1"></i> Current Class:</label>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="text-xs font-bold text-cyan-400"><i class="fa-solid fa-school mr-1"></i>目前班級 / Current Class</label>
             <select id="teacherClassFilter" onchange="onClassFilterChange(this.value)" class="bg-slate-950 border border-cyan-500/50 text-xs font-bold rounded-lg px-3 py-1.5 text-cyan-200 outline-none"></select>
-            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-plus mr-1"></i> Add Class</button>
-            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-xs text-rose-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-trash mr-1"></i> Delete Class</button>
+            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-plus mr-1"></i>新增班級 / Add</button>
+            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-xs text-rose-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-trash mr-1"></i>刪除班級 / Delete</button>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="openManageClassStudentsModal()" class="px-3 py-1.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer active:scale-95">Manage Students</button>
-            <label for="excelFileInput" class="cursor-pointer px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
-              <i class="fa-solid fa-file-excel"></i> Import (Excel)
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="openManageClassStudentsModal()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer active:scale-95">管理學生 / Manage</button>
+            <label for="excelFileInput" class="cursor-pointer px-3 py-1.5 rounded-lg bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
+              <i class="fa-solid fa-file-excel"></i> 匯入 Excel / Import
             </label>
             <input id="excelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(event)" class="hidden">
-            <button onclick="promptRewardAllStudents()" class="px-3 py-1.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black shadow-md cursor-pointer active:scale-95 flex items-center gap-1.5">
-              <i class="fa-solid fa-bolt"></i> 全班發放 EXP
+            <button onclick="promptRewardAllStudents()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black shadow-md cursor-pointer active:scale-95 flex items-center gap-1.5">
+              <i class="fa-solid fa-bolt"></i> 全班發放 EXP / Class EXP
             </button>
           </div>
         </div>
-        <div id="teacherStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5"></div>
+        <div id="teacherStudentGrid" class="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-5"></div>
       </div>
 
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
         <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 mb-3 gap-2">
-          <h4 class="text-xs font-bold text-cyan-300 flex items-center"><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>Classroom Activity Log</h4>
+          <h4 class="text-xs font-bold text-cyan-300 flex items-center"><i class="fa-solid fa-scroll mr-1.5 text-cyan-400"></i>課堂紀錄 / Activity Log</h4>
           <div class="flex items-center gap-2">
             <select id="teacherLogFactionFilter" onchange="renderBattleLogs()" class="bg-slate-950 border border-cyan-500/40 text-[10px] rounded px-2 py-1 text-cyan-200 outline-none">
               <option value="ALL">全部日誌</option>
@@ -5748,7 +5789,7 @@ function getTeacherTemplate() {
             </select>
             <span class="text-[10px] text-slate-400 font-mono" id="teacherLogFilterBadge"></span>
             <button onclick="clearBattleLogs()" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 border border-rose-700/60 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-trash-can"></i> <span id="lblClearLogBtn">Clear Logs</span>
+              <i class="fa-solid fa-trash-can"></i> <span id="lblClearLogBtn">清空紀錄 / Clear Logs</span>
             </button>
           </div>
         </div>
@@ -8304,43 +8345,122 @@ else if (mode === 'pvp') {
         addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck class with [${moveName}] for ${pwr} DMG!`, "battle", selectedTeacherClass);
         showToast("Class AOE Strike", `Active students struck!`, "damage");
       } else {
-        let menu = `Select target for ${digi.name}'s [${moveName}] (${pwr} DMG):\n\n`;
-        myStudents.forEach((s, idx) => {
-          menu += `${idx + 1}. ${s.name} - HP: ${s.hp || 100} ${s.hasShield ? '🛡️' : ''} ${s.isFainted ? '[FAINTED]' : ''}\n`;
+        openTeacherTargetPicker({
+          pwr,
+          moveName,
+          digiName: digi.name,
+          className: selectedTeacherClass
         });
-        const choice = prompt(menu, "1");
-        if (choice === null) return;
-        const targetIdx = parseInt(choice) - 1;
+      }
+    }
 
-        if (targetIdx >= 0 && targetIdx < myStudents.length) {
-          const target = myStudents[targetIdx];
-          if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
-            return alert(`Student [${target.name}] is already FAINTED! Please revive first.`);
-          }
+    let pendingTeacherStrike = null;
 
-          if (target.hasShield) {
-            patchStudentAtomic(target.id, { hasShield: false });
-            addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield absorbed Boss [${moveName}]!`, "battle", target.classId);
-            showToast("Blocked!", `${target.name}'s shield absorbed the damage!`, "info");
-            playSound('shield');
+    function openTeacherTargetPicker(strike) {
+      pendingTeacherStrike = strike;
+      const modal = document.getElementById('modalTeacherTargetPicker');
+      if (!modal) return;
+      const sub = document.getElementById('teacherTargetPickerSubtitle');
+      const classLabel = !strike.className || strike.className === 'ALL' ? '全部班級 / All Classes' : strike.className;
+      if (sub) sub.textContent = `${strike.digiName} · ${strike.moveName} · ${strike.pwr} DMG · ${classLabel}`;
+      renderTeacherTargetList();
+      modal.classList.remove('hidden');
+    }
+
+    function closeTeacherTargetPicker() {
+      const modal = document.getElementById('modalTeacherTargetPicker');
+      if (modal) modal.classList.add('hidden');
+      pendingTeacherStrike = null;
+    }
+
+    function renderTeacherTargetList() {
+      const container = document.getElementById('teacherTargetListContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      const strike = pendingTeacherStrike;
+      if (!strike) return;
+
+      const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, strike.className));
+      if (myStudents.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-slate-500 italic text-xs">這個班沒有學生。 / No students in this class.</div>';
+        return;
+      }
+
+      const bountyId = appData.bounties ? appData.bounties[sanitizeClassKey(strike.className)] : null;
+      myStudents.forEach(target => {
+        const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+        const isFainted = target.isFainted || (target.hp !== undefined && target.hp <= 0);
+        const fac = getStudentFactionInClass(target, strike.className);
+        const isBounty = bountyId === target.id;
+        const hpNow = target.hp !== undefined ? target.hp : tgtDigi.maxHp;
+        const card = document.createElement('div');
+        card.setAttribute('data-teacher-target', target.id);
+        card.className = `p-3 rounded-2xl border ${isBounty ? 'border-rose-500 bg-rose-950/20' : 'border-slate-800 bg-slate-950'} flex items-center justify-between gap-3 transition ${isFainted ? 'opacity-40 cursor-not-allowed' : 'hover:border-rose-400/80 cursor-pointer active:scale-[0.99]'}`;
+        card.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-12 h-12 bg-slate-900 rounded-xl p-1 border border-slate-800 flex items-center justify-center shrink-0">
+              <img src="${getDigiImgSrc(target.currentDigiId)}" onerror="this.onerror=null;this.src='${tgtDigi.svg}';" class="max-w-full max-h-full object-contain ${isFainted ? 'grayscale' : ''}">
+            </div>
+            <div class="truncate">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white truncate">${escapeHtml(target.name)}</span>
+                <span class="text-[10px] font-mono text-slate-400">(${escapeHtml(target.username || target.id)})</span>
+                ${isBounty ? '<span class="px-1.5 py-0.2 rounded bg-rose-900 border border-rose-500 text-rose-300 font-pixel text-[8px] animate-pulse">BOUNTY 懸賞</span>' : ''}
+                ${target.hasShield ? '<span class="text-[10px] text-cyan-400" title="護盾 / Shield"><i class="fa-solid fa-shield-halved"></i></span>' : ''}
+              </div>
+              <div class="text-[11px] text-slate-300 mt-0.5">
+                ${escapeHtml(tgtDigi.name)} <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 text-cyan-300">${escapeHtml(tgtDigi.stageName || '')}</span>
+                · HP: <b class="text-emerald-400 font-mono">${hpNow}</b> / ${tgtDigi.maxHp}
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">陣營 Faction: <b class="${fac.factionName ? 'text-indigo-300' : 'text-slate-500'}">${escapeHtml(fac.factionName || '無陣營 / None')}</b></div>
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            ${isFainted
+              ? '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600">已倒下 / Fainted</span>'
+              : `<div class="font-pixel text-xs text-rose-300">${strike.pwr} DMG</div><div class="text-[10px] text-slate-400">點一下 / Tap</div>`}
+          </div>
+        `;
+        if (!isFainted) card.onclick = () => executeTeacherSingleStrike(target.id);
+        container.appendChild(card);
+      });
+    }
+
+    function executeTeacherSingleStrike(targetId) {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const strike = pendingTeacherStrike;
+      const target = appData.students[targetId];
+      if (!strike || !target) return;
+      if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
+        return alert(`Student [${target.name}] is already FAINTED! Please revive first.`);
+      }
+
+      const pwr = strike.pwr;
+      const moveName = strike.moveName;
+      const digiName = strike.digiName;
+      closeTeacherTargetPicker();
+
+      if (target.hasShield) {
+        patchStudentAtomic(target.id, { hasShield: false });
+        addBattleLog(`🛡️ [BOSS BLOCKED] ${target.name}'s Shield absorbed Boss [${moveName}]!`, "battle", target.classId);
+        showToast("Blocked!", `${target.name}'s shield absorbed the damage!`, "info");
+        playSound('shield');
+      } else {
+        applyDamageToStudent(target.id, pwr, { name: digiName, id: currentUser.id }).then(result => {
+          if (result && result.itemUsed) {
+            logAutoRevive(target, target.classId, result.charges);
+            showToast("自動復活 / Auto Revive", `${target.name} 的復活核心已自動使用。 / ${target.name}'s revive core was used automatically.`, "heal");
+            playSound('heal');
+          } else if (result && result.fainted) {
+            playSound('faint');
+            showToast("Digimon Fainted!", `${target.name} 已被擊倒。`, "damage");
           } else {
-            applyDamageToStudent(target.id, pwr, { name: digi.name, id: currentUser.id }).then(result => {
-              if (result && result.itemUsed) {
-                logAutoRevive(target, target.classId, result.charges);
-                showToast("自動復活 / Auto Revive", `${target.name} 的復活核心已自動使用。 / ${target.name}'s revive core was used automatically.`, "heal");
-                playSound('heal');
-              } else if (result && result.fainted) {
-                playSound('faint');
-                showToast("Digimon Fainted!", `${target.name} 已被擊倒。`, "damage");
-              } else {
-                playSound('attack');
-                showToast("Single Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
-              }
-              addBattleLog(`⚡ [BOSS STRIKE] ${digi.name} struck [${target.name}] for ${pwr} DMG!`, "battle", target.classId);
-              renderTeacherGrid();
-            });
+            playSound('attack');
+            showToast("Single Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
           }
-        }
+          addBattleLog(`⚡ [BOSS STRIKE] ${digiName} struck [${target.name}] for ${pwr} DMG!`, "battle", target.classId);
+          renderTeacherGrid();
+        });
       }
     }
 
@@ -8382,28 +8502,28 @@ else if (mode === 'pvp') {
 
     card.innerHTML = `
       <div>
-        <div class="flex justify-between items-start mb-1 gap-2">
+        <div class="flex flex-wrap justify-between items-start mb-1 gap-2">
           <div class="flex items-start gap-2 flex-1 min-w-0">
             <span class="font-pixel text-[11px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-bold shadow shrink-0 mt-0.5">
               #${studentIndex}
             </span>
-            <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${isBountyTarget ? 'text-rose-400 font-black' : (isDead ? 'text-rose-400' : 'text-cyan-300')} text-sm leading-snug cursor-pointer select-none break-words" title="Click to toggle favorite">
+            <span onclick="toggleStudentStarMark('${s.id}', event)" class="font-bold ${isBountyTarget ? 'text-rose-400 font-black' : (isDead ? 'text-rose-400' : 'text-cyan-300')} text-sm leading-snug cursor-pointer select-none break-words" title="點一下加入或取消收藏 / Click to toggle favorite">
               ${s.name}${markDot} ${s.hasShield ? '🛡️' : ''} ${isBountyTarget ? '🎯' : ''} ${isIndividualBanned ? '🔒[BANNED]' : ''}
             </span>
           </div>
           
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="toggleStudentBan('${s.id}', event)" class="p-1.5 rounded ${isIndividualBanned ? 'bg-amber-600 text-slate-950 font-black' : 'bg-slate-900 text-rose-400 hover:bg-rose-950 border border-rose-600/50'} text-xs transition cursor-pointer active:scale-90" title="${isIndividualBanned ? 'Unlock Student' : 'Ban Student (Read-Only)'}">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button onclick="toggleStudentBan('${s.id}', event)" class="p-1.5 rounded-lg ${isIndividualBanned ? 'bg-amber-600 text-slate-950 font-black' : 'bg-slate-900 text-rose-400 hover:bg-rose-950 border border-rose-600/50'} text-xs transition cursor-pointer active:scale-90" title="${isIndividualBanned ? '解鎖學生 / Unlock Student' : '鎖定唯讀 / Ban Student (Read-Only)'}">
               <i class="fa-solid ${isIndividualBanned ? 'fa-lock-open' : 'fa-ban'}"></i>
             </button>
-            <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="Export Card">
+            <button onclick="downloadStudentCard('${s.id}')" class="p-1.5 rounded-lg bg-slate-900 hover:bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 text-xs transition cursor-pointer active:scale-90" title="匯出卡片 / Export Card">
               <i class="fa-solid fa-id-card"></i>
             </button>
             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold">
               ID: ${s.username || s.id}
             </span>
             <span class="text-[10px] px-2 py-0.5 rounded ${isDead ? 'bg-rose-950 text-rose-300 border border-rose-600 font-bold' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
-              ${isDead ? 'FAINTED' : digi.stageName}
+              ${isDead ? '已倒下 / FAINTED' : digi.stageName}
             </span>
           </div>
         </div>
@@ -8422,51 +8542,54 @@ else if (mode === 'pvp') {
           <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center shrink-0">
             <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain ${isDead ? 'opacity-40 grayscale' : ''}">
           </div>
-          <div class="text-xs">
+          <div class="text-xs min-w-0">
             <div class="font-bold text-slate-200">${digi.name}</div>
-            <div class="text-emerald-400 font-mono text-[11px]">HP: ${s.hp || 0} / ${digi.maxHp}</div>
-            <div class="text-slate-400 font-mono text-[11px]">
-              EXP: ${s.exp || 0} | Attacks: <span class="text-amber-300 font-bold">${s.attackQuota || 0}</span> | Tickets: <span class="text-purple-300 font-bold">${s.gachaTickets || 0}</span> | 金幣: <span class="text-yellow-400 font-bold">${s.coins || 0}</span>
+            <div class="flex flex-wrap gap-1 mt-1">
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-emerald-800/60 text-emerald-300 font-mono text-[10px]">HP ${s.hp || 0}/${digi.maxHp}</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-[10px]">EXP ${s.exp || 0}</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-amber-800/60 text-amber-300 font-mono text-[10px]">攻擊 ${s.attackQuota || 0}</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-purple-800/60 text-purple-300 font-mono text-[10px]">券 ${s.gachaTickets || 0}</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-yellow-800/60 text-yellow-300 font-mono text-[10px]">幣 ${s.coins || 0}</span>
             </div>
-            <div class="text-emerald-300 font-mono text-[11px]">今日答題 Today ${reviveQuizLeft(s)} / 3${autoReviveItemCount(s) ? ` · 自動復活核心 Auto Revive x${autoReviveItemCount(s)}` : ''}</div>
+            <div class="text-emerald-300 font-mono text-[11px] mt-1">今日答題 Today ${reviveQuizLeft(s)} / 3${autoReviveItemCount(s) ? ` · 自動復活核心 Auto Revive x${autoReviveItemCount(s)}` : ''}</div>
           </div>
         </div>
       </div>
 
       <div class="space-y-1.5 mt-2">
         <div class="grid grid-cols-3 gap-1">
-          <button onclick="promptRewardStudent('${s.id}')" class="p-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+EXP</button>
-          <button onclick="grantGachaTicket('${s.id}', 1)" class="p-1 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 Ticket</button>
-          <button onclick="grantAttackQuota('${s.id}', 1)" class="p-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 Attack</button>
-      <div class="grid grid-cols-2 gap-1 mt-1">
-  <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="p-1 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded text-[10px] text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
-    <i class="fa-solid fa-plus text-[9px]"></i> 獎勵金幣
-  </button>
-  <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="p-1 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded text-[10px] text-yellow-500 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
-    <i class="fa-solid fa-minus text-[9px]"></i> 扣除金幣
-  </button>
-</div>
+          <button onclick="promptRewardStudent('${s.id}')" class="px-1 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded-lg text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+經驗 / EXP</button>
+          <button onclick="grantGachaTicket('${s.id}', 1)" class="px-1 py-1.5 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 券 / Ticket</button>
+          <button onclick="grantAttackQuota('${s.id}', 1)" class="px-1 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded-lg text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 攻擊 / Atk</button>
         </div>
-        <div class="grid grid-cols-4 gap-1">
-          <button onclick="deductStudentTicket('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Ticket">-1 Ticket</button>
-          <button onclick="deductStudentQuota('${s.id}', 1)" class="p-1 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95" title="Deduct 1 Attack Quota">-1 Attack</button>
-          <button onclick="healStudent('${s.id}', 50)" class="p-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
-          <button onclick="penalizeHp('${s.id}', 30)" class="p-1 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-30 HP</button>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="px-1 py-1.5 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded-lg text-[10px] text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-plus text-[9px]"></i> 獎勵金幣 / +Coins
+          </button>
+          <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="px-1 py-1.5 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded-lg text-[10px] text-yellow-500 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-minus text-[9px]"></i> 扣除金幣 / -Coins
+          </button>
         </div>
-        <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-900">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1">
+          <button onclick="deductStudentTicket('${s.id}', 1)" class="px-1 py-1.5 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="扣除 1 張抽獎券 / Deduct 1 Ticket">-1 券 / Ticket</button>
+          <button onclick="deductStudentQuota('${s.id}', 1)" class="px-1 py-1.5 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded-lg text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95" title="扣除 1 次攻擊 / Deduct 1 Attack">-1 攻擊 / Atk</button>
+          <button onclick="healStudent('${s.id}', 50)" class="px-1 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
+          <button onclick="penalizeHp('${s.id}', 30)" class="px-1 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-30 HP</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-800">
           ${isDead ? `
-            <button onclick="teacherReviveStudent('${s.id}')" class="py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
-              <i class="fa-solid fa-heart-pulse"></i> Revive
+            <button onclick="teacherReviveStudent('${s.id}')" class="py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded-lg text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
+              <i class="fa-solid fa-heart-pulse"></i> 復活 / Revive
             </button>
-            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
+            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1.5 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-arrow-down"></i> 退化 / De-Evolve
             </button>
           ` : `
-            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-arrow-down"></i> De-Evolve (-50% EXP)
+            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-arrow-down"></i> 退化 / De-Evolve
             </button>
-            <button onclick="teacherRebirthStudent('${s.id}')" class="py-1 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-              <i class="fa-solid fa-rotate-left"></i> Random Egg
+            <button onclick="teacherRebirthStudent('${s.id}')" class="py-1.5 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-rotate-left"></i> 隨機蛋 / Random Egg
             </button>
           `}
         </div>
