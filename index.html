@@ -769,6 +769,9 @@
           <div class="relative my-3 z-10 flex flex-col items-center">
             <div id="digiImageContainer" class="w-52 h-52 flex items-center justify-center relative">
               <img id="stDigiImage" src="" alt="Digimon" class="max-w-full max-h-full object-contain animate-glow transition-all duration-500">
+              <span id="stSpyMark" class="hidden absolute top-1 right-1 z-30 pointer-events-none w-7 h-7 rounded-full bg-slate-950/90 border border-violet-400/80 text-violet-200 items-center justify-center shadow-lg" title="Spy / 間諜">
+                <i class="fa-solid fa-user-secret text-xs"></i>
+              </span>
               <div id="stFaintOverlay" class="hidden absolute inset-0 bg-rose-950/70 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center text-rose-300">
                 <i class="fa-solid fa-skull-crossbones text-4xl animate-bounce mb-2"></i>
                 <span class="font-pixel text-[10px] tracking-wider">FAINTED IN BATTLE 戰鬥倒下</span>
@@ -787,7 +790,7 @@
               <i class="fa-solid fa-bolt mr-1"></i> Digivolution Ready! Click to EVOLVE / 進化就緒！點擊進化
             </button>
             <button id="btnMegaRebirth" onclick="openMegaRebirthPrompt()" class="hidden w-full py-2.5 rounded-full font-black text-sm bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:from-purple-500 hover:to-amber-400 text-white shadow-xl shadow-purple-500/40 animate-pulse cursor-pointer active:scale-95 border-2 border-amber-300">
-              <i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 究極轉生 (Mega Rebirth) - 換取 30 抽獎券 & 永久 +10% 攻擊力
+              <i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 超究極轉生 / Ultra Rebirth — 30 抽獎券 & 永久 +10% 攻擊力
             </button>
             
             <div id="stSkillsGrid" class="grid grid-cols-2 gap-2 w-full"></div>
@@ -1102,8 +1105,8 @@
             <span id="winnerExp" class="font-bold text-cyan-400">0</span>
           </div>
           <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-            <span class="text-slate-500 block text-[10px]">Quota</span>
-            <span id="winnerQuota" class="font-bold text-amber-400">0</span>
+            <span class="text-slate-500 block text-[10px]">Coins</span>
+            <span id="winnerCoins" class="font-bold text-yellow-300">0</span>
           </div>
           <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
             <span class="text-slate-500 block text-[10px]">Tickets</span>
@@ -1118,8 +1121,8 @@
           <button onclick="rewardWinnerQuick('ticket', 1)" class="py-2 px-3 rounded-xl bg-amber-950 border border-amber-500 hover:bg-amber-900 text-amber-300 font-bold text-xs cursor-pointer active:scale-95">
             +1 Gacha Ticket
           </button>
-          <button onclick="rewardWinnerQuick('quota', 2)" class="py-2 px-3 rounded-xl bg-rose-950 border border-rose-500 hover:bg-rose-900 text-rose-300 font-bold text-xs cursor-pointer active:scale-95">
-            +2 Attacks
+          <button onclick="rewardWinnerQuick('coins', 20)" class="py-2 px-3 rounded-xl bg-yellow-950 border border-yellow-500 hover:bg-yellow-900 text-yellow-300 font-bold text-xs cursor-pointer active:scale-95">
+            +20 Coins
           </button>
         </div>
       </div>
@@ -1519,7 +1522,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.3";
+    const CURRENT_APP_VERSION = "2.7.5";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -3590,16 +3593,70 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
 function getStudentFactionInClass(student, className) {
   if (!student) return { factionId: null, factionName: null };
   const tagKey = sanitizeClassKey(className || 'ALL');
-  
-  // 優先讀取各班專屬陣營設定
-  if (student.classFactions && student.classFactions[tagKey]) {
-    return student.classFactions[tagKey];
+  const map = (student.classFactions && typeof student.classFactions === 'object') ? student.classFactions : null;
+  if (map) {
+    const keys = Object.keys(map);
+    const exact = map[tagKey];
+    const altKey = keys.find(k => String(k).toLowerCase() === String(tagKey).toLowerCase());
+    const entry = (exact && exact.factionId) ? exact : (altKey && map[altKey] && map[altKey].factionId ? map[altKey] : null);
+    if (entry && entry.factionId) {
+      return { factionId: entry.factionId, factionName: entry.factionName || 'Ally' };
+    }
   }
-  // 向下相容舊版單一陣營
   if (student.factionId) {
     return { factionId: student.factionId, factionName: student.factionName || 'Ally' };
   }
   return { factionId: null, factionName: null };
+}
+
+function sharedStudentClasses(a, b) {
+  const aClasses = parseStudentClasses(a && a.classId);
+  const bClasses = parseStudentClasses(b && b.classId);
+  return aClasses.filter(c => bClasses.some(bc => String(bc).toLowerCase() === String(c).toLowerCase()));
+}
+
+function studentsAreFactionAllies(a, b, className) {
+  if (!a || !b || a.id === b.id) return false;
+  const sameSide = (cls) => {
+    const fa = getStudentFactionInClass(a, cls);
+    const fb = getStudentFactionInClass(b, cls);
+    if (fa.factionId && fb.factionId && String(fa.factionId).trim().toLowerCase() === String(fb.factionId).trim().toLowerCase()) return true;
+    const na = String(fa.factionName || '').trim().toLowerCase();
+    const nb = String(fb.factionName || '').trim().toLowerCase();
+    return !!(na && nb && na !== 'ally' && na === nb && fa.factionId && fb.factionId);
+  };
+  if (className && className !== 'ALL') return sameSide(className);
+  const shared = sharedStudentClasses(a, b);
+  if (shared.length) return shared.some(sameSide);
+  return !!(a.factionId && b.factionId && String(a.factionId).trim().toLowerCase() === String(b.factionId).trim().toLowerCase());
+}
+
+function studentClassNumber(student, className) {
+  const raw = String((student && (student.username || student.id)) || '').trim();
+  if (!raw) return null;
+  const cls = String(className || '').trim();
+  if (cls && cls.toLowerCase() !== 'all') {
+    const escaped = cls.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const prefixed = raw.match(new RegExp('^' + escaped + '0*(\\d+)$', 'i'));
+    if (prefixed) return parseInt(prefixed[1], 10);
+  }
+  if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+  const tail = raw.match(/(\d+)$/);
+  return tail ? parseInt(tail[1], 10) : null;
+}
+
+function studentIsClassSpy(student, className) {
+  if (!student || !student.classSpy || typeof student.classSpy !== 'object') return false;
+  const tagKey = sanitizeClassKey(className || '');
+  if (!tagKey) return false;
+  return Object.keys(student.classSpy).some(k => String(k).toLowerCase() === String(tagKey).toLowerCase() && student.classSpy[k]);
+}
+
+function studentShowsOwnSpyMark(student) {
+  if (!student || !student.classSpy || typeof student.classSpy !== 'object') return false;
+  const classes = parseStudentClasses(student.classId);
+  if (!classes.length) return Object.values(student.classSpy).some(Boolean);
+  return classes.some(c => studentIsClassSpy(student, c));
 }
 
 function reviveOptionMarkedCorrect(opt) {
@@ -3695,7 +3752,8 @@ function normalizeStudent(s, keyId) {
     reviveDailyUsed: Math.max(0, Number(s.reviveDailyUsed) || 0),
     reviveQuizPending: normalizeRevivePending(s.reviveQuizPending),
     reviveQuizClosed: !!s.reviveQuizClosed,
-    territoryDailyDay: s.territoryDailyDay ? String(s.territoryDailyDay) : ''
+    territoryDailyDay: s.territoryDailyDay ? String(s.territoryDailyDay) : '',
+    classSpy: (s.classSpy && typeof s.classSpy === 'object') ? s.classSpy : null
   };
 }
 
@@ -4231,8 +4289,17 @@ function getFactionsForClass(className) {
     return combined;
   }
   const tagKey = sanitizeClassKey(className);
-  const classFactions = appData.factions[tagKey] || {};
-  return Object.values(classFactions).map(fac => Object.assign({}, fac, { _classKey: tagKey }));
+  let resolvedKey = tagKey;
+  let classFactions = appData.factions[tagKey];
+  if (!classFactions) {
+    const found = Object.keys(appData.factions).find(k => String(k).toLowerCase() === String(tagKey).toLowerCase());
+    if (found) {
+      resolvedKey = found;
+      classFactions = appData.factions[found];
+    }
+  }
+  classFactions = classFactions || {};
+  return Object.values(classFactions).map(fac => Object.assign({}, fac, { _classKey: resolvedKey }));
 }
 
 function createNewFaction() {
@@ -6337,7 +6404,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.3</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.5</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -6367,6 +6434,9 @@ function getTeacherTemplate() {
               </button>
               <button onclick="teacherPromptClassCoins('reward')" class="px-2.5 py-1.5 rounded-lg bg-yellow-950 border border-yellow-500 text-yellow-300 text-xs font-bold hover:bg-yellow-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
                 <i class="fa-solid fa-coins text-amber-400"></i> +金幣 / Coins
+              </button>
+              <button onclick="teacherPromptCoinsByClassNumber()" class="px-2.5 py-1.5 rounded-lg bg-yellow-950 border border-amber-400 text-amber-200 text-xs font-bold hover:bg-yellow-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
+                <i class="fa-solid fa-list-ol"></i> 指定學號金幣 / Coins by No.
               </button>
               <button onclick="teacherHealAll()" class="px-2.5 py-1.5 rounded-lg bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1 cursor-pointer active:scale-95">
                 <i class="fa-solid fa-hand-holding-heart"></i> 回復 HP / Restore HP
@@ -7000,6 +7070,8 @@ function logout() {
   document.getElementById('viewLogin').classList.remove('hidden');
   document.getElementById('loginUsername').value = "";
   document.getElementById('loginPassword').value = "";
+  const toastBox = document.getElementById('toastContainer');
+  if (toastBox) toastBox.innerHTML = '';
 }
 
     function refreshCurrentView() {
@@ -7230,16 +7302,21 @@ function logout() {
       if (req.canEvolve && !isDead && !banned) btnEvolve.classList.remove('hidden');
       else btnEvolve.classList.add('hidden');
 
-      // 究極體專屬轉生按鈕判定
       const btnRebirth = document.getElementById('btnMegaRebirth');
       if (btnRebirth) {
-        if ((digi.stage === 'MEGA' || digi.stage === 'ULTRA') && !isDead && !banned) {
+        if (digi.stage === 'ULTRA' && !isDead && !banned) {
           btnRebirth.classList.remove('hidden');
           const currentBonus = (st.rebirthCount || 0) * 10;
-          btnRebirth.innerHTML = `<i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 究極轉生 (第 ${(st.rebirthCount || 0) + 1} 次) - 獲 30 抽獎券 & 永久攻擊升至 +${currentBonus + 10}%`;
+          btnRebirth.innerHTML = `<i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 超究極轉生 (第 ${(st.rebirthCount || 0) + 1} 次) / Ultra Rebirth — 30 抽獎券 & 攻擊 +${currentBonus + 10}%`;
         } else {
           btnRebirth.classList.add('hidden');
         }
+      }
+      const spyMark = document.getElementById('stSpyMark');
+      if (spyMark) {
+        const showSpy = studentShowsOwnSpyMark(st);
+        spyMark.classList.toggle('hidden', !showSpy);
+        spyMark.classList.toggle('flex', showSpy);
       }
 
       const maxTrait = Math.max(10, st.courage || 0, st.love || 0, st.discipline || 0, st.wisdom || 0);
@@ -7624,8 +7701,8 @@ function openMegaRebirthPrompt() {
       if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
 
-      if (digi.stage !== 'MEGA' && digi.stage !== 'ULTRA') {
-        alert("只有進化至究極體 (Mega) 或超究極體 (Ultra) 的數碼暴龍才能進行轉生！ / Only a Mega or Ultra Digimon can rebirth.");
+      if (digi.stage !== 'ULTRA') {
+        alert("只有進化至超究極體 (Ultra) 的數碼暴龍才能轉生回數碼蛋並領取 30 張抽獎券。究極體 (Mega) 請先進化成 Ultra。 / Only an Ultra Digimon can rebirth to an egg and take 30 tickets. A Mega must evolve into Ultra first.");
         return;
       }
 
@@ -7633,14 +7710,14 @@ function openMegaRebirthPrompt() {
       const nextAtkBonusPct = nextRebirthCount * 10;
 
       const confirmText = 
-        `★【數碼暴龍 究極轉生契約 (Mega Rebirth)】★\n\n` +
+        `★【數碼暴龍 超究極轉生契約 / Ultra Rebirth】★\n\n` +
         `當前數碼暴龍：${digi.name} (${digi.stageName})\n` +
         `轉生歷史：已轉生 ${st.rebirthCount || 0} 次 (當前攻擊加成: +${(st.rebirthCount || 0) * 10}%)\n\n` +
         `【轉生獎勵與代價】：\n` +
-        `1. 退化回隨機數碼蛋 (等級重回 Digi-Egg，HP 重設為 200，EXP 與特質數值歸零)\n` +
+        `1. 退化回隨機數碼蛋 (等級重回 Digi-Egg，HP 重設為蛋的滿血，EXP 與特質數值歸零)\n` +
         `2. 立即獲贈 🎁 30 張抽獎券 (Gacha Tickets)！\n` +
         `3. 獲得第 ${nextRebirthCount} 層永久攻擊祝福：所有技能傷害永久提升至 +${nextAtkBonusPct}%！\n\n` +
-        `請問你是否願意退化回數碼蛋，進行究極轉生？`;
+        `請問你是否願意退化回數碼蛋，進行超究極轉生？ / Rebirth this Ultra back to a random egg?`;
 
       if (!confirm(confirmText)) return;
 
@@ -7688,7 +7765,7 @@ function openMegaRebirthPrompt() {
         if (typeof confetti === 'function') {
           confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
         }
-        addBattleLog(`🌟🥚 [MEGA REBIRTH] 學生【${st.name}】完成了第 ${nextRebirthCount} 次究極轉生！退化為【${eggDigi.name}】，獲得 30 張抽獎券，並獲得永久 +${nextAtkBonusPct}% 攻擊力加成！`, "evolution", st.classId);
+        addBattleLog(`🌟🥚 [ULTRA REBIRTH] 學生【${st.name}】完成了第 ${nextRebirthCount} 次超究極轉生！退化為【${eggDigi.name}】，獲得 30 張抽獎券，並獲得永久 +${nextAtkBonusPct}% 攻擊力加成！`, "evolution", st.classId);
         showToast("轉生成功！", `已轉生為【${eggDigi.name}】！獲得 +30 張抽獎券，永久攻擊加成提升至 +${nextAtkBonusPct}%！`, "evolution");
         updateStudentUI();
       }).catch(err => {
@@ -7828,10 +7905,7 @@ else if (mode === 'pvp') {
           const tCurHp = target.hp !== undefined ? target.hp : tMaxHp;
           const isDead = target.isFainted || tCurHp <= 0;
 
-          // 陣營判定（同陣營免疫）
-          const myFac = getStudentFactionInClass(st, myClasses[0]);
-          const tgtFac = getStudentFactionInClass(target, myClasses[0]);
-          const isAlly = myFac.factionId && tgtFac.factionId && (myFac.factionId === tgtFac.factionId);
+          const isAlly = studentsAreFactionAllies(st, target);
 
           const card = document.createElement('div');
           card.className = `p-3 rounded-xl border flex items-center justify-between gap-3 transition ${isDead ? 'bg-slate-950/60 border-slate-800 opacity-50 cursor-not-allowed' : (isAlly ? 'bg-indigo-950/30 border-indigo-500/40' : 'bg-slate-950 border-cyan-500/40 hover:border-cyan-400 cursor-pointer')}`;
@@ -7887,6 +7961,12 @@ else if (mode === 'pvp') {
       // 檢查自己是否處於倒下狀態
       if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
         showToast("無法行動", "你的數碼暴龍已經倒下，無法攻擊或反擊！", "damage");
+        return;
+      }
+
+      if (studentsAreFactionAllies(st, target)) {
+        showToast("Faction Ally / 陣營盟友", `${target.name} 是同陣營盟友，免疫傷害。 / Same-faction ally. Immune to damage.`, "info");
+        if (isCounterAttack) renderCounterAttackModalList();
         return;
       }
 
@@ -8218,6 +8298,7 @@ else if (mode === 'pvp') {
         const atkDigi = DIGIMON_DB[atkDigiId] || DIGIMON_DB['digitama1'];
         const atkCurHp = attacker && attacker.hp !== undefined ? attacker.hp : atkDigi.maxHp;
         const isAttackerDead = !attacker || attacker.isFainted || atkCurHp <= 0;
+        const isAlly = !!(attacker && st && studentsAreFactionAllies(st, attacker));
 
         html += `
           <div class="p-3 bg-slate-950 border border-rose-500/50 rounded-2xl flex items-center justify-between gap-3 shadow-md">
@@ -8240,8 +8321,8 @@ else if (mode === 'pvp') {
               </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button onclick="executePvPStrike('${alertItem.attackerId}', true, '${alertItem._key}')" ${isAttackerDead ? 'disabled' : ''} class="px-3 py-2 rounded-xl font-black text-xs ${isAttackerDead ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer active:scale-95'} flex items-center gap-1">
-                <i class="fa-solid fa-bolt"></i> ${isAttackerDead ? '對手已倒下' : '立即反擊'}
+              <button onclick="executePvPStrike('${alertItem.attackerId}', true, '${alertItem._key}')" ${isAttackerDead || isAlly ? 'disabled' : ''} class="px-3 py-2 rounded-xl font-black text-xs ${isAttackerDead || isAlly ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer active:scale-95'} flex items-center gap-1">
+                <i class="fa-solid fa-bolt"></i> ${isAttackerDead ? '對手已倒下' : (isAlly ? '盟友免疫' : '立即反擊')}
               </button>
               <button onclick="dismissSingleAttackAlert('${alertItem._key}')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs cursor-pointer" title="忽略此筆">
                 <i class="fa-solid fa-xmark"></i>
@@ -9327,6 +9408,10 @@ else if (mode === 'pvp') {
 
     // 取得該學生在老師目前選定班級 (selectedTeacherClass) 的獨立專屬陣營
     const currentStudentFaction = getStudentFactionInClass(s, selectedTeacherClass);
+    const spyHere = selectedTeacherClass === 'ALL'
+      ? parseStudentClasses(s.classId).some(c => studentIsClassSpy(s, c))
+      : studentIsClassSpy(s, selectedTeacherClass);
+    const classNo = studentClassNumber(s, selectedTeacherClass);
 
     // 生成該學生在當前班別的陣營切換選項
     let factionOptionsHtml = '<option value="">No Faction</option>';
@@ -9354,7 +9439,7 @@ else if (mode === 'pvp') {
               <i class="fa-solid fa-id-card"></i>
             </button>
             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold">
-              ID: ${s.username || s.id}
+              ID: ${s.username || s.id}${classNo != null ? ` · 學號 No.${classNo}` : ''}
             </span>
             <span class="text-[10px] px-2 py-0.5 rounded ${isDead ? 'bg-rose-950 text-rose-300 border border-rose-600 font-bold' : 'bg-slate-900 border border-slate-700 text-slate-400'}">
               ${isDead ? '已倒下 / FAINTED' : digi.stageName}
@@ -9373,8 +9458,9 @@ else if (mode === 'pvp') {
         </div>
 
         <div class="flex items-center gap-3 my-2">
-          <div class="w-12 h-12 bg-slate-900 rounded-lg p-1 border border-slate-800 flex items-center justify-center shrink-0">
+          <div onclick="teacherToggleClassSpy('${s.id}', event)" title="點擊這隻數碼暴龍，指定或取消本班間諜。只有該學生自己看得到圖示，不會寫入紀錄。 / Click this Digimon to set or clear the class spy. Only that student sees the icon. No log." class="w-12 h-12 bg-slate-900 rounded-lg p-1 border ${spyHere ? 'border-violet-400' : 'border-slate-800'} flex items-center justify-center shrink-0 cursor-pointer relative">
             <img src="${getDigiImgSrc(s.currentDigiId)}" onerror="this.onerror=null;this.src='${digi.svg}';" class="max-w-full max-h-full object-contain ${isDead ? 'opacity-40 grayscale' : ''}">
+            ${spyHere ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 border border-violet-200 text-white flex items-center justify-center"><i class="fa-solid fa-user-secret text-[8px]"></i></span>' : ''}
           </div>
           <div class="text-xs min-w-0">
             <div class="font-bold text-slate-200">${digi.name}</div>
@@ -9528,6 +9614,107 @@ function teacherPromptClassCoins(mode = 'reward') {
       addBattleLog(`💸⚠️ [CLASS COIN DEDUCT] 老師從 ${classTitle} 全體學生扣除了 -${amount} 數碼幣！`, "battle", targetClass);
       showToast("金幣扣除完成", `已從 ${classTitle} 全員扣除 ${amount} 數碼幣！`, "damage");
     }
+  });
+}
+
+function teacherPromptCoinsByClassNumber() {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  if (targetClass === 'ALL') {
+    showToast("請先選擇班級 / Pick a Class", "請先在班級選單選一個班，再輸入學號。 / Choose one class, then enter class numbers.", "info");
+    return;
+  }
+  const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
+  if (myStudents.length === 0) {
+    showToast("班級操作 / Class", "這個班沒有學生。 / No students in this class.", "info");
+    return;
+  }
+
+  const numbersText = prompt(
+    `【指定學號發放金幣 / Coins by class number】\n班級 Class: ${targetClass}\n輸入學號，用逗號或空格分開。例如 1, 2, 3, 4。\n學號看學生 ID 最後的數字：5B01 = 1，5B12 = 12。\nEnter class numbers, for example 1, 2, 3, 4.\nThe class number is the digits at the end of the student ID.`,
+    ""
+  );
+  if (numbersText === null) return;
+  const wanted = Array.from(new Set(
+    String(numbersText).split(/[,，、;；\s]+/).map(s => s.trim()).filter(s => /^\d+$/.test(s)).map(s => parseInt(s, 10))
+  )).filter(n => n >= 0);
+  if (wanted.length === 0) {
+    alert("請輸入學號，例如 1, 2, 3, 4。 / Enter class numbers, for example 1, 2, 3, 4.");
+    return;
+  }
+
+  const targets = [];
+  const missing = [];
+  wanted.forEach(n => {
+    const hits = myStudents.filter(s => studentClassNumber(s, targetClass) === n);
+    if (hits.length === 0) missing.push(n);
+    else hits.forEach(s => { if (!targets.some(t => t.id === s.id)) targets.push(s); });
+  });
+  if (targets.length === 0) {
+    alert(`找不到這些學號：${wanted.join(', ')}。 / No students with class numbers ${wanted.join(', ')}.`);
+    return;
+  }
+
+  const who = targets.map(s => `No.${studentClassNumber(s, targetClass)} ${s.name}`).join(', ');
+  const amountText = prompt(
+    `發放多少金幣？預設 20。 / How many coins? Default 20.\n將發給 ${targets.length} 位 / Giving to ${targets.length}: ${who}${missing.length ? `\n找不到 / Not found: ${missing.join(', ')}` : ''}`,
+    "20"
+  );
+  if (amountText === null || String(amountText).trim() === '') return;
+  const amount = parseInt(String(amountText).trim(), 10);
+  if (isNaN(amount) || amount <= 0) {
+    alert("請輸入大於 0 的整數。 / Enter a whole number greater than 0.");
+    return;
+  }
+
+  const updates = {};
+  targets.forEach(s => {
+    const next = (Number(s.coins) || 0) + amount;
+    s.coins = next;
+    updates[`students/${s.id}/coins`] = next;
+  });
+  executeAtomicMultiPathUpdate(updates).then(() => {
+    playSound('gacha');
+    addBattleLog(`💰 [CLASS NUMBER COINS] 老師向班級 [${targetClass}] 的學號 ${wanted.join(', ')} 各發放 +${amount} 金幣（${who}）。`, "gacha", targetClass);
+    const missNote = missing.length ? ` 找不到學號 ${missing.join(', ')}。` : '';
+    showToast("金幣已發放 / Coins Sent", `已給 ${targets.length} 位學生每人 +${amount} 金幣。 / +${amount} coins each.${missNote}`, "heal");
+    renderTeacherGrid();
+  });
+}
+
+function teacherToggleClassSpy(studentId, event) {
+  if (event && event.stopPropagation) event.stopPropagation();
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  if (!targetClass || targetClass === 'ALL') {
+    showToast("請先選擇班級 / Pick a Class", "請先選擇一個班，再點學生的數碼暴龍指定間諜。 / Choose one class, then click a student's Digimon.", "info");
+    return;
+  }
+  const s = appData.students[studentId];
+  if (!s || !studentIsInClass(s, targetClass)) return;
+  const tagKey = sanitizeClassKey(targetClass);
+  const wasSpy = studentIsClassSpy(s, targetClass);
+  const updates = {};
+
+  Object.values(appData.students || {}).forEach(other => {
+    if (!other || !other.classSpy || typeof other.classSpy !== 'object') return;
+    Object.keys(other.classSpy).forEach(k => {
+      if (String(k).toLowerCase() !== String(tagKey).toLowerCase() || !other.classSpy[k]) return;
+      updates[`students/${other.id}/classSpy/${k}`] = null;
+      delete other.classSpy[k];
+    });
+  });
+
+  if (!wasSpy) {
+    if (!s.classSpy || typeof s.classSpy !== 'object') s.classSpy = {};
+    s.classSpy[tagKey] = true;
+    updates[`students/${s.id}/classSpy/${tagKey}`] = true;
+  }
+
+  executeAtomicMultiPathUpdate(updates).then(() => {
+    renderTeacherGrid();
+    if (wasSpy) showToast("間諜已取消 / Spy Cleared", `${s.name} 不再是本班間諜。只有你看到這則提示。 / ${s.name} is no longer the spy.`, "info");
+    else showToast("已指定間諜 / Spy Set", `${s.name} 是本班間諜。只有該學生看得到圖示，不會寫入紀錄。 / Only ${s.name} can see the spy icon. No log.`, "info");
   });
 }
     function promptRewardStudent(id) {
@@ -10168,7 +10355,7 @@ function teacherPromptClassCoins(mode = 'reward') {
       document.getElementById('winnerClassAndDigi').textContent = `${formatStudentClassesDisplay(winner)} · ${digi.name} (${digi.stageName})`;
       document.getElementById('winnerHp').textContent = `${winner.hp || 100} HP`;
       document.getElementById('winnerExp').textContent = `${winner.exp || 0}`;
-      document.getElementById('winnerQuota').textContent = `${winner.attackQuota || 0}`;
+      document.getElementById('winnerCoins').textContent = `${winner.coins || 0}`;
       document.getElementById('winnerTickets').textContent = `${winner.gachaTickets || 0}`;
       setDigiImageTag(document.getElementById('winnerDigiImg'), winner.currentDigiId);
 
@@ -10185,26 +10372,27 @@ function teacherPromptClassCoins(mode = 'reward') {
       if (!currentPickedStudent) return;
       const st = appData.students[currentPickedStudent.id];
       if (!st) return;
+      const grant = Math.floor(Number(amount));
+      if (!Number.isFinite(grant) || grant <= 0) return;
 
       if (type === 'exp') {
-        patchStudentAtomic(currentPickedStudent.id, {
-          exp: (st.exp || 0) + amount,
-          statPool: (st.statPool || 0) + amount
-        });
-        document.getElementById('winnerExp').textContent = `${(st.exp || 0) + amount}`;
-        showToast("Bonus EXP", `Awarded +${amount} EXP to ${st.name}!`, "info");
+        const nextExp = (Number(st.exp) || 0) + grant;
+        patchStudentAtomic(st.id, { exp: nextExp });
+        document.getElementById('winnerExp').textContent = String(nextExp);
+        addBattleLog(`⭐ [LOTTERY EXP] ${st.name} received +${grant} EXP.`, "normal", st.classId);
+        showToast("Bonus EXP", `Awarded +${grant} EXP to ${st.name}!`, "info");
       } else if (type === 'ticket') {
-        patchStudentAtomic(currentPickedStudent.id, {
-          gachaTickets: (st.gachaTickets || 0) + amount
-        });
-        document.getElementById('winnerTickets').textContent = `${(st.gachaTickets || 0) + amount}`;
-        showToast("Bonus Ticket", `Awarded +${amount} Ticket to ${st.name}!`, "gacha");
-      } else if (type === 'quota') {
-        patchStudentAtomic(currentPickedStudent.id, {
-          attackQuota: (st.attackQuota || 0) + amount
-        });
-        document.getElementById('winnerQuota').textContent = `${(st.attackQuota || 0) + amount}`;
-        showToast("Bonus Attacks", `Awarded +${amount} Attacks to ${st.name}!`, "damage");
+        const nextTickets = (Number(st.gachaTickets) || 0) + grant;
+        patchStudentAtomic(st.id, { gachaTickets: nextTickets });
+        document.getElementById('winnerTickets').textContent = String(nextTickets);
+        addBattleLog(`🎁 [LOTTERY TICKET] ${st.name} received +${grant} Gacha Ticket.`, "gacha", st.classId);
+        showToast("Bonus Ticket", `Awarded +${grant} Ticket to ${st.name}!`, "gacha");
+      } else if (type === 'coins') {
+        const nextCoins = (Number(st.coins) || 0) + grant;
+        patchStudentAtomic(st.id, { coins: nextCoins });
+        document.getElementById('winnerCoins').textContent = String(nextCoins);
+        addBattleLog(`💰 [LOTTERY COINS] ${st.name} received +${grant} Coins.`, "gacha", st.classId);
+        showToast("Bonus Coins", `Awarded +${grant} Coins to ${st.name}!`, "heal");
       }
     }
 
@@ -12626,7 +12814,7 @@ function startStudentExamTimer() {
         const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
         const isFainted = target.isFainted || (target.hp !== undefined && target.hp <= 0);
         const tgtFac = getStudentFactionInClass(target, classFilter);
-        const isSameFaction = (myFac.factionId && tgtFac.factionId && myFac.factionId === tgtFac.factionId);
+        const isSameFaction = studentsAreFactionAllies(me, target, classFilter);
         const isBounty = (activeBountyTargetId === target.id);
 
         // 計算擊殺經驗值
@@ -12675,7 +12863,7 @@ function startStudentExamTimer() {
           </div>
         `;
 
-        if (!isFainted) {
+        if (!isFainted && !isSameFaction) {
           card.onclick = () => executePvPAttack(target.id, classFilter);
         }
         container.appendChild(card);
@@ -12709,9 +12897,9 @@ function startStudentExamTimer() {
       // 1. 同陣營盟友免傷判斷 (Friendly Fire Immunity)
       const myFac = getStudentFactionInClass(me, targetClass);
       const tgtFac = getStudentFactionInClass(target, targetClass);
-      if (myFac.factionId && tgtFac.factionId && myFac.factionId === tgtFac.factionId) {
+      if (studentsAreFactionAllies(me, target, targetClass)) {
         playSound('shield');
-        showToast("Faction Ally / 陣營盟友", `${target.name} is in your faction [${myFac.factionName}]! Immune to friendly fire. / 同陣營盟友免疫傷害！`, "info");
+        showToast("Faction Ally / 陣營盟友", `${target.name} is in your faction [${myFac.factionName || tgtFac.factionName || ''}]! Immune to friendly fire. / 同陣營盟友免疫傷害！`, "info");
         return;
       }
 
