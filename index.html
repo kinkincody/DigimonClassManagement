@@ -1247,10 +1247,14 @@
       </div>
 
       <div class="flex gap-2 my-4 border-b border-slate-800 pb-3 overflow-x-auto text-xs font-bold">
-        <button onclick="renderEvoTreeTab('ROOKIE')" id="tabEvoRookie" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95">Rookie</button>
-        <button onclick="renderEvoTreeTab('CHAMPION')" id="tabEvoChampion" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Champion</button>
-        <button onclick="renderEvoTreeTab('ULTIMATE')" id="tabEvoUltimate" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Ultimate</button>
-        <button onclick="renderEvoTreeTab('MEGA')" id="tabEvoMega" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Mega</button>
+        <button onclick="renderEvoTreeTab('DIGI-EGG')" id="tabEvoEgg" data-evo-stage="DIGI-EGG" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Egg</button>
+        <button onclick="renderEvoTreeTab('FRESH')" id="tabEvoFresh" data-evo-stage="FRESH" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Fresh</button>
+        <button onclick="renderEvoTreeTab('IN-TRAINING')" id="tabEvoInTraining" data-evo-stage="IN-TRAINING" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">In-Training</button>
+        <button onclick="renderEvoTreeTab('ROOKIE')" id="tabEvoRookie" data-evo-stage="ROOKIE" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95 shrink-0">Rookie</button>
+        <button onclick="renderEvoTreeTab('CHAMPION')" id="tabEvoChampion" data-evo-stage="CHAMPION" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Champion</button>
+        <button onclick="renderEvoTreeTab('ULTIMATE')" id="tabEvoUltimate" data-evo-stage="ULTIMATE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Ultimate</button>
+        <button onclick="renderEvoTreeTab('MEGA')" id="tabEvoMega" data-evo-stage="MEGA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Mega</button>
+        <button onclick="renderEvoTreeTab('ULTRA')" id="tabEvoUltra" data-evo-stage="ULTRA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Ultra</button>
       </div>
 
       <div id="evoTreeContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1"></div>
@@ -1415,12 +1419,14 @@
 
       <div class="flex gap-2 my-3 border-b border-slate-800 pb-3 text-xs font-bold overflow-x-auto">
         <button onclick="filterDexStage('ALL')" id="dexTab_ALL" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95">All Forms</button>
-        <button onclick="filterDexStage('DIGI-EGG')" id="dexTab_DIGI-EGG" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Eggs</button>
-        <button onclick="filterDexStage('IN-TRAINING')" id="dexTab_IN-TRAINING" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">In-Training</button>
+        <button onclick="filterDexStage('DIGI-EGG')" id="dexTab_DIGI-EGG" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Eggs</button>
+        <button onclick="filterDexStage('FRESH')" id="dexTab_FRESH" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Fresh</button>
+        <button onclick="filterDexStage('IN-TRAINING')" id="dexTab_IN-TRAINING" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">In-Training</button>
         <button onclick="filterDexStage('ROOKIE')" id="dexTab_ROOKIE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Rookie</button>
         <button onclick="filterDexStage('CHAMPION')" id="dexTab_CHAMPION" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Champion</button>
         <button onclick="filterDexStage('ULTIMATE')" id="dexTab_ULTIMATE" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Ultimate</button>
-        <button onclick="filterDexStage('MEGA')" id="dexTab_MEGA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95">Mega</button>
+        <button onclick="filterDexStage('MEGA')" id="dexTab_MEGA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Mega</button>
+        <button onclick="filterDexStage('ULTRA')" id="dexTab_ULTRA" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0">Ultra</button>
       </div>
 
       <div id="dexGridContainer" class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-1">
@@ -1511,7 +1517,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.6.9";
+    const CURRENT_APP_VERSION = "2.7.0";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -2329,12 +2335,34 @@ const DIGIMON_DB = {
       "digitama4": { id: "digitama4", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama IV", title: "Verdant green egg", img: "./images/digitama4.png", svg: makeBadgeSvg("Digitama IV", "#059669", "#34d399", "🌱", "EGG"), nextExp: 100, maxHp: 200, skills: [{ name: "Sprout Blessing", power: 15, type: "heal", icon: "fa-seedling" }] },
       "digitama5": { id: "digitama5", stage: "DIGI-EGG", stageName: "Digi-Egg", type: "Free", name: "Digitama V", title: "Golden sacred egg", img: "./images/digitama5.png", svg: makeBadgeSvg("Digitama V", "#d97706", "#fbbf24", "✨", "EGG"), nextExp: 100, maxHp: 200, skills: [{ name: "Holy Glow", power: 15, type: "heal", icon: "fa-sun" }] },
 
-      "koromon": { id: "koromon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Koromon", title: "Courageous baby Digimon", img: "./images/koromon.png", svg: makeBadgeSvg("Koromon", "#e11d48", "#fb7185", "🦖", "BABY"), nextExp: 300, maxHp: 240, prevForm: "digitama1", skills: [{ name: "Awa", power: 15, type: "damage", icon: "fa-soap" }, { name: "Bite", power: 12, type: "damage", icon: "fa-tooth" }] },
-      "tsunomon": { id: "tsunomon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tsunomon", title: "Horned friendship baby", img: "./images/tsunomon.png", svg: makeBadgeSvg("Tsunomon", "#d97706", "#fbbf24", "🦏", "BABY"), nextExp: 300, maxHp: 240, prevForm: "digitama2", skills: [{ name: "Horn Attack", power: 16, type: "damage", icon: "fa-bolt" }] },
-      "tokomon": { id: "tokomon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tokomon", title: "Disciplined sacred baby", img: "./images/tokomon.png", svg: makeBadgeSvg("Tokomon", "#0284c7", "#38bdf8", "👼", "BABY"), nextExp: 300, maxHp: 240, prevForm: "digitama3", skills: [{ name: "Bite Attack", power: 15, type: "damage", icon: "fa-teeth-open" }] },
-      "motimon": { id: "motimon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Motimon", title: "Wise elastic baby", img: "./images/motimon.png", svg: makeBadgeSvg("Motimon", "#7c3aed", "#a78bfa", "👾", "BABY"), nextExp: 300, maxHp: 240, prevForm: "digitama4", skills: [{ name: "Elastic Bubbles", power: 15, type: "damage", icon: "fa-soap" }] },
-      "tanemon": { id: "tanemon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Data", name: "Tanemon", title: "Sprouting nature baby", img: "./images/tanemon.png", svg: makeBadgeSvg("Tanemon", "#059669", "#34d399", "🌿", "BABY"), nextExp: 300, maxHp: 240, prevForm: "digitama5", skills: [{ name: "Adhesive Bubbles", power: 15, type: "damage", icon: "fa-plant-wilt" }] },
-      "demiveemon": { id: "demiveemon", stage: "IN-TRAINING", stageName: "In-Training II", type: "Free", name: "DemiVeemon", title: "Energetic dragon baby", img: "./images/demiveemon.png", svg: makeBadgeSvg("DemiVeemon", "#2563eb", "#60a5fa", "🐲", "BABY"), nextExp: 300, maxHp: 240, prevForm: "digitama1", skills: [{ name: "Pop Attack", power: 16, type: "damage", icon: "fa-wind" }] },
+      "botamon": { id: "botamon", stage: "FRESH", stageName: "Fresh", type: "Data", name: "Botamon", title: "Black baby blob of courage", img: "./images/Botamon.png", svg: makeBadgeSvg("Botamon", "#e11d48", "#fb7185", "🫧", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama2", skills: [{ name: "Bubble Blow", power: 16, type: "damage", icon: "fa-soap" }] },
+      "punimon": { id: "punimon", stage: "FRESH", stageName: "Fresh", type: "Data", name: "Punimon", title: "Red jelly of friendship", img: "./images/Punimon.png", svg: makeBadgeSvg("Punimon", "#dc2626", "#f87171", "🔴", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama2", skills: [{ name: "Acid Bubbles", power: 16, type: "damage", icon: "fa-soap" }] },
+      "chibimon": { id: "chibimon", stage: "FRESH", stageName: "Fresh", type: "Free", name: "Chibimon", title: "Tiny dragon hatchling", img: "./images/Chibimon.png", svg: makeBadgeSvg("Chibimon", "#2563eb", "#60a5fa", "🐲", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama1", skills: [{ name: "Hot Pop", power: 18, type: "damage", icon: "fa-wind" }] },
+      "pitchmon": { id: "pitchmon", stage: "FRESH", stageName: "Fresh", type: "Vaccine", name: "Pitchmon", title: "Fluffy bird hatchling", img: "./images/Pitchmon.png", svg: makeBadgeSvg("Pitchmon", "#db2777", "#f472b6", "🐣", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama3", skills: [{ name: "Pitch Bubbles", power: 15, type: "damage", icon: "fa-feather" }] },
+      "zurumon": { id: "zurumon", stage: "FRESH", stageName: "Fresh", type: "Virus", name: "Zurumon", title: "Poisonous green jelly", img: "./images/Zurumon.png", svg: makeBadgeSvg("Zurumon", "#16a34a", "#4ade80", "🟢", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama4", skills: [{ name: "Poison Bubbles", power: 16, type: "damage", icon: "fa-skull" }] },
+      "choromon": { id: "choromon", stage: "FRESH", stageName: "Fresh", type: "Data", name: "Choromon", title: "Gear-faced machine baby", img: "./images/Choromon.png", svg: makeBadgeSvg("Choromon", "#64748b", "#94a3b8", "⚙️", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama4", skills: [{ name: "Electric Shock", power: 16, type: "damage", icon: "fa-bolt" }] },
+      "bubbmon": { id: "bubbmon", stage: "FRESH", stageName: "Fresh", type: "Data", name: "Bubbmon", title: "Sticky bubble newborn", img: "./images/Bubbmon.png", svg: makeBadgeSvg("Bubbmon", "#0284c7", "#38bdf8", "💧", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama3", skills: [{ name: "Adhesive Bubbles", power: 15, type: "damage", icon: "fa-soap" }] },
+      "poyomon": { id: "poyomon", stage: "FRESH", stageName: "Fresh", type: "Data", name: "Poyomon", title: "Floating holy jellyfish", img: "./images/Poyomon.png", svg: makeBadgeSvg("Poyomon", "#0284c7", "#7dd3fc", "🪼", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama3", skills: [{ name: "Acid Bubbles", power: 15, type: "damage", icon: "fa-water" }] },
+      "yukimibotamon": { id: "yukimibotamon", stage: "FRESH", stageName: "Fresh", type: "Vaccine", name: "YukimiBotamon", title: "Snowy white courage baby", img: "./images/YukimiBotamon.png", svg: makeBadgeSvg("YukimiBotamon", "#e0f2fe", "#38bdf8", "❄️", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama5", skills: [{ name: "Diamond Dust", power: 17, type: "damage", icon: "fa-snowflake" }] },
+      "mokumon": { id: "mokumon", stage: "FRESH", stageName: "Fresh", type: "Virus", name: "Mokumon", title: "Smoldering flame puff", img: "./images/Mokumon.png", svg: makeBadgeSvg("Mokumon", "#ea580c", "#fb923c", "🔥", "FRESH"), nextExp: 180, maxHp: 220, prevForm: "digitama2", skills: [{ name: "Flame Bubbles", power: 17, type: "damage", icon: "fa-fire" }] },
+
+      "koromon": { id: "koromon", stage: "IN-TRAINING", stageName: "In-Training", type: "Data", name: "Koromon", title: "Courageous baby Digimon", img: "./images/koromon.png", svg: makeBadgeSvg("Koromon", "#e11d48", "#fb7185", "🦖", "BABY"), nextExp: 300, maxHp: 240, prevForm: "botamon", skills: [{ name: "Awa", power: 15, type: "damage", icon: "fa-soap" }, { name: "Bite", power: 12, type: "damage", icon: "fa-tooth" }] },
+      "tsunomon": { id: "tsunomon", stage: "IN-TRAINING", stageName: "In-Training", type: "Data", name: "Tsunomon", title: "Horned friendship baby", img: "./images/tsunomon.png", svg: makeBadgeSvg("Tsunomon", "#d97706", "#fbbf24", "🦏", "BABY"), nextExp: 300, maxHp: 240, prevForm: "punimon", skills: [{ name: "Horn Attack", power: 16, type: "damage", icon: "fa-bolt" }] },
+      "tokomon": { id: "tokomon", stage: "IN-TRAINING", stageName: "In-Training", type: "Data", name: "Tokomon", title: "Disciplined sacred baby", img: "./images/tokomon.png", svg: makeBadgeSvg("Tokomon", "#0284c7", "#38bdf8", "👼", "BABY"), nextExp: 300, maxHp: 240, prevForm: "poyomon", skills: [{ name: "Bite Attack", power: 15, type: "damage", icon: "fa-teeth-open" }] },
+      "motimon": { id: "motimon", stage: "IN-TRAINING", stageName: "In-Training", type: "Data", name: "Motimon", title: "Wise elastic baby", img: "./images/motimon.png", svg: makeBadgeSvg("Motimon", "#7c3aed", "#a78bfa", "👾", "BABY"), nextExp: 300, maxHp: 240, prevForm: "bubbmon", skills: [{ name: "Elastic Bubbles", power: 15, type: "damage", icon: "fa-soap" }] },
+      "tanemon": { id: "tanemon", stage: "IN-TRAINING", stageName: "In-Training", type: "Data", name: "Tanemon", title: "Sprouting nature baby", img: "./images/tanemon.png", svg: makeBadgeSvg("Tanemon", "#059669", "#34d399", "🌿", "BABY"), nextExp: 300, maxHp: 240, prevForm: "bubbmon", skills: [{ name: "Adhesive Bubbles", power: 15, type: "damage", icon: "fa-plant-wilt" }] },
+      "demiveemon": { id: "demiveemon", stage: "IN-TRAINING", stageName: "In-Training", type: "Free", name: "DemiVeemon", title: "Energetic dragon baby", img: "./images/demiveemon.png", svg: makeBadgeSvg("DemiVeemon", "#2563eb", "#60a5fa", "🐲", "BABY"), nextExp: 300, maxHp: 240, prevForm: "chibimon", skills: [{ name: "Pop Attack", power: 16, type: "damage", icon: "fa-wind" }] },
+
+      "pukamon": { id: "pukamon", stage: "IN-TRAINING", stageName: "In-Training", type: "Data", name: "Pukamon", title: "Seal pup of the shallows", img: "./images/Pukamon.png", svg: makeBadgeSvg("Pukamon", "#0284c7", "#38bdf8", "🦭", "BABY"), nextExp: 300, maxHp: 240, prevForm: "bubbmon", skills: [{ name: "Acid Bubbles", power: 16, type: "damage", icon: "fa-water" }] },
+      "gigimon": { id: "gigimon", stage: "IN-TRAINING", stageName: "In-Training", type: "Virus", name: "Gigimon", title: "Red dragon infant", img: "./images/Gigimon.png", svg: makeBadgeSvg("Gigimon", "#b91c1c", "#f87171", "🐉", "BABY"), nextExp: 300, maxHp: 240, prevForm: "mokumon", skills: [{ name: "Hot Bite", power: 18, type: "damage", icon: "fa-fire" }] },
+      "pagumon": { id: "pagumon", stage: "IN-TRAINING", stageName: "In-Training", type: "Virus", name: "Pagumon", title: "Mischievous imp baby", img: "./images/Pagumon.png", svg: makeBadgeSvg("Pagumon", "#7c3aed", "#c084fc", "😈", "BABY"), nextExp: 300, maxHp: 240, prevForm: "zurumon", skills: [{ name: "Nail Scratch", power: 16, type: "damage", icon: "fa-hand-back-fist" }] },
+      "caprimon": { id: "caprimon", stage: "IN-TRAINING", stageName: "In-Training", type: "Data", name: "Caprimon", title: "Gear capsule machine baby", img: "./images/Caprimon.png", svg: makeBadgeSvg("Caprimon", "#475569", "#94a3b8", "⚙️", "BABY"), nextExp: 300, maxHp: 240, prevForm: "choromon", skills: [{ name: "Howling Gear", power: 16, type: "damage", icon: "fa-gears" }] },
+      "minomon": { id: "minomon", stage: "IN-TRAINING", stageName: "In-Training", type: "Virus", name: "Minomon", title: "Cocooned insect larva", img: "./images/Minomon.png", svg: makeBadgeSvg("Minomon", "#65a30d", "#a3e635", "🐛", "BABY"), nextExp: 300, maxHp: 240, prevForm: "bubbmon", skills: [{ name: "Acid Bubble", power: 15, type: "damage", icon: "fa-bug" }] },
+      "nyaromon": { id: "nyaromon", stage: "IN-TRAINING", stageName: "In-Training", type: "Vaccine", name: "Nyaromon", title: "Holy kitten cub", img: "./images/Nyaromon.png", svg: makeBadgeSvg("Nyaromon", "#eab308", "#fde047", "🐱", "BABY"), nextExp: 300, maxHp: 240, prevForm: "yukimibotamon", skills: [{ name: "Tail Whip", power: 16, type: "damage", icon: "fa-paw" }] },
+      "poromon": { id: "poromon", stage: "IN-TRAINING", stageName: "In-Training", type: "Vaccine", name: "Poromon", title: "Winged chick of the sky", img: "./images/Poromon.png", svg: makeBadgeSvg("Poromon", "#db2777", "#f9a8d4", "🐤", "BABY"), nextExp: 300, maxHp: 240, prevForm: "pitchmon", skills: [{ name: "Baby Breeze", power: 16, type: "damage", icon: "fa-wind" }] },
+      "upamon": { id: "upamon", stage: "IN-TRAINING", stageName: "In-Training", type: "Free", name: "Upamon", title: "Armored baby digger", img: "./images/Upamon.png", svg: makeBadgeSvg("Upamon", "#d97706", "#fbbf24", "🥚", "BABY"), nextExp: 300, maxHp: 240, prevForm: "punimon", skills: [{ name: "Shock Wave", power: 16, type: "damage", icon: "fa-burst" }] },
+      "gummymon": { id: "gummymon", stage: "IN-TRAINING", stageName: "In-Training", type: "Vaccine", name: "Gummymon", title: "Twin horned baby beast", img: "./images/Gummymon.png", svg: makeBadgeSvg("Gummymon", "#059669", "#34d399", "🐰", "BABY"), nextExp: 300, maxHp: 240, prevForm: "botamon", skills: [{ name: "Double Bubble", power: 16, type: "damage", icon: "fa-soap" }] },
+      "chocomon": { id: "chocomon", stage: "IN-TRAINING", stageName: "In-Training", type: "Virus", name: "Chocomon", title: "Dark twin of the horned baby", img: "./images/Chocomon.png", svg: makeBadgeSvg("Chocomon", "#7c3aed", "#a78bfa", "🍫", "BABY"), nextExp: 300, maxHp: 240, prevForm: "yukimibotamon", skills: [{ name: "San no Awa", power: 16, type: "damage", icon: "fa-moon" }] },
 
       "agumon": { id: "agumon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Agumon", title: "Symbol of Courage and Flame", img: "./images/agumon.png", svg: makeBadgeSvg("Agumon", "#ea580c", "#fb923c", "🦖", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "koromon", skills: [{ name: "Baby Flame", power: 30, type: "damage", icon: "fa-fire" }, { name: "Spitfire", power: 22, type: "damage", icon: "fa-hand-fist" }] },
       "gabumon": { id: "gabumon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Gabumon", title: "Guardian of Friendship wearing pelt", img: "./images/gabumon.png", svg: makeBadgeSvg("Gabumon", "#2563eb", "#60a5fa", "🐺", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "tsunomon", skills: [{ name: "Petit Fire", power: 28, type: "damage", icon: "fa-snowflake" }, { name: "Horn Attack", power: 22, type: "damage", icon: "fa-bolt" }] },
@@ -2344,6 +2372,17 @@ const DIGIMON_DB = {
       "tentomon": { id: "tentomon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Tentomon", title: "Symbol of Wisdom & Lightning", img: "./images/tentomon.png", svg: makeBadgeSvg("Tentomon", "#e11d48", "#fb7185", "🐞", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "motimon", skills: [{ name: "Petit Thunder", power: 28, type: "damage", icon: "fa-bolt-lightning" }] },
       "gomamon": { id: "gomamon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Gomamon", title: "Marching fishes commander", img: "./images/gomamon.png", svg: makeBadgeSvg("Gomamon", "#0284c7", "#38bdf8", "🦭", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "tanemon", skills: [{ name: "Marching Fishes", power: 28, type: "damage", icon: "fa-fish" }] },
       "veemon": { id: "veemon", stage: "ROOKIE", stageName: "Rookie", type: "Free", name: "Veemon", title: "Ancient dragon descendant", img: "./images/veemon.png", svg: makeBadgeSvg("Veemon", "#2563eb", "#38bdf8", "🐉", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "demiveemon", skills: [{ name: "Vee Headbutt", power: 32, type: "damage", icon: "fa-hammer" }, { name: "Vee Punch", power: 24, type: "damage", icon: "fa-hand-back-fist" }] },
+
+      "guilmon": { id: "guilmon", stage: "ROOKIE", stageName: "Rookie", type: "Virus", name: "Guilmon", title: "Hazard dragon child", img: "./images/Guilmon.png", svg: makeBadgeSvg("Guilmon", "#dc2626", "#f87171", "🦖", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "gigimon", skills: [{ name: "Rock Breaker", power: 30, type: "damage", icon: "fa-hammer" }, { name: "Pyro Sphere", power: 24, type: "damage", icon: "fa-fire" }] },
+      "renamon": { id: "renamon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Renamon", title: "Swift nine-tailed apprentice", img: "./images/Renamon.png", svg: makeBadgeSvg("Renamon", "#eab308", "#fde047", "🦊", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "nyaromon", skills: [{ name: "Diamond Storm", power: 28, type: "damage", icon: "fa-gem" }, { name: "Koyousetsu", power: 22, type: "damage", icon: "fa-hand-scissors" }] },
+      "demidevimon": { id: "demidevimon", stage: "ROOKIE", stageName: "Rookie", type: "Virus", name: "DemiDevimon", title: "Bat imp of the night", img: "./images/DemiDevimon.png", svg: makeBadgeSvg("DemiDevimon", "#6d28d9", "#c4b5fd", "🦇", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "pagumon", skills: [{ name: "Demi Dart", power: 28, type: "damage", icon: "fa-feather" }] },
+      "blackagumon": { id: "blackagumon", stage: "ROOKIE", stageName: "Rookie", type: "Virus", name: "BlackAgumon", title: "Virus twin of the flame child", img: "./images/BlackAgumon.png", svg: makeBadgeSvg("BlackAgumon", "#171717", "#fb7185", "🦖", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "koromon", skills: [{ name: "Pepper Breath", power: 30, type: "damage", icon: "fa-fire" }] },
+      "wormmon": { id: "wormmon", stage: "ROOKIE", stageName: "Rookie", type: "Free", name: "Wormmon", title: "Silk larva of kindness", img: "./images/Wormmon.png", svg: makeBadgeSvg("Wormmon", "#65a30d", "#bef264", "🐛", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "minomon", skills: [{ name: "Sticky Net", power: 26, type: "damage", icon: "fa-spider" }] },
+      "salamon": { id: "salamon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Salamon", title: "Holy ring puppy", img: "./images/Salamon.png", svg: makeBadgeSvg("Salamon", "#fbbf24", "#fde68a", "🐶", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "nyaromon", skills: [{ name: "Puppy Howling", power: 26, type: "damage", icon: "fa-paw" }] },
+      "monodramon": { id: "monodramon", stage: "ROOKIE", stageName: "Rookie", type: "Vaccine", name: "Monodramon", title: "One-horned dragon rookie", img: "./images/Monodramon.png", svg: makeBadgeSvg("Monodramon", "#1d4ed8", "#60a5fa", "🐉", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "demiveemon", skills: [{ name: "Crack Bite", power: 32, type: "damage", icon: "fa-tooth" }] },
+      "hagurumon": { id: "hagurumon", stage: "ROOKIE", stageName: "Rookie", type: "Virus", name: "Hagurumon", title: "Cog-wheel machine child", img: "./images/Hagurumon.png", svg: makeBadgeSvg("Hagurumon", "#64748b", "#cbd5e1", "⚙️", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "caprimon", skills: [{ name: "Cog Crusher", power: 28, type: "damage", icon: "fa-gears" }] },
+      "candlemon": { id: "candlemon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Candlemon", title: "Living candle flame", img: "./images/Candlemon.png", svg: makeBadgeSvg("Candlemon", "#ea580c", "#fdba74", "🕯️", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "motimon", skills: [{ name: "Bonfire", power: 28, type: "damage", icon: "fa-fire" }] },
+      "hawkmon": { id: "hawkmon", stage: "ROOKIE", stageName: "Rookie", type: "Data", name: "Hawkmon", title: "Keen-eyed bird knight", img: "./images/Hawkmon.png", svg: makeBadgeSvg("Hawkmon", "#b45309", "#fbbf24", "🦅", "ROOKIE"), nextExp: 900, maxHp: 400, prevForm: "poromon", skills: [{ name: "Feather Slash", power: 28, type: "damage", icon: "fa-feather" }] },
 
       "greymon": { id: "greymon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Greymon", title: "Dinosaur Warrior - Mega Flame", img: "./images/greymon.png", svg: makeBadgeSvg("Greymon", "#ea580c", "#fb923c", "🦖", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "agumon", skills: [{ name: "Mega Flame", power: 55, type: "damage", icon: "fa-fire" }] },
       "garurumon": { id: "garurumon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Garurumon", title: "Ice Wolf Beast - Fox Fire", img: "./images/garurumon.png", svg: makeBadgeSvg("Garurumon", "#2563eb", "#93c5fd", "🐺", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "gabumon", skills: [{ name: "Fox Fire", power: 55, type: "damage", icon: "fa-icicles" }] },
@@ -2364,6 +2403,17 @@ const DIGIMON_DB = {
       "wizardmon": { id: "wizardmon", stage: "CHAMPION", stageName: "Champion", type: "Data", name: "Wizardmon", title: "Thunder Sorcerer", img: "./images/wizardmon.png", svg: makeBadgeSvg("Wizardmon", "#7c3aed", "#c084fc", "🧙", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "gabumon", skills: [{ name: "Thunder Cloud", power: 56, type: "damage", icon: "fa-wand-magic-sparkles" }] },
       "togemon": { id: "togemon", stage: "CHAMPION", stageName: "Champion", type: "Data", name: "Togemon", title: "Prickly Boxing Cactus", img: "./images/togemon.png", svg: makeBadgeSvg("Togemon", "#16a34a", "#86efac", "🌵", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "palmon", skills: [{ name: "Chikuchiku Bang Bang", power: 54, type: "damage", icon: "fa-hand-fist" }] },
 
+      "devimon": { id: "devimon", stage: "CHAMPION", stageName: "Champion", type: "Virus", name: "Devimon", title: "Fallen angel - Death Claw", img: "./images/Devimon.png", svg: makeBadgeSvg("Devimon", "#4c1d95", "#a78bfa", "😈", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "demidevimon", skills: [{ name: "Death Claw", power: 58, type: "damage", icon: "fa-hand-back-fist" }] },
+      "growlmon": { id: "growlmon", stage: "CHAMPION", stageName: "Champion", type: "Virus", name: "Growlmon", title: "Berserk dragon - Exhaust Flame", img: "./images/Growlmon.png", svg: makeBadgeSvg("Growlmon", "#b91c1c", "#ef4444", "🦖", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "guilmon", skills: [{ name: "Exhaust Flame", power: 58, type: "damage", icon: "fa-fire" }] },
+      "stingmon": { id: "stingmon", stage: "CHAMPION", stageName: "Champion", type: "Free", name: "Stingmon", title: "Piercing insect knight", img: "./images/Stingmon.png", svg: makeBadgeSvg("Stingmon", "#65a30d", "#84cc16", "🐝", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "wormmon", skills: [{ name: "Spiking Finish", power: 56, type: "damage", icon: "fa-bolt" }] },
+      "gaogamon": { id: "gaogamon", stage: "CHAMPION", stageName: "Champion", type: "Data", name: "Gaogamon", title: "Gauntlet wolf beast", img: "./images/Gaogamon.png", svg: makeBadgeSvg("Gaogamon", "#1d4ed8", "#93c5fd", "🐺", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "gabumon", skills: [{ name: "Spiral Blow", power: 55, type: "damage", icon: "fa-hand-fist" }] },
+      "ogremon": { id: "ogremon", stage: "CHAMPION", stageName: "Champion", type: "Virus", name: "Ogremon", title: "Club-wielding ogre", img: "./images/Ogremon.png", svg: makeBadgeSvg("Ogremon", "#78350f", "#f59e0b", "👹", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "demidevimon", skills: [{ name: "Pummel Whack", power: 56, type: "damage", icon: "fa-hammer" }] },
+      "leomon": { id: "leomon", stage: "CHAMPION", stageName: "Champion", type: "Vaccine", name: "Leomon", title: "Beast king of the savanna", img: "./images/Leomon.png", svg: makeBadgeSvg("Leomon", "#ca8a04", "#fde047", "🦁", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "gabumon", skills: [{ name: "Fist of the Beast King", power: 58, type: "damage", icon: "fa-paw" }] },
+      "devidramon": { id: "devidramon", stage: "CHAMPION", stageName: "Champion", type: "Virus", name: "Devidramon", title: "Crimson virus dragon", img: "./images/Devidramon.png", svg: makeBadgeSvg("Devidramon", "#7f1d1d", "#f87171", "🐉", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "monodramon", skills: [{ name: "Crimson Nail", power: 56, type: "damage", icon: "fa-hand-scissors" }] },
+      "drimogemon": { id: "drimogemon", stage: "CHAMPION", stageName: "Champion", type: "Data", name: "Drimogemon", title: "Drill-nosed mole beast", img: "./images/Drimogemon.png", svg: makeBadgeSvg("Drimogemon", "#57534e", "#d6d3d1", "⛏️", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "hagurumon", skills: [{ name: "Drill Spin", power: 54, type: "damage", icon: "fa-screwdriver" }] },
+      "ankylomon": { id: "ankylomon", stage: "CHAMPION", stageName: "Champion", type: "Free", name: "Ankylomon", title: "Armored tail hammer", img: "./images/Ankylomon.png", svg: makeBadgeSvg("Ankylomon", "#b45309", "#fbbf24", "🛡️", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "veemon", skills: [{ name: "Megaton Press", power: 55, type: "damage", icon: "fa-hammer" }] },
+      "icedevimon": { id: "icedevimon", stage: "CHAMPION", stageName: "Champion", type: "Virus", name: "IceDevimon", title: "Frozen fallen angel", img: "./images/IceDevimon.png", svg: makeBadgeSvg("IceDevimon", "#0ea5e9", "#bae6fd", "❄️", "CHAMPION"), nextExp: 2200, maxHp: 700, prevForm: "demidevimon", skills: [{ name: "Frozen Claw", power: 58, type: "damage", icon: "fa-snowflake" }] },
+
       "metalgreymon": { id: "metalgreymon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "MetalGreymon", title: "Cyborg Dragon - Giga Destroyer", img: "./images/metalgreymon.png", svg: makeBadgeSvg("MetalGreymon", "#ea580c", "#f97316", "🦾", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "greymon", skills: [{ name: "Giga Destroyer", power: 95, type: "damage", icon: "fa-rocket" }] },
       "weregarurumon": { id: "weregarurumon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "WereGarurumon", title: "Bipedal Beast Warrior - Wolf Claw", img: "./images/weregarurumon.png", svg: makeBadgeSvg("WereGarurumon", "#2563eb", "#60a5fa", "🐺", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "garurumon", skills: [{ name: "Wolf Claw", power: 95, type: "damage", icon: "fa-hand-scissors" }] },
       "magnaangemon": { id: "magnaangemon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "MagnaAngemon", title: "Archangel of Judgment - Gate of Destiny", img: "./images/magnaangemon.png", svg: makeBadgeSvg("MagnaAngemon", "#0284c7", "#38bdf8", "⚔️", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "angemon", skills: [{ name: "Gate of Destiny", power: 105, type: "damage", icon: "fa-door-open" }] },
@@ -2376,83 +2426,186 @@ const DIGIMON_DB = {
       "megaseadramon": { id: "megaseadramon", stage: "ULTIMATE", stageName: "Ultimate", type: "Data", name: "MegaSeadramon", title: "Lightning Ocean Dragon - Mailstrom", img: "./images/megaseadramon.png", svg: makeBadgeSvg("MegaSeadramon", "#0284c7", "#38bdf8", "🌊", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "seadramon", skills: [{ name: "Mailstrom", power: 93, type: "damage", icon: "fa-water" }] },
       "metaltyrannomon": { id: "metaltyrannomon", stage: "ULTIMATE", stageName: "Ultimate", type: "Virus", name: "MetalTyrannomon", title: "Cyborg Dinosaur - Giga Destroyer II", img: "./images/metaltyrannomon.png", svg: makeBadgeSvg("MetalTyrannomon", "#475569", "#94a3b8", "🦖", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "tyrannomon", skills: [{ name: "Nuclear Laser", power: 95, type: "damage", icon: "fa-radiation" }] },
 
-      "wargreymon": { id: "wargreymon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "WarGreymon", title: "Dragon Warrior - Gaia Force", img: "./images/wargreymon.png", svg: makeBadgeSvg("WarGreymon", "#ea580c", "#f97316", "🔥", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "metalgreymon", skills: [{ name: "Gaia Force", power: 150, type: "damage", icon: "fa-sun" }, { name: "Great Tornado", power: 115, type: "damage", icon: "fa-tornado" }] },
-      "metalgarurumon": { id: "metalgarurumon", stage: "MEGA", stageName: "Mega", type: "Data", name: "MetalGarurumon", title: "Cyborg Wolf Titan - Cocytus Breath", img: "./images/metalgarurumon.png", svg: makeBadgeSvg("MetalGarurumon", "#2563eb", "#60a5fa", "🐺", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "weregarurumon", skills: [{ name: "Cocytus Breath", power: 148, type: "damage", icon: "fa-icicles" }] },
-      "seraphimon": { id: "seraphimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Seraphimon", title: "Supreme Angel - Seven Heavens", img: "./images/seraphimon.png", svg: makeBadgeSvg("Seraphimon", "#0284c7", "#38bdf8", "👑", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "magnaangemon", skills: [{ name: "Seven Heavens", power: 155, type: "damage", icon: "fa-star" }] },
-      "ophanimon": { id: "ophanimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Ophanimon", title: "Supreme Holy Mother - Sefirot Crystal", img: "./images/ophanimon.png", svg: makeBadgeSvg("Ophanimon", "#eab308", "#fde047", "✨", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "angewomon", skills: [{ name: "Sefirot Crystal", power: 145, type: "damage", icon: "fa-gem" }] },
-      "herculeskabuterimon": { id: "herculeskabuterimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "HerculesKabuterimon", title: "Golden Insect King - Giga Blaster", img: "./images/herculeskabuterimon.png", svg: makeBadgeSvg("HerculesKabuterimon", "#ca8a04", "#eab308", "🪲", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "megakabuterimon", skills: [{ name: "Giga Blaster", power: 148, type: "damage", icon: "fa-bolt-lightning" }] },
-      "vikemon": { id: "vikemon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Vikemon", title: "Lord of the Freezing Glaciers - Arctic Blizzard", img: "./images/vikemon.png", svg: makeBadgeSvg("Vikemon", "#0284c7", "#38bdf8", "🛡️", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "zudomon", skills: [{ name: "Arctic Blizzard", power: 146, type: "damage", icon: "fa-snowflake" }] },
-      "rosemon": { id: "rosemon", stage: "MEGA", stageName: "Mega", type: "Data", name: "Rosemon", title: "Queen of Flowers - Thorn Whipping", img: "./images/rosemon.png", svg: makeBadgeSvg("Rosemon", "#db2777", "#f472b6", "🌹", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "lillymon", skills: [{ name: "Thorn Whipping", power: 142, type: "damage", icon: "fa-spa" }] },
-      "phoenixmon": { id: "phoenixmon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Phoenixmon", title: "Four-Winged Golden Holy Beast - Starlight Explosion", img: "./images/phoenixmon.png", svg: makeBadgeSvg("Phoenixmon", "#d97706", "#fbbf24", "🦅", "MEGA"), nextExp: 0, maxHp: 2400, prevForm: "garudamon", skills: [{ name: "Starlight Explosion", power: 146, type: "damage", icon: "fa-sun" }] },
-      "imperialdramon": { id: "imperialdramon", stage: "MEGA", stageName: "Mega", type: "Free", name: "Imperialdramon", title: "Ancient Dragon Emperor - Mega Death", img: "./images/imperialdramon.png", svg: makeBadgeSvg("Imperialdramon", "#312e81", "#6366f1", "🐉", "MEGA"), nextExp: 0, maxHp: 2600, prevForm: "paildramon", skills: [{ name: "Mega Death", power: 160, type: "damage", icon: "fa-skull" }] }
+      "wargrowlmon": { id: "wargrowlmon", stage: "ULTIMATE", stageName: "Ultimate", type: "Virus", name: "WarGrowlmon", title: "Cyborg dragon - Atomic Blaster", img: "./images/WarGrowlmon.png", svg: makeBadgeSvg("WarGrowlmon", "#991b1b", "#f87171", "🦾", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "growlmon", skills: [{ name: "Atomic Blaster", power: 98, type: "damage", icon: "fa-rocket" }] },
+      "myotismon": { id: "myotismon", stage: "ULTIMATE", stageName: "Ultimate", type: "Virus", name: "Myotismon", title: "Vampire lord of the night", img: "./images/Myotismon.png", svg: makeBadgeSvg("Myotismon", "#4c1d95", "#c4b5fd", "🦇", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "devimon", skills: [{ name: "Grisly Wing", power: 100, type: "damage", icon: "fa-moon" }] },
+      "skullgreymon": { id: "skullgreymon", stage: "ULTIMATE", stageName: "Ultimate", type: "Virus", name: "SkullGreymon", title: "Berserk bone dragon", img: "./images/SkullGreymon.png", svg: makeBadgeSvg("SkullGreymon", "#44403c", "#e7e5e4", "💀", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "greymon", skills: [{ name: "Oblivion Bird", power: 102, type: "damage", icon: "fa-skull" }] },
+      "andromon": { id: "andromon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "Andromon", title: "Cyborg soldier - Spiral Sword", img: "./images/Andromon.png", svg: makeBadgeSvg("Andromon", "#334155", "#94a3b8", "🤖", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "wizardmon", skills: [{ name: "Spiral Sword", power: 96, type: "damage", icon: "fa-bolt" }] },
+      "ladydevimon": { id: "ladydevimon", stage: "ULTIMATE", stageName: "Ultimate", type: "Virus", name: "LadyDevimon", title: "Dark lady of the fallen", img: "./images/LadyDevimon.png", svg: makeBadgeSvg("LadyDevimon", "#831843", "#f472b6", "🖤", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "devimon", skills: [{ name: "Darkness Wave", power: 98, type: "damage", icon: "fa-moon" }] },
+      "grapleomon": { id: "grapleomon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "GrapLeomon", title: "Grappling beast champion", img: "./images/GrapLeomon.png", svg: makeBadgeSvg("GrapLeomon", "#a16207", "#fde047", "🦁", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "leomon", skills: [{ name: "Lion Beast Drive", power: 96, type: "damage", icon: "fa-paw" }] },
+      "rizegreymon": { id: "rizegreymon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "RizeGreymon", title: "Revolver dragon cyborg", img: "./images/RizeGreymon.png", svg: makeBadgeSvg("RizeGreymon", "#c2410c", "#fdba74", "🔫", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "greymon", skills: [{ name: "Trident Revolver", power: 98, type: "damage", icon: "fa-gun" }] },
+      "gigaseadramon": { id: "gigaseadramon", stage: "ULTIMATE", stageName: "Ultimate", type: "Data", name: "GigaSeadramon", title: "Armored ocean destroyer", img: "./images/GigaSeadramon.png", svg: makeBadgeSvg("GigaSeadramon", "#0369a1", "#38bdf8", "🌊", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "seadramon", skills: [{ name: "Giga Sea Destroyer", power: 96, type: "damage", icon: "fa-water" }] },
+      "asuramon": { id: "asuramon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "Asuramon", title: "Four-armed asura", img: "./images/Asuramon.png", svg: makeBadgeSvg("Asuramon", "#b45309", "#fb923c", "👊", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "leomon", skills: [{ name: "Asura Shinken", power: 97, type: "damage", icon: "fa-hand-fist" }] },
+      "karatenmon": { id: "karatenmon", stage: "ULTIMATE", stageName: "Ultimate", type: "Vaccine", name: "Karatenmon", title: "Sword-winged tengu", img: "./images/Karatenmon.png", svg: makeBadgeSvg("Karatenmon", "#1e3a8a", "#93c5fd", "🗡️", "ULTIMATE"), nextExp: 9000, maxHp: 1300, prevForm: "birdramon", skills: [{ name: "Shock Wave", power: 96, type: "damage", icon: "fa-wind" }] },
+
+      "wargreymon": { id: "wargreymon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "WarGreymon", title: "Dragon Warrior - Gaia Force", img: "./images/wargreymon.png", svg: makeBadgeSvg("WarGreymon", "#ea580c", "#f97316", "🔥", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "metalgreymon", skills: [{ name: "Gaia Force", power: 150, type: "damage", icon: "fa-sun" }, { name: "Great Tornado", power: 115, type: "damage", icon: "fa-tornado" }] },
+      "metalgarurumon": { id: "metalgarurumon", stage: "MEGA", stageName: "Mega", type: "Data", name: "MetalGarurumon", title: "Cyborg Wolf Titan - Cocytus Breath", img: "./images/metalgarurumon.png", svg: makeBadgeSvg("MetalGarurumon", "#2563eb", "#60a5fa", "🐺", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "weregarurumon", skills: [{ name: "Cocytus Breath", power: 148, type: "damage", icon: "fa-icicles" }] },
+      "seraphimon": { id: "seraphimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Seraphimon", title: "Supreme Angel - Seven Heavens", img: "./images/seraphimon.png", svg: makeBadgeSvg("Seraphimon", "#0284c7", "#38bdf8", "👑", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "magnaangemon", skills: [{ name: "Seven Heavens", power: 155, type: "damage", icon: "fa-star" }] },
+      "ophanimon": { id: "ophanimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Ophanimon", title: "Supreme Holy Mother - Sefirot Crystal", img: "./images/ophanimon.png", svg: makeBadgeSvg("Ophanimon", "#eab308", "#fde047", "✨", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "angewomon", skills: [{ name: "Sefirot Crystal", power: 145, type: "damage", icon: "fa-gem" }] },
+      "herculeskabuterimon": { id: "herculeskabuterimon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "HerculesKabuterimon", title: "Golden Insect King - Giga Blaster", img: "./images/herculeskabuterimon.png", svg: makeBadgeSvg("HerculesKabuterimon", "#ca8a04", "#eab308", "🪲", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "megakabuterimon", skills: [{ name: "Giga Blaster", power: 148, type: "damage", icon: "fa-bolt-lightning" }] },
+      "vikemon": { id: "vikemon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Vikemon", title: "Lord of the Freezing Glaciers - Arctic Blizzard", img: "./images/vikemon.png", svg: makeBadgeSvg("Vikemon", "#0284c7", "#38bdf8", "🛡️", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "zudomon", skills: [{ name: "Arctic Blizzard", power: 146, type: "damage", icon: "fa-snowflake" }] },
+      "rosemon": { id: "rosemon", stage: "MEGA", stageName: "Mega", type: "Data", name: "Rosemon", title: "Queen of Flowers - Thorn Whipping", img: "./images/rosemon.png", svg: makeBadgeSvg("Rosemon", "#db2777", "#f472b6", "🌹", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "lillymon", skills: [{ name: "Thorn Whipping", power: 142, type: "damage", icon: "fa-spa" }] },
+      "phoenixmon": { id: "phoenixmon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Phoenixmon", title: "Four-Winged Golden Holy Beast - Starlight Explosion", img: "./images/phoenixmon.png", svg: makeBadgeSvg("Phoenixmon", "#d97706", "#fbbf24", "🦅", "MEGA"), nextExp: 16000, maxHp: 2400, prevForm: "garudamon", skills: [{ name: "Starlight Explosion", power: 146, type: "damage", icon: "fa-sun" }] },
+      "imperialdramon": { id: "imperialdramon", stage: "MEGA", stageName: "Mega", type: "Free", name: "Imperialdramon", title: "Ancient Dragon Emperor - Mega Death", img: "./images/imperialdramon.png", svg: makeBadgeSvg("Imperialdramon", "#312e81", "#6366f1", "🐉", "MEGA"), nextExp: 16000, maxHp: 2600, prevForm: "paildramon", skills: [{ name: "Mega Death", power: 160, type: "damage", icon: "fa-skull" }] },
+
+      "shinegreymon": { id: "shinegreymon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "ShineGreymon", title: "Sun dragon of glory", img: "./images/ShineGreymon.png", svg: makeBadgeSvg("ShineGreymon", "#f59e0b", "#fde68a", "☀️", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "rizegreymon", skills: [{ name: "Glorious Burst", power: 158, type: "damage", icon: "fa-sun" }] },
+      "miragegaogamon": { id: "miragegaogamon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "MirageGaogamon", title: "Full-moon wolf mirage", img: "./images/MirageGaogamon.png", svg: makeBadgeSvg("MirageGaogamon", "#1d4ed8", "#bfdbfe", "🌕", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "weregarurumon", skills: [{ name: "Full Moon Blaster", power: 156, type: "damage", icon: "fa-moon" }] },
+      "gaioumon": { id: "gaioumon", stage: "MEGA", stageName: "Mega", type: "Virus", name: "Gaioumon", title: "Black war dragon of the eclipse", img: "./images/Gaioumon.png", svg: makeBadgeSvg("Gaioumon", "#7f1d1d", "#fecaca", "🐉", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "wargrowlmon", skills: [{ name: "Rinkazan", power: 160, type: "damage", icon: "fa-khanda" }] },
+      "victorygreymon": { id: "victorygreymon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "VictoryGreymon", title: "Dramon breaker of victory", img: "./images/VictoryGreymon.png", svg: makeBadgeSvg("VictoryGreymon", "#ea580c", "#fdba74", "⚔️", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "metalgreymon", skills: [{ name: "Dramon Breaker", power: 158, type: "damage", icon: "fa-sword" }] },
+      "zeedgarurumon": { id: "zeedgarurumon", stage: "MEGA", stageName: "Mega", type: "Data", name: "ZeedGarurumon", title: "Final cyborg wolf", img: "./images/ZeedGarurumon.png", svg: makeBadgeSvg("ZeedGarurumon", "#1e3a8a", "#60a5fa", "🐺", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "weregarurumon", skills: [{ name: "Zeed Cannon", power: 158, type: "damage", icon: "fa-burst" }] },
+      "chaospiedmon": { id: "chaospiedmon", stage: "MEGA", stageName: "Mega", type: "Virus", name: "ChaosPiedmon", title: "Clown emperor of chaos", img: "./images/ChaosPiedmon.png", svg: makeBadgeSvg("ChaosPiedmon", "#6d28d9", "#ddd6fe", "🃏", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "myotismon", skills: [{ name: "Trump Sword", power: 155, type: "damage", icon: "fa-hat-wizard" }] },
+      "craniamon": { id: "craniamon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Craniamon", title: "Royal Knight of the black helm", img: "./images/Craniamon.png", svg: makeBadgeSvg("Craniamon", "#334155", "#cbd5e1", "🛡️", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "andromon", skills: [{ name: "Shock Ringer", power: 156, type: "damage", icon: "fa-shield" }] },
+      "sleipmon": { id: "sleipmon", stage: "MEGA", stageName: "Mega", type: "Vaccine", name: "Sleipmon", title: "Royal Knight of the sacred horse", img: "./images/Sleipmon.png", svg: makeBadgeSvg("Sleipmon", "#0369a1", "#7dd3fc", "🐴", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "magnaangemon", skills: [{ name: "Bifrost", power: 156, type: "damage", icon: "fa-horse" }] },
+      "duftmon": { id: "duftmon", stage: "MEGA", stageName: "Mega", type: "Data", name: "Duftmon", title: "Royal Knight of the leopard throne", img: "./images/Duftmon.png", svg: makeBadgeSvg("Duftmon", "#a16207", "#fde68a", "🐆", "MEGA"), nextExp: 16000, maxHp: 2500, prevForm: "grapleomon", skills: [{ name: "Aussterben", power: 154, type: "damage", icon: "fa-paw" }] },
+      "examon": { id: "examon", stage: "MEGA", stageName: "Mega", type: "Data", name: "Examon", title: "Dragon emperor of the lance", img: "./images/Examon.png", svg: makeBadgeSvg("Examon", "#166534", "#86efac", "🐲", "MEGA"), nextExp: 16000, maxHp: 2700, prevForm: "paildramon", skills: [{ name: "Pendragon's Glory", power: 162, type: "damage", icon: "fa-dragon" }] },
+
+      "omnimon": { id: "omnimon", stage: "ULTRA", stageName: "Ultra", type: "Vaccine", name: "Omnimon", title: "Royal Knight of the twin blades", img: "./images/Omnimon.png", svg: makeBadgeSvg("Omnimon", "#e2e8f0", "#38bdf8", "⚔️", "ULTRA"), nextExp: 0, maxHp: 3400, prevForm: "wargreymon", skills: [{ name: "Transcendent Sword", power: 200, type: "damage", icon: "fa-sword" }, { name: "Garuru Cannon", power: 180, type: "damage", icon: "fa-burst" }] },
+      "alphamonouryuken": { id: "alphamonouryuken", stage: "ULTRA", stageName: "Ultra", type: "Vaccine", name: "AlphamonOuryuken", title: "Royal Knight - Ouryuken blade", img: "./images/AlphamonOuryuken.png", svg: makeBadgeSvg("AlphamonOuryuken", "#fbbf24", "#fef3c7", "🗡️", "ULTRA"), nextExp: 0, maxHp: 3400, prevForm: "craniamon", skills: [{ name: "Digitalize of Soul", power: 210, type: "damage", icon: "fa-sun" }] },
+      "imperialdramonpaladinmode": { id: "imperialdramonpaladinmode", stage: "ULTRA", stageName: "Ultra", type: "Vaccine", name: "ImperialdramonPaladinMode", title: "Holy paladin dragon emperor", img: "./images/ImperialdramonPaladinMode.png", svg: makeBadgeSvg("ImperialdramonPaladinMode", "#f8fafc", "#fde68a", "🛡️", "ULTRA"), nextExp: 0, maxHp: 3400, prevForm: "imperialdramon", skills: [{ name: "Omni Sword", power: 205, type: "damage", icon: "fa-sword" }] },
+      "gallantmoncrimsonmode": { id: "gallantmoncrimsonmode", stage: "ULTRA", stageName: "Ultra", type: "Virus", name: "GallantmonCrimsonMode", title: "Crimson knight of the holy lance", img: "./images/GallantmonCrimsonMode.png", svg: makeBadgeSvg("GallantmonCrimsonMode", "#991b1b", "#fecaca", "🩸", "ULTRA"), nextExp: 0, maxHp: 3400, prevForm: "gaioumon", skills: [{ name: "Quo Vadis", power: 205, type: "damage", icon: "fa-burst" }] },
+      "susanoomon": { id: "susanoomon", stage: "ULTRA", stageName: "Ultra", type: "Vaccine", name: "Susanoomon", title: "Warrior god of the digital world", img: "./images/Susanoomon.png", svg: makeBadgeSvg("Susanoomon", "#f97316", "#fde68a", "⚡", "ULTRA"), nextExp: 0, maxHp: 3400, prevForm: "seraphimon", skills: [{ name: "Yakusa no Ikaduchi", power: 210, type: "damage", icon: "fa-bolt" }] },
     };
 
     const EVOLUTION_MATRIX = {
-      "DIGI-EGG": { courage: "koromon", friendship: "tsunomon", discipline: "tokomon", wisdom: "motimon", alt1: "demiveemon", alt2: "tanemon" },
-      "koromon": { courage: "agumon", friendship: "biyomon", discipline: "patamon", wisdom: "tentomon", alt1: "veemon", alt2: "gomamon" },
-      "tsunomon": { courage: "agumon", friendship: "gabumon", discipline: "patamon", wisdom: "tentomon", alt1: "gomamon", alt2: "palmon" },
-      "tokomon": { courage: "patamon", friendship: "veemon", discipline: "palmon", wisdom: "biyomon", alt1: "agumon", alt2: "tentomon" },
-      "motimon": { courage: "tentomon", friendship: "gomamon", discipline: "agumon", wisdom: "biyomon", alt1: "palmon", alt2: "gabumon" },
-      "tanemon": { courage: "palmon", friendship: "gomamon", discipline: "biyomon", wisdom: "tentomon", alt1: "veemon", alt2: "patamon" },
-      "demiveemon": { courage: "veemon", friendship: "gabumon", discipline: "agumon", wisdom: "patamon", alt1: "tentomon", alt2: "gomamon" },
-      "agumon": { courage: "greymon", friendship: "tyrannomon", discipline: "airdramon", wisdom: "wizardmon", alt1: "exveemon", alt2: "greymon" },
-      "gabumon": { courage: "garurumon", friendship: "kyubimon", discipline: "wizardmon", wisdom: "seadramon", alt1: "greymon", alt2: "garurumon" },
-      "patamon": { courage: "angemon", friendship: "gatomon", discipline: "unimon", wisdom: "gargomon", alt1: "wizardmon", alt2: "angemon" },
-      "biyomon": { courage: "birdramon", friendship: "airdramon", discipline: "unimon", wisdom: "kyubimon", alt1: "sunflowmon", alt2: "birdramon" },
-      "palmon": { courage: "sunflowmon", friendship: "gatomon", discipline: "seadramon", wisdom: "kuwagamon", alt1: "togemon", alt2: "sunflowmon" },
-      "tentomon": { courage: "kabuterimon", friendship: "kuwagamon", discipline: "gargomon", wisdom: "wizardmon", alt1: "greymon", alt2: "kabuterimon" },
-      "gomamon": { courage: "ikkakumon", friendship: "seadramon", discipline: "garurumon", wisdom: "tyrannomon", alt1: "exveemon", alt2: "ikkakumon" },
-      "veemon": { courage: "exveemon", friendship: "airdramon", discipline: "greymon", wisdom: "gargomon", alt1: "tyrannomon", alt2: "exveemon" },
-      "greymon": { courage: "metalgreymon", friendship: "weregarurumon", discipline: "magnaangemon", wisdom: "megakabuterimon", alt1: "metaltyrannomon", alt2: "metalgreymon" },
+      "digitama1": { courage: "botamon", friendship: "punimon", discipline: "poyomon", wisdom: "yukimibotamon", alt1: "chibimon", alt2: "bubbmon" },
+      "digitama2": { courage: "botamon", friendship: "mokumon", discipline: "zurumon", wisdom: "choromon", alt1: "chibimon", alt2: "punimon" },
+      "digitama3": { courage: "poyomon", friendship: "punimon", discipline: "pitchmon", wisdom: "yukimibotamon", alt1: "bubbmon", alt2: "chibimon" },
+      "digitama4": { courage: "bubbmon", friendship: "pitchmon", discipline: "choromon", wisdom: "poyomon", alt1: "yukimibotamon", alt2: "mokumon" },
+      "digitama5": { courage: "yukimibotamon", friendship: "poyomon", discipline: "botamon", wisdom: "chibimon", alt1: "pitchmon", alt2: "zurumon" },
+      "botamon": { courage: "koromon", friendship: "gummymon", discipline: "pukamon", wisdom: "gigimon", alt1: "nyaromon", alt2: "demiveemon" },
+      "punimon": { courage: "tsunomon", friendship: "caprimon", discipline: "pagumon", wisdom: "chocomon", alt1: "koromon", alt2: "upamon" },
+      "chibimon": { courage: "demiveemon", friendship: "gigimon", discipline: "koromon", wisdom: "gummymon", alt1: "upamon", alt2: "tsunomon" },
+      "pitchmon": { courage: "poromon", friendship: "tokomon", discipline: "tanemon", wisdom: "gummymon", alt1: "motimon", alt2: "demiveemon" },
+      "zurumon": { courage: "pagumon", friendship: "caprimon", discipline: "gigimon", wisdom: "tsunomon", alt1: "chocomon", alt2: "motimon" },
+      "choromon": { courage: "caprimon", friendship: "motimon", discipline: "pagumon", wisdom: "upamon", alt1: "tsunomon", alt2: "minomon" },
+      "bubbmon": { courage: "motimon", friendship: "tanemon", discipline: "pukamon", wisdom: "minomon", alt1: "nyaromon", alt2: "caprimon" },
+      "poyomon": { courage: "tokomon", friendship: "poromon", discipline: "nyaromon", wisdom: "pukamon", alt1: "tanemon", alt2: "minomon" },
+      "yukimibotamon": { courage: "nyaromon", friendship: "tokomon", discipline: "chocomon", wisdom: "koromon", alt1: "motimon", alt2: "tanemon" },
+      "mokumon": { courage: "gigimon", friendship: "koromon", discipline: "pagumon", wisdom: "minomon", alt1: "tanemon", alt2: "pukamon" },
+      "koromon": { courage: "agumon", friendship: "biyomon", discipline: "patamon", wisdom: "tentomon", alt1: "veemon", alt2: "blackagumon" },
+      "tsunomon": { courage: "agumon", friendship: "gabumon", discipline: "patamon", wisdom: "tentomon", alt1: "gomamon", alt2: "renamon" },
+      "tokomon": { courage: "patamon", friendship: "veemon", discipline: "palmon", wisdom: "biyomon", alt1: "agumon", alt2: "hawkmon" },
+      "motimon": { courage: "tentomon", friendship: "gomamon", discipline: "agumon", wisdom: "biyomon", alt1: "hagurumon", alt2: "gabumon" },
+      "tanemon": { courage: "palmon", friendship: "gomamon", discipline: "biyomon", wisdom: "tentomon", alt1: "wormmon", alt2: "patamon" },
+      "demiveemon": { courage: "veemon", friendship: "gabumon", discipline: "agumon", wisdom: "patamon", alt1: "monodramon", alt2: "guilmon" },
+      "pukamon": { courage: "gomamon", friendship: "palmon", discipline: "tentomon", wisdom: "hawkmon", alt1: "wormmon", alt2: "veemon" },
+      "gigimon": { courage: "guilmon", friendship: "agumon", discipline: "blackagumon", wisdom: "monodramon", alt1: "veemon", alt2: "hagurumon" },
+      "pagumon": { courage: "demidevimon", friendship: "blackagumon", discipline: "agumon", wisdom: "candlemon", alt1: "guilmon", alt2: "hagurumon" },
+      "caprimon": { courage: "hagurumon", friendship: "tentomon", discipline: "candlemon", wisdom: "wormmon", alt1: "gomamon", alt2: "palmon" },
+      "minomon": { courage: "wormmon", friendship: "palmon", discipline: "tentomon", wisdom: "hagurumon", alt1: "candlemon", alt2: "biyomon" },
+      "nyaromon": { courage: "salamon", friendship: "renamon", discipline: "patamon", wisdom: "biyomon", alt1: "hawkmon", alt2: "candlemon" },
+      "poromon": { courage: "hawkmon", friendship: "biyomon", discipline: "patamon", wisdom: "salamon", alt1: "renamon", alt2: "veemon" },
+      "upamon": { courage: "veemon", friendship: "gomamon", discipline: "tentomon", wisdom: "hagurumon", alt1: "wormmon", alt2: "patamon" },
+      "gummymon": { courage: "patamon", friendship: "gabumon", discipline: "hawkmon", wisdom: "salamon", alt1: "renamon", alt2: "agumon" },
+      "chocomon": { courage: "renamon", friendship: "demidevimon", discipline: "salamon", wisdom: "blackagumon", alt1: "candlemon", alt2: "guilmon" },
+      "agumon": { courage: "greymon", friendship: "tyrannomon", discipline: "airdramon", wisdom: "wizardmon", alt1: "exveemon", alt2: "growlmon" },
+      "gabumon": { courage: "garurumon", friendship: "kyubimon", discipline: "wizardmon", wisdom: "seadramon", alt1: "greymon", alt2: "gaogamon" },
+      "patamon": { courage: "angemon", friendship: "gatomon", discipline: "unimon", wisdom: "gargomon", alt1: "wizardmon", alt2: "leomon" },
+      "biyomon": { courage: "birdramon", friendship: "airdramon", discipline: "unimon", wisdom: "kyubimon", alt1: "sunflowmon", alt2: "leomon" },
+      "palmon": { courage: "sunflowmon", friendship: "gatomon", discipline: "seadramon", wisdom: "kuwagamon", alt1: "togemon", alt2: "stingmon" },
+      "tentomon": { courage: "kabuterimon", friendship: "kuwagamon", discipline: "gargomon", wisdom: "wizardmon", alt1: "greymon", alt2: "stingmon" },
+      "gomamon": { courage: "ikkakumon", friendship: "seadramon", discipline: "garurumon", wisdom: "tyrannomon", alt1: "exveemon", alt2: "ankylomon" },
+      "veemon": { courage: "exveemon", friendship: "airdramon", discipline: "greymon", wisdom: "gargomon", alt1: "tyrannomon", alt2: "devidramon" },
+      "guilmon": { courage: "growlmon", friendship: "greymon", discipline: "tyrannomon", wisdom: "devidramon", alt1: "airdramon", alt2: "exveemon" },
+      "renamon": { courage: "kyubimon", friendship: "garurumon", discipline: "gatomon", wisdom: "wizardmon", alt1: "leomon", alt2: "kyubimon" },
+      "demidevimon": { courage: "devimon", friendship: "icedevimon", discipline: "ogremon", wisdom: "wizardmon", alt1: "devimon", alt2: "kuwagamon" },
+      "blackagumon": { courage: "tyrannomon", friendship: "ogremon", discipline: "greymon", wisdom: "devimon", alt1: "icedevimon", alt2: "drimogemon" },
+      "wormmon": { courage: "stingmon", friendship: "kuwagamon", discipline: "kabuterimon", wisdom: "togemon", alt1: "sunflowmon", alt2: "stingmon" },
+      "salamon": { courage: "gatomon", friendship: "angemon", discipline: "unimon", wisdom: "leomon", alt1: "kyubimon", alt2: "gatomon" },
+      "monodramon": { courage: "devidramon", friendship: "exveemon", discipline: "airdramon", wisdom: "greymon", alt1: "drimogemon", alt2: "growlmon" },
+      "hagurumon": { courage: "gargomon", friendship: "kabuterimon", discipline: "wizardmon", wisdom: "kuwagamon", alt1: "ankylomon", alt2: "unimon" },
+      "candlemon": { courage: "wizardmon", friendship: "devimon", discipline: "birdramon", wisdom: "sunflowmon", alt1: "icedevimon", alt2: "leomon" },
+      "hawkmon": { courage: "birdramon", friendship: "airdramon", discipline: "unimon", wisdom: "angemon", alt1: "devidramon", alt2: "birdramon" },
+      "greymon": { courage: "metalgreymon", friendship: "rizegreymon", discipline: "skullgreymon", wisdom: "megakabuterimon", alt1: "metaltyrannomon", alt2: "metalgreymon" },
       "garurumon": { courage: "weregarurumon", friendship: "weregarurumon", discipline: "zudomon", wisdom: "megaseadramon", alt1: "metalgreymon", alt2: "weregarurumon" },
       "angemon": { courage: "magnaangemon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "magnaangemon", alt1: "angewomon", alt2: "magnaangemon" },
-      "birdramon": { courage: "garudamon", friendship: "garudamon", discipline: "angewomon", wisdom: "lillymon", alt1: "garudamon", alt2: "garudamon" },
+      "birdramon": { courage: "garudamon", friendship: "garudamon", discipline: "angewomon", wisdom: "lillymon", alt1: "garudamon", alt2: "karatenmon" },
       "sunflowmon": { courage: "lillymon", friendship: "lillymon", discipline: "angewomon", wisdom: "megakabuterimon", alt1: "lillymon", alt2: "lillymon" },
       "togemon": { courage: "lillymon", friendship: "lillymon", discipline: "garudamon", wisdom: "megakabuterimon", alt1: "lillymon", alt2: "lillymon" },
       "kabuterimon": { courage: "megakabuterimon", friendship: "megakabuterimon", discipline: "metalgreymon", wisdom: "megakabuterimon", alt1: "megakabuterimon", alt2: "megakabuterimon" },
       "ikkakumon": { courage: "zudomon", friendship: "zudomon", discipline: "weregarurumon", wisdom: "megaseadramon", alt1: "zudomon", alt2: "zudomon" },
       "exveemon": { courage: "paildramon", friendship: "paildramon", discipline: "magnaangemon", wisdom: "metalgreymon", alt1: "paildramon", alt2: "paildramon" },
-      "gatomon": { courage: "angewomon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "lillymon", alt1: "angewomon", alt2: "angewomon" },
+      "gatomon": { courage: "angewomon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "lillymon", alt1: "angewomon", alt2: "ladydevimon" },
       "tyrannomon": { courage: "metaltyrannomon", friendship: "metalgreymon", discipline: "zudomon", wisdom: "megakabuterimon", alt1: "metaltyrannomon", alt2: "metaltyrannomon" },
-      "seadramon": { courage: "megaseadramon", friendship: "zudomon", discipline: "weregarurumon", wisdom: "megaseadramon", alt1: "megaseadramon", alt2: "megaseadramon" },
+      "seadramon": { courage: "megaseadramon", friendship: "zudomon", discipline: "weregarurumon", wisdom: "megaseadramon", alt1: "megaseadramon", alt2: "gigaseadramon" },
       "airdramon": { courage: "garudamon", friendship: "megaseadramon", discipline: "magnaangemon", wisdom: "metalgreymon", alt1: "paildramon", alt2: "garudamon" },
       "gargomon": { courage: "metalgreymon", friendship: "weregarurumon", discipline: "magnaangemon", wisdom: "megakabuterimon", alt1: "zudomon", alt2: "paildramon" },
       "kuwagamon": { courage: "megakabuterimon", friendship: "metaltyrannomon", discipline: "megaseadramon", wisdom: "megakabuterimon", alt1: "megakabuterimon", alt2: "megakabuterimon" },
       "kyubimon": { courage: "weregarurumon", friendship: "angewomon", discipline: "magnaangemon", wisdom: "lillymon", alt1: "garudamon", alt2: "weregarurumon" },
       "unimon": { courage: "magnaangemon", friendship: "angewomon", discipline: "garudamon", wisdom: "megakabuterimon", alt1: "zudomon", alt2: "magnaangemon" },
-      "wizardmon": { courage: "magnaangemon", friendship: "weregarurumon", discipline: "angewomon", wisdom: "megakabuterimon", alt1: "metalgreymon", alt2: "magnaangemon" },
-      "metalgreymon": { courage: "wargreymon", friendship: "metalgarurumon", discipline: "imperialdramon", wisdom: "herculeskabuterimon", alt1: "wargreymon", alt2: "wargreymon" },
-      "weregarurumon": { courage: "metalgarurumon", friendship: "metalgarurumon", discipline: "vikemon", wisdom: "wargreymon", alt1: "metalgarurumon", alt2: "metalgarurumon" },
-      "magnaangemon": { courage: "seraphimon", friendship: "ophanimon", discipline: "seraphimon", wisdom: "seraphimon", alt1: "seraphimon", alt2: "seraphimon" },
-      "angewomon": { courage: "ophanimon", friendship: "ophanimon", discipline: "seraphimon", wisdom: "rosemon", alt1: "ophanimon", alt2: "ophanimon" },
-      "garudamon": { courage: "phoenixmon", friendship: "phoenixmon", discipline: "seraphimon", wisdom: "rosemon", alt1: "phoenixmon", alt2: "phoenixmon" },
+      "wizardmon": { courage: "magnaangemon", friendship: "weregarurumon", discipline: "angewomon", wisdom: "megakabuterimon", alt1: "metalgreymon", alt2: "andromon" },
+      "growlmon": { courage: "wargrowlmon", friendship: "metalgreymon", discipline: "skullgreymon", wisdom: "rizegreymon", alt1: "metaltyrannomon", alt2: "wargrowlmon" },
+      "devimon": { courage: "myotismon", friendship: "ladydevimon", discipline: "skullgreymon", wisdom: "andromon", alt1: "myotismon", alt2: "ladydevimon" },
+      "stingmon": { courage: "paildramon", friendship: "megakabuterimon", discipline: "metalgreymon", wisdom: "andromon", alt1: "megakabuterimon", alt2: "paildramon" },
+      "gaogamon": { courage: "weregarurumon", friendship: "rizegreymon", discipline: "zudomon", wisdom: "megaseadramon", alt1: "metalgreymon", alt2: "weregarurumon" },
+      "ogremon": { courage: "asuramon", friendship: "metaltyrannomon", discipline: "skullgreymon", wisdom: "myotismon", alt1: "asuramon", alt2: "metaltyrannomon" },
+      "leomon": { courage: "grapleomon", friendship: "asuramon", discipline: "magnaangemon", wisdom: "weregarurumon", alt1: "grapleomon", alt2: "asuramon" },
+      "devidramon": { courage: "megaseadramon", friendship: "metalgreymon", discipline: "gigaseadramon", wisdom: "paildramon", alt1: "skullgreymon", alt2: "megaseadramon" },
+      "drimogemon": { courage: "skullgreymon", friendship: "metaltyrannomon", discipline: "andromon", wisdom: "zudomon", alt1: "skullgreymon", alt2: "metaltyrannomon" },
+      "ankylomon": { courage: "zudomon", friendship: "megakabuterimon", discipline: "metaltyrannomon", wisdom: "andromon", alt1: "zudomon", alt2: "megakabuterimon" },
+      "icedevimon": { courage: "ladydevimon", friendship: "myotismon", discipline: "angewomon", wisdom: "skullgreymon", alt1: "ladydevimon", alt2: "myotismon" },
+      "metalgreymon": { courage: "wargreymon", friendship: "victorygreymon", discipline: "shinegreymon", wisdom: "examon", alt1: "wargreymon", alt2: "imperialdramon" },
+      "weregarurumon": { courage: "metalgarurumon", friendship: "zeedgarurumon", discipline: "vikemon", wisdom: "wargreymon", alt1: "metalgarurumon", alt2: "miragegaogamon" },
+      "magnaangemon": { courage: "seraphimon", friendship: "ophanimon", discipline: "seraphimon", wisdom: "seraphimon", alt1: "sleipmon", alt2: "craniamon" },
+      "angewomon": { courage: "ophanimon", friendship: "ophanimon", discipline: "seraphimon", wisdom: "rosemon", alt1: "ophanimon", alt2: "duftmon" },
+      "garudamon": { courage: "phoenixmon", friendship: "phoenixmon", discipline: "seraphimon", wisdom: "rosemon", alt1: "phoenixmon", alt2: "sleipmon" },
       "lillymon": { courage: "rosemon", friendship: "rosemon", discipline: "ophanimon", wisdom: "herculeskabuterimon", alt1: "rosemon", alt2: "rosemon" },
       "megakabuterimon": { courage: "herculeskabuterimon", friendship: "herculeskabuterimon", discipline: "wargreymon", wisdom: "herculeskabuterimon", alt1: "herculeskabuterimon", alt2: "herculeskabuterimon" },
       "zudomon": { courage: "vikemon", friendship: "vikemon", discipline: "metalgarurumon", wisdom: "wargreymon", alt1: "vikemon", alt2: "vikemon" },
-      "paildramon": { courage: "imperialdramon", friendship: "imperialdramon", discipline: "wargreymon", wisdom: "seraphimon", alt1: "imperialdramon", alt2: "imperialdramon" },
-      "megaseadramon": { courage: "vikemon", friendship: "metalgarurumon", discipline: "wargreymon", wisdom: "herculeskabuterimon", alt1: "vikemon", alt2: "vikemon" },
-      "metaltyrannomon": { courage: "wargreymon", friendship: "metalgarurumon", discipline: "imperialdramon", wisdom: "herculeskabuterimon", alt1: "wargreymon", alt2: "wargreymon" }
+      "paildramon": { courage: "imperialdramon", friendship: "examon", discipline: "wargreymon", wisdom: "seraphimon", alt1: "imperialdramon", alt2: "examon" },
+      "megaseadramon": { courage: "vikemon", friendship: "metalgarurumon", discipline: "wargreymon", wisdom: "herculeskabuterimon", alt1: "vikemon", alt2: "examon" },
+      "metaltyrannomon": { courage: "wargreymon", friendship: "metalgarurumon", discipline: "imperialdramon", wisdom: "herculeskabuterimon", alt1: "wargreymon", alt2: "victorygreymon" },
+      "wargrowlmon": { courage: "gaioumon", friendship: "craniamon", discipline: "victorygreymon", wisdom: "shinegreymon", alt1: "gaioumon", alt2: "examon" },
+      "myotismon": { courage: "chaospiedmon", friendship: "gaioumon", discipline: "craniamon", wisdom: "imperialdramon", alt1: "chaospiedmon", alt2: "gaioumon" },
+      "skullgreymon": { courage: "wargreymon", friendship: "victorygreymon", discipline: "shinegreymon", wisdom: "gaioumon", alt1: "wargreymon", alt2: "victorygreymon" },
+      "andromon": { courage: "herculeskabuterimon", friendship: "craniamon", discipline: "wargreymon", wisdom: "seraphimon", alt1: "craniamon", alt2: "herculeskabuterimon" },
+      "ladydevimon": { courage: "chaospiedmon", friendship: "ophanimon", discipline: "rosemon", wisdom: "gaioumon", alt1: "chaospiedmon", alt2: "ophanimon" },
+      "grapleomon": { courage: "duftmon", friendship: "sleipmon", discipline: "rosemon", wisdom: "vikemon", alt1: "duftmon", alt2: "phoenixmon" },
+      "rizegreymon": { courage: "shinegreymon", friendship: "victorygreymon", discipline: "wargreymon", wisdom: "examon", alt1: "shinegreymon", alt2: "victorygreymon" },
+      "gigaseadramon": { courage: "vikemon", friendship: "examon", discipline: "imperialdramon", wisdom: "metalgarurumon", alt1: "examon", alt2: "vikemon" },
+      "asuramon": { courage: "duftmon", friendship: "wargreymon", discipline: "gaioumon", wisdom: "craniamon", alt1: "duftmon", alt2: "victorygreymon" },
+      "karatenmon": { courage: "phoenixmon", friendship: "sleipmon", discipline: "seraphimon", wisdom: "duftmon", alt1: "phoenixmon", alt2: "sleipmon" },
+      "wargreymon": { courage: "omnimon", friendship: "susanoomon", discipline: "gallantmoncrimsonmode", wisdom: "omnimon", alt1: "omnimon", alt2: "susanoomon" },
+      "metalgarurumon": { courage: "omnimon", friendship: "susanoomon", discipline: "alphamonouryuken", wisdom: "omnimon", alt1: "omnimon", alt2: "susanoomon" },
+      "seraphimon": { courage: "susanoomon", friendship: "omnimon", discipline: "alphamonouryuken", wisdom: "susanoomon", alt1: "susanoomon", alt2: "omnimon" },
+      "ophanimon": { courage: "susanoomon", friendship: "omnimon", discipline: "alphamonouryuken", wisdom: "susanoomon", alt1: "susanoomon", alt2: "omnimon" },
+      "herculeskabuterimon": { courage: "susanoomon", friendship: "omnimon", discipline: "gallantmoncrimsonmode", wisdom: "susanoomon", alt1: "susanoomon", alt2: "omnimon" },
+      "vikemon": { courage: "susanoomon", friendship: "omnimon", discipline: "susanoomon", wisdom: "omnimon", alt1: "susanoomon", alt2: "omnimon" },
+      "rosemon": { courage: "susanoomon", friendship: "omnimon", discipline: "susanoomon", wisdom: "omnimon", alt1: "susanoomon", alt2: "omnimon" },
+      "phoenixmon": { courage: "susanoomon", friendship: "omnimon", discipline: "susanoomon", wisdom: "omnimon", alt1: "susanoomon", alt2: "omnimon" },
+      "imperialdramon": { courage: "imperialdramonpaladinmode", friendship: "omnimon", discipline: "susanoomon", wisdom: "imperialdramonpaladinmode", alt1: "imperialdramonpaladinmode", alt2: "omnimon" },
+      "shinegreymon": { courage: "susanoomon", friendship: "omnimon", discipline: "imperialdramonpaladinmode", wisdom: "susanoomon", alt1: "susanoomon", alt2: "omnimon" },
+      "miragegaogamon": { courage: "susanoomon", friendship: "omnimon", discipline: "alphamonouryuken", wisdom: "omnimon", alt1: "susanoomon", alt2: "omnimon" },
+      "gaioumon": { courage: "alphamonouryuken", friendship: "gallantmoncrimsonmode", discipline: "omnimon", wisdom: "alphamonouryuken", alt1: "gallantmoncrimsonmode", alt2: "omnimon" },
+      "victorygreymon": { courage: "omnimon", friendship: "susanoomon", discipline: "omnimon", wisdom: "susanoomon", alt1: "omnimon", alt2: "susanoomon" },
+      "zeedgarurumon": { courage: "omnimon", friendship: "susanoomon", discipline: "omnimon", wisdom: "alphamonouryuken", alt1: "omnimon", alt2: "susanoomon" },
+      "chaospiedmon": { courage: "omnimon", friendship: "gallantmoncrimsonmode", discipline: "susanoomon", wisdom: "alphamonouryuken", alt1: "omnimon", alt2: "susanoomon" },
+      "craniamon": { courage: "alphamonouryuken", friendship: "gallantmoncrimsonmode", discipline: "omnimon", wisdom: "susanoomon", alt1: "alphamonouryuken", alt2: "omnimon" },
+      "sleipmon": { courage: "susanoomon", friendship: "alphamonouryuken", discipline: "omnimon", wisdom: "susanoomon", alt1: "alphamonouryuken", alt2: "omnimon" },
+      "duftmon": { courage: "alphamonouryuken", friendship: "susanoomon", discipline: "omnimon", wisdom: "alphamonouryuken", alt1: "susanoomon", alt2: "omnimon" },
+      "examon": { courage: "imperialdramonpaladinmode", friendship: "omnimon", discipline: "susanoomon", wisdom: "imperialdramonpaladinmode", alt1: "omnimon", alt2: "susanoomon" }
     };
 
     function getDigiImgSrc(digiId) {
-      const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
+      const d = DIGIMON_DB[digiId] || DIGIMON_DB[String(digiId || '').toLowerCase()] || DIGIMON_DB['digitama1'];
       return d.img || d.svg;
     }
 
     function setDigiImageTag(imgEl, digiId) {
       if (!imgEl) return;
-      const d = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
+      const d = DIGIMON_DB[digiId] || DIGIMON_DB[String(digiId || '').toLowerCase()] || DIGIMON_DB['digitama1'];
       const cleanId = String(digiId).toLowerCase();
       const capitalizedId = cleanId.charAt(0).toUpperCase() + cleanId.slice(1);
-      
+      const exactImg = d.img && !String(d.img).startsWith('data:') ? d.img : null;
+
       const fallbackList = [
+        exactImg,
+        `./images/${digiId}.png`,
         `./images/${cleanId}.png`,
         `./images/${capitalizedId}.png`,
-        `./images/${digiId}.png`,
         `./images/${cleanId}.jpg`,
         `./images/${cleanId}.webp`,
         d.svg
-      ];
+      ].filter(Boolean);
 
       let fallbackIndex = 0;
       imgEl.onerror = function() {
@@ -2468,16 +2621,18 @@ const DIGIMON_DB = {
     }
 
     // ========================================================
-    // 數碼暴龍階段等級對照 (0: 數碼蛋 ~ 5: 究極體)
-    // Digimon Stage Order Definition (0: Digi-Egg ~ 5: Mega)
+    // 數碼暴龍階段等級對照 (0: 數碼蛋 ~ 7: 超究極體)
+    // Digimon Stage Order (0 Egg, 1 Fresh, 2 In-Training, 3 Rookie, 4 Champion, 5 Ultimate, 6 Mega, 7 Ultra)
     // ========================================================
     const STAGE_ORDER = {
       "DIGI-EGG": 0,
-      "IN-TRAINING": 1,
-      "ROOKIE": 2,
-      "CHAMPION": 3,
-      "ULTIMATE": 4,
-      "MEGA": 5
+      "FRESH": 1,
+      "IN-TRAINING": 2,
+      "ROOKIE": 3,
+      "CHAMPION": 4,
+      "ULTIMATE": 5,
+      "MEGA": 6,
+      "ULTRA": 7
     };
 
     // ========================================================
@@ -2502,20 +2657,14 @@ const DIGIMON_DB = {
 
 // ⚔️ 嚴格計算擊殺階級差距之金幣獎勵 (PvP Kill Coins Calculator)
     function calculatePvPBaseKillCoins(attackerDigiId, targetDigiId) {
-      // 輔助函式：取得數碼獸的階級數字 (0: 蛋, 1: 幼年, 2: 成長, 3: 成熟, 4: 完全, 5: 究極)
       function getDigiRank(id) {
-        if (!id) return 2;
+        if (!id) return STAGE_ORDER.ROOKIE;
         const cleanId = String(id).toLowerCase().trim();
         const d = DIGIMON_DB[cleanId];
-        if (!d || !d.stage) return 2; // 找不到預設為成長期
+        if (!d || !d.stage) return STAGE_ORDER.ROOKIE;
         const s = String(d.stage).toUpperCase().trim();
-        if (s.includes('EGG')) return 0;
-        if (s.includes('IN-TRAINING') || s.includes('BABY')) return 1;
-        if (s.includes('ROOKIE')) return 2;
-        if (s.includes('CHAMPION')) return 3;
-        if (s.includes('ULTIMATE')) return 4;
-        if (s.includes('MEGA')) return 5;
-        return 2;
+        if (STAGE_ORDER[s] !== undefined) return STAGE_ORDER[s];
+        return STAGE_ORDER.ROOKIE;
       }
 
       const atkRank = getDigiRank(attackerDigiId);
@@ -2553,10 +2702,13 @@ const DIGIMON_DB = {
         }
       }
 
+      if (cur.stage === "ULTRA") return "wargreymon";
       if (cur.stage === "MEGA") return "metalgreymon";
       if (cur.stage === "ULTIMATE") return "greymon";
       if (cur.stage === "CHAMPION") return "agumon";
       if (cur.stage === "ROOKIE") return "koromon";
+      if (cur.stage === "IN-TRAINING") return "botamon";
+      if (cur.stage === "FRESH") return getRandomEggId();
       return getRandomEggId();
     }
 
@@ -4261,11 +4413,13 @@ const TERRITORY_NODE_DEFS = [
 
 const TERRITORY_STAGE_POINTS = {
   'DIGI-EGG': 5,
+  'FRESH': 6,
   'IN-TRAINING': 8,
   'ROOKIE': 10,
   'CHAMPION': 20,
   'ULTIMATE': 35,
-  'MEGA': 50
+  'MEGA': 50,
+  'ULTRA': 70
 };
 
 function territoryStagePoints(digiId) {
@@ -4619,7 +4773,7 @@ function renderStudentTerritory() {
         <button type="button" onclick="studentTerritoryAction('${def.id}','invade')" class="px-2 py-2 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 ${own || noFac ? 'bg-slate-800 text-slate-500' : 'bg-rose-600 hover:bg-rose-500 text-white'}">進攻 Invade (-1) · ${points}</button>
         <button type="button" onclick="studentTerritoryAction('${def.id}','fortify')" class="px-2 py-2 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 ${!own ? 'bg-slate-800 text-slate-500' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}">駐守 Fortify (-1) · ${points}</button>
       </div>
-      <p class="text-[10px] text-slate-500">蛋 5 · 幼年 8 · 成長 Rookie 10 · 成熟 Champion 20 · 完全 Ultimate 35 · 究極 Mega 50</p>
+      <p class="text-[10px] text-slate-500">蛋 5 · 幼年I Fresh 6 · 幼年II 8 · 成長 Rookie 10 · 成熟 Champion 20 · 完全 Ultimate 35 · 究極 Mega 50 · 超究極 Ultra 70</p>
     `;
     return territoryCardHtml(node, { myFactionId: fac.factionId, actions: actions });
   }).join('');
@@ -6142,7 +6296,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.6.9</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.0</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -6884,18 +7038,20 @@ function logout() {
       const traitsArr = [st.courage || 0, st.love || 0, st.discipline || 0, st.wisdom || 0];
       const maxTrait = Math.max(...traitsArr);
 
-      if (stage === "MEGA") {
-        return { canEvolve: false, isMax: true, message: "✨ Max Level Reached (Mega Stage Unlocked)!" };
+      if (stage === "ULTRA") {
+        return { canEvolve: false, isMax: true, message: "✨ Max Level Reached (Ultra / 超究極體)!" };
       }
 
       let requiredTotal = nextExp;
       let requiredMax = 30;
 
       if (stage === "DIGI-EGG") requiredMax = 30;
+      else if (stage === "FRESH") requiredMax = 60;
       else if (stage === "IN-TRAINING") requiredMax = 90;
       else if (stage === "ROOKIE") requiredMax = 250;
       else if (stage === "CHAMPION") requiredMax = 600;
       else if (stage === "ULTIMATE") requiredMax = 2500;
+      else if (stage === "MEGA") requiredMax = 4500;
 
       const expMet = (st.exp || 0) >= nextExp;
       const totalMet = totalTraits >= requiredTotal;
@@ -7036,7 +7192,7 @@ function logout() {
       // 究極體專屬轉生按鈕判定
       const btnRebirth = document.getElementById('btnMegaRebirth');
       if (btnRebirth) {
-        if (digi.stage === 'MEGA' && !isDead && !banned) {
+        if ((digi.stage === 'MEGA' || digi.stage === 'ULTRA') && !isDead && !banned) {
           btnRebirth.classList.remove('hidden');
           const currentBonus = (st.rebirthCount || 0) * 10;
           btnRebirth.innerHTML = `<i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 究極轉生 (第 ${(st.rebirthCount || 0) + 1} 次) - 獲 30 抽獎券 & 永久攻擊升至 +${currentBonus + 10}%`;
@@ -7187,7 +7343,7 @@ function logout() {
     return;
   }
 
-  const branch = curDigi.stage === "DIGI-EGG" ? EVOLUTION_MATRIX["DIGI-EGG"] : (EVOLUTION_MATRIX[curDigi.id] || EVOLUTION_MATRIX["agumon"]);
+  const branch = EVOLUTION_MATRIX[curDigi.id] || null;
   if (!branch) {
     showToast("Evolution", "Max evolution stage reached!", "info");
     return;
@@ -7198,7 +7354,7 @@ function logout() {
   let nextId = branch.courage;
 
   if (activeCount >= 3) {
-    const pool = [branch.courage, branch.friendship, branch.discipline, branch.wisdom, branch.alt1, branch.alt2].filter(Boolean);
+    const pool = Object.values(branch).filter(Boolean);
     nextId = pool[Math.floor(Math.random() * pool.length)];
   } else {
     const maxVal = Math.max(...traits);
@@ -7216,9 +7372,23 @@ function logout() {
 
   if (targetStageRank !== currentStageRank + 1) {
     console.warn(`[Evo Blocked] Detected invalid stage jump from ${curDigi.stage} (${currentStageRank}) to ${nextDigi.stage} (${targetStageRank}).`);
-    // 若配表異常跨階，安全回退到同體系完全體或合法下一階形態
-    if (currentStageRank === 3) nextId = "magnaangemon"; 
-    nextDigi = DIGIMON_DB[nextId] || curDigi;
+    const branchIds = Object.values(branch).filter(Boolean);
+    const legalId = branchIds.find(id => {
+      const cand = DIGIMON_DB[id];
+      return cand && STAGE_ORDER[cand.stage] === currentStageRank + 1;
+    });
+    if (legalId) {
+      nextId = legalId;
+      nextDigi = DIGIMON_DB[legalId];
+    } else {
+      const anyNext = Object.values(DIGIMON_DB).find(d => STAGE_ORDER[d.stage] === currentStageRank + 1);
+      if (!anyNext) {
+        showToast("Evolution", "Max evolution stage reached!", "info");
+        return;
+      }
+      nextId = anyNext.id;
+      nextDigi = anyNext;
+    }
   }
 
   playEvolutionCutscene(st.name, curDigi, nextDigi, () => {
@@ -7413,8 +7583,8 @@ function openMegaRebirthPrompt() {
       if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return;
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
 
-      if (digi.stage !== 'MEGA') {
-        alert("只有進化至究極體 (Mega) 的數碼暴龍才能進行究極轉生！");
+      if (digi.stage !== 'MEGA' && digi.stage !== 'ULTRA') {
+        alert("只有進化至究極體 (Mega) 或超究極體 (Ultra) 的數碼暴龍才能進行轉生！ / Only a Mega or Ultra Digimon can rebirth.");
         return;
       }
 
@@ -7423,7 +7593,7 @@ function openMegaRebirthPrompt() {
 
       const confirmText = 
         `★【數碼暴龍 究極轉生契約 (Mega Rebirth)】★\n\n` +
-        `當前數碼暴龍：${digi.name} (究極體)\n` +
+        `當前數碼暴龍：${digi.name} (${digi.stageName})\n` +
         `轉生歷史：已轉生 ${st.rebirthCount || 0} 次 (當前攻擊加成: +${(st.rebirthCount || 0) * 10}%)\n\n` +
         `【轉生獎勵與代價】：\n` +
         `1. 退化回隨機數碼蛋 (等級重回 Digi-Egg，HP 重設為 200，EXP 與特質數值歸零)\n` +
@@ -10115,7 +10285,7 @@ function teacherPromptClassCoins(mode = 'reward') {
 
     function filterDexStage(stage) {
       currentDexFilter = stage;
-      ['ALL', 'DIGI-EGG', 'IN-TRAINING', 'ROOKIE', 'CHAMPION', 'ULTIMATE', 'MEGA'].forEach(s => {
+      ['ALL', 'DIGI-EGG', 'FRESH', 'IN-TRAINING', 'ROOKIE', 'CHAMPION', 'ULTIMATE', 'MEGA', 'ULTRA'].forEach(s => {
         const tab = document.getElementById(`dexTab_${s}`);
         if (tab) {
           tab.className = (s === stage) ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
@@ -10351,8 +10521,8 @@ function teacherPromptClassCoins(mode = 'reward') {
 
       const sel = document.getElementById('modalTcDigiSelect');
       sel.innerHTML = '';
-      Object.values(DIGIMON_DB).filter(d => d.stage === 'MEGA').forEach(d => {
-        sel.innerHTML += `<option value="${d.id}">${d.name} (Mega)</option>`;
+      Object.values(DIGIMON_DB).filter(d => d.stage === 'MEGA' || d.stage === 'ULTRA').forEach(d => {
+        sel.innerHTML += `<option value="${d.id}">${d.name} (${d.stageName})</option>`;
       });
       document.getElementById('modalTeacherEdit').classList.remove('hidden');
     }
@@ -10372,9 +10542,9 @@ function teacherPromptClassCoins(mode = 'reward') {
 
       const sel = document.getElementById('modalTcDigiSelect');
       sel.innerHTML = '';
-      Object.values(DIGIMON_DB).filter(d => d.stage === 'MEGA').forEach(d => {
+      Object.values(DIGIMON_DB).filter(d => d.stage === 'MEGA' || d.stage === 'ULTRA').forEach(d => {
         const isSelected = d.id === tc.partnerDigiId ? 'selected' : '';
-        sel.innerHTML += `<option value="${d.id}" ${isSelected}>${d.name} (Mega)</option>`;
+        sel.innerHTML += `<option value="${d.id}" ${isSelected}>${d.name} (${d.stageName})</option>`;
       });
       document.getElementById('modalTeacherEdit').classList.remove('hidden');
     }
@@ -10486,13 +10656,10 @@ function teacherPromptClassCoins(mode = 'reward') {
       if (!container) return;
       container.innerHTML = '';
 
-      ['tabEvoRookie', 'tabEvoChampion', 'tabEvoUltimate', 'tabEvoMega'].forEach(tabId => {
-        const el = document.getElementById(tabId);
-        if (el) {
-          el.className = tabId.toUpperCase().includes(stage)
-            ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95"
-            : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95";
-        }
+      document.querySelectorAll('[data-evo-stage]').forEach(el => {
+        el.className = el.getAttribute('data-evo-stage') === stage
+          ? "px-3 py-1.5 rounded-lg bg-cyan-600 text-white cursor-pointer active:scale-95 shrink-0"
+          : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer active:scale-95 shrink-0";
       });
 
       const list = Object.values(DIGIMON_DB).filter(d => d.stage === stage);
@@ -10502,7 +10669,15 @@ function teacherPromptClassCoins(mode = 'reward') {
       }
 
       list.forEach(d => {
-        const matrix = EVOLUTION_MATRIX[d.id] || (d.stage === 'MEGA' ? { courage: 'Max Mega', friendship: 'Max Mega', discipline: 'Max Mega', wisdom: 'Max Mega' } : { courage: "wargreymon", friendship: "metalgarurumon", discipline: "seraphimon", wisdom: "herculeskabuterimon" });
+        const matrix = EVOLUTION_MATRIX[d.id] || { courage: 'Max Form', friendship: 'Max Form', discipline: 'Max Form', wisdom: 'Max Form' };
+        const mainIds = [matrix.courage, matrix.friendship, matrix.discipline, matrix.wisdom];
+        const extras = Object.entries(matrix)
+          .filter(([key, value]) => String(key).startsWith('alt') && value && !mainIds.includes(value))
+          .map(([, value]) => DIGIMON_DB[value]?.name || value);
+        const extraLine = extras.length
+          ? `<div class="mt-2 text-[11px] text-slate-400">Also / 其他分支: ${extras.join(' · ')}</div>`
+          : '';
+        const nameOf = (id) => DIGIMON_DB[id]?.name || id || '--';
         container.innerHTML += `
           <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center gap-4 text-xs">
             <img src="${d.img || d.svg}" onerror="this.onerror=null;this.src='${d.svg}';" class="w-14 h-14 object-contain">
@@ -10510,11 +10685,12 @@ function teacherPromptClassCoins(mode = 'reward') {
               <div class="font-bold text-cyan-300 text-sm">${d.name} (${d.stageName})</div>
               <div class="text-slate-400 my-1">${d.title}</div>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                <div class="p-1 bg-rose-950/50 rounded border border-rose-800/50 text-rose-300">🔥 <b>Courage:</b> ${DIGIMON_DB[matrix.courage]?.name || matrix.courage || '--'}</div>
-                <div class="p-1 bg-emerald-950/50 rounded border border-emerald-800/50 text-emerald-300">🐺 <b>Friend:</b> ${DIGIMON_DB[matrix.friendship]?.name || matrix.friendship || '--'}</div>
-                <div class="p-1 bg-amber-950/50 rounded border border-amber-800/50 text-amber-300">🛡️ <b>Discipline:</b> ${DIGIMON_DB[matrix.discipline]?.name || matrix.discipline || '--'}</div>
-                <div class="p-1 bg-blue-950/50 rounded border border-blue-800/50 text-blue-300">🧠 <b>Wisdom:</b> ${DIGIMON_DB[matrix.wisdom]?.name || matrix.wisdom || '--'}</div>
+                <div class="p-1 bg-rose-950/50 rounded border border-rose-800/50 text-rose-300">🔥 <b>Courage:</b> ${nameOf(matrix.courage)}</div>
+                <div class="p-1 bg-emerald-950/50 rounded border border-emerald-800/50 text-emerald-300">🐺 <b>Friend:</b> ${nameOf(matrix.friendship)}</div>
+                <div class="p-1 bg-amber-950/50 rounded border border-amber-800/50 text-amber-300">🛡️ <b>Discipline:</b> ${nameOf(matrix.discipline)}</div>
+                <div class="p-1 bg-blue-950/50 rounded border border-blue-800/50 text-blue-300">🧠 <b>Wisdom:</b> ${nameOf(matrix.wisdom)}</div>
               </div>
+              ${extraLine}
             </div>
           </div>
         `;
