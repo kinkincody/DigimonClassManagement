@@ -30,6 +30,9 @@
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
     
     .font-pixel { font-family: 'Press Start 2P', monospace; }
+    .territory-fill { transition: width 0.7s ease; }
+    @keyframes territoryGlow { 50% { box-shadow: 0 0 18px rgba(34, 211, 238, 0.45); } }
+    .territory-live { animation: territoryGlow 2.4s ease-in-out infinite; }
     body { 
       font-family: 'Inter', 'Noto Sans TC', sans-serif; 
       background-color: #020617; 
@@ -587,6 +590,15 @@
         </span>
         <span id="studentChatNotifyCount" class="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-mono font-bold">0</span>
       </button>
+      <div class="grid grid-cols-2 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
+        <button id="btnStudentTabClass" type="button" onclick="switchStudentSubTab('class')" class="w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-gamepad"></i> 課堂 / Classroom
+        </button>
+        <button id="btnStudentTabFaction" type="button" onclick="switchStudentSubTab('faction')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-flag"></i> 陣營據點 / Factions
+        </button>
+      </div>
+      <div id="studentSubViewFaction" class="space-y-6 hidden">
       <!-- 🛡️ Student Faction Info & Transfer Request Card (Multi-Class Support) -->
       <div id="studentFactionCard" class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-cyan-500/40 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -618,6 +630,9 @@
           </button>
         </div>
       </div>
+      <div id="studentTerritoryRoot" class="space-y-3"></div>
+      </div>
+      <div id="studentSubViewClass" class="space-y-6">
 
       <!-- 📢 學生專屬置頂公告欄 -->
       <div id="studentAnnouncementBox" class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/50 rounded-2xl p-4 shadow-xl space-y-2.5">
@@ -954,6 +969,7 @@
         <div id="studentBattleLogs" class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar text-xs font-mono">
           <div class="text-slate-500 italic">No events recorded for your class yet. / 尚無戰鬥活動記錄。</div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -1495,7 +1511,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.6.8";
+    const CURRENT_APP_VERSION = "2.6.9";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -1767,6 +1783,7 @@
   bounties: {},
   factions: {},
   factionRequests: {},
+  territoryNodes: {},
   classMessageAccess: {},
   messages: {},
   messageReads: {},
@@ -1801,9 +1818,10 @@
         description: "高濃度生命補劑！立即回復 150 點 HP。\n(High-concentration medicine that recovers +150 HP immediately.)",
         effect: (st) => {
           const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-          st.hp = Math.min(d.maxHp, (st.hp || 100) + 150);
+          const gain = territoryBoostHeal(st, 150);
+          st.hp = Math.min(d.maxHp, (st.hp || 100) + gain);
           playSound('heal');
-          return "+150 HP 回復生效 (+150 HP Restored)";
+          return `+${gain} HP 回復生效 (+${gain} HP Restored)`;
         }
       },
       "item_shield": {
@@ -1942,9 +1960,10 @@
         description: "Standard medicine that recovers +50 HP.",
         effect: (st) => {
           const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
-          st.hp = Math.min(d.maxHp, (st.hp || 100) + 50);
+          const gain = territoryBoostHeal(st, 50);
+          st.hp = Math.min(d.maxHp, (st.hp || 100) + gain);
           playSound('heal');
-          return "+50 HP Restored";
+          return `+${gain} HP Restored`;
         }
       },
       "potion_full": {
@@ -2021,10 +2040,11 @@
           const d = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
           st.exp = (st.exp || 0) + 100;
           st.statPool = (st.statPool || 0) + 100;
-          st.hp = Math.min(d.maxHp, (st.hp || 100) + 100);
+          const hpGain = territoryBoostHeal(st, 100);
+          st.hp = Math.min(d.maxHp, (st.hp || 100) + hpGain);
           st.attackQuota = (st.attackQuota || 0) + 2;
           playSound('heal');
-          return "+100 EXP, +100 HP & +2 Quotas!";
+          return `+100 EXP, +${hpGain} HP & +2 Quotas!`;
         }
       },
       "super_incubator": {
@@ -2573,6 +2593,8 @@ const DIGIMON_DB = {
     let studentTargetTeacherId = 'teacher1';
     let activeQuizInstance = null;
     let activeTeacherSubTab = 'main';
+    let activeStudentSubTab = 'class';
+    let territoryNodesReady = false;
     let isQuizTimeoutSubmitting = false; // 防止重複觸發逾時
     
     // === 考卷系統全域變數 ===
@@ -3518,8 +3540,8 @@ function normalizeStudent(s, keyId) {
     reviveDailyDay: s.reviveDailyDay ? String(s.reviveDailyDay) : '',
     reviveDailyUsed: Math.max(0, Number(s.reviveDailyUsed) || 0),
     reviveQuizPending: normalizeRevivePending(s.reviveQuizPending),
-    reviveQuizClosed: !!s.reviveQuizClosed
-    
+    reviveQuizClosed: !!s.reviveQuizClosed,
+    territoryDailyDay: s.territoryDailyDay ? String(s.territoryDailyDay) : ''
   };
 }
 
@@ -3580,25 +3602,31 @@ function normalizeStudent(s, keyId) {
     function switchTeacherSubTab(tabName) {
       activeTeacherSubTab = tabName;
       const btnMain = document.getElementById('btnTeacherTabMain');
+      const btnFaction = document.getElementById('btnTeacherTabFaction');
       const btnQuiz = document.getElementById('btnTeacherTabQuiz');
       const btnExam = document.getElementById('btnTeacherTabExam');
       const btnMsg = document.getElementById('btnTeacherTabMsg');
       const viewMain = document.getElementById('teacherSubViewMain');
+      const viewFaction = document.getElementById('teacherSubViewFaction');
       const viewQuiz = document.getElementById('teacherSubViewQuiz');
       const viewExam = document.getElementById('teacherSubViewExam');
       const viewMsg = document.getElementById('teacherSubViewMessage');
 
       // 重置所有樣式
-      [btnMain, btnQuiz, btnExam, btnMsg].forEach(b => {
+      [btnMain, btnFaction, btnQuiz, btnExam, btnMsg].forEach(b => {
         if (b) b.className = "w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
       });
-      [viewMain, viewQuiz, viewExam, viewMsg].forEach(v => {
+      [viewMain, viewFaction, viewQuiz, viewExam, viewMsg].forEach(v => {
         if (v) v.classList.add('hidden');
       });
 
       if (tabName === 'main') {
         if (btnMain) btnMain.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
         if (viewMain) viewMain.classList.remove('hidden');
+      } else if (tabName === 'faction') {
+        if (btnFaction) btnFaction.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-indigo-600 to-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
+        if (viewFaction) viewFaction.classList.remove('hidden');
+        renderTeacherTerritory();
       } else if (tabName === 'quiz') {
         if (btnQuiz) btnQuiz.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-amber-600 to-yellow-600 text-slate-950 cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
         if (viewQuiz) viewQuiz.classList.remove('hidden');
@@ -3701,8 +3729,24 @@ function normalizeStudent(s, keyId) {
           appData.factions = snap.val() || {};
           saveLocalCache();
           if (currentUser) {
-            if (currentUser.role === 'teacher') renderTeacherFactionPanel();
+            if (currentUser.role === 'teacher') {
+              renderTeacherFactionPanel();
+              renderTeacherTerritory();
+            }
             if (currentUser.role === 'student') updateStudentFactionUI();
+          }
+        });
+
+        dbRootRef.child('systemSettings/territoryNodes').on('value', (snap) => {
+          appData.territoryNodes = snap.val() || {};
+          if (!appData.systemSettings) appData.systemSettings = {};
+          appData.systemSettings.territoryNodes = appData.territoryNodes;
+          territoryNodesReady = true;
+          saveLocalCache();
+          if (currentUser && currentUser.role === 'teacher') renderTeacherTerritory();
+          if (currentUser && currentUser.role === 'student') {
+            renderStudentTerritory();
+            claimTerritoryDailyRewards();
           }
         });
 
@@ -4185,6 +4229,543 @@ function updateStudentFactionUI() {
       select.appendChild(opt);
     });
   }
+  renderStudentTerritory();
+}
+
+const TERRITORY_NODE_DEFS = [
+  {
+    id: 'file_island',
+    name: 'File Island (檔案島)',
+    maxControlPoints: 300,
+    buffKey: 'file_island_buff',
+    buffTitle: '數碼源泉 / Digital Spring',
+    buffDesc: '每日 00:00（香港）全體成員 +3 攻擊次數。回復道具與回復技能效果 +30%。 / At 00:00 Hong Kong time, every member gains +3 attacks. Recovery items and heal skills are +30%.'
+  },
+  {
+    id: 'server_continent',
+    name: 'Server Continent (伺服器大陸)',
+    maxControlPoints: 500,
+    buffKey: 'server_continent_buff',
+    buffTitle: '超頻協議 / Overclock Protocol',
+    buffDesc: '技能傷害 +20%，可與轉生攻擊加成疊加。戰鬥與搶答／考卷 EXP +20%。 / Skill damage +20%, stacking with rebirth. Battle, quiz, and exam EXP +20%.'
+  },
+  {
+    id: 'core',
+    name: 'Digital World Core (數碼世界核心)',
+    maxControlPoints: 800,
+    buffKey: 'core_buff',
+    buffTitle: '世界樹權柄 / World Tree',
+    buffDesc: '10% 機率完全格擋一次攻擊。擊倒敵對學生額外 +5 金幣。每日 00:00 自動獲得 20 金幣。 / 10% chance to fully block an attack. +5 coins when you defeat an enemy student. 20 coins at 00:00.'
+  }
+];
+
+const TERRITORY_STAGE_POINTS = {
+  'DIGI-EGG': 5,
+  'IN-TRAINING': 8,
+  'ROOKIE': 10,
+  'CHAMPION': 20,
+  'ULTIMATE': 35,
+  'MEGA': 50
+};
+
+function territoryStagePoints(digiId) {
+  const digi = DIGIMON_DB[digiId] || DIGIMON_DB['digitama1'];
+  const stage = digi && digi.stage ? String(digi.stage).toUpperCase() : 'ROOKIE';
+  return TERRITORY_STAGE_POINTS[stage] || 10;
+}
+
+function blankTerritoryNode(def) {
+  return {
+    id: def.id,
+    name: def.name,
+    controllerFactionId: null,
+    controllerFactionName: 'Neutral',
+    currentControlPoints: 0,
+    maxControlPoints: def.maxControlPoints,
+    fortifyShield: 0,
+    buffKey: def.buffKey,
+    contributions: {},
+    leadingFactionId: null,
+    leadingFactionName: null
+  };
+}
+
+function territoryNodeDef(nodeId) {
+  return TERRITORY_NODE_DEFS.find(n => n.id === nodeId) || TERRITORY_NODE_DEFS[0];
+}
+
+function getTerritoryNode(className, nodeId) {
+  const def = territoryNodeDef(nodeId);
+  const key = sanitizeClassKey(className || '');
+  const stored = (appData.territoryNodes && appData.territoryNodes[key] && appData.territoryNodes[key][nodeId]) || null;
+  const node = Object.assign(blankTerritoryNode(def), stored || {});
+  node.id = def.id;
+  node.name = def.name;
+  node.maxControlPoints = def.maxControlPoints;
+  node.buffKey = def.buffKey;
+  node.controllerFactionName = node.controllerFactionId ? (node.controllerFactionName || 'Faction') : 'Neutral';
+  node.contributions = (stored && stored.contributions && typeof stored.contributions === 'object') ? Object.assign({}, stored.contributions) : {};
+  node.currentControlPoints = Math.max(0, Number(node.currentControlPoints) || 0);
+  node.fortifyShield = Math.max(0, Number(node.fortifyShield) || 0);
+  return node;
+}
+
+function studentHoldsTerritoryNode(student, className, nodeId) {
+  if (!student) return false;
+  const classes = (className && className !== 'ALL') ? [className] : parseStudentClasses(student.classId);
+  return classes.some(c => {
+    const fac = getStudentFactionInClass(student, c);
+    if (!fac || !fac.factionId) return false;
+    return getTerritoryNode(c, nodeId).controllerFactionId === fac.factionId;
+  });
+}
+
+function territoryDamageMultiplier(student, className) {
+  return studentHoldsTerritoryNode(student, className, 'server_continent') ? 1.2 : 1;
+}
+
+function territoryExpMultiplier(student, className) {
+  return studentHoldsTerritoryNode(student, className, 'server_continent') ? 1.2 : 1;
+}
+
+function territoryBoostHeal(student, amount) {
+  const base = Math.max(0, Number(amount) || 0);
+  if (!studentHoldsTerritoryNode(student, null, 'file_island')) return base;
+  return Math.round(base * 1.3);
+}
+
+function territoryBlocksAttack(student, className) {
+  if (!studentHoldsTerritoryNode(student, className, 'core')) return false;
+  return Math.random() < 0.1;
+}
+
+function territoryContextClass(student, preferred) {
+  if (!student) return '';
+  if (preferred && preferred !== 'ALL' && studentIsInClass(student, preferred)) return preferred;
+  const classes = parseStudentClasses(student.classId);
+  const withFac = classes.find(c => getStudentFactionInClass(student, c).factionId);
+  return withFac || classes[0] || '';
+}
+
+function applyTerritoryNodeChange(rawNode, action) {
+  const def = territoryNodeDef((rawNode && rawNode.id) || action.nodeId);
+  const node = Object.assign(blankTerritoryNode(def), rawNode || {});
+  node.id = def.id;
+  node.name = def.name;
+  node.maxControlPoints = def.maxControlPoints;
+  node.buffKey = def.buffKey;
+  node.contributions = Object.assign({}, (rawNode && rawNode.contributions) || {});
+  const result = { ok: true, captured: false, absorbed: 0, added: 0, reason: '', node: node };
+
+  if (action.type === 'reset') {
+    result.node = blankTerritoryNode(def);
+    return result;
+  }
+  if (action.type === 'assign') {
+    node.controllerFactionId = action.factionId || null;
+    node.controllerFactionName = action.factionId ? (action.factionName || 'Faction') : 'Neutral';
+    node.currentControlPoints = 0;
+    node.fortifyShield = 0;
+    node.contributions = {};
+    node.leadingFactionId = null;
+    node.leadingFactionName = null;
+    result.captured = true;
+    result.node = node;
+    return result;
+  }
+  if (!action.factionId) {
+    result.ok = false;
+    result.reason = 'no-faction';
+    return result;
+  }
+  if (action.type === 'fortify') {
+    if (node.controllerFactionId !== action.factionId) {
+      result.ok = false;
+      result.reason = 'not-owner';
+      return result;
+    }
+    node.fortifyShield = (Number(node.fortifyShield) || 0) + Number(action.points || 0);
+    result.added = Number(action.points || 0);
+    result.node = node;
+    return result;
+  }
+  if (node.controllerFactionId && node.controllerFactionId === action.factionId) {
+    result.ok = false;
+    result.reason = 'own-node';
+    return result;
+  }
+  let incoming = Math.max(0, Number(action.points) || 0);
+  const shield = Number(node.fortifyShield) || 0;
+  const absorbed = Math.min(shield, incoming);
+  node.fortifyShield = shield - absorbed;
+  incoming -= absorbed;
+  result.absorbed = absorbed;
+  if (incoming > 0) {
+    node.contributions[action.factionId] = (Number(node.contributions[action.factionId]) || 0) + incoming;
+    result.added = incoming;
+  }
+  let bestId = null;
+  let best = 0;
+  Object.keys(node.contributions).forEach(fid => {
+    const val = Number(node.contributions[fid]) || 0;
+    if (val > best) { best = val; bestId = fid; }
+  });
+  node.currentControlPoints = best;
+  node.leadingFactionId = bestId;
+  if (bestId === action.factionId) node.leadingFactionName = action.factionName || 'Faction';
+  if (best >= node.maxControlPoints && bestId) {
+    node.controllerFactionId = bestId;
+    node.controllerFactionName = bestId === action.factionId ? (action.factionName || 'Faction') : (node.leadingFactionName || 'Faction');
+    node.currentControlPoints = 0;
+    node.fortifyShield = 0;
+    node.contributions = {};
+    node.leadingFactionId = null;
+    node.leadingFactionName = null;
+    result.captured = true;
+  }
+  result.node = node;
+  return result;
+}
+
+function rememberTerritoryNode(className, node) {
+  const key = sanitizeClassKey(className);
+  if (!appData.territoryNodes) appData.territoryNodes = {};
+  if (!appData.territoryNodes[key]) appData.territoryNodes[key] = {};
+  appData.territoryNodes[key][node.id] = node;
+}
+
+function commitTerritoryNode(className, nodeId, action) {
+  const key = sanitizeClassKey(className);
+  const path = `systemSettings/territoryNodes/${key}/${nodeId}`;
+  const before = getTerritoryNode(className, nodeId);
+  const run = (cur) => applyTerritoryNodeChange(Object.assign({ id: nodeId }, cur || before), Object.assign({ nodeId: nodeId }, action));
+  if (!dbRootRef) {
+    const out = run(before);
+    if (out.ok) rememberTerritoryNode(className, out.node);
+    renderTeacherTerritory();
+    renderStudentTerritory();
+    return Promise.resolve(out);
+  }
+  return new Promise(resolve => {
+    let preview = null;
+    dbRootRef.child(path).transaction(cur => {
+      const out = run(cur);
+      preview = out;
+      if (!out.ok) return;
+      const next = Object.assign({}, out.node);
+      if (!next.contributions || !Object.keys(next.contributions).length) next.contributions = null;
+      return next;
+    }, (err, committed, snap) => {
+      if (err || !committed || !snap) {
+        resolve(preview && !preview.ok ? preview : { ok: false, reason: 'aborted', node: before, captured: false, absorbed: 0, added: 0 });
+        return;
+      }
+      const saved = snap.val() || {};
+      rememberTerritoryNode(className, Object.assign(blankTerritoryNode(territoryNodeDef(nodeId)), saved, { contributions: saved.contributions || {} }));
+      renderTeacherTerritory();
+      renderStudentTerritory();
+      resolve(preview || { ok: true, node: saved, captured: false, absorbed: 0, added: 0 });
+    });
+  });
+}
+
+function chooseTerritoryPriority(className, factionId) {
+  const nodes = TERRITORY_NODE_DEFS.map(def => getTerritoryNode(className, def.id));
+  const owned = nodes.filter(n => n.controllerFactionId === factionId);
+  if (owned.length) {
+    owned.sort((a, b) => (b.currentControlPoints - a.currentControlPoints) || (a.fortifyShield - b.fortifyShield));
+    return { nodeId: owned[0].id, mode: 'fortify' };
+  }
+  let best = nodes[0];
+  let bestPts = -1;
+  nodes.forEach(n => {
+    const pts = Number((n.contributions || {})[factionId] || 0);
+    if (pts > bestPts) { bestPts = pts; best = n; }
+  });
+  return { nodeId: best.id, mode: 'invade' };
+}
+
+function grantTerritoryNodePoints(student, className, points, sourceLabel) {
+  if (!student) return Promise.resolve({ ok: false });
+  const cls = territoryContextClass(student, className);
+  const fac = getStudentFactionInClass(student, cls);
+  if (!cls || !fac.factionId) return Promise.resolve({ ok: false, reason: 'no-faction' });
+  const choice = chooseTerritoryPriority(cls, fac.factionId);
+  return commitTerritoryNode(cls, choice.nodeId, {
+    type: choice.mode,
+    factionId: fac.factionId,
+    factionName: fac.factionName || 'Faction',
+    points: points
+  }).then(res => {
+    if (!res || !res.ok) return res;
+    const def = territoryNodeDef(choice.nodeId);
+    const verb = choice.mode === 'fortify' ? '駐守 / fortified' : '推進 / pushed';
+    addBattleLog(`🗺️ [NODE ${sourceLabel}] ${student.name} 的陣營【${fac.factionName}】在【${def.name}】${verb} +${points}。`, 'battle', cls);
+    if (res.captured) {
+      addBattleLog(`🚩 [NODE CAPTURED] 【${fac.factionName}】佔領了【${def.name}】！被動效果已經轉移。 / ${fac.factionName} captured ${def.name}.`, 'evolution', cls);
+      playSound('evolve');
+    }
+    return res;
+  });
+}
+
+function claimTerritoryDailyRewards() {
+  if (!currentUser || currentUser.role !== 'student' || !territoryNodesReady) return;
+  const st = appData.students[currentUser.id];
+  if (!st) return;
+  const today = hongKongDateKey();
+  if (st.territoryDailyDay === today) return;
+  const holdFile = studentHoldsTerritoryNode(st, null, 'file_island');
+  const holdCore = studentHoldsTerritoryNode(st, null, 'core');
+  const applyClaim = (cur) => {
+    if (!cur) return;
+    if (String(cur.territoryDailyDay || '') === today) return;
+    cur.territoryDailyDay = today;
+    if (holdFile) cur.attackQuota = (Number(cur.attackQuota) || 0) + 3;
+    if (holdCore) cur.coins = (Number(cur.coins) || 0) + 20;
+    return cur;
+  };
+  const finish = (quotaAdded, coinsAdded) => {
+    if (quotaAdded) showToast('數碼源泉 / Digital Spring', '每日攻擊 +3。 / +3 attacks for today.', 'info');
+    if (coinsAdded) showToast('世界樹權柄 / World Tree', '每日金幣 +20。 / +20 coins for today.', 'heal');
+    if (quotaAdded || coinsAdded) {
+      addBattleLog(`🌅 [NODE DAILY] ${st.name} 收到據點每日獎勵${quotaAdded ? ' +3 攻擊' : ''}${coinsAdded ? ' +20 金幣' : ''}。`, 'heal', st.classId);
+      playSound('heal');
+    }
+  };
+  if (!dbRootRef) {
+    const next = applyClaim(Object.assign({}, st));
+    if (!next) return;
+    Object.assign(st, { territoryDailyDay: next.territoryDailyDay, attackQuota: next.attackQuota, coins: next.coins });
+    finish(holdFile, holdCore);
+    updateStudentUI();
+    return;
+  }
+  dbRootRef.child('students/' + st.id).transaction(cur => {
+    const next = applyClaim(cur);
+    if (!next) return;
+    return next;
+  }, (err, committed) => {
+    if (committed) finish(holdFile, holdCore);
+  });
+}
+
+function switchStudentSubTab(tabName) {
+  activeStudentSubTab = tabName === 'faction' ? 'faction' : 'class';
+  const classView = document.getElementById('studentSubViewClass');
+  const facView = document.getElementById('studentSubViewFaction');
+  const btnClass = document.getElementById('btnStudentTabClass');
+  const btnFaction = document.getElementById('btnStudentTabFaction');
+  if (classView) classView.classList.toggle('hidden', activeStudentSubTab !== 'class');
+  if (facView) facView.classList.toggle('hidden', activeStudentSubTab !== 'faction');
+  if (btnClass) btnClass.className = activeStudentSubTab === 'class'
+    ? 'w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2'
+    : 'w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2';
+  if (btnFaction) btnFaction.className = activeStudentSubTab === 'faction'
+    ? 'w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-indigo-600 to-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2'
+    : 'w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2';
+  if (activeStudentSubTab === 'faction') {
+    updateStudentFactionUI();
+    claimTerritoryDailyRewards();
+  }
+}
+
+function territoryCardHtml(node, opts) {
+  const def = territoryNodeDef(node.id);
+  const pct = Math.max(0, Math.min(100, Math.round((node.currentControlPoints / node.maxControlPoints) * 100)));
+  const owner = node.controllerFactionId ? escapeHtml(node.controllerFactionName || 'Faction') : '中立 / Neutral';
+  const mine = opts.myFactionId && node.controllerFactionId === opts.myFactionId;
+  const ownerClass = mine ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : (node.controllerFactionId ? 'bg-rose-950 text-rose-300 border-rose-500' : 'bg-slate-800 text-slate-300 border-slate-600');
+  const lead = node.leadingFactionName ? escapeHtml(node.leadingFactionName) : '—';
+  return `
+    <article class="rounded-2xl border ${mine ? 'border-emerald-500/60 territory-live' : 'border-slate-700'} bg-slate-950/80 p-4 space-y-3" data-territory-node="${def.id}">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <h4 class="text-sm font-black text-white">${escapeHtml(def.name)}</h4>
+          <p class="text-[10px] text-cyan-300 font-bold mt-1">${escapeHtml(def.buffTitle)}</p>
+        </div>
+        <span class="text-[10px] px-2 py-0.5 rounded-full border font-bold ${ownerClass}">${owner}</span>
+      </div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">${escapeHtml(def.buffDesc)}</p>
+      <div>
+        <div class="flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+          <span>佔領進度 / Control ${node.currentControlPoints} / ${node.maxControlPoints}</span>
+          <span>護盾 / Shield ${node.fortifyShield}</span>
+        </div>
+        <div class="h-2.5 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+          <div class="territory-fill h-full bg-gradient-to-r from-rose-500 to-amber-400" style="width:${pct}%"></div>
+        </div>
+        <div class="text-[10px] text-slate-500 mt-1">領先推進 / Leading push: ${lead}</div>
+      </div>
+      ${opts.actions || ''}
+    </article>
+  `;
+}
+
+function renderStudentTerritory() {
+  const root = document.getElementById('studentTerritoryRoot');
+  if (!root || !currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st) return;
+  const className = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || '';
+  const fac = getStudentFactionInClass(st, className);
+  const points = territoryStagePoints(st.currentDigiId);
+  const noFac = !fac.factionId;
+  const cards = TERRITORY_NODE_DEFS.map(def => {
+    const node = getTerritoryNode(className, def.id);
+    const own = fac.factionId && node.controllerFactionId === fac.factionId;
+    const actions = `
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="studentTerritoryAction('${def.id}','invade')" class="px-2 py-2 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 ${own || noFac ? 'bg-slate-800 text-slate-500' : 'bg-rose-600 hover:bg-rose-500 text-white'}">進攻 Invade (-1) · ${points}</button>
+        <button type="button" onclick="studentTerritoryAction('${def.id}','fortify')" class="px-2 py-2 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 ${!own ? 'bg-slate-800 text-slate-500' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}">駐守 Fortify (-1) · ${points}</button>
+      </div>
+      <p class="text-[10px] text-slate-500">蛋 5 · 幼年 8 · 成長 Rookie 10 · 成熟 Champion 20 · 完全 Ultimate 35 · 究極 Mega 50</p>
+    `;
+    return territoryCardHtml(node, { myFactionId: fac.factionId, actions: actions });
+  }).join('');
+  root.innerHTML = `
+    <div class="rounded-2xl border border-indigo-500/40 bg-indigo-950/20 p-4">
+      <h3 class="text-sm font-black text-indigo-200 font-pixel">據點爭奪 / Node Control</h3>
+      <p class="text-[11px] text-slate-400 mt-1">用 1 次攻擊次數進攻敵方或中立據點，或駐守自己的據點。進度先打掉護盾，再累積到上限就立刻易主。搶答前三名，或考卷達到 80 分，會幫陣營的優先據點 +50。 / Spend 1 attack to invade or fortify. Points break the shield first, then fill the bar. The node changes hands at the maximum. A top-3 quiz finish, or an exam score of 80 or higher, adds 50 points to your faction's priority node.</p>
+    </div>
+    ${cards}
+  `;
+}
+
+function studentTerritoryAction(nodeId, mode) {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = appData.students[currentUser.id];
+  if (!st || st.isFainted || (st.hp !== undefined && st.hp <= 0) || isStudentBanned(st)) {
+    showToast('無法行動 / Unavailable', '倒下或鎖定時不能爭奪據點。 / You cannot contest a node while fainted or locked.', 'damage');
+    return;
+  }
+  const className = studentActiveFactionViewClass || parseStudentClasses(st.classId)[0] || '';
+  const fac = getStudentFactionInClass(st, className);
+  if (!fac.factionId) {
+    showToast('尚未加入陣營 / No Faction', '先加入這個班的陣營。 / Join a faction in this class first.', 'info');
+    return;
+  }
+  if ((st.attackQuota || 0) < 1) {
+    showToast('攻擊次數不足 / No Attacks', '需要 1 次攻擊次數。 / You need 1 attack.', 'damage');
+    return;
+  }
+  const points = territoryStagePoints(st.currentDigiId);
+  const spend = () => commitTerritoryNode(className, nodeId, {
+    type: mode,
+    factionId: fac.factionId,
+    factionName: fac.factionName || 'Faction',
+    points: points
+  });
+  const after = (res) => {
+    if (!res || !res.ok) {
+      const reason = res && res.reason === 'own-node'
+        ? '這是己方據點，請改按駐守。 / This node is yours. Fortify it.'
+        : (res && res.reason === 'not-owner' ? '只能駐守己方據點。 / You can only fortify a node your faction holds.' : '據點沒有改變。 / The node did not change.');
+      showToast('據點 / Node', reason, 'info');
+      if (dbRootRef) {
+        dbRootRef.child(`students/${st.id}/attackQuota`).transaction(q => (Number(q) || 0) + 1);
+      } else {
+        st.attackQuota = (st.attackQuota || 0) + 1;
+      }
+      return;
+    }
+    const def = territoryNodeDef(nodeId);
+    if (mode === 'fortify') {
+      playSound('shield');
+      showToast('駐守 / Fortify', `${def.name} 護盾 +${res.added}。 / Shield +${res.added}.`, 'info');
+    } else {
+      playSound(res.captured ? 'evolve' : 'attack');
+      showToast(res.captured ? '佔領 / Captured' : '進攻 / Invade', res.captured ? `${fac.factionName} 佔領了 ${def.name}。` : `推進 +${res.added}，護盾吸收 ${res.absorbed}。 / Push +${res.added}, shield absorbed ${res.absorbed}.`, res.captured ? 'evolution' : 'damage');
+    }
+    addBattleLog(`🗺️ [NODE] ${st.name} ${mode === 'fortify' ? '駐守' : '進攻'}【${def.name}】${res.added} 點${res.absorbed ? `（護盾吸收 ${res.absorbed}）` : ''}。`, 'battle', className);
+    if (res.captured) addBattleLog(`🚩 [NODE CAPTURED] 【${fac.factionName}】佔領了【${def.name}】！被動效果已經轉移。`, 'evolution', className);
+    updateStudentUI();
+  };
+  if (!dbRootRef) {
+    st.attackQuota = Math.max(0, (st.attackQuota || 0) - 1);
+    spend().then(after);
+    return;
+  }
+  dbRootRef.child(`students/${st.id}/attackQuota`).transaction(q => {
+    const n = Number(q) || 0;
+    if (n < 1) return;
+    return n - 1;
+  }, (err, committed) => {
+    if (!committed) {
+      showToast('攻擊次數不足 / No Attacks', '需要 1 次攻擊次數。 / You need 1 attack.', 'damage');
+      return;
+    }
+    spend().then(after);
+  });
+}
+
+function renderTeacherTerritory() {
+  const root = document.getElementById('teacherTerritoryRoot');
+  const list = document.getElementById('teacherTerritoryFactionList');
+  const label = document.getElementById('teacherTerritoryClassLabel');
+  if (!root || !currentUser || currentUser.role !== 'teacher') return;
+  const className = selectedTeacherClass || 'ALL';
+  if (label) label.textContent = className === 'ALL' ? '請先選擇一個班級 / Select one class' : `Class: ${className}`;
+  if (className === 'ALL') {
+    if (list) list.innerHTML = '';
+    root.innerHTML = '<div class="col-span-full text-sm text-slate-400">據點跟班級走。請在課堂主控台選擇一個班。 / Nodes belong to one class. Choose a class on the dashboard.</div>';
+    return;
+  }
+  const factions = getFactionsForClass(className).filter(f => f && f.id);
+  if (list) {
+    list.innerHTML = factions.length
+      ? factions.map(f => `<span class="px-2.5 py-1 rounded-full bg-indigo-950 border border-indigo-500 text-indigo-200 text-[11px] font-bold">${escapeHtml(f.name)}</span>`).join('')
+      : '<span class="text-[11px] text-slate-500">這個班還沒有陣營。 / This class has no factions yet.</span>';
+  }
+  const options = ['<option value="">中立 / Neutral</option>'].concat(factions.map(f => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.name)}</option>`)).join('');
+  root.innerHTML = TERRITORY_NODE_DEFS.map(def => {
+    const node = getTerritoryNode(className, def.id);
+    const actions = `
+      <div class="flex flex-wrap gap-2 items-center">
+        <select id="territoryAssign_${def.id}" class="flex-1 min-w-[8rem] bg-slate-900 border border-indigo-500/50 rounded-lg px-2 py-1.5 text-[11px] text-indigo-100 outline-none">${options}</select>
+        <button type="button" onclick="teacherAssignTerritoryNode('${def.id}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black cursor-pointer active:scale-95">指定 / Assign</button>
+        <button type="button" onclick="teacherResetTerritoryNode('${def.id}')" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-rose-700 text-rose-300 text-[11px] font-bold cursor-pointer active:scale-95">重置 / Reset</button>
+      </div>
+    `;
+    return territoryCardHtml(node, { myFactionId: node.controllerFactionId, actions: actions });
+  }).join('');
+  TERRITORY_NODE_DEFS.forEach(def => {
+    const sel = document.getElementById('territoryAssign_' + def.id);
+    const node = getTerritoryNode(className, def.id);
+    if (sel && node.controllerFactionId) sel.value = node.controllerFactionId;
+  });
+}
+
+function teacherResetTerritoryNode(nodeId) {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const className = selectedTeacherClass || 'ALL';
+  if (className === 'ALL') return alert('請先選擇一個班級。 / Select a class first.');
+  const def = territoryNodeDef(nodeId);
+  if (!confirm(`重置【${def.name}】的佔領進度與護盾？ / Reset control and shield for ${def.name}?`)) return;
+  commitTerritoryNode(className, nodeId, { type: 'reset' }).then(() => {
+    addBattleLog(`🗺️ [NODE RESET] 老師重置了【${def.name}】。`, 'normal', className);
+    showToast('據點已重置 / Node Reset', def.name, 'info');
+  });
+}
+
+function teacherAssignTerritoryNode(nodeId) {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const className = selectedTeacherClass || 'ALL';
+  if (className === 'ALL') return alert('請先選擇一個班級。 / Select a class first.');
+  const sel = document.getElementById('territoryAssign_' + nodeId);
+  const factionId = sel ? sel.value : '';
+  const factions = getFactionsForClass(className);
+  const fac = factions.find(f => f.id === factionId);
+  const def = territoryNodeDef(nodeId);
+  commitTerritoryNode(className, nodeId, {
+    type: 'assign',
+    factionId: factionId || null,
+    factionName: fac ? fac.name : 'Neutral'
+  }).then(() => {
+    const name = fac ? fac.name : '中立 / Neutral';
+    addBattleLog(`🚩 [NODE ASSIGN] 老師把【${def.name}】指定給【${name}】。`, 'evolution', className);
+    showToast('據點已指定 / Node Assigned', `${def.name} → ${name}`, 'info');
+  });
 }
 
 // 老師針對指定陣營批量發放獎勵 (EXP / Tickets / Attack Quota)
@@ -5523,9 +6104,12 @@ function toggleFactionBuffModal() {
 
 function getTeacherTemplate() {
   return `
-    <div class="grid grid-cols-2 xl:grid-cols-4 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
       <button id="btnTeacherTabMain" onclick="switchTeacherSubTab('main')" class="w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
         <i class="fa-solid fa-chalkboard"></i> 課堂主控台 (Dashboard)
+      </button>
+      <button id="btnTeacherTabFaction" onclick="switchTeacherSubTab('faction')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
+        <i class="fa-solid fa-flag text-indigo-300"></i> 陣營據點 (Factions)
       </button>
       <button id="btnTeacherTabQuiz" onclick="switchTeacherSubTab('quiz')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
         <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> 搶答 (Pop-up Quiz)
@@ -5558,7 +6142,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.6.8</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.6.9</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -6018,6 +6602,19 @@ function getTeacherTemplate() {
         </div>
       </div>
     </div>
+    <div id="teacherSubViewFaction" class="space-y-6 hidden">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/50 rounded-2xl p-5 shadow-xl space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-black text-indigo-200 font-pixel uppercase">陣營與據點 / Faction Territory</h3>
+            <p class="text-[11px] text-slate-400 mt-1">查看這個班的陣營，並管理三個據點。重置或指定不會改變學生的攻擊、金幣或經驗。 / Review this class's factions and run the three nodes. Reset and assign do not change student attacks, coins, or EXP.</p>
+          </div>
+          <span id="teacherTerritoryClassLabel" class="text-xs font-mono text-indigo-300">Class: All</span>
+        </div>
+        <div id="teacherTerritoryFactionList" class="flex flex-wrap gap-2"></div>
+        <div id="teacherTerritoryRoot" class="grid grid-cols-1 xl:grid-cols-3 gap-3"></div>
+      </div>
+    </div>
   `;
 }
 
@@ -6222,6 +6819,7 @@ function logout() {
     populateTeacherBountySelect();
     updateClassBanButtonUI();
     renderTeacherFactionPanel();
+    renderTeacherTerritory();
     renderTeacherGrid();
   } else if (currentUser.role === 'superadmin') {
     renderSuperAdminDashboard();
@@ -6324,6 +6922,7 @@ function logout() {
       renderStudentBossBar();
       renderBountyUI();
       updateStudentFactionUI(); // 👈 加入此行：保證每次刷新學生畫面時必定更新陣營狀態
+      claimTerritoryDailyRewards();
       const coinCountEl = document.getElementById('stCoinsCount');
       if (coinCountEl) coinCountEl.textContent = st.coins || 0;
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
@@ -7124,12 +7723,23 @@ else if (mode === 'pvp') {
       } else if (facData && facData.buffType === 'def_boost') {
         calculatedDmg = Math.max(1, Math.round(calculatedDmg * 0.8));
       }
+      calculatedDmg = Math.max(1, Math.round(calculatedDmg * territoryDamageMultiplier(st, myClasses[0])));
 
       // 扣除攻擊次數（僅主動攻擊扣除，反擊不扣）
       const newQuota = isCounterAttack ? (st.attackQuota || 0) : Math.max(0, (st.attackQuota || 0) - 1);
       st.attackQuota = newQuota;
 
       const actionTag = isCounterAttack ? "⚡[反擊 COUNTER]" : "⚔️[PVP ATTACK]";
+
+      if (territoryBlocksAttack(target, myClasses[0])) {
+        if (!isCounterAttack) patchStudentAtomic(currentUser.id, { attackQuota: newQuota });
+        playSound('shield');
+        addBattleLog(`🌳 [WORLD TREE] ${target.name} 的世界樹權柄完全格擋了 ${st.name} 的 ${actionTag}。`, "battle", st.classId);
+        showToast("世界樹格擋 / World Tree", `${target.name} 完全格擋了這次攻擊。 / The attack was fully blocked.`, "info");
+        updateStudentUI();
+        if (isCounterAttack) renderCounterAttackModalList();
+        return;
+      }
 
       // 3. 聖盾抵擋判定
       if (target.hasShield) {
@@ -7187,7 +7797,8 @@ else if (mode === 'pvp') {
           bountyBonusTickets = 1;
         }
 
-        const totalExpAward = earnedExp + bountyBonusExp;
+        const totalExpAward = Math.round((earnedExp + bountyBonusExp) * territoryExpMultiplier(st, myClasses[0]));
+        if (studentHoldsTerritoryNode(st, myClasses[0], 'core')) earnedCoins += 5;
 
         st.coins = (st.coins || 0) + earnedCoins;
         st.exp = (st.exp || 0) + totalExpAward;
@@ -7675,6 +8286,7 @@ else if (mode === 'pvp') {
       populateTeacherBountySelect();
       updateClassBanButtonUI();
       renderTeacherFactionPanel(); // 👈 補上這一行，讓切換班別時即時更新陣營面板
+      renderTeacherTerritory();
       renderTeacherGrid();
       renderBattleLogs();
       renderAnnouncementsUI();
@@ -8331,6 +8943,10 @@ else if (mode === 'pvp') {
         const damageJobs = [];
         myStudents.forEach(s => {
           if (s.isFainted || (s.hp !== undefined && s.hp <= 0)) return;
+          if (territoryBlocksAttack(s, selectedTeacherClass)) {
+            addBattleLog(`🌳 [WORLD TREE] ${s.name} 的世界樹權柄完全格擋了首領的範圍攻擊。`, "battle", s.classId);
+            return;
+          }
           if (s.hasShield) {
             updates[`students/${s.id}/hasShield`] = false;
           } else {
@@ -8439,6 +9055,13 @@ else if (mode === 'pvp') {
       const moveName = strike.moveName;
       const digiName = strike.digiName;
       closeTeacherTargetPicker();
+
+      if (territoryBlocksAttack(target, selectedTeacherClass)) {
+        playSound('shield');
+        addBattleLog(`🌳 [WORLD TREE] ${target.name} 的世界樹權柄完全格擋了首領的 [${moveName}]。`, "battle", target.classId);
+        showToast("世界樹格擋 / World Tree", `${target.name} 完全格擋了這次攻擊。 / The attack was fully blocked.`, "info");
+        return;
+      }
 
       if (target.hasShield) {
         patchStudentAtomic(target.id, { hasShield: false });
@@ -10538,18 +11161,25 @@ function teacherPromptClassCoins(mode = 'reward') {
               }
 
               // 依排名核發獎勵
+              const quizClass = (finalQuiz && finalQuiz.classTag) || (activeQuizInstance && activeQuizInstance.classTag);
+              const quizExp = (base) => Math.round(base * territoryExpMultiplier(st, territoryContextClass(st, quizClass)));
               if (myFinalSub.rank === 1) {
                 grantAttackQuota(st.id, 2);
-                showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數！", "evolution");
+                grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+                showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數，陣營據點 +50！", "evolution");
               } else if (myFinalSub.rank === 2) {
                 grantAttackQuota(st.id, 1);
-                showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數！", "evolution");
+                grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+                showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數，陣營據點 +50！", "evolution");
               } else if (myFinalSub.rank === 3) {
-                rewardStudent(st.id, 30);
-                showToast("搶答季軍！", "第 3 名答對！榮獲 +30 EXP！", "evolution");
+                const expGain = quizExp(30);
+                rewardStudent(st.id, expGain);
+                grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+                showToast("搶答季軍！", `第 3 名答對！榮獲 +${expGain} EXP，陣營據點 +50！`, "evolution");
               } else {
-                rewardStudent(st.id, 10);
-                showToast("回答正確！", "成功答對題目，獎勵 +10 EXP！", "heal");
+                const expGain = quizExp(10);
+                rewardStudent(st.id, expGain);
+                showToast("回答正確！", `成功答對題目，獎勵 +${expGain} EXP！`, "heal");
               }
             } else if (isTimeout) {
               playSound('faint');
@@ -11296,10 +11926,10 @@ function startStudentExamTimer() {
 
   const totalQ = questions.length;
   const scorePct = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
-  const expReward = correctCount * 15;
-  const coinReward = correctCount * 2;
-
   const st = appData.students[currentUser.id];
+  const examClass = (activeExamInstance && activeExamInstance.targetClass) || 'ALL';
+  const expReward = Math.round(correctCount * 15 * territoryExpMultiplier(st, territoryContextClass(st, examClass)));
+  const coinReward = correctCount * 2;
   const submissionData = {
     studentId: currentUser.id,
     studentName: st ? st.name : currentUser.id,
@@ -11327,6 +11957,7 @@ function startStudentExamTimer() {
       if (examStudentCountdownTimer) clearInterval(examStudentCountdownTimer);
       playSound('evolve');
       addBattleLog(`🎓 [EXAM SUBMIT] ${submissionData.studentName} 完成並繳交考卷，成績: ${correctCount}/${totalQ} (${scorePct}%)，獲得 +${expReward} EXP 及 +${coinReward} 金幣！`, "evolution", st ? st.classId : 'ALL');
+      if (scorePct >= 80) grantTerritoryNodePoints(st, examClass, 50, 'EXAM');
       renderStudentExamResultView(submissionData);
     }).catch(err => {
       isExamSubmitting = false;
@@ -11633,6 +12264,7 @@ function startStudentExamTimer() {
             healAmt = Math.round(healAmt * 1.3);
           }
         }
+        healAmt = territoryBoostHeal(st, healAmt);
         const maxHp = digi.maxHp || 100;
         const newHp = Math.min(maxHp, (st.hp || 0) + healAmt);
         patchStudentAtomic(currentUser.id, { hp: newHp });
@@ -11670,15 +12302,19 @@ function startStudentExamTimer() {
       if (!tc) return alert("No active Teacher Boss! / 無可攻擊的老師首領！");
 
       let dmg = skill.power || 20;
+      const bossClass = parseStudentClasses(st.classId)[0] || 'ALL';
       // 陣營力量激增 Buff (+20% 傷害)
-      const myFacInfo = getStudentFactionInClass(st, parseStudentClasses(st.classId)[0] || 'ALL');
+      const myFacInfo = getStudentFactionInClass(st, bossClass);
       if (myFacInfo.factionId) {
-        const factions = getFactionsForClass(parseStudentClasses(st.classId)[0] || 'ALL');
+        const factions = getFactionsForClass(bossClass);
         const myFac = factions.find(f => f.id === myFacInfo.factionId);
         if (myFac && myFac.buffType === 'atk_boost') {
           dmg = Math.round(dmg * 1.2);
         }
       }
+      const rebirthMultiplier = 1 + ((st.rebirthCount || 0) * 0.1);
+      dmg = Math.max(1, Math.round(dmg * rebirthMultiplier * territoryDamageMultiplier(st, bossClass)));
+      const bossExp = Math.round(15 * territoryExpMultiplier(st, bossClass));
 
       const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
       const curHp = tc.hp !== undefined ? tc.hp : (tc.maxHp || 2000);
@@ -11688,14 +12324,14 @@ function startStudentExamTimer() {
       const newQuota = Math.max(0, (st.attackQuota || 1) - 1);
       patchStudentAtomic(currentUser.id, {
         attackQuota: newQuota,
-        exp: (st.exp || 0) + 15,
-        statPool: (st.statPool || 0) + 15
+        exp: (st.exp || 0) + bossExp,
+        statPool: (st.statPool || 0) + bossExp
       });
 
       patchTeacherAtomic(tc.id, { hp: nextHp });
       playSound('attack');
-      addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG! (+15 EXP)`, "battle", st.classId);
-      showToast("Hit Boss / 命中首領", `Dealt ${dmg} DMG to ${tcDigi.name}! (+15 EXP) / 對首領造成 ${dmg} 點傷害！(+15 EXP)`, "damage");
+      addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG! (+${bossExp} EXP)`, "battle", st.classId);
+      showToast("Hit Boss / 命中首領", `Dealt ${dmg} DMG to ${tcDigi.name}! (+${bossExp} EXP) / 對首領造成 ${dmg} 點傷害！(+${bossExp} EXP)`, "damage");
       updateStudentUI();
     }
 
@@ -11879,11 +12515,21 @@ function startStudentExamTimer() {
         if (fObj && fObj.buffType === 'vulnerable_debuff') dmg = Math.round(dmg * 2.0);
         else if (fObj && fObj.buffType === 'def_boost') dmg = Math.max(1, Math.round(dmg * 0.8));
       }
+      const rebirthMultiplier = 1 + ((me.rebirthCount || 0) * 0.1);
+      dmg = Math.max(1, Math.round(dmg * rebirthMultiplier * territoryDamageMultiplier(me, targetClass)));
 
       // 扣除攻擊次數
       const newQuota = Math.max(0, (me.attackQuota || 1) - 1);
       const updates = {};
       updates[`students/${me.id}/attackQuota`] = newQuota;
+
+      if (territoryBlocksAttack(target, targetClass)) {
+        executeAtomicMultiPathUpdate(updates).then(() => updateStudentUI());
+        playSound('shield');
+        addBattleLog(`🌳 [WORLD TREE] ${target.name} 的世界樹權柄完全格擋了 ${me.name} 的攻擊。`, "battle", targetClass);
+        showToast("世界樹格擋 / World Tree", `${target.name} 完全格擋了這次攻擊。 / The attack was fully blocked.`, "info");
+        return;
+      }
 
       // 3. 護盾抵擋判定 (Shield Block)
       if (target.hasShield) {
@@ -11935,6 +12581,7 @@ function startStudentExamTimer() {
 
         expGained += killExp;
         coinsGained += 10; // 成功擊殺基礎金幣獎勵
+        if (studentHoldsTerritoryNode(me, targetClass, 'core')) coinsGained += 5;
 
         // 懸賞擊殺特別大獎 (Elimination Bounty: +300 EXP, +1 Ticket, +20 Coins)
         if (activeBountyTargetId === target.id) {
@@ -11955,6 +12602,7 @@ function startStudentExamTimer() {
         showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
       }
 
+      expGained = Math.round(expGained * territoryExpMultiplier(me, targetClass));
       // 更新攻擊者經驗值、點數池與金幣
       updates[`students/${me.id}/exp`] = (me.exp || 0) + expGained;
       updates[`students/${me.id}/statPool`] = (me.statPool || 0) + expGained;
