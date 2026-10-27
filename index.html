@@ -31,6 +31,8 @@
     
     .font-pixel { font-family: 'Press Start 2P', monospace; }
     .territory-fill { transition: width 0.7s ease; }
+    .territory-photo { height: 9.5rem; background: radial-gradient(circle at 30% 20%, #1e3a5f, #020617 72%); }
+    .territory-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     @keyframes territoryGlow { 50% { box-shadow: 0 0 18px rgba(34, 211, 238, 0.45); } }
     .territory-live { animation: territoryGlow 2.4s ease-in-out infinite; }
     body { 
@@ -1517,7 +1519,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.0";
+    const CURRENT_APP_VERSION = "2.7.3";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -4388,6 +4390,7 @@ const TERRITORY_NODE_DEFS = [
   {
     id: 'file_island',
     name: 'File Island (檔案島)',
+    image: 'FileIsland',
     maxControlPoints: 300,
     buffKey: 'file_island_buff',
     buffTitle: '數碼源泉 / Digital Spring',
@@ -4396,6 +4399,7 @@ const TERRITORY_NODE_DEFS = [
   {
     id: 'server_continent',
     name: 'Server Continent (伺服器大陸)',
+    image: 'ServerContinent',
     maxControlPoints: 500,
     buffKey: 'server_continent_buff',
     buffTitle: '超頻協議 / Overclock Protocol',
@@ -4404,6 +4408,7 @@ const TERRITORY_NODE_DEFS = [
   {
     id: 'core',
     name: 'Digital World Core (數碼世界核心)',
+    image: 'DigitalWorldCore',
     maxControlPoints: 800,
     buffKey: 'core_buff',
     buffTitle: '世界樹權柄 / World Tree',
@@ -4724,6 +4729,32 @@ function switchStudentSubTab(tabName) {
   }
 }
 
+function territoryImageName(def) {
+  if (def && def.image) return String(def.image).trim();
+  const full = String(def && def.name || '').trim();
+  const english = full.match(/^(.*?)\s*\(/);
+  return (english ? english[1] : full).trim();
+}
+
+function territoryImageCandidates(def) {
+  const name = territoryImageName(def);
+  return name ? ['./images/' + encodeURI(name + '.png')] : [];
+}
+
+function territoryPhotoError(img) {
+  const rest = String(img.dataset.fallbacks || '').split('|').filter(Boolean);
+  const next = rest.shift();
+  img.dataset.fallbacks = rest.join('|');
+  if (next) {
+    img.src = next;
+    return;
+  }
+  img.onerror = null;
+  img.classList.add('hidden');
+  const fallback = img.parentElement && img.parentElement.querySelector('.territory-photo-fallback');
+  if (fallback) fallback.classList.remove('hidden');
+}
+
 function territoryCardHtml(node, opts) {
   const def = territoryNodeDef(node.id);
   const pct = Math.max(0, Math.min(100, Math.round((node.currentControlPoints / node.maxControlPoints) * 100)));
@@ -4731,8 +4762,18 @@ function territoryCardHtml(node, opts) {
   const mine = opts.myFactionId && node.controllerFactionId === opts.myFactionId;
   const ownerClass = mine ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : (node.controllerFactionId ? 'bg-rose-950 text-rose-300 border-rose-500' : 'bg-slate-800 text-slate-300 border-slate-600');
   const lead = node.leadingFactionName ? escapeHtml(node.leadingFactionName) : '—';
+  const photos = territoryImageCandidates(def);
+  const photoSrc = photos[0] || '';
+  const photoFallbacks = photos.slice(1).join('|');
   return `
     <article class="rounded-2xl border ${mine ? 'border-emerald-500/60 territory-live' : 'border-slate-700'} bg-slate-950/80 p-4 space-y-3" data-territory-node="${def.id}">
+      <div class="territory-photo relative rounded-xl overflow-hidden border border-slate-700">
+        <img src="${photoSrc}" data-fallbacks="${photoFallbacks}" alt="${escapeHtml(def.name)}" onerror="territoryPhotoError(this)">
+        <div class="territory-photo-fallback hidden absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+          <i class="fa-solid fa-chess-rook text-2xl"></i>
+          <span class="text-[10px] mt-1">images/${escapeHtml(territoryImageName(def))}.png</span>
+        </div>
+      </div>
       <div class="flex items-start justify-between gap-2">
         <div>
           <h4 class="text-sm font-black text-white">${escapeHtml(def.name)}</h4>
@@ -6296,7 +6337,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.0</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.3</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
