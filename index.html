@@ -1566,7 +1566,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.10";
+    const CURRENT_APP_VERSION = "2.7.11";
     let isForceUpdating = false;
 
     // 比對版本號函數 (返回 1: a > b, -1: a < b, 0: a == b)
@@ -3976,6 +3976,7 @@ function normalizeStudent(s, keyId) {
           });
           appData.students = cleanStudents;
           saveLocalCache();
+          if (territoryNodesReady && currentUser) issueTerritoryDailyRewards();
           refreshCurrentView();
           const mgrModal = document.getElementById('modalClassStudentsManager');
           if (mgrModal && !mgrModal.classList.contains('hidden')) renderManagerStudentsList();
@@ -4004,10 +4005,8 @@ function normalizeStudent(s, keyId) {
           territoryNodesReady = true;
           saveLocalCache();
           if (currentUser && currentUser.role === 'teacher') renderTeacherTerritory();
-          if (currentUser && currentUser.role === 'student') {
-            renderStudentTerritory();
-            claimTerritoryDailyRewards();
-          }
+          if (currentUser && currentUser.role === 'student') renderStudentTerritory();
+          if (currentUser) issueTerritoryDailyRewards();
         });
 
         dbRootRef.child('factionRequests').on('value', (snap) => {
@@ -4576,10 +4575,24 @@ function territoryNodeDef(nodeId) {
   return TERRITORY_NODE_DEFS.find(n => n.id === nodeId) || TERRITORY_NODE_DEFS[0];
 }
 
+function territoryClassStore(className) {
+  const nodes = appData.territoryNodes || {};
+  const key = sanitizeClassKey(className || '');
+  if (nodes[key]) return nodes[key];
+  const alt = Object.keys(nodes).find(k => String(k).toLowerCase() === String(key).toLowerCase());
+  return alt ? nodes[alt] : null;
+}
+
+function territoryFactionIdsMatch(a, b) {
+  const left = String(a || '').trim().toLowerCase();
+  const right = String(b || '').trim().toLowerCase();
+  return !!(left && right && left === right);
+}
+
 function getTerritoryNode(className, nodeId) {
   const def = territoryNodeDef(nodeId);
-  const key = sanitizeClassKey(className || '');
-  const stored = (appData.territoryNodes && appData.territoryNodes[key] && appData.territoryNodes[key][nodeId]) || null;
+  const bucket = territoryClassStore(className);
+  const stored = (bucket && bucket[nodeId]) || null;
   const node = Object.assign(blankTerritoryNode(def), stored || {});
   node.id = def.id;
   node.name = def.name;
@@ -4598,8 +4611,18 @@ function studentHoldsTerritoryNode(student, className, nodeId) {
   return classes.some(c => {
     const fac = getStudentFactionInClass(student, c);
     if (!fac || !fac.factionId) return false;
-    return getTerritoryNode(c, nodeId).controllerFactionId === fac.factionId;
+    return territoryFactionIdsMatch(getTerritoryNode(c, nodeId).controllerFactionId, fac.factionId);
   });
+}
+
+function territoryHoldClass(student, nodeId) {
+  if (!student) return '';
+  const classes = parseStudentClasses(student.classId);
+  return classes.find(c => {
+    const fac = getStudentFactionInClass(student, c);
+    if (!fac || !fac.factionId) return false;
+    return territoryFactionIdsMatch(getTerritoryNode(c, nodeId).controllerFactionId, fac.factionId);
+  }) || classes[0] || '';
 }
 
 function territoryDamageMultiplier(student, className) {
@@ -4791,45 +4814,98 @@ function grantTerritoryNodePoints(student, className, points, sourceLabel) {
   });
 }
 
-function claimTerritoryDailyRewards() {
-  if (!currentUser || currentUser.role !== 'student' || !territoryNodesReady) return;
-  const st = appData.students[currentUser.id];
-  if (!st) return;
+const territoryDailyInFlight = {};
+let territoryDailyRunning = false;
+let territoryDailyTimer = null;
+let territoryDailyPaintQueued = false;
+
+function queueTerritoryDailyPaint() {
+  if (territoryDailyPaintQueued) return;
+  territoryDailyPaintQueued = true;
+  setTimeout(() => {
+    territoryDailyPaintQueued = false;
+    if (!currentUser) return;
+    if (currentUser.role === 'student') updateStudentUI();
+    else if (currentUser.role === 'teacher') renderTeacherGrid();
+  }, 30);
+}
+
+function issueTerritoryDailyRewards() {
+  if (!currentUser || !territoryNodesReady || !appData.students || territoryDailyRunning) return;
   const today = hongKongDateKey();
-  if (st.territoryDailyDay === today) return;
-  const holdFile = studentHoldsTerritoryNode(st, null, 'file_island');
-  const holdCore = studentHoldsTerritoryNode(st, null, 'core');
-  const applyClaim = (cur) => {
-    if (!cur) return;
-    if (String(cur.territoryDailyDay || '') === today) return;
-    cur.territoryDailyDay = today;
-    if (holdFile) cur.attackQuota = (Number(cur.attackQuota) || 0) + 3;
-    if (holdCore) cur.coins = (Number(cur.coins) || 0) + 20;
-    return cur;
-  };
-  const finish = (quotaAdded, coinsAdded) => {
-    if (quotaAdded) showToast('數碼源泉 / Digital Spring', '每日攻擊 +3。 / +3 attacks for today.', 'info');
-    if (coinsAdded) showToast('世界樹權柄 / World Tree', '每日金幣 +20。 / +20 coins for today.', 'heal');
-    if (quotaAdded || coinsAdded) {
-      addBattleLog(`🌅 [NODE DAILY] ${st.name} 收到據點每日獎勵${quotaAdded ? ' +3 攻擊' : ''}${coinsAdded ? ' +20 金幣' : ''}。`, 'heal', st.classId);
-      playSound('heal');
-    }
-  };
-  if (!dbRootRef) {
-    const next = applyClaim(Object.assign({}, st));
-    if (!next) return;
-    Object.assign(st, { territoryDailyDay: next.territoryDailyDay, attackQuota: next.attackQuota, coins: next.coins });
-    finish(holdFile, holdCore);
-    updateStudentUI();
-    return;
+  const roster = Object.values(appData.students);
+  territoryDailyRunning = true;
+  try {
+    roster.forEach(st => {
+      if (!st || !st.id || territoryDailyInFlight[st.id]) return;
+      if (String(st.territoryDailyDay || '') === today) return;
+      const holdFile = studentHoldsTerritoryNode(st, null, 'file_island');
+      const holdCore = studentHoldsTerritoryNode(st, null, 'core');
+      const fileClass = holdFile ? territoryHoldClass(st, 'file_island') : '';
+      const coreClass = holdCore ? territoryHoldClass(st, 'core') : '';
+      territoryDailyInFlight[st.id] = true;
+      let changed = false;
+      const applyClaim = (cur) => {
+        changed = false;
+        if (!cur) return;
+        if (String(cur.territoryDailyDay || '') === today) return cur;
+        const next = Object.assign({}, cur);
+        next.territoryDailyDay = today;
+        if (holdFile) next.attackQuota = (Number(cur.attackQuota) || 0) + 3;
+        if (holdCore) next.coins = (Number(cur.coins) || 0) + 20;
+        changed = true;
+        return next;
+      };
+      const finish = (committed, snapVal) => {
+        delete territoryDailyInFlight[st.id];
+        if (!committed || !changed) return;
+        const saved = snapVal || {};
+        const local = appData.students[st.id];
+        if (local) {
+          local.territoryDailyDay = String(saved.territoryDailyDay || today);
+          if (saved.attackQuota != null) local.attackQuota = Number(saved.attackQuota);
+          if (saved.coins != null) local.coins = Number(saved.coins);
+        }
+        if (holdFile) {
+          addBattleLog(`🌅 [FILE ISLAND] ${st.name} 收到檔案島午夜獎勵 +3 攻擊次數。 / File Island midnight reward: +3 attacks.`, 'heal', fileClass || coreClass || st.classId, true);
+        }
+        if (holdCore) {
+          addBattleLog(`🌅 [WORLD CORE] ${st.name} 收到數碼世界核心午夜獎勵 +20 金幣。 / Digital World Core midnight reward: +20 coins.`, 'heal', coreClass || fileClass || st.classId, true);
+        }
+        if (currentUser && currentUser.id === st.id && (holdFile || holdCore)) {
+          if (holdFile) showToast('數碼源泉 / Digital Spring', '每日攻擊 +3。 / +3 attacks for today.', 'info');
+          if (holdCore) showToast('世界樹權柄 / World Tree', '每日金幣 +20。 / +20 coins for today.', 'heal');
+          playSound('heal');
+        }
+        if (holdFile || holdCore) queueTerritoryDailyPaint();
+      };
+      if (!dbRootRef) {
+        const next = applyClaim(Object.assign({}, st));
+        if (!next) {
+          delete territoryDailyInFlight[st.id];
+          return;
+        }
+        finish(true, next);
+        return;
+      }
+      dbRootRef.child('students/' + st.id).transaction(cur => applyClaim(cur), (err, committed, snap) => {
+        finish(!!committed && !err, snap && snap.val ? snap.val() : null);
+      });
+    });
+  } finally {
+    territoryDailyRunning = false;
   }
-  dbRootRef.child('students/' + st.id).transaction(cur => {
-    const next = applyClaim(cur);
-    if (!next) return;
-    return next;
-  }, (err, committed) => {
-    if (committed) finish(holdFile, holdCore);
-  });
+}
+
+function claimTerritoryDailyRewards() {
+  issueTerritoryDailyRewards();
+}
+
+function ensureTerritoryDailyTimer() {
+  if (territoryDailyTimer) return;
+  territoryDailyTimer = setInterval(() => {
+    if (currentUser && territoryNodesReady) issueTerritoryDailyRewards();
+  }, 60000);
 }
 
 function switchStudentSubTab(tabName) {
@@ -5922,8 +5998,8 @@ function rejectFactionRequest(reqKey) {
     }
 
     // 🥷 核心更新：加入老師隱藏模式檢查，若開啟則直接攔截不記錄任何 Log
-    function addBattleLog(text, type = "normal", classTag = null) {
-      if (currentUser && currentUser.role === 'teacher' && isTeacherStealthMode) {
+    function addBattleLog(text, type = "normal", classTag = null, force = false) {
+      if (!force && currentUser && currentUser.role === 'teacher' && isTeacherStealthMode) {
         return;
       }
 
@@ -6460,7 +6536,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.10</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.11</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -7114,6 +7190,7 @@ function getSuperAdminTemplate() {
   renderBattleLogs();
   renderAnnouncementsUI();
   renderBountyUI();
+  issueTerritoryDailyRewards();
 }
 
 function logout() {
@@ -8165,7 +8242,11 @@ else if (mode === 'pvp') {
         }
 
         const totalExpAward = Math.round((earnedExp + bountyBonusExp) * territoryExpMultiplier(st, myClasses[0]));
-        if (studentHoldsTerritoryNode(st, myClasses[0], 'core')) earnedCoins += 5;
+        let worldTreeCoins = 0;
+        if (studentHoldsTerritoryNode(st, myClasses[0], 'core')) {
+          earnedCoins += 5;
+          worldTreeCoins = 5;
+        }
 
         st.coins = (st.coins || 0) + earnedCoins;
         st.exp = (st.exp || 0) + totalExpAward;
@@ -8176,6 +8257,7 @@ else if (mode === 'pvp') {
 
         playSound('faint');
         addBattleLog(`☠️💥 ${actionTag} ${st.name} 擊敗了 ${target.name}！自身受反傷 -${recoilDmg} HP，獲得 +${totalExpAward} EXP 與 +${earnedCoins} 金幣！`, "battle", st.classId);
+        if (worldTreeCoins) addBattleLog(`🌳 [WORLD TREE] ${st.name} 擊倒 ${target.name}，世界樹權柄額外 +5 金幣。 / World Tree bonus: +5 coins.`, "heal", st.classId, true);
         showToast("擊敗對手！", `${isCounterAttack ? '反擊' : '擊殺'}成功！獲得 +${earnedCoins} 金幣，自身受反傷 -${recoilDmg} HP`, "heal");
       } else {
         playSound('attack');
@@ -13680,6 +13762,8 @@ function startStudentExamTimer() {
       const activeBountyTargetId = appData.bounties ? (appData.bounties[sanitizeClassKey(targetClass)] || appData.bounties['ALL']) : null;
       let expGained = 10;
       let coinsGained = 0;
+      let worldTreeCoins = 0;
+      let killExp = 0;
 
       if (activeBountyTargetId === target.id) {
         expGained += 30; // 懸賞命中獎勵
@@ -13693,7 +13777,7 @@ function startStudentExamTimer() {
 
         // 計算階級差距經驗 (同級 100, 越一級 150, 越兩級 200, 弱一級 50, 弱兩級 0)
         const baseKillExp = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
-        let killExp = baseKillExp;
+        killExp = baseKillExp;
 
         // 陣營 EXP Frenzy 增益 (+25% EXP)
         if (myFac.factionId) {
@@ -13705,7 +13789,10 @@ function startStudentExamTimer() {
 
         expGained += killExp;
         coinsGained += 10; // 成功擊殺基礎金幣獎勵
-        if (studentHoldsTerritoryNode(me, targetClass, 'core')) coinsGained += 5;
+        if (studentHoldsTerritoryNode(me, targetClass, 'core')) {
+          coinsGained += 5;
+          worldTreeCoins = 5;
+        }
 
         // 懸賞擊殺特別大獎 (Elimination Bounty: +300 EXP, +1 Ticket, +20 Coins)
         if (activeBountyTargetId === target.id) {
@@ -13715,9 +13802,13 @@ function startStudentExamTimer() {
           updates[`bounties/${sanitizeClassKey(targetClass)}`] = null; // 結算並清除懸賞
           addBattleLog(`🎯🏆 [BOUNTY CLAIMED / 懸賞達成] ${me.name} eliminated Bounty Target [${target.name}]! Awarded +300 EXP, +1 Ticket & +20 Coins!`, "evolution", targetClass);
         }
+      }
 
+      expGained = Math.round(expGained * territoryExpMultiplier(me, targetClass));
+      if (nextHp <= 0) {
         playSound('faint');
         addBattleLog(`☠️⚔️ [PVP KILL / 對決擊殺] ${me.name}'s [${myDigi.name}] defeated ${target.name}'s [${tgtDigi.name}]! (Kill EXP: +${killExp}, Total EXP: +${expGained}, +${coinsGained} Coins)`, "battle", targetClass);
+        if (worldTreeCoins) addBattleLog(`🌳 [WORLD TREE] ${me.name} 擊倒 ${target.name}，世界樹權柄額外 +5 金幣。 / World Tree bonus: +5 coins.`, "heal", targetClass, true);
         showToast("Target Defeated! / 擊殺對手！", `Defeated ${target.name}! Gained +${expGained} EXP & +${coinsGained} Coins! / 成功擊殺 ${target.name}！獲得 +${expGained} EXP 與 +${coinsGained} 金幣！`, "evolution");
       } else {
         playSound('attack');
@@ -13725,8 +13816,6 @@ function startStudentExamTimer() {
         addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
         showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
       }
-
-      expGained = Math.round(expGained * territoryExpMultiplier(me, targetClass));
       // 更新攻擊者經驗值、點數池與金幣
       updates[`students/${me.id}/exp`] = (me.exp || 0) + expGained;
       updates[`students/${me.id}/statPool`] = (me.statPool || 0) + expGained;
@@ -13900,6 +13989,7 @@ function startStudentExamTimer() {
 
     window.addEventListener('DOMContentLoaded', () => {
       initFirebase();
+      ensureTerritoryDailyTimer();
       const deathReviveBtn = document.getElementById('btnDeathReviveQuiz');
       if (deathReviveBtn) deathReviveBtn.addEventListener('pointerup', () => openReviveQuizFromDeath());
       const pInput = document.getElementById('loginPassword');
