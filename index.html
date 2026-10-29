@@ -668,6 +668,11 @@
             <option value="">-- 尚未加入群組 --</option>
           </select>
         </div>
+        <div id="studentGroupMemberBar" class="hidden items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+          <span id="studentGroupMemberCount" class="text-[11px] font-bold text-emerald-200">成員 0</span>
+          <button id="btnStudentGroupMembers" type="button" onclick="toggleStudentMemberPanel()" class="min-h-12 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black cursor-pointer active:scale-95">成員名單 / Members</button>
+        </div>
+        <div id="studentGroupMemberList" class="hidden rounded-xl border border-emerald-500/40 bg-slate-950/70 p-3 space-y-2"></div>
         <p id="studentChatRoomMeta" class="text-[10px] text-slate-500">只會送給這個班獲准的老師。同學看不到，也不能回你。 / Only the teachers allowed for this class can see this. Classmates cannot see it or reply.</p>
         <div id="studentChatMessagesList" onclick="acknowledgeStudentClassChat()" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1 text-xs">
           <div class="text-slate-500 italic text-center py-4">選擇班級後即可查看聊天室。 / Select a class to open the messages.</div>
@@ -1584,7 +1589,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.14";
+    const CURRENT_APP_VERSION = "2.7.15";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -2872,6 +2877,12 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     let studentChatMode = "private";
     let selectedTeacherGroupId = "";
     let selectedStudentGroupId = "";
+    let teacherMemberPanelOpen = false;
+    let studentMemberPanelOpen = false;
+    let teacherMemberFilter = "";
+    let studentMemberFilter = "";
+    let teacherMemberPanelGroupId = "";
+    let studentMemberPanelGroupId = "";
     const chatRenderSignatures = {};
 
     function collectKnownClassNames() {
@@ -3945,9 +3956,17 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       const canManage = !!(currentUser && teacherCanManageGroupChat(currentUser.id) && selectedTeacherChatClass && teacherCanAccessClassChat(currentUser.id, selectedTeacherChatClass));
       if (manage) manage.classList.toggle('hidden', !(groupMode && canManage));
       const editor = document.getElementById('teacherGroupMemberEditor');
-      if (editor && !groupMode) {
-        editor.classList.add('hidden');
-        editor.innerHTML = '';
+      const memberBar = document.getElementById('teacherGroupMemberBar');
+      if (!groupMode) {
+        if (memberBar) {
+          memberBar.classList.add('hidden');
+          memberBar.classList.remove('flex');
+        }
+        if (editor) {
+          editor.classList.add('hidden');
+          editor.innerHTML = '';
+          editor.dataset.sig = '';
+        }
       }
     }
 
@@ -3963,6 +3982,19 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       if (groupRow) {
         groupRow.classList.toggle('hidden', !groupMode);
         groupRow.classList.toggle('flex', groupMode);
+      }
+      if (!groupMode) {
+        const memberBar = document.getElementById('studentGroupMemberBar');
+        const memberList = document.getElementById('studentGroupMemberList');
+        if (memberBar) {
+          memberBar.classList.add('hidden');
+          memberBar.classList.remove('flex');
+        }
+        if (memberList) {
+          memberList.classList.add('hidden');
+          memberList.innerHTML = '';
+          memberList.dataset.sig = '';
+        }
       }
     }
 
@@ -4057,6 +4089,96 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       }).catch(err => alert('刪除群組失敗: ' + (err && err.message ? err.message : err)));
     }
 
+    function groupMemberRoster(group) {
+      if (!group) return [];
+      return studentsInClassChat(group.className)
+        .filter(s => studentIsGroupMember(group, s.id))
+        .sort((a, b) => compareClassStudents(a, b, group.className));
+    }
+
+    function compareClassStudents(a, b, className) {
+      const na = studentClassNumber(a, className);
+      const nb = studentClassNumber(b, className);
+      if (na != null && nb != null && na !== nb) return na - nb;
+      if (na != null && nb == null) return -1;
+      if (na == null && nb != null) return 1;
+      return String(a.name || a.id).localeCompare(String(b.name || b.id), 'zh-Hant');
+    }
+
+    function memberSearchText(student, className) {
+      const no = studentClassNumber(student, className);
+      return [student.name, student.username, student.id, no != null ? String(no) : ''].filter(Boolean).join(' ').toLowerCase();
+    }
+
+    function memberNumberLabel(student, className) {
+      const no = studentClassNumber(student, className);
+      if (no != null) return 'No.' + no;
+      return String(student.username || student.id || '');
+    }
+
+    function memberQueryHits(row, query) {
+      if (!query) return true;
+      const hay = String(row.getAttribute('data-member-search') || '').toLowerCase();
+      if (/^\d+$/.test(query)) {
+        const num = String(row.getAttribute('data-member-number') || '');
+        if (num && num === String(parseInt(query, 10))) return true;
+        return hay.split(/\s+/).some(part => part === query);
+      }
+      return hay.includes(query);
+    }
+
+    function filterMemberRows(listId, value, which) {
+      const q = String(value || '').trim().toLowerCase();
+      if (which === 'student') studentMemberFilter = q;
+      else teacherMemberFilter = q;
+      const rows = document.querySelectorAll('#' + listId + ' [data-member-search]');
+      let shown = 0;
+      rows.forEach(row => {
+        const hide = !memberQueryHits(row, q);
+        row.classList.toggle('hidden', hide);
+        if (!hide) shown++;
+      });
+      const empty = document.getElementById(listId + 'Empty');
+      if (empty) empty.classList.toggle('hidden', shown > 0 || !rows.length);
+    }
+
+    function toggleTeacherMemberPanel() {
+      teacherMemberPanelOpen = !teacherMemberPanelOpen;
+      if (!teacherMemberPanelOpen) teacherMemberFilter = '';
+      const editor = document.getElementById('teacherGroupMemberEditor');
+      if (editor) editor.dataset.sig = '';
+      renderTeacherClassChat();
+    }
+
+    function toggleStudentMemberPanel() {
+      studentMemberPanelOpen = !studentMemberPanelOpen;
+      if (!studentMemberPanelOpen) studentMemberFilter = '';
+      const list = document.getElementById('studentGroupMemberList');
+      if (list) list.dataset.sig = '';
+      renderStudentClassChat();
+    }
+
+    function setMemberPanelVisibility(bar, box, open) {
+      if (bar) {
+        bar.classList.toggle('hidden', false);
+        bar.classList.toggle('flex', true);
+      }
+      if (!box) return;
+      box.classList.toggle('hidden', !open);
+    }
+
+    function hideMemberPanel(bar, box) {
+      if (bar) {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+      }
+      if (box) {
+        box.classList.add('hidden');
+        box.innerHTML = '';
+        box.dataset.sig = '';
+      }
+    }
+
     function toggleGroupMember(encGroupId, encStudentId, allowed) {
       if (!currentUser || currentUser.role !== 'teacher' || !teacherCanManageGroupChat(currentUser.id)) return;
       const className = selectedTeacherChatClass;
@@ -4071,28 +4193,106 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       });
     }
 
-    function renderTeacherGroupMemberEditor(group) {
+    function renderTeacherGroupMemberEditor(group, canManage) {
       const box = document.getElementById('teacherGroupMemberEditor');
+      const bar = document.getElementById('teacherGroupMemberBar');
+      const countEl = document.getElementById('teacherGroupMemberCount');
+      const btn = document.getElementById('btnTeacherGroupMembers');
       if (!box) return;
-      const canManage = !!(currentUser && teacherCanManageGroupChat(currentUser.id));
-      if (teacherChatMode !== 'group' || !group || !canManage) {
-        box.classList.add('hidden');
-        box.innerHTML = '';
+      if (teacherChatMode !== 'group' || !group) {
+        hideMemberPanel(bar, box);
         return;
       }
-      const students = studentsInClassChat(group.className);
-      const encGroup = encodeURIComponent(group.id);
-      const checks = students.map(s => {
-        const on = studentIsGroupMember(group, s.id);
-        const encS = encodeURIComponent(s.id);
-        return `<label class="flex items-center gap-2 min-h-12 px-2.5 py-1.5 rounded-lg border ${on ? 'border-emerald-500/70 bg-emerald-950/40 text-emerald-100' : 'border-slate-800 bg-slate-950 text-slate-400'} cursor-pointer select-none">
-          <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleGroupMember('${encGroup}', '${encS}', this.checked)" class="accent-emerald-500 cursor-pointer">
-          <span class="font-bold text-xs">${escapeHtml(s.name || s.id)}</span>
-        </label>`;
-      }).join('');
+      if (teacherMemberPanelGroupId !== group.id) {
+        teacherMemberFilter = '';
+        teacherMemberPanelGroupId = group.id;
+      }
+      const members = groupMemberRoster(group);
+      const classStudents = studentsInClassChat(group.className).slice().sort((a, b) => compareClassStudents(a, b, group.className));
+      const people = canManage ? classStudents : members;
+      setMemberPanelVisibility(bar, box, teacherMemberPanelOpen);
+      if (countEl) countEl.textContent = canManage ? `成員 ${members.length} / ${classStudents.length}` : `成員 ${members.length}`;
+      if (btn) btn.textContent = teacherMemberPanelOpen ? '收起 / Close' : (canManage ? '選擇成員 / Choose' : '成員名單 / Members');
+      if (!teacherMemberPanelOpen) {
+        box.classList.add('hidden');
+        box.innerHTML = '';
+        box.dataset.sig = '';
+        return;
+      }
+      const sig = [canManage ? 'edit' : 'read', group.id].concat(people.map(s => s.id + ':' + (studentIsGroupMember(group, s.id) ? '1' : '0'))).join('|');
       box.classList.remove('hidden');
-      box.innerHTML = `<div class="text-[11px] font-bold text-emerald-300">選擇加入【${escapeHtml(group.name)}】的學生 / Choose students</div>
-        <div class="flex flex-wrap gap-2">${checks || '<span class="text-slate-500 text-xs">這個班沒有學生。</span>'}</div>`;
+      if (box.dataset.sig === sig) return;
+      const encGroup = encodeURIComponent(group.id);
+      const rows = people.map(s => {
+        const on = studentIsGroupMember(group, s.id);
+        const control = canManage
+          ? `<input type="checkbox" ${on ? 'checked' : ''} onchange="toggleGroupMember('${encGroup}', '${encodeURIComponent(s.id)}', this.checked)" class="accent-emerald-500 cursor-pointer w-5 h-5 shrink-0">`
+          : '<i class="fa-solid fa-user text-emerald-400 text-[11px] w-5 text-center shrink-0"></i>';
+        const tone = on
+          ? 'border-emerald-500/70 bg-emerald-950/40 text-emerald-100'
+          : 'border-slate-800 bg-slate-950 text-slate-300';
+        const tag = canManage ? 'label' : 'div';
+        const memberNo = studentClassNumber(s, group.className);
+        return `<${tag} data-member-search="${escapeHtml(memberSearchText(s, group.className))}" data-member-number="${memberNo == null ? '' : memberNo}" class="flex items-center gap-2 min-h-12 px-2.5 rounded-lg border ${tone} ${canManage ? 'cursor-pointer select-none' : ''}">
+          ${control}
+          <span class="font-bold text-xs truncate">${escapeHtml(s.name || s.id)}</span>
+          <span class="ml-auto font-mono text-[10px] text-slate-500 shrink-0">${escapeHtml(memberNumberLabel(s, group.className))}</span>
+        </${tag}>`;
+      }).join('');
+      const hint = canManage
+        ? '搜尋姓名或學號，再勾選。名單會捲動，不會一次鋪滿聊天頁。 / Search a name or class number, then check. The list scrolls.'
+        : '你只能看名單，不能改成員。 / You can read this list. You cannot change it.';
+      box.innerHTML = `<div class="text-[11px] font-bold text-emerald-300">${escapeHtml(group.name)} · ${canManage ? '選擇成員 / Choose members' : '成員名單 / Members'}</div>
+        <p class="text-[10px] text-slate-500">${hint}</p>
+        <input id="teacherMemberFilter" type="search" value="${escapeHtml(teacherMemberFilter)}" oninput="filterMemberRows('teacherMemberRows', this.value, 'teacher')" placeholder="搜尋姓名或學號 / Search name or number" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-lg px-3 text-xs text-white outline-none focus:border-emerald-400">
+        <div id="teacherMemberRows" class="max-h-52 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">${rows || '<div class="text-slate-500 text-xs py-3 text-center">沒有學生。 / No students.</div>'}</div>
+        <div id="teacherMemberRowsEmpty" class="hidden text-slate-500 text-xs text-center py-2">找不到。 / No match.</div>`;
+      box.dataset.sig = sig;
+      if (teacherMemberFilter) filterMemberRows('teacherMemberRows', teacherMemberFilter, 'teacher');
+    }
+
+    function renderStudentGroupMemberList(group) {
+      const box = document.getElementById('studentGroupMemberList');
+      const bar = document.getElementById('studentGroupMemberBar');
+      const countEl = document.getElementById('studentGroupMemberCount');
+      const btn = document.getElementById('btnStudentGroupMembers');
+      if (!box) return;
+      if (studentChatMode !== 'group' || !group) {
+        hideMemberPanel(bar, box);
+        return;
+      }
+      if (studentMemberPanelGroupId !== group.id) {
+        studentMemberFilter = '';
+        studentMemberPanelGroupId = group.id;
+      }
+      const members = groupMemberRoster(group);
+      setMemberPanelVisibility(bar, box, studentMemberPanelOpen);
+      if (countEl) countEl.textContent = `成員 ${members.length}`;
+      if (btn) btn.textContent = studentMemberPanelOpen ? '收起 / Close' : '成員名單 / Members';
+      if (!studentMemberPanelOpen) {
+        box.classList.add('hidden');
+        box.innerHTML = '';
+        box.dataset.sig = '';
+        return;
+      }
+      const sig = ['student', group.id].concat(members.map(s => s.id)).join('|');
+      box.classList.remove('hidden');
+      if (box.dataset.sig === sig) return;
+      const rows = members.map(s => {
+        const memberNo = studentClassNumber(s, group.className);
+        return `<div data-member-search="${escapeHtml(memberSearchText(s, group.className))}" data-member-number="${memberNo == null ? '' : memberNo}" class="flex items-center gap-2 min-h-12 px-2.5 rounded-lg border border-emerald-500/40 bg-emerald-950/30 text-emerald-100">
+          <i class="fa-solid fa-user text-emerald-400 text-[11px] w-5 text-center shrink-0"></i>
+          <span class="font-bold text-xs truncate">${escapeHtml(s.name || s.id)}</span>
+          <span class="ml-auto font-mono text-[10px] text-slate-500 shrink-0">${escapeHtml(memberNumberLabel(s, group.className))}</span>
+        </div>`;
+      }).join('');
+      box.innerHTML = `<div class="text-[11px] font-bold text-emerald-300">${escapeHtml(group.name)} · 成員名單 / Members</div>
+        <p class="text-[10px] text-slate-500">這個群組裡的同學。 / People in this group.</p>
+        <input id="studentMemberFilter" type="search" value="${escapeHtml(studentMemberFilter)}" oninput="filterMemberRows('studentMemberRows', this.value, 'student')" placeholder="搜尋姓名或學號 / Search name or number" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-lg px-3 text-xs text-white outline-none focus:border-emerald-400">
+        <div id="studentMemberRows" class="max-h-52 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">${rows || '<div class="text-slate-500 text-xs py-3 text-center">尚未有成員。 / No members yet.</div>'}</div>
+        <div id="studentMemberRowsEmpty" class="hidden text-slate-500 text-xs text-center py-2">找不到。 / No match.</div>`;
+      box.dataset.sig = sig;
+      if (studentMemberFilter) filterMemberRows('studentMemberRows', studentMemberFilter, 'student');
     }
 
     function renderTeacherGroupChatPane() {
@@ -4130,7 +4330,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
         return { value: g.id, label: `${unread ? '🔴 ' + unread + ' ' : ''}${g.name} (${members})` };
       }), selectedTeacherGroupId, '-- 這個班還沒有群組 / No groups --');
 
-      renderTeacherGroupMemberEditor(canManage ? group : null);
+      renderTeacherGroupMemberEditor(group, !!(canManage && group));
       if (!selectedTeacherChatClass) {
         if (titleEl) titleEl.textContent = '尚未獲授權 / Not allowed yet';
         if (countEl) countEl.textContent = '訊息數 Messages：0';
@@ -4154,7 +4354,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
         return;
       }
       const msgList = getGroupMessages(group.className, group.id);
-      const names = studentsInClassChat(group.className).filter(s => studentIsGroupMember(group, s.id)).map(s => s.name || s.id);
+      const memberCount = groupMemberRoster(group).length;
       if (input) {
         input.disabled = !canManage;
         input.placeholder = canManage
@@ -4164,8 +4364,8 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       if (titleEl) titleEl.textContent = `${group.name} · ${group.className}`;
       if (countEl) countEl.textContent = `訊息數 Messages：${msgList.length} / ${CLASS_CHAT_MAX_MESSAGES}`;
       if (metaEl) metaEl.textContent = canManage
-        ? `你可以選擇學生加入。目前成員：${names.length ? names.join('、') : '尚未選擇'}。 / You choose who joins. Members: ${names.length ? names.join(', ') : 'none yet'}.`
-        : `只能閱讀。成員：${names.length ? names.join('、') : '尚未選擇'}。你不能開群，也不能改成員。 / Read only. You cannot open a group or change members.`;
+        ? `這個群有 ${memberCount} 位成員。按「選擇成員」搜尋並勾選，名單不會鋪滿畫面。 / ${memberCount} members. Open Choose to search and pick. The names stay in a short list.`
+        : `只能閱讀。這個群有 ${memberCount} 位成員，按「成員名單」查看。你不能改成員。 / Read only. ${memberCount} members. Open Members to see them. You cannot change the list.`;
       if (clearBtn) clearBtn.classList.toggle('hidden', !canManage);
       fillChatContainer(container, renderClassChatBubbles(msgList, '這個群組還沒有訊息。 / No messages in this group yet.'));
       updateClassChatUnreadBadge();
@@ -4193,6 +4393,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
         return { value: g.id, label: `${unread ? '🔴 ' + unread + ' ' : ''}${g.className} · ${g.name}` };
       }), selectedStudentGroupId, '-- 尚未加入群組 / No group yet --');
       if (!group) {
+        renderStudentGroupMemberList(null);
         if (metaEl) metaEl.textContent = '老師還沒有把你加入任何群組。 / A teacher has not added you to a group yet.';
         if (input) input.disabled = true;
         fillChatContainer(container, '<div class="text-slate-500 italic text-center py-4">尚未加入群組。 / You are not in a group.</div>');
@@ -4200,11 +4401,13 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
         return;
       }
       const canSend = !!(st && studentIsInClass(st, group.className) && studentIsGroupMember(group, st.id) && !st.isBanned && !isClassBannedForChat(group.className));
+      const memberCount = groupMemberRoster(group).length;
+      renderStudentGroupMemberList(group);
       if (input) {
         input.disabled = !canSend;
         input.placeholder = canSend ? '傳給這個群組... / Message this group...' : '目前為唯讀 / Read only.';
       }
-      if (metaEl) metaEl.textContent = `群組【${group.name}】· ${group.className}。群組成員和這個班獲准的老師看得到。 / Members and the allowed teachers can see this group.`;
+      if (metaEl) metaEl.textContent = `群組【${group.name}】· ${group.className}。按「成員名單」查看 ${memberCount} 位成員。 / Open Members to see the ${memberCount} people in this group.`;
       fillChatContainer(container, renderClassChatBubbles(getGroupMessages(group.className, group.id), '這個群組還沒有訊息。 / No messages yet.'));
       updateClassChatUnreadBadge();
     }
@@ -7272,7 +7475,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.14</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.15</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -7742,6 +7945,10 @@ function getTeacherTemplate() {
           <button id="btnNewClassGroup" type="button" onclick="createClassGroup()" class="min-h-12 px-3 rounded-xl bg-emerald-600 text-white text-xs font-black cursor-pointer active:scale-95">開新群組 / New group</button>
           <button id="btnDeleteClassGroup" type="button" onclick="deleteClassGroup()" class="min-h-12 px-3 rounded-xl bg-rose-950 border border-rose-600 text-rose-200 text-xs font-black cursor-pointer active:scale-95">刪除群組 / Delete group</button>
         </div>
+        <div id="teacherGroupMemberBar" class="hidden items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+          <span id="teacherGroupMemberCount" class="text-[11px] font-bold text-emerald-200">成員 0</span>
+          <button id="btnTeacherGroupMembers" type="button" onclick="toggleTeacherMemberPanel()" class="min-h-12 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black cursor-pointer active:scale-95">成員名單 / Members</button>
+        </div>
         <div id="teacherGroupMemberEditor" class="hidden rounded-xl border border-emerald-500/40 bg-slate-950/70 p-3 space-y-2"></div>
         <p id="teacherChatRoomMeta" class="text-[11px] text-slate-400">只有獲准的老師看得到這位學生的訊息。 / Only the allowed teachers can see this student's messages.</p>
 
@@ -7959,6 +8166,16 @@ function logout() {
   selectedTeacherChatClass = "";
   selectedTeacherChatStudent = "";
   selectedStudentChatClass = "";
+  teacherChatMode = "private";
+  studentChatMode = "private";
+  selectedTeacherGroupId = "";
+  selectedStudentGroupId = "";
+  teacherMemberPanelOpen = false;
+  studentMemberPanelOpen = false;
+  teacherMemberFilter = "";
+  studentMemberFilter = "";
+  teacherMemberPanelGroupId = "";
+  studentMemberPanelGroupId = "";
   document.getElementById('mainHeader').classList.add('hidden');
   document.getElementById('viewStudent').classList.add('hidden');
   
