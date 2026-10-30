@@ -35,10 +35,25 @@
     .territory-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     @keyframes territoryGlow { 50% { box-shadow: 0 0 18px rgba(34, 211, 238, 0.45); } }
     .territory-live { animation: territoryGlow 2.4s ease-in-out infinite; }
+    html { -webkit-text-size-adjust: 100%; }
     body { 
       font-family: 'Inter', 'Noto Sans TC', sans-serif; 
       background-color: #020617; 
-      color: #f8fafc; 
+      color: #f8fafc;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    button, select, input, textarea { touch-action: manipulation; }
+    select, input, textarea { font-size: 16px; }
+    @media (min-width: 1024px) {
+      #teacherStudentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    #mainHeader button, #btnTeacherTabMain, #btnTeacherTabFaction, #btnTeacherTabQuiz, #btnTeacherTabExam, #btnTeacherTabMsg, #btnStudentTabClass, #btnStudentTabChat, #btnStudentTabFaction, #loginUsername, #loginPassword {
+      min-height: 44px;
+    }
+    #teacherStudentGrid select, #teacherBountyStudentSelect, #teacherTargetFactionSelect, #teacherClassFilter {
+      min-height: 44px;
     }
     
     .digi-card {
@@ -575,7 +590,7 @@
   </header>
 
   <!-- Main Container -->
-  <main class="max-w-6xl mx-auto p-4 md:p-6">
+  <main class="max-w-6xl mx-auto w-full p-3 sm:p-4 md:p-6 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
 
     <!-- 0. LOGIN VIEW -->
     <div id="viewLogin" class="max-w-md mx-auto my-12 bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 md:p-8 shadow-2xl relative z-10">
@@ -1081,8 +1096,8 @@
     </div>
   </div>
   <!-- Teacher single-target picker. Same tap-a-card flow as the student picker. -->
-  <div id="modalTeacherTargetPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[1001] flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border-2 border-rose-500/60 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col p-5 text-slate-200 shadow-2xl relative">
+  <div id="modalTeacherTargetPicker" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[1001] flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-slate-900 border-2 border-rose-500/60 rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[92dvh] flex flex-col p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-200 shadow-2xl relative">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2.5">
           <div class="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-400 flex items-center justify-center text-rose-300 text-lg">
@@ -1589,7 +1604,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.15";
+    const CURRENT_APP_VERSION = "2.7.16";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -1662,7 +1677,7 @@
 
       // 3. 加上不重複的時間戳與版本 query，強制繞過手機端快取
       const cleanUrl = window.location.origin + window.location.pathname;
-      const targetUrl = cleanUrl + '?_reload=' + Date.now() + '&v=' + encodeURIComponent(CURRENT_APP_VERSION);
+      const targetUrl = cleanUrl + '?_reload=' + syncedNow() + '&v=' + encodeURIComponent(CURRENT_APP_VERSION);
       
       window.location.href = targetUrl;
     }
@@ -1706,7 +1721,7 @@
       if (dbRootRef) {
         const payload = {
           version: CURRENT_APP_VERSION,
-          timestamp: Date.now(),
+          timestamp: syncedNow(),
           by: currentUser.id
         };
 
@@ -3561,8 +3576,8 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
           senderName: msgPayload.senderName,
           studentId: studentId,
           text: String(msgPayload.text || '').slice(0, 500),
-          timestamp: Math.max(Date.now(), maxTs + 1),
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: Math.max(syncedNow(), maxTs + 1),
+          time: serverClockText(false),
           className: canonical
         };
         return msgRef.update(updates);
@@ -4050,14 +4065,14 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       if (!name) return;
       if (!dbRootRef) return alert('尚未連上資料庫，請稍後再試。');
       const classKey = classChatKey(className);
-      const groupId = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const groupId = 'g' + syncedNow().toString(36) + Math.random().toString(36).slice(2, 8);
       const entry = {
         id: groupId,
         className: canonicalClassName(className),
         name: name,
         memberIds: null,
         createdBy: currentUser.id,
-        createdAt: Date.now()
+        createdAt: syncedNow()
       };
       dbRootRef.child(`systemSettings/classGroups/${classKey}/${groupId}`).set(entry).then(() => {
         teacherChatMode = 'group';
@@ -4447,8 +4462,8 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
           senderId: msgPayload.senderId,
           senderName: msgPayload.senderName,
           text: String(msgPayload.text || '').slice(0, 500),
-          timestamp: Math.max(Date.now(), maxTs + 1),
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: Math.max(syncedNow(), maxTs + 1),
+          time: serverClockText(false),
           className: canonicalClassName(className),
           groupId: group.id
         };
@@ -4533,6 +4548,51 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     let quizTeacherCountdownTimer = null;
     let firebaseServerTimeOffset = 0;
     let firebaseServerTimeOffsetReady = false;
+    const pendingFactionWrites = {};
+
+    function syncedNow() {
+      return +new Date() + (firebaseServerTimeOffsetReady ? firebaseServerTimeOffset : 0);
+    }
+
+    function serverClockText(withSeconds) {
+      const opts = { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Hong_Kong' };
+      if (withSeconds) opts.second = '2-digit';
+      return new Date(syncedNow()).toLocaleTimeString('en-GB', opts);
+    }
+
+    function rememberFactionWrite(studentId, tagKey, factionId, factionName) {
+      pendingFactionWrites[studentId + '|' + tagKey] = {
+        factionId: factionId || '',
+        factionName: factionName || '',
+        until: syncedNow() + 8000
+      };
+    }
+
+    function applyPendingFactionWrites(students) {
+      const now = syncedNow();
+      Object.keys(pendingFactionWrites).forEach(key => {
+        const pending = pendingFactionWrites[key];
+        const splitAt = key.indexOf('|');
+        const id = key.slice(0, splitAt);
+        const tagKey = key.slice(splitAt + 1);
+        const stu = students && students[id];
+        if (!pending || pending.until < now || !stu) {
+          delete pendingFactionWrites[key];
+          return;
+        }
+        if (!stu.classFactions || typeof stu.classFactions !== 'object') stu.classFactions = {};
+        const current = stu.classFactions[tagKey];
+        const same = pending.factionId
+          ? !!(current && current.factionId === pending.factionId)
+          : !(current && current.factionId);
+        if (same) {
+          delete pendingFactionWrites[key];
+          return;
+        }
+        if (!pending.factionId) delete stu.classFactions[tagKey];
+        else stu.classFactions[tagKey] = { factionId: pending.factionId, factionName: pending.factionName || 'Ally' };
+      });
+    }
     let quizSeenAnchor = null;
     // 老師端答案隱藏/顯示控制旗標（true = 遮蔽答案以防課堂抄襲，false = 顯示）
     let isQuizAnswerHiddenByTeacher = true;
@@ -4784,12 +4844,38 @@ function normalizeStudent(s, keyId) {
       }
     }
 
-    function saveLocalCache() {
+    function writeLocalCacheNow() {
+      const payload = Object.assign({}, appData);
+      delete payload.messages;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       } catch (e) {
-        console.warn("Local cache save warning:", e);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            students: appData.students || {},
+            teachers: appData.teachers || {},
+            classes: appData.classes || {}
+          }));
+        } catch (e2) {
+          console.warn("Local cache save warning:", e2);
+        }
       }
+    }
+
+    function saveLocalCache() {
+      if (saveLocalCache.timer) return;
+      saveLocalCache.timer = setTimeout(() => {
+        saveLocalCache.timer = null;
+        writeLocalCacheNow();
+      }, 800);
+    }
+
+    function flushLocalCache() {
+      if (saveLocalCache.timer) {
+        clearTimeout(saveLocalCache.timer);
+        saveLocalCache.timer = null;
+      }
+      writeLocalCacheNow();
     }
 
     function switchTeacherSubTab(tabName) {
@@ -4907,13 +4993,11 @@ function normalizeStudent(s, keyId) {
               cleanStudents[id].classId = pending.classId;
             }
           });
+          applyPendingFactionWrites(cleanStudents);
           appData.students = cleanStudents;
           saveLocalCache();
-          if (territoryNodesReady && currentUser) issueTerritoryDailyRewards();
-          refreshCurrentView();
-          const mgrModal = document.getElementById('modalClassStudentsManager');
-          if (mgrModal && !mgrModal.classList.contains('hidden')) renderManagerStudentsList();
-          if (activeTeacherSubTab === 'quiz') renderTeacherQuizLiveDashboard();
+          if (territoryNodesReady && currentUser) scheduleTerritoryDailyRewards();
+          scheduleRefreshCurrentView();
         }, (err) => {
           console.error("Students read permission error:", err);
           updateSyncStatusUI(false, `❌ Permission Denied: ${err.message}`);
@@ -4939,7 +5023,7 @@ function normalizeStudent(s, keyId) {
           saveLocalCache();
           if (currentUser && currentUser.role === 'teacher') renderTeacherTerritory();
           if (currentUser && currentUser.role === 'student') renderStudentTerritory();
-          if (currentUser) issueTerritoryDailyRewards();
+          if (currentUser) scheduleTerritoryDailyRewards();
         });
 
         dbRootRef.child('factionRequests').on('value', (snap) => {
@@ -5061,13 +5145,14 @@ function normalizeStudent(s, keyId) {
           refreshCurrentView();
         });
         // 🔄 即時監聽伺服器強制更新信號（支援手機 App / PWA 背景喚醒）
-        let pageLaunchTimestamp = Date.now();
+        const pageLaunchLocalMs = +new Date();
         dbRootRef.child('systemSettings/forceReloadSignal').on('value', (snap) => {
           const signal = snap.val();
           if (!signal || !signal.timestamp) return;
           // Only a broadcast that happens while this page is already open.
           // An older saved version must not lock the login screen forever.
-          if (Number(signal.timestamp) <= pageLaunchTimestamp) return;
+          const openedAt = pageLaunchLocalMs + (firebaseServerTimeOffsetReady ? firebaseServerTimeOffset : 0);
+          if (Number(signal.timestamp) <= openedAt) return;
           const isTeacherOrAdmin = currentUser && (currentUser.role === 'teacher' || currentUser.role === 'superadmin');
           if (isTeacherOrAdmin) return;
           triggerForceUpdateScreen(signal.version || CURRENT_APP_VERSION, signal.timestamp);
@@ -5105,7 +5190,7 @@ function normalizeStudent(s, keyId) {
           saveLocalCache();
           if (classChatSnapshotReady) notifyNewClassChatMessages(prevMessages, appData.messages);
           classChatSnapshotReady = true;
-          refreshClassChatUI();
+          scheduleClassChatRefresh();
         }, () => {});
         dbRootRef.child('systemSettings/classMessageReads').on('value', (snap) => {
           mergeServerClassChatReads(snap.val() || {});
@@ -5300,7 +5385,7 @@ function createNewFaction() {
   }
 
   const tagKey = sanitizeClassKey(targetClass);
-  const factionId = 'fac_' + Date.now();
+  const factionId = 'fac_' + syncedNow();
 
   if (dbRootRef) {
     dbRootRef.child(`factions/${tagKey}/${factionId}`).set({
@@ -5447,7 +5532,7 @@ const TERRITORY_NODE_DEFS = [
     maxControlPoints: 300,
     buffKey: 'file_island_buff',
     buffTitle: '數碼源泉 / Digital Spring',
-    buffDesc: '每日 00:00（香港）全體成員 +3 攻擊次數。回復道具與回復技能效果 +30%。 / At 00:00 Hong Kong time, every member gains +3 attacks. Recovery items and heal skills are +30%.'
+    buffDesc: '每日 00:00（香港）全體成員 +10 攻擊次數。回復道具與回復技能效果 +30%。 / At 00:00 Hong Kong time, every member gains +10 attacks. Recovery items and heal skills are +30%.'
   },
   {
     id: 'server_continent',
@@ -5465,7 +5550,7 @@ const TERRITORY_NODE_DEFS = [
     maxControlPoints: 800,
     buffKey: 'core_buff',
     buffTitle: '世界樹權柄 / World Tree',
-    buffDesc: '10% 機率完全格擋一次攻擊。擊倒敵對學生額外 +5 金幣。每日 00:00 自動獲得 20 金幣。 / 10% chance to fully block an attack. +5 coins when you defeat an enemy student. 20 coins at 00:00.'
+    buffDesc: '10% 機率完全格擋一次攻擊。擊倒敵對學生額外 +5 金幣。每日 00:00 自動獲得 200 金幣。 / 10% chance to fully block an attack. +5 coins when you defeat an enemy student. 200 coins at 00:00.'
   }
 ];
 
@@ -5745,10 +5830,32 @@ function grantTerritoryNodePoints(student, className, points, sourceLabel) {
   });
 }
 
+const FILE_ISLAND_DAILY_ATTACKS = 10;
+const WORLD_CORE_DAILY_COINS = 200;
 const territoryDailyInFlight = {};
 let territoryDailyRunning = false;
 let territoryDailyTimer = null;
 let territoryDailyPaintQueued = false;
+let territoryDailyQueued = false;
+
+function scheduleTerritoryDailyRewards() {
+  if (!firebaseServerTimeOffsetReady || !currentUser || !territoryNodesReady) return;
+  if (territoryDailyQueued) return;
+  territoryDailyQueued = true;
+  const wait = 300 + Math.floor(Math.random() * 900);
+  setTimeout(() => {
+    territoryDailyQueued = false;
+    issueTerritoryDailyRewards();
+  }, wait);
+}
+
+function territoryRewardRoster() {
+  const all = Object.values(appData.students || {});
+  if (!currentUser) return [];
+  if (currentUser.role === 'student') return all.filter(s => s && s.id === currentUser.id);
+  if (currentUser.role === 'teacher') return all.filter(s => studentIsInClass(s, selectedTeacherClass || 'ALL'));
+  return all;
+}
 
 function queueTerritoryDailyPaint() {
   if (territoryDailyPaintQueued) return;
@@ -5762,9 +5869,9 @@ function queueTerritoryDailyPaint() {
 }
 
 function issueTerritoryDailyRewards() {
-  if (!currentUser || !territoryNodesReady || !appData.students || territoryDailyRunning) return;
+  if (!firebaseServerTimeOffsetReady || !currentUser || !territoryNodesReady || !appData.students || territoryDailyRunning) return;
   const today = hongKongDateKey();
-  const roster = Object.values(appData.students);
+  const roster = territoryRewardRoster();
   territoryDailyRunning = true;
   try {
     roster.forEach(st => {
@@ -5782,8 +5889,8 @@ function issueTerritoryDailyRewards() {
         if (String(cur.territoryDailyDay || '') === today) return cur;
         const next = Object.assign({}, cur);
         next.territoryDailyDay = today;
-        if (holdFile) next.attackQuota = (Number(cur.attackQuota) || 0) + 3;
-        if (holdCore) next.coins = (Number(cur.coins) || 0) + 20;
+        if (holdFile) next.attackQuota = (Number(cur.attackQuota) || 0) + FILE_ISLAND_DAILY_ATTACKS;
+        if (holdCore) next.coins = (Number(cur.coins) || 0) + WORLD_CORE_DAILY_COINS;
         changed = true;
         return next;
       };
@@ -5798,14 +5905,14 @@ function issueTerritoryDailyRewards() {
           if (saved.coins != null) local.coins = Number(saved.coins);
         }
         if (holdFile) {
-          addBattleLog(`🌅 [FILE ISLAND] ${st.name} 收到檔案島午夜獎勵 +3 攻擊次數。 / File Island midnight reward: +3 attacks.`, 'heal', fileClass || coreClass || st.classId, true);
+          addBattleLog(`🌅 [FILE ISLAND] ${st.name} 收到檔案島午夜獎勵 +${FILE_ISLAND_DAILY_ATTACKS} 攻擊次數。 / File Island midnight reward: +${FILE_ISLAND_DAILY_ATTACKS} attacks.`, 'heal', fileClass || coreClass || st.classId, true);
         }
         if (holdCore) {
-          addBattleLog(`🌅 [WORLD CORE] ${st.name} 收到數碼世界核心午夜獎勵 +20 金幣。 / Digital World Core midnight reward: +20 coins.`, 'heal', coreClass || fileClass || st.classId, true);
+          addBattleLog(`🌅 [WORLD CORE] ${st.name} 收到數碼世界核心午夜獎勵 +${WORLD_CORE_DAILY_COINS} 金幣。 / Digital World Core midnight reward: +${WORLD_CORE_DAILY_COINS} coins.`, 'heal', coreClass || fileClass || st.classId, true);
         }
         if (currentUser && currentUser.id === st.id && (holdFile || holdCore)) {
-          if (holdFile) showToast('數碼源泉 / Digital Spring', '每日攻擊 +3。 / +3 attacks for today.', 'info');
-          if (holdCore) showToast('世界樹權柄 / World Tree', '每日金幣 +20。 / +20 coins for today.', 'heal');
+          if (holdFile) showToast('數碼源泉 / Digital Spring', `每日攻擊 +${FILE_ISLAND_DAILY_ATTACKS}。 / +${FILE_ISLAND_DAILY_ATTACKS} attacks for today.`, 'info');
+          if (holdCore) showToast('世界樹權柄 / World Tree', `每日金幣 +${WORLD_CORE_DAILY_COINS}。 / +${WORLD_CORE_DAILY_COINS} coins for today.`, 'heal');
           playSound('heal');
         }
         if (holdFile || holdCore) queueTerritoryDailyPaint();
@@ -5835,7 +5942,7 @@ function claimTerritoryDailyRewards() {
 function ensureTerritoryDailyTimer() {
   if (territoryDailyTimer) return;
   territoryDailyTimer = setInterval(() => {
-    if (currentUser && territoryNodesReady) issueTerritoryDailyRewards();
+    if (currentUser && territoryNodesReady) scheduleTerritoryDailyRewards();
   }, 60000);
 }
 
@@ -6260,17 +6367,31 @@ function teacherAttackFactionPrompt() {
 }
 
 function teacherAssignStudentFaction(studentId, newFactionId) {
+  noteTeacherInteraction(5000);
   const s = appData.students[studentId];
   if (!s) return;
 
   const targetClass = selectedTeacherClass || 'ALL';
-  const tagKey = sanitizeClassKey(targetClass);
   const factions = getFactionsForClass(targetClass);
   const found = factions.find(f => f.id === newFactionId);
+  let tagKey = found && found._classKey ? found._classKey : sanitizeClassKey(targetClass);
+  if ((!found || targetClass === 'ALL') && tagKey === 'ALL') {
+    const firstClass = parseStudentClasses(s.classId)[0];
+    if (firstClass) tagKey = sanitizeClassKey(firstClass);
+  }
 
   const updates = {};
   if (!newFactionId) {
-    updates[`students/${studentId}/classFactions/${tagKey}`] = null;
+    const keys = targetClass === 'ALL'
+      ? parseStudentClasses(s.classId).map(c => sanitizeClassKey(c))
+      : [tagKey];
+    keys.forEach(key => {
+      if (!key) return;
+      updates[`students/${studentId}/classFactions/${key}`] = null;
+      rememberFactionWrite(studentId, key, '', '');
+      if (!s.classFactions) s.classFactions = {};
+      delete s.classFactions[key];
+    });
     addBattleLog(`🚩 [陣營指派] 老師將 ${s.name} 從班別 [${targetClass}] 的陣營中移出。`, "normal", targetClass);
     showToast("Faction Updated", `${s.name} 在 [${targetClass}] 現為無陣營狀態。`, "info");
   } else if (found) {
@@ -6278,8 +6399,11 @@ function teacherAssignStudentFaction(studentId, newFactionId) {
       factionId: found.id,
       factionName: found.name
     };
-    addBattleLog(`🚩 [陣營指派] 老師將 ${s.name} 指派至班別 [${targetClass}] 的 [${found.name}] 陣營！`, "evolution", targetClass);
-    showToast("Faction Assigned", `${s.name} 已加入 [${targetClass}] 的 [${found.name}]！`, "heal");
+    rememberFactionWrite(studentId, tagKey, found.id, found.name);
+    if (!s.classFactions || typeof s.classFactions !== 'object') s.classFactions = {};
+    s.classFactions[tagKey] = { factionId: found.id, factionName: found.name };
+    addBattleLog(`🚩 [陣營指派] 老師將 ${s.name} 指派至班別 [${found.className || targetClass}] 的 [${found.name}] 陣營！`, "evolution", found.className || targetClass);
+    showToast("Faction Assigned", `${s.name} 已加入 [${found.className || targetClass}] 的 [${found.name}]！`, "heal");
   }
 
   // 清除此班級對應的申請
@@ -6489,7 +6613,7 @@ function requestStudentFactionTransfer() {
         currentFactionName: currentFac.factionName || "無陣營 (No Faction)", // 👈 記錄原本的陣營名稱
         requestedFactionId: selectedFaction.id,
         requestedFactionName: selectedFaction.name,
-        timestamp: Date.now()
+        timestamp: syncedNow()
       };
 
       if (dbRootRef) {
@@ -6722,15 +6846,15 @@ function rejectFactionRequest(reqKey) {
         text: text,
         teacherName: tc.name || currentUser.id,
         classTag: targetClass,
-        timestamp: Date.now(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: syncedNow(),
+        time: serverClockText(false)
       };
 
       if (!appData.announcements) appData.announcements = {};
       if (!appData.announcements[tagKey]) appData.announcements[tagKey] = {};
 
       if (!dbRootRef) {
-        const localId = 'local_' + Date.now();
+        const localId = 'local_' + syncedNow();
         appData.announcements[tagKey][localId] = newAnnouncement;
         saveLocalCache();
         inputEl.value = '';
@@ -6953,8 +7077,8 @@ function rejectFactionRequest(reqKey) {
       }
 
       const newLog = {
-        timestamp: Date.now(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        timestamp: syncedNow(),
+        time: serverClockText(true),
         text: text,
         type: type,
         classTag: targetClassTag || 'ALL'
@@ -7475,7 +7599,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.15</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.16</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -7576,7 +7700,7 @@ function getTeacherTemplate() {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
             <div class="flex items-center gap-2">
               <label class="text-xs font-bold text-slate-300 shrink-0">選擇目標陣營：</label>
-              <select id="teacherTargetFactionSelect" class="flex-1 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-xs text-indigo-200 outline-none">
+              <select id="teacherTargetFactionSelect" onpointerdown="noteTeacherInteraction(6000)" onfocus="noteTeacherInteraction(6000)" class="flex-1 min-h-12 min-w-0 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-base text-indigo-200 outline-none">
                 <option value="">-- 請選擇陣營 / Select a faction --</option>
               </select>
             </div>
@@ -7611,7 +7735,7 @@ function getTeacherTemplate() {
         </div>
         <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
           <label class="text-xs text-slate-300 font-bold shrink-0">Select Target Student:</label>
-          <select id="teacherBountyStudentSelect" class="flex-1 bg-slate-950 border border-rose-500/50 rounded-lg px-3 py-2 text-xs text-rose-200 outline-none"></select>
+          <select id="teacherBountyStudentSelect" onpointerdown="noteTeacherInteraction(6000)" onfocus="noteTeacherInteraction(6000)" class="flex-1 min-h-12 min-w-0 w-full bg-slate-950 border border-rose-500/50 rounded-lg px-3 py-2 text-base text-rose-200 outline-none"></select>
           <button onclick="assignCurrentClassBounty()" class="px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 text-white font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
             <i class="fa-solid fa-skull"></i> Set as Bounty Target
           </button>
@@ -8127,7 +8251,7 @@ function getSuperAdminTemplate() {
     const st = appData.students[currentUser.id] || currentUser.data;
     document.getElementById('headerUserInfo').textContent = `Tamer: ${st.name} (${formatStudentClassesDisplay(st)})`;
     document.getElementById('viewStudent').classList.remove('hidden');
-    window.studentLoginSessionTime = Date.now();
+    window.studentLoginSessionTime = syncedNow();
     counterAlertsArmed = false;
     lastKnownAlertCount = 0;
     attackAlertBaselineKeys = {};
@@ -8199,7 +8323,44 @@ function logout() {
   document.getElementById('loginPassword').value = "";
   const toastBox = document.getElementById('toastContainer');
   if (toastBox) toastBox.innerHTML = '';
+  flushLocalCache();
 }
+
+    let viewRefreshTimer = null;
+    let chatRefreshTimer = null;
+    let teacherInteractUntil = 0;
+
+    function noteTeacherInteraction(ms) {
+      teacherInteractUntil = Math.max(teacherInteractUntil, (+new Date()) + (ms || 4000));
+    }
+
+    function teacherControlsBusy() {
+      if ((+new Date()) < teacherInteractUntil) return true;
+      const picker = document.getElementById('modalTeacherTargetPicker');
+      if (picker && !picker.classList.contains('hidden')) return true;
+      const el = document.activeElement;
+      if (!el || !el.tagName) return false;
+      const tag = el.tagName;
+      if (tag !== 'SELECT' && tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
+      const teacherView = document.getElementById('viewTeacher');
+      return !!(teacherView && teacherView.contains(el));
+    }
+
+    function scheduleRefreshCurrentView() {
+      if (viewRefreshTimer) return;
+      viewRefreshTimer = setTimeout(() => {
+        viewRefreshTimer = null;
+        refreshCurrentView();
+      }, 280);
+    }
+
+    function scheduleClassChatRefresh() {
+      if (chatRefreshTimer) return;
+      chatRefreshTimer = setTimeout(() => {
+        chatRefreshTimer = null;
+        refreshClassChatUI();
+      }, 200);
+    }
 
     function refreshCurrentView() {
   if (!currentUser) return;
@@ -8208,19 +8369,27 @@ function logout() {
     updateStudentUI();
     updateStudentFactionUI();
   } else if (currentUser.role === 'teacher') {
-    updateTeacherBossHeader();
-    populateClassDropdown();
-    populateTeacherBountySelect();
-    updateClassBanButtonUI();
-    renderTeacherFactionPanel();
-    renderTeacherTerritory();
-    renderTeacherGrid();
+    if (teacherControlsBusy()) {
+      updateTeacherBossHeader();
+      scheduleRefreshCurrentView();
+    } else {
+      updateTeacherBossHeader();
+      populateClassDropdown();
+      populateTeacherBountySelect();
+      updateClassBanButtonUI();
+      renderTeacherFactionPanel();
+      renderTeacherTerritory();
+      renderTeacherGrid();
+      const mgrModal = document.getElementById('modalClassStudentsManager');
+      if (mgrModal && !mgrModal.classList.contains('hidden')) renderManagerStudentsList();
+      if (activeTeacherSubTab === 'quiz') renderTeacherQuizLiveDashboard();
+    }
   } else if (currentUser.role === 'superadmin') {
     renderSuperAdminDashboard();
   }
   renderAnnouncementsUI();
   renderBountyUI();
-  refreshClassChatUI();
+  if (!chatRefreshTimer) refreshClassChatUI();
 }
 
     function populateStudentTeacherBossOptions() {
@@ -8777,7 +8946,7 @@ function logout() {
       document.getElementById('cardValLove').textContent = st.love || 0;
       document.getElementById('cardValDiscipline').textContent = st.discipline || 0;
       document.getElementById('cardValWisdom').textContent = st.wisdom || 0;
-      document.getElementById('cardIssueDate').textContent = `ISSUED: ${new Date().toLocaleDateString()}`;
+      document.getElementById('cardIssueDate').textContent = `ISSUED: ${new Date(syncedNow()).toLocaleDateString('en-CA', { timeZone: 'Asia/Hong_Kong' })}`;
 
       const cardImg = document.getElementById('cardDigiImg');
       cardImg.style.width = "100%";
@@ -9364,8 +9533,8 @@ else if (mode === 'pvp') {
           attackerDigiName: myDigi.name,
           skillName: sk.name,
           damage: calculatedDmg,
-          timestamp: Date.now(),
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          timestamp: syncedNow(),
+          time: serverClockText(true)
         };
         dbRootRef.child(`attackAlerts/${target.id}`).push(alertObj).catch(e => console.warn("Alert push error:", e));
       }
@@ -9445,8 +9614,8 @@ else if (mode === 'pvp') {
         attackerDigiName: myDigi.name,
         skillName: skillName || '攻擊',
         damage: Number(damage) || 0,
-        timestamp: Date.now(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        timestamp: syncedNow(),
+        time: serverClockText(true)
       };
       dbRootRef.child('attackAlerts/' + targetStudentId).push(alertObj).catch(e => console.warn('Alert push error:', e));
     }
@@ -9899,7 +10068,8 @@ else if (mode === 'pvp') {
     }
 
     function hongKongDateKey(date) {
-      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date || new Date());
+      const when = date || new Date(syncedNow());
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).format(when);
     }
 
     function reviveDailyUsed(student) {
@@ -10849,7 +11019,7 @@ else if (mode === 'pvp') {
 
     let deathReviveTapAt = 0;
     function openReviveQuizFromDeath() {
-      const now = Date.now();
+      const now = performance.now();
       if (now - deathReviveTapAt < 400) return;
       deathReviveTapAt = now;
       if (!currentUser || currentUser.role !== 'student') return;
@@ -11160,6 +11330,12 @@ else if (mode === 'pvp') {
       }
 
       const bountyId = appData.bounties ? appData.bounties[sanitizeClassKey(strike.className)] : null;
+      myStudents.sort((a, b) => {
+        const aBounty = bountyId === a.id ? 0 : 1;
+        const bBounty = bountyId === b.id ? 0 : 1;
+        if (aBounty !== bBounty) return aBounty - bBounty;
+        return compareClassStudents(a, b, strike.className);
+      });
       myStudents.forEach(target => {
         const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
         const isFainted = target.isFainted || (target.hp !== undefined && target.hp <= 0);
@@ -11168,7 +11344,7 @@ else if (mode === 'pvp') {
         const hpNow = target.hp !== undefined ? target.hp : tgtDigi.maxHp;
         const card = document.createElement('div');
         card.setAttribute('data-teacher-target', target.id);
-        card.className = `p-3 rounded-2xl border ${isBounty ? 'border-rose-500 bg-rose-950/20' : 'border-slate-800 bg-slate-950'} flex items-center justify-between gap-3 transition ${isFainted ? 'opacity-40 cursor-not-allowed' : 'hover:border-rose-400/80 cursor-pointer active:scale-[0.99]'}`;
+        card.className = `min-h-[4.5rem] p-3 rounded-2xl border ${isBounty ? 'border-rose-500 bg-rose-950/30' : 'border-slate-800 bg-slate-950'} flex items-center justify-between gap-3 transition ${isFainted ? 'opacity-40 cursor-not-allowed' : 'hover:border-rose-400/80 cursor-pointer active:scale-[0.99]'}`;
         card.innerHTML = `
           <div class="flex items-center gap-3 min-w-0">
             <div class="w-12 h-12 bg-slate-900 rounded-xl p-1 border border-slate-800 flex items-center justify-center shrink-0">
@@ -11244,20 +11420,34 @@ else if (mode === 'pvp') {
       }
     }
 
+    function teacherCardSignature(s, bountyId) {
+      const fac = getStudentFactionInClass(s, selectedTeacherClass);
+      return [
+        s.id, s.name, s.hp, s.exp, s.attackQuota, s.gachaTickets, s.coins,
+        s.isFainted ? 1 : 0, s.hasShield ? 1 : 0, s.isBanned ? 1 : 0, s.isStarred ? 1 : 0,
+        s.currentDigiId, fac.factionId || '', bountyId === s.id ? 1 : 0,
+        reviveQuizLeft(s), dailyTrialLeft(s)
+      ].join(':');
+    }
+
     function renderTeacherGrid() {
   
   const container = document.getElementById('teacherStudentGrid');
   if (!container || !currentUser) return;
-  container.innerHTML = '';
 
   const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
 
   if (myStudents.length === 0) {
+    container.dataset.sig = 'empty';
     container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-500 text-xs">No students in this class. Click "Manage Students in Class" or import an Excel file.</div>';
     return;
   }
 
   const currentBountyId = appData.bounties ? appData.bounties[sanitizeClassKey(selectedTeacherClass)] : null;
+  const gridSig = selectedTeacherClass + '|' + (currentBountyId || '') + '|' + myStudents.map(s => teacherCardSignature(s, currentBountyId)).join(';');
+  if (container.dataset.sig === gridSig) return;
+  container.dataset.sig = gridSig;
+  container.innerHTML = '';
   const currentFactions = getFactionsForClass(selectedTeacherClass);
 
   myStudents.forEach((s, index) => {
@@ -11312,11 +11502,11 @@ else if (mode === 'pvp') {
           </div>
         </div>
 
-        <div class="flex items-center justify-between text-[10px] text-slate-500 mb-1.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 mb-1.5">
           <span>Classes: <span class="text-cyan-300 font-mono">${formatStudentClassesDisplay(s)}</span></span>
           <div class="flex items-center gap-1">
             <span class="text-indigo-400 font-bold">Faction:</span>
-            <select onchange="teacherAssignStudentFaction('${s.id}', this.value)" class="bg-slate-900 border border-indigo-500/50 text-[10px] rounded px-1.5 py-0.5 text-indigo-200 outline-none">
+            <select onpointerdown="noteTeacherInteraction(5000)" onfocus="noteTeacherInteraction(5000)" onchange="teacherAssignStudentFaction('${s.id}', this.value)" class="min-h-11 bg-slate-900 border border-indigo-500/50 text-base rounded-lg px-2 py-1 text-indigo-200 outline-none">
               ${factionOptionsHtml}
             </select>
           </div>
@@ -12892,10 +13082,7 @@ function teacherToggleClassSpy(studentId, event) {
     function noteFirebaseServerTimeOffset(offset) {
       firebaseServerTimeOffset = Number(offset) || 0;
       firebaseServerTimeOffsetReady = true;
-    }
-
-    function syncedNow() {
-      return Date.now() + (firebaseServerTimeOffsetReady ? firebaseServerTimeOffset : 0);
+      if (typeof scheduleTerritoryDailyRewards === 'function') scheduleTerritoryDailyRewards();
     }
 
     function liveQuizServerStamp() {
@@ -12924,13 +13111,7 @@ function teacherToggleClassSpy(studentId, event) {
       if (!Number.isFinite(limitMs)) return Infinity;
       const start = Number(quiz && quiz.timestamp);
       const startOk = Number.isFinite(start) && start > 0;
-      const key = quizSessionKey(quiz);
-      if (!quizSeenAnchor || quizSeenAnchor.key !== key) {
-        quizSeenAnchor = { key: key, seenAt: Date.now() };
-      }
-      if (!firebaseServerTimeOffsetReady || !startOk) {
-        return limitMs - (Date.now() - quizSeenAnchor.seenAt);
-      }
+      if (!firebaseServerTimeOffsetReady || !startOk) return limitMs;
       return limitMs - (syncedNow() - start);
     }
 
@@ -12971,7 +13152,7 @@ function teacherToggleClassSpy(studentId, event) {
 
       const quizData = {
         active: true,
-        quizId: 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        quizId: 'q' + syncedNow().toString(36) + Math.random().toString(36).slice(2, 8),
         question: q,
         options: shuffledTexts,
         correctIndex: correctIndex,
@@ -13392,7 +13573,7 @@ function teacherToggleClassSpy(studentId, event) {
         : (isTimeout ? '⏰ 逾時未答 / Time is up' : '未作答');
 
       const submitTime = syncedNow();
-      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const timeString = serverClockText(true);
 
       // 使用 Firebase Transaction 決定搶答名次與核發獎勵
       if (dbRootRef) {
@@ -13585,7 +13766,7 @@ function onExamTimePresetChange(val) {
   }
 
   const targetClass = selectedTeacherClass || 'ALL';
-  const now = Date.now();
+  const now = syncedNow();
   const durationMs = durationMins * 60 * 1000;
   const examId = 'exam_' + now;
 
@@ -13660,7 +13841,7 @@ function onExamTimePresetChange(val) {
 
         const updates = {};
         updates['activeExam/status'] = 'closed';
-        updates['activeExam/closedAt'] = Date.now();
+        updates['activeExam/closedAt'] = syncedNow();
         updates['activeExam/isForceClosed'] = true;
 
         dbRootRef.update(updates).then(() => {
@@ -13729,7 +13910,7 @@ function onStudentExamStateSync() {
   }
 
   // 4. 檢查考試時間是否已經全面結束 (絕對伺服器時間)
-  const now = Date.now();
+  const now = syncedNow();
   const remainingMs = (activeExamInstance.endTime || 0) - now;
   if (remainingMs <= 0) {
     if (!studentHasSubmittedCurrentExam) {
@@ -13772,7 +13953,7 @@ function onStudentExamStateSync() {
 function updateStudentExamTimerDisplay() {
   if (!activeExamInstance || !activeExamInstance.endTime) return;
   const timerBadge = document.getElementById('examStudentTimerBadge');
-  const now = Date.now();
+  const now = syncedNow();
   const diffSec = Math.max(0, Math.floor((activeExamInstance.endTime - now) / 1000));
 
   const mins = Math.floor(diffSec / 60);
@@ -14003,7 +14184,7 @@ function startStudentExamTimer() {
       return;
     }
 
-    const remainingSec = Math.max(0, Math.floor((activeExamInstance.endTime - Date.now()) / 1000));
+    const remainingSec = Math.max(0, Math.floor((activeExamInstance.endTime - syncedNow()) / 1000));
     const mins = Math.floor(remainingSec / 60);
     const secs = remainingSec % 60;
     if (badge) {
@@ -14028,10 +14209,10 @@ function startStudentExamTimer() {
       if (!badge || !activeExamInstance) return;
 
       const durationSec = (activeExamInstance.timeLimitMinutes || 30) * 60;
-      const startTime = activeExamInstance.startTime || activeExamInstance.timestamp || Date.now();
+      const startTime = activeExamInstance.startTime || activeExamInstance.timestamp || syncedNow();
 
       function updateTick() {
-        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        const elapsedSec = Math.floor((syncedNow() - startTime) / 1000);
         const remainSec = durationSec - elapsedSec;
 
         if (remainSec <= 0) {
@@ -14226,8 +14407,8 @@ function startStudentExamTimer() {
     expReward: expReward,
     coinReward: coinReward,
     detailedAnswers: detailedAnswers,
-    submittedAt: Date.now(),
-    submitTimeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    submittedAt: syncedNow(),
+    submitTimeStr: serverClockText(true)
   };
 
   if (dbRootRef) {
@@ -14349,7 +14530,7 @@ function startStudentExamTimer() {
           if (timerBadgeWrapper) timerBadgeWrapper.classList.add('hidden');
           return;
         }
-        const leftSec = Math.max(0, Math.floor((activeExamInstance.endTime - Date.now()) / 1000));
+        const leftSec = Math.max(0, Math.floor((activeExamInstance.endTime - syncedNow()) / 1000));
         const m = Math.floor(leftSec / 60);
         const s = leftSec % 60;
         if (remainingTimeEl) {
@@ -14436,7 +14617,7 @@ function startStudentExamTimer() {
       const chosenText = activeQuizInstance.options[chosenIdx] || '';
       const isCorrect = (chosenIdx === activeQuizInstance.correctIndex);
       const st = appData.students[currentUser.id] || { name: currentUser.id };
-      const now = Date.now();
+      const now = syncedNow();
 
       dbRootRef.child('activeQuiz').transaction((quiz) => {
         if (!quiz || !quiz.active) return quiz;
@@ -14449,13 +14630,13 @@ function startStudentExamTimer() {
         if (isCorrect) {
           if (!quiz.winners.rank1) {
             assignedRank = 1;
-            quiz.winners.rank1 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: new Date().toLocaleTimeString() };
+            quiz.winners.rank1 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: serverClockText(true) };
           } else if (!quiz.winners.rank2) {
             assignedRank = 2;
-            quiz.winners.rank2 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: new Date().toLocaleTimeString() };
+            quiz.winners.rank2 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: serverClockText(true) };
           } else if (!quiz.winners.rank3) {
             assignedRank = 3;
-            quiz.winners.rank3 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: new Date().toLocaleTimeString() };
+            quiz.winners.rank3 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: serverClockText(true) };
           }
         }
 
@@ -15070,6 +15251,15 @@ function startStudentExamTimer() {
     window.addEventListener('DOMContentLoaded', () => {
       initFirebase();
       ensureTerritoryDailyTimer();
+      document.addEventListener('pointerdown', (event) => {
+        const target = event.target && event.target.closest ? event.target.closest('#viewTeacher select, #modalTeacherTargetPicker') : null;
+        if (target) noteTeacherInteraction(6000);
+      }, true);
+      document.addEventListener('focusin', (event) => {
+        const el = event.target;
+        if (!el || !el.closest) return;
+        if (el.closest('#viewTeacher') || el.closest('#modalTeacherTargetPicker')) noteTeacherInteraction(6000);
+      }, true);
       const deathReviveBtn = document.getElementById('btnDeathReviveQuiz');
       if (deathReviveBtn) deathReviveBtn.addEventListener('pointerup', () => openReviveQuizFromDeath());
       const pInput = document.getElementById('loginPassword');
