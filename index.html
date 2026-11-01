@@ -49,7 +49,7 @@
     @media (min-width: 1024px) {
       #teacherStudentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-    #mainHeader button, #btnTeacherTabMain, #btnTeacherTabFaction, #btnTeacherTabQuiz, #btnTeacherTabExam, #btnTeacherTabMsg, #btnStudentTabClass, #btnStudentTabChat, #btnStudentTabFaction, #loginUsername, #loginPassword {
+    #mainHeader button, #btnTeacherTabMain, #btnTeacherTabFaction, #btnTeacherTabQuiz, #btnTeacherTabExam, #btnTeacherTabMsg, #btnStudentTabClass, #btnStudentTabChat, #btnStudentTabFaction, #btnStudentTabDungeon, #loginUsername, #loginPassword {
       min-height: 44px;
     }
     #teacherStudentGrid select, #teacherBountyStudentSelect, #teacherTargetFactionSelect, #teacherClassFilter {
@@ -646,7 +646,7 @@
         </span>
         <span id="studentChatNotifyCount" class="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-mono font-bold">0</span>
       </button>
-      <div class="grid grid-cols-3 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
         <button id="btnStudentTabClass" type="button" onclick="switchStudentSubTab('class')" class="w-full min-h-12 py-2.5 rounded-lg text-[11px] sm:text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-1.5">
           <i class="fa-solid fa-gamepad"></i> 課堂
         </button>
@@ -656,6 +656,10 @@
         </button>
         <button id="btnStudentTabFaction" type="button" onclick="switchStudentSubTab('faction')" class="w-full min-h-12 py-2.5 rounded-lg text-[11px] sm:text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-1.5">
           <i class="fa-solid fa-flag"></i> 陣營
+        </button>
+        <button id="btnStudentTabDungeon" type="button" onclick="openDungeonFromClassroom()" class="w-full min-h-12 py-2.5 rounded-lg text-[11px] sm:text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-dungeon"></i> 迷宮
+          <span id="studentDungeonTicketBadge" class="px-1.5 py-0.5 text-[10px] bg-violet-700 text-white rounded-full font-mono font-bold">0</span>
         </button>
       </div>
       <div id="studentSubViewChat" class="space-y-6 hidden">
@@ -1604,7 +1608,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.16";
+    const CURRENT_APP_VERSION = "2.7.18";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4792,7 +4796,9 @@ function normalizeStudent(s, keyId) {
     dailyTrialDay: s.dailyTrialDay ? String(s.dailyTrialDay) : '',
     dailyTrialUsed: Math.max(0, Number(s.dailyTrialUsed) || 0),
     dailyTrialSeen: copyDailyTrialSeen(s.dailyTrialSeen),
-    dailyTrialOpen: normalizeDailyTrialOpen(s.dailyTrialOpen)
+    dailyTrialOpen: normalizeDailyTrialOpen(s.dailyTrialOpen),
+    dungeonTickets: Math.max(0, Number(s.dungeonTickets) || 0),
+    friendshipCrests: Math.max(0, Number(s.friendshipCrests) || 0)
   };
 }
 
@@ -5136,6 +5142,13 @@ function normalizeStudent(s, keyId) {
           saveLocalCache();
           if (currentUser && currentUser.role === 'teacher') updateDailyTrialTeacherPanel();
           if (currentUser && currentUser.role === 'student') updateDailyTrialStudentBadge();
+        }, () => {});
+
+        dbRootRef.child('systemSettings/dungeonQuestions').on('value', (snap) => {
+          if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+          appData.systemSettings.dungeonQuestions = snap.val() || {};
+          saveLocalCache();
+          if (currentUser && currentUser.role === 'teacher' && typeof updateDungeonTeacherPanel === 'function') updateDungeonTeacherPanel();
         }, () => {});
 
         dbRootRef.child('systemSettings/bannedClasses').on('value', (snap) => {
@@ -5660,6 +5673,34 @@ function territoryBlocksAttack(student, className) {
   return Math.random() < 0.1;
 }
 
+function canonAttribute(type) {
+  const key = String(type || '').trim().toLowerCase();
+  if (key === 'vaccine' || key === '疫苗') return 'Vaccine';
+  if (key === 'virus' || key === '病毒') return 'Virus';
+  if (key === 'data' || key === '數據' || key === '数据') return 'Data';
+  if (key === 'free' || key === '自由' || key === 'variable') return 'Free';
+  return 'Free';
+}
+
+function attributeDamageMultiplier(attackerType, defenderType) {
+  const attacker = canonAttribute(attackerType);
+  const defender = canonAttribute(defenderType);
+  if (attacker === 'Free' || defender === 'Free' || attacker === defender) return 1;
+  if ((attacker === 'Vaccine' && defender === 'Virus') || (attacker === 'Virus' && defender === 'Data') || (attacker === 'Data' && defender === 'Vaccine')) return 2;
+  return 0.5;
+}
+
+function attributeMatchNote(mult) {
+  if (mult > 1) return '克制 Advantage ×2';
+  if (mult < 1) return '抵抗 Resist ×0.5';
+  return '';
+}
+
+function attributeStrike(base, attackerType, defenderType) {
+  const mult = attributeDamageMultiplier(attackerType, defenderType);
+  return { damage: Math.max(1, Math.round((Number(base) || 0) * mult)), mult: mult, note: attributeMatchNote(mult) };
+}
+
 function territoryContextClass(student, preferred) {
   if (!student) return '';
   if (preferred && preferred !== 'ALL' && studentIsInClass(student, preferred)) return preferred;
@@ -5944,6 +5985,26 @@ function ensureTerritoryDailyTimer() {
   territoryDailyTimer = setInterval(() => {
     if (currentUser && territoryNodesReady) scheduleTerritoryDailyRewards();
   }, 60000);
+}
+
+function stampDungeonGate(student) {
+  if (!student || !student.id) return;
+  try {
+    sessionStorage.setItem('DIGIMON_CLASS_GATE_V1', JSON.stringify({
+      id: String(student.id).toLowerCase(),
+      name: student.name || student.id,
+      classId: student.classId || '',
+      role: 'student',
+      issuedAt: Date.now()
+    }));
+  } catch (e) {}
+}
+
+function openDungeonFromClassroom() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const st = (appData.students && appData.students[currentUser.id]) || currentUser.data || { id: currentUser.id };
+  stampDungeonGate(st);
+  location.href = 'dungeon.html';
 }
 
 function switchStudentSubTab(tabName) {
@@ -7545,6 +7606,7 @@ function toggleFactionBuffModal() {
 
       if (st) {
         currentUser = { role: 'student', id: st.id, data: st };
+        stampDungeonGate(st);
         await enterDashboard();
         return;
       }
@@ -7599,7 +7661,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.16</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.18</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -7814,6 +7876,23 @@ function getTeacherTemplate() {
             <i class="fa-solid fa-file-excel"></i> 上傳每日試煉題庫 / Upload Trial Questions
           </label>
           <input id="dailyTrialExcelInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" onchange="handleDailyTrialExcelImport(event)" class="hidden">
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-violet-500/40 rounded-xl p-4 shadow-lg space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <div>
+            <h4 class="text-xs font-black text-violet-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-dungeon mr-1"></i>數碼迷宮 (Digital Matrix)</h4>
+            <p class="text-[11px] text-slate-400 mt-1">持有迷宮券的學生可以從課堂頁的「迷宮」進入 dungeon.html，自己一個人或組最多 3 人。沒有券的同學可以被有券的隊長邀請。學術石碑題目和彈出搶答一樣：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的石碑題庫。<br>A student with a dungeon ticket opens the Dungeon tab and enters dungeon.html, alone or in a squad of up to 3. A classmate without a ticket can be invited by the ticket holder. Shrine questions use the same Excel shape as the pop-up quiz: A question, B correct answer, C D E wrong answers. A new upload replaces this class's shrine bank.</p>
+          </div>
+          <span id="dungeonBankStatus" class="text-[11px] text-violet-200 font-mono">請先選擇一個班級。 / Select a class first.</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="grantClassDungeonTickets()" class="min-h-11 px-3 py-1.5 rounded bg-violet-950 border border-violet-500 text-violet-100 text-xs font-bold cursor-pointer active:scale-95">全班 +1 迷宮券 / Class Ticket</button>
+          <label for="dungeonExcelInput" class="cursor-pointer min-h-11 px-3 py-1.5 rounded bg-violet-950 border border-violet-500 text-violet-100 text-xs font-bold hover:bg-violet-900 transition flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-file-excel"></i> 上傳石碑題庫 / Upload Shrine Questions
+          </label>
+          <input id="dungeonExcelInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" onchange="handleDungeonExcelImport(event)" class="hidden">
         </div>
       </div>
 
@@ -8323,6 +8402,7 @@ function logout() {
   document.getElementById('loginPassword').value = "";
   const toastBox = document.getElementById('toastContainer');
   if (toastBox) toastBox.innerHTML = '';
+  try { sessionStorage.removeItem('DIGIMON_CLASS_GATE_V1'); } catch (e) {}
   flushLocalCache();
 }
 
@@ -8590,6 +8670,8 @@ function logout() {
       claimTerritoryDailyRewards();
       const coinCountEl = document.getElementById('stCoinsCount');
       if (coinCountEl) coinCountEl.textContent = st.coins || 0;
+      const dungeonBadge = document.getElementById('studentDungeonTicketBadge');
+      if (dungeonBadge) dungeonBadge.textContent = String(Math.max(0, Number(st.dungeonTickets) || 0));
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const maxHp = digi.maxHp || 100;
       if (st.hp === undefined) st.hp = maxHp;
@@ -9402,6 +9484,9 @@ else if (mode === 'pvp') {
         calculatedDmg = Math.max(1, Math.round(calculatedDmg * 0.8));
       }
       calculatedDmg = Math.max(1, Math.round(calculatedDmg * territoryDamageMultiplier(st, myClasses[0])));
+      const attrHit = attributeStrike(calculatedDmg, myDigi.type, tgtDigi.type);
+      calculatedDmg = attrHit.damage;
+      const attrNote = attrHit.note ? ` · ${attrHit.note}` : '';
 
       // 扣除攻擊次數（僅主動攻擊扣除，反擊不扣）
       const newQuota = isCounterAttack ? (st.attackQuota || 0) : Math.max(0, (st.attackQuota || 0) - 1);
@@ -9495,7 +9580,7 @@ else if (mode === 'pvp') {
         showToast("擊敗對手！", `${isCounterAttack ? '反擊' : '擊殺'}成功！獲得 +${earnedCoins} 金幣，自身受反傷 -${recoilDmg} HP`, "heal");
       } else {
         playSound('attack');
-        addBattleLog(`${actionTag} ${st.name} 對 ${target.name} 使用【${sk.name}】造成 ${calculatedDmg} 傷害，自身受反傷 -${recoilDmg} HP！`, "battle", st.classId);
+        addBattleLog(`${actionTag} ${st.name} 對 ${target.name} 使用【${sk.name}】造成 ${calculatedDmg} 傷害${attrNote}，自身受反傷 -${recoilDmg} HP！`, "battle", st.classId);
         showToast(isCounterAttack ? "反擊命中！" : "命中並受反傷！", `造成 ${calculatedDmg} 傷害，自身受反傷 -${recoilDmg} HP (剩餘 ${finalSelfHp})！`, "damage");
       }
 
@@ -9957,6 +10042,7 @@ else if (mode === 'pvp') {
       updateClassBanButtonUI();
       updateReviveQuizTeacherPanel();
       updateDailyTrialTeacherPanel();
+      if (typeof updateDungeonTeacherPanel === 'function') updateDungeonTeacherPanel();
 
       const quizClassBadge = document.getElementById('teacherQuizTargetClassBadge');
       if (quizClassBadge) {
@@ -9978,6 +10064,7 @@ else if (mode === 'pvp') {
       renderBountyUI();
       updateReviveQuizTeacherPanel();
       updateDailyTrialTeacherPanel();
+      if (typeof updateDungeonTeacherPanel === 'function') updateDungeonTeacherPanel();
 
       const quizClassBadge = document.getElementById('teacherQuizTargetClassBadge');
       if (quizClassBadge) {
@@ -11206,6 +11293,115 @@ else if (mode === 'pvp') {
       reader.readAsArrayBuffer(file);
     }
 
+    function classDungeonQuestions(className) {
+      const bank = appData.systemSettings && appData.systemSettings.dungeonQuestions;
+      const raw = reviveBucketValue(bank, className);
+      if (!raw) return [];
+      const rows = Array.isArray(raw) ? raw : Object.keys(raw).sort().map(k => raw[k]);
+      return rows.filter(q => q && q.question && q.correct).map(q => ({
+        question: String(q.question),
+        correct: String(q.correct),
+        wrongs: normalizeWrongAnswers(q.wrongs)
+      }));
+    }
+
+    function updateDungeonTeacherPanel() {
+      const status = document.getElementById('dungeonBankStatus');
+      if (!status) return;
+      if (!selectedTeacherClass || selectedTeacherClass === 'ALL') {
+        status.textContent = '請先選擇一個班級，再上傳石碑題庫。 / Select a class before uploading shrine questions.';
+        return;
+      }
+      const count = classDungeonQuestions(selectedTeacherClass).length;
+      const questionWord = count === 1 ? 'question' : 'questions';
+      status.textContent = `${selectedTeacherClass}：石碑 ${count} 題 / ${count} ${questionWord}`;
+    }
+
+    function grantDungeonTicket(studentId, amount, silent) {
+      const give = Math.max(1, Number(amount) || 1);
+      if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef || !studentId) return Promise.resolve(false);
+      return new Promise(resolve => {
+        dbRootRef.child(`students/${studentId}/dungeonTickets`).transaction(cur => (Number(cur) || 0) + give, (err, committed, snap) => {
+          if (committed) {
+            const s = appData.students[studentId];
+            if (s) s.dungeonTickets = Number(snap.val()) || 0;
+            if (!silent) {
+              addBattleLog(`🎫 [DUNGEON] Teacher issued ${give} Digital Matrix ticket to [${s ? s.name : studentId}].`, 'battle', s && s.classId, true);
+              showToast('迷宮券 / Dungeon Ticket', `+${give} → ${s ? s.name : studentId}`, 'evolution');
+              renderTeacherGrid();
+            }
+          }
+          resolve(!!committed);
+        });
+      });
+    }
+
+    function grantClassDungeonTickets() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherClass || selectedTeacherClass === 'ALL') {
+        alert('請先在 Current Class 選擇一個班級。 / Select one class in Current Class first.');
+        return;
+      }
+      const list = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
+      if (!list.length) return alert('這個班沒有學生。 / This class has no students.');
+      if (!confirm(`發 1 張迷宮券給【${selectedTeacherClass}】的 ${list.length} 位學生？\nGive 1 dungeon ticket to ${list.length} students in [${selectedTeacherClass}]?`)) return;
+      Promise.all(list.map(s => grantDungeonTicket(s.id, 1, true))).then(() => {
+        addBattleLog(`🎫 [DUNGEON] Teacher issued 1 Digital Matrix ticket to every student in [${selectedTeacherClass}].`, 'battle', selectedTeacherClass, true);
+        showToast('迷宮券 / Dungeon Tickets', `已發給 ${list.length} 位學生。 / Issued to ${list.length} students.`, 'evolution');
+        renderTeacherGrid();
+      });
+    }
+
+    function handleDungeonExcelImport(event) {
+      const input = event.target;
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file || !currentUser || currentUser.role !== 'teacher') return;
+      if (!selectedTeacherClass || selectedTeacherClass === 'ALL') return alert('請先在 Current Class 選擇一個班級，再上傳石碑題庫。 / Select one class in Current Class before uploading shrine questions.');
+      if (typeof XLSX === 'undefined') return alert('Excel 讀取工具尚未載入，請重新整理後再試。 / The Excel reader is not loaded yet. Refresh and try again.');
+      const existing = classDungeonQuestions(selectedTeacherClass).length;
+      if (existing > 0 && !confirm(`上傳會取代【${selectedTeacherClass}】目前的 ${existing} 題石碑。確定取代？\nThis replaces the ${existing} shrine questions for [${selectedTeacherClass}]. Replace them?`)) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          const questions = [];
+          for (let i = 1; i < jsonRows.length; i++) {
+            const row = jsonRows[i];
+            if (!row || row[0] === undefined || row[0] === null || row[1] === undefined || row[1] === null) continue;
+            const questionText = String(row[0]).trim();
+            const correctOpt = String(row[1]).trim();
+            if (!questionText || !correctOpt) continue;
+            const wrongs = [];
+            [2, 3, 4].forEach(col => {
+              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(String(row[col]).trim());
+            });
+            questions.push({ question: questionText, correct: correctOpt, wrongs: wrongs });
+          }
+          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header.');
+          const key = reviveSettingKey(selectedTeacherClass);
+          const payload = {};
+          questions.forEach((q, i) => { payload['q' + i] = q; });
+          if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
+          if (!appData.systemSettings.dungeonQuestions) appData.systemSettings.dungeonQuestions = {};
+          appData.systemSettings.dungeonQuestions[key] = payload;
+          updateDungeonTeacherPanel();
+          const write = dbRootRef ? dbRootRef.child(`systemSettings/dungeonQuestions/${key}`).set(payload) : Promise.resolve();
+          write.then(() => {
+            showToast('石碑題庫已更新 / Shrine Questions Updated', `${selectedTeacherClass} 已換成 ${questions.length} 題。 / ${selectedTeacherClass} now has ${questions.length} questions.`, 'evolution');
+          }).catch(err => {
+            alert('題庫儲存失敗 / Could not save the questions: ' + (err && err.message ? err.message : err));
+          });
+        } catch (err) {
+          alert('石碑題庫讀取失敗 / Could not read the file: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
     function penalizeAllHp(amount = 30) {
       const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
       if (myStudents.length === 0) return showToast("Class Damage", "No students in this class.", "info");
@@ -11277,7 +11473,9 @@ else if (mode === 'pvp') {
           if (s.hasShield) {
             updates[`students/${s.id}/hasShield`] = false;
           } else {
-            damageJobs.push(applyDamageToStudent(s.id, pwr, { name: digi.name, id: currentUser.id }).then(result => {
+            const tgtDigi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
+            const hit = attributeStrike(pwr, digi.type, tgtDigi.type);
+            damageJobs.push(applyDamageToStudent(s.id, hit.damage, { name: digi.name, id: currentUser.id }).then(result => {
               if (result && result.itemUsed) logAutoRevive(s, selectedTeacherClass, result.charges);
             }));
           }
@@ -11285,13 +11483,14 @@ else if (mode === 'pvp') {
         if (Object.keys(updates).length) executeAtomicMultiPathUpdate(updates);
         Promise.all(damageJobs).then(() => renderTeacherGrid());
         playSound('attack');
-        addBattleLog(`🔥 [BOSS AOE] ${digi.name} struck class with [${moveName}] for ${pwr} DMG!`, "battle", selectedTeacherClass);
+        addBattleLog(`🔥 [BOSS AOE] ${digi.name} (${digi.type || 'Free'}) struck class with [${moveName}]. Base ${pwr} DMG, attribute triangle applied.`, "battle", selectedTeacherClass);
         showToast("Class AOE Strike", `Active students struck!`, "damage");
       } else {
         openTeacherTargetPicker({
           pwr,
           moveName,
           digiName: digi.name,
+          digiType: digi.type,
           className: selectedTeacherClass
         });
       }
@@ -11367,7 +11566,7 @@ else if (mode === 'pvp') {
           <div class="text-right shrink-0">
             ${isFainted
               ? '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600">已倒下 / Fainted</span>'
-              : `<div class="font-pixel text-xs text-rose-300">${strike.pwr} DMG</div><div class="text-[10px] text-slate-400">點一下 / Tap</div>`}
+              : `<div class="font-pixel text-xs text-rose-300">${attributeStrike(strike.pwr, strike.digiType, tgtDigi.type).damage} DMG</div><div class="text-[10px] text-slate-400">${escapeHtml(attributeMatchNote(attributeDamageMultiplier(strike.digiType, tgtDigi.type)) || 'Neutral')}</div>`}
           </div>
         `;
         if (!isFainted) card.onclick = () => executeTeacherSingleStrike(target.id);
@@ -11384,7 +11583,9 @@ else if (mode === 'pvp') {
         return alert(`Student [${target.name}] is already FAINTED! Please revive first.`);
       }
 
-      const pwr = strike.pwr;
+      const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+      const hit = attributeStrike(strike.pwr, strike.digiType, tgtDigi.type);
+      const pwr = hit.damage;
       const moveName = strike.moveName;
       const digiName = strike.digiName;
       closeTeacherTargetPicker();
@@ -11414,7 +11615,7 @@ else if (mode === 'pvp') {
             playSound('attack');
             showToast("Single Strike", `Dealt ${pwr} DMG to ${target.name}!`, "damage");
           }
-          addBattleLog(`⚡ [BOSS STRIKE] ${digiName} struck [${target.name}] for ${pwr} DMG!`, "battle", target.classId);
+          addBattleLog(`⚡ [BOSS STRIKE] ${digiName} struck [${target.name}] for ${pwr} DMG${hit.note ? ' · ' + hit.note : ''}!`, "battle", target.classId);
           renderTeacherGrid();
         });
       }
@@ -11426,7 +11627,7 @@ else if (mode === 'pvp') {
         s.id, s.name, s.hp, s.exp, s.attackQuota, s.gachaTickets, s.coins,
         s.isFainted ? 1 : 0, s.hasShield ? 1 : 0, s.isBanned ? 1 : 0, s.isStarred ? 1 : 0,
         s.currentDigiId, fac.factionId || '', bountyId === s.id ? 1 : 0,
-        reviveQuizLeft(s), dailyTrialLeft(s)
+        reviveQuizLeft(s), dailyTrialLeft(s), s.dungeonTickets || 0
       ].join(':');
     }
 
@@ -11528,15 +11729,17 @@ else if (mode === 'pvp') {
             </div>
             <div class="text-emerald-300 font-mono text-[11px] mt-1">復活答題 Revive ${reviveQuizLeft(s)} / 3${autoReviveItemCount(s) ? ` · 自動復活核心 Auto Revive x${autoReviveItemCount(s)}` : ''}</div>
             <div class="text-amber-300 font-mono text-[11px]">每日試煉 Trial ${dailyTrialLeft(s)} / 10</div>
+            <div class="text-violet-300 font-mono text-[11px]">迷宮券 Dungeon ${s.dungeonTickets || 0}</div>
           </div>
         </div>
       </div>
 
       <div class="space-y-1.5 mt-2">
-        <div class="grid grid-cols-3 gap-1">
-          <button onclick="promptRewardStudent('${s.id}')" class="px-1 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded-lg text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+經驗 / EXP</button>
-          <button onclick="grantGachaTicket('${s.id}', 1)" class="px-1 py-1.5 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 券 / Ticket</button>
-          <button onclick="grantAttackQuota('${s.id}', 1)" class="px-1 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded-lg text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 攻擊 / Atk</button>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1">
+          <button onclick="promptRewardStudent('${s.id}')" class="min-h-11 px-1 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded-lg text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+經驗 / EXP</button>
+          <button onclick="grantGachaTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 券 / Ticket</button>
+          <button onclick="grantAttackQuota('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded-lg text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 攻擊 / Atk</button>
+          <button onclick="grantDungeonTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-violet-950 hover:bg-violet-900 border border-violet-700 rounded-lg text-[10px] text-violet-200 font-bold cursor-pointer active:scale-95">+1 迷宮券</button>
         </div>
         <div class="grid grid-cols-2 gap-1">
           <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="px-1 py-1.5 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded-lg text-[10px] text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
@@ -14768,6 +14971,8 @@ function startStudentExamTimer() {
       const tc = appData.teachers[tcId] || Object.values(appData.teachers || {})[0];
       if (!tc) return alert("No active Teacher Boss! / 無可攻擊的老師首領！");
 
+      const myDigi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
       let dmg = skill.power || 20;
       const bossClass = parseStudentClasses(st.classId)[0] || 'ALL';
       // 陣營力量激增 Buff (+20% 傷害)
@@ -14781,9 +14986,9 @@ function startStudentExamTimer() {
       }
       const rebirthMultiplier = 1 + ((st.rebirthCount || 0) * 0.1);
       dmg = Math.max(1, Math.round(dmg * rebirthMultiplier * territoryDamageMultiplier(st, bossClass)));
+      const bossHit = attributeStrike(dmg, myDigi.type, tcDigi.type);
+      dmg = bossHit.damage;
       const bossExp = Math.round(15 * territoryExpMultiplier(st, bossClass));
-
-      const tcDigi = DIGIMON_DB[tc.partnerDigiId] || DIGIMON_DB['wargreymon'];
       const curHp = tc.hp !== undefined ? tc.hp : (tc.maxHp || 2000);
       const nextHp = Math.max(0, curHp - dmg);
 
@@ -14797,7 +15002,7 @@ function startStudentExamTimer() {
 
       patchTeacherAtomic(tc.id, { hp: nextHp });
       playSound('attack');
-      addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG! (+${bossExp} EXP)`, "battle", st.classId);
+      addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG${bossHit.note ? ' · ' + bossHit.note : ''}! (+${bossExp} EXP)`, "battle", st.classId);
       showToast("Hit Boss / 命中首領", `Dealt ${dmg} DMG to ${tcDigi.name}! (+${bossExp} EXP) / 對首領造成 ${dmg} 點傷害！(+${bossExp} EXP)`, "damage");
       updateStudentUI();
     }
@@ -14913,6 +15118,8 @@ function startStudentExamTimer() {
                 <span>陣營 Faction: <b class="${tgtFac.factionName ? 'text-indigo-300' : 'text-slate-500'}">${tgtFac.factionName || '無陣營 (None)'}</b></span>
                 <span>|</span>
                 <span class="${rankColor}">階級: ${rankDiffLabel}</span>
+                <span>|</span>
+                <span>${myDigi.type || 'Free'} → ${tgtDigi.type || 'Free'}${attributeMatchNote(attributeDamageMultiplier(myDigi.type, tgtDigi.type)) ? ' · ' + attributeMatchNote(attributeDamageMultiplier(myDigi.type, tgtDigi.type)) : ''}</span>
               </div>
             </div>
           </div>
@@ -14984,6 +15191,9 @@ function startStudentExamTimer() {
       }
       const rebirthMultiplier = 1 + ((me.rebirthCount || 0) * 0.1);
       dmg = Math.max(1, Math.round(dmg * rebirthMultiplier * territoryDamageMultiplier(me, targetClass)));
+      const pvpHit = attributeStrike(dmg, myDigi.type, tgtDigi.type);
+      dmg = pvpHit.damage;
+      const pvpNote = pvpHit.note ? ` · ${pvpHit.note}` : '';
 
       // 扣除攻擊次數
       const newQuota = Math.max(0, (me.attackQuota || 1) - 1);
@@ -15074,7 +15284,7 @@ function startStudentExamTimer() {
       } else {
         playSound('attack');
         notifyTargetOfAttack(target.id, dmg, skill.name);
-        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
+        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG${pvpNote}! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
         showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
       }
       // 更新攻擊者經驗值、點數池與金幣
@@ -15126,6 +15336,9 @@ function startStudentExamTimer() {
           calcDmg = Math.max(1, Math.round(calcDmg * 0.8));
         }
       }
+      const atkDigi = digi || DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
+      const defDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
+      calcDmg = attributeStrike(calcDmg, atkDigi.type, defDigi.type).damage;
 
       dbRootRef.child(`students/${target.id}`).transaction((targetData) => {
         if (!targetData) return targetData;
