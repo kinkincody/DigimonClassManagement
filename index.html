@@ -1608,7 +1608,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.19";
+    const CURRENT_APP_VERSION = "2.7.21";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4939,13 +4939,17 @@ function normalizeStudent(s, keyId) {
       }
 
       // 檢查 Firebase SDK 是否成功加載
-      if (typeof firebase === 'undefined') {
+      if (!window.__DIGI_TEST_DB && typeof firebase === 'undefined') {
         console.error("Firebase SDK not loaded! Check CDN scripts.");
         updateSyncStatusUI(false, "❌ Firebase SDK CDN Load Failed");
         return;
       }
 
       try {
+        if (window.__DIGI_TEST_DB) {
+          dbRootRef = window.__DIGI_TEST_DB;
+          isFirebaseConnected = true;
+        } else {
         if (!firebase.apps.length) {
           firebase.initializeApp(FIREBASE_CONFIG);
         }
@@ -4981,6 +4985,7 @@ function normalizeStudent(s, keyId) {
             if (currentUser && currentUser.role === 'teacher') renderTeacherQuizLiveDashboard();
           }
         });
+        }
 
         // 2. 核心資料節點同步
         dbRootRef.child('students').on('value', (snap) => {
@@ -5002,6 +5007,7 @@ function normalizeStudent(s, keyId) {
           applyPendingFactionWrites(cleanStudents);
           appData.students = cleanStudents;
           saveLocalCache();
+          if (!currentUser) resumeStudentGate();
           if (territoryNodesReady && currentUser) scheduleTerritoryDailyRewards();
           scheduleRefreshCurrentView();
         }, (err) => {
@@ -5987,6 +5993,21 @@ function ensureTerritoryDailyTimer() {
   }, 60000);
 }
 
+let studentGateResumeStarted = false;
+function resumeStudentGate() {
+  if (currentUser || studentGateResumeStarted) return;
+  let gate = null;
+  try { gate = JSON.parse(sessionStorage.getItem('DIGIMON_CLASS_GATE_V1') || 'null'); } catch (e) { return; }
+  if (!gate || gate.role !== 'student' || !gate.id || !gate.issuedAt) return;
+  if ((Date.now() - Number(gate.issuedAt)) >= 18 * 60 * 60 * 1000) return;
+  const id = String(gate.id).toLowerCase();
+  const st = appData.students && appData.students[id];
+  if (!st) return;
+  studentGateResumeStarted = true;
+  currentUser = { role: 'student', id: st.id, data: st };
+  enterDashboard();
+}
+
 function stampDungeonGate(student) {
   if (!student || !student.id) return;
   try {
@@ -6428,7 +6449,6 @@ function teacherAttackFactionPrompt() {
 }
 
 function teacherAssignStudentFaction(studentId, newFactionId) {
-  noteTeacherInteraction(5000);
   const s = appData.students[studentId];
   if (!s) return;
 
@@ -7661,7 +7681,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.19</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.21</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -7762,7 +7782,7 @@ function getTeacherTemplate() {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
             <div class="flex items-center gap-2">
               <label class="text-xs font-bold text-slate-300 shrink-0">選擇目標陣營：</label>
-              <select id="teacherTargetFactionSelect" onpointerdown="noteTeacherInteraction(6000)" onfocus="noteTeacherInteraction(6000)" class="flex-1 min-h-12 min-w-0 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-base text-indigo-200 outline-none">
+              <select id="teacherTargetFactionSelect" class="flex-1 min-h-12 min-w-0 bg-slate-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-base text-indigo-200 outline-none">
                 <option value="">-- 請選擇陣營 / Select a faction --</option>
               </select>
             </div>
@@ -7797,7 +7817,7 @@ function getTeacherTemplate() {
         </div>
         <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
           <label class="text-xs text-slate-300 font-bold shrink-0">Select Target Student:</label>
-          <select id="teacherBountyStudentSelect" onpointerdown="noteTeacherInteraction(6000)" onfocus="noteTeacherInteraction(6000)" class="flex-1 min-h-12 min-w-0 w-full bg-slate-950 border border-rose-500/50 rounded-lg px-3 py-2 text-base text-rose-200 outline-none"></select>
+          <select id="teacherBountyStudentSelect" class="flex-1 min-h-12 min-w-0 w-full bg-slate-950 border border-rose-500/50 rounded-lg px-3 py-2 text-base text-rose-200 outline-none"></select>
           <button onclick="assignCurrentClassBounty()" class="px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 text-white font-black rounded-lg text-xs shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
             <i class="fa-solid fa-skull"></i> Set as Bounty Target
           </button>
@@ -7888,7 +7908,8 @@ function getTeacherTemplate() {
           <span id="dungeonBankStatus" class="text-[11px] text-violet-200 font-mono">請先選擇一個班級。 / Select a class first.</span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button type="button" onclick="grantClassDungeonTickets()" class="min-h-11 px-3 py-1.5 rounded bg-violet-950 border border-violet-500 text-violet-100 text-xs font-bold cursor-pointer active:scale-95">全班 +1 迷宮券 / Class Ticket</button>
+          <button type="button" onclick="grantClassDungeonTickets()" class="min-h-11 px-3 py-1.5 rounded bg-violet-950 border border-violet-500 text-violet-100 text-xs font-bold cursor-pointer active:scale-95">全班 +1 迷宮券 / Class +1</button>
+          <button type="button" onclick="deductClassDungeonTickets()" class="min-h-11 px-3 py-1.5 rounded bg-slate-950 border border-violet-700 text-violet-200 text-xs font-bold cursor-pointer active:scale-95">全班 -1 迷宮券 / Class −1</button>
           <label for="dungeonExcelInput" class="cursor-pointer min-h-11 px-3 py-1.5 rounded bg-violet-950 border border-violet-500 text-violet-100 text-xs font-bold hover:bg-violet-900 transition flex items-center gap-1.5 active:scale-95">
             <i class="fa-solid fa-file-excel"></i> 上傳石碑題庫 / Upload Shrine Questions
           </label>
@@ -8408,22 +8429,42 @@ function logout() {
 
     let viewRefreshTimer = null;
     let chatRefreshTimer = null;
-    let teacherInteractUntil = 0;
-
-    function noteTeacherInteraction(ms) {
-      teacherInteractUntil = Math.max(teacherInteractUntil, (+new Date()) + (ms || 4000));
-    }
 
     function teacherControlsBusy() {
-      if ((+new Date()) < teacherInteractUntil) return true;
       const picker = document.getElementById('modalTeacherTargetPicker');
       if (picker && !picker.classList.contains('hidden')) return true;
       const el = document.activeElement;
       if (!el || !el.tagName) return false;
       const tag = el.tagName;
       if (tag !== 'SELECT' && tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
+      if (tag === 'SELECT') {
+        const grid = document.getElementById('teacherStudentGrid');
+        return !!(grid && grid.contains(el));
+      }
       const teacherView = document.getElementById('viewTeacher');
       return !!(teacherView && teacherView.contains(el));
+    }
+
+    function paintTeacherLiveStats() {
+      const nodes = document.querySelectorAll('#teacherStudentGrid [data-student][data-stat]');
+      nodes.forEach(node => {
+        const s = appData.students && appData.students[node.dataset.student];
+        if (!s) return;
+        const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB.digitama1 || { maxHp: 0 };
+        const stat = node.dataset.stat;
+        if (stat === 'hp') node.textContent = 'HP ' + (s.hp || 0) + '/' + (digi.maxHp || 0);
+        else if (stat === 'exp') node.textContent = 'EXP ' + (s.exp || 0);
+        else if (stat === 'quota') node.textContent = '攻擊 ' + (s.attackQuota || 0);
+        else if (stat === 'tickets') node.textContent = '券 ' + (s.gachaTickets || 0);
+        else if (stat === 'coins') node.textContent = '幣 ' + (s.coins || 0);
+        else if (stat === 'dungeon') node.textContent = '迷宮券 ' + Math.max(0, Number(s.dungeonTickets) || 0);
+      });
+    }
+
+    function showTeacherStatsNow() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      if (teacherControlsBusy()) paintTeacherLiveStats();
+      else renderTeacherGrid();
     }
 
     function scheduleRefreshCurrentView() {
@@ -8451,6 +8492,7 @@ function logout() {
   } else if (currentUser.role === 'teacher') {
     if (teacherControlsBusy()) {
       updateTeacherBossHeader();
+      paintTeacherLiveStats();
       scheduleRefreshCurrentView();
     } else {
       updateTeacherBossHeader();
@@ -11317,38 +11359,81 @@ else if (mode === 'pvp') {
       status.textContent = `${selectedTeacherClass}：石碑 ${count} 題 / ${count} ${questionWord}`;
     }
 
-    function grantDungeonTicket(studentId, amount, silent) {
-      const give = Math.max(1, Number(amount) || 1);
-      if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef || !studentId) return Promise.resolve(false);
+    function writeDungeonTickets(studentId, delta, silent) {
+      const change = Number(delta) || 0;
+      if (!change || !currentUser || currentUser.role !== 'teacher' || !dbRootRef || !studentId) return Promise.resolve(false);
+      const s = appData.students && appData.students[studentId];
+      const before = Math.max(0, Number(s && s.dungeonTickets) || 0);
+      const optimistic = Math.max(0, before + change);
+      if (s) s.dungeonTickets = optimistic;
+      if (!silent) showTeacherStatsNow();
       return new Promise(resolve => {
-        dbRootRef.child(`students/${studentId}/dungeonTickets`).transaction(cur => (Number(cur) || 0) + give, (err, committed, snap) => {
+        dbRootRef.child(`students/${studentId}/dungeonTickets`).transaction(cur => Math.max(0, (Number(cur) || 0) + change), (err, committed, snap) => {
+          const student = appData.students && appData.students[studentId];
           if (committed) {
-            const s = appData.students[studentId];
-            if (s) s.dungeonTickets = Number(snap.val()) || 0;
+            if (student) student.dungeonTickets = Math.max(0, Number(snap.val()) || 0);
+            const left = student ? student.dungeonTickets : Math.max(0, Number(snap.val()) || 0);
+            const name = student ? student.name : studentId;
             if (!silent) {
-              addBattleLog(`🎫 [DUNGEON] Teacher issued ${give} Digital Matrix ticket to [${s ? s.name : studentId}].`, 'battle', s && s.classId, true);
-              showToast('迷宮券 / Dungeon Ticket', `+${give} → ${s ? s.name : studentId}`, 'evolution');
-              renderTeacherGrid();
+              if (change > 0) {
+                addBattleLog(`🎫 [DUNGEON] Teacher issued ${change} Digital Matrix ticket to [${name}]. Left: ${left}.`, 'battle', student && student.classId, true);
+                showToast('迷宮券 / Dungeon Ticket', `+${change} → ${name}（餘 ${left}）`, 'evolution');
+              } else {
+                addBattleLog(`🎫 [DUNGEON] Teacher removed ${-change} Digital Matrix ticket from [${name}]. Left: ${left}.`, 'battle', student && student.classId, true);
+                showToast('迷宮券 / Dungeon Ticket', `${change} → ${name}（餘 ${left}）`, 'damage');
+              }
             }
+          } else if (student) {
+            student.dungeonTickets = before;
           }
+          showTeacherStatsNow();
           resolve(!!committed);
         });
       });
     }
 
-    function grantClassDungeonTickets() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
+    function grantDungeonTicket(studentId, amount, silent) {
+      return writeDungeonTickets(studentId, Math.max(1, Number(amount) || 1), silent);
+    }
+
+    function deductDungeonTicket(studentId, amount, silent) {
+      return writeDungeonTickets(studentId, -Math.max(1, Number(amount) || 1), silent);
+    }
+
+    function classDungeonStudents() {
+      if (!currentUser || currentUser.role !== 'teacher') return [];
       if (!selectedTeacherClass || selectedTeacherClass === 'ALL') {
         alert('請先在 Current Class 選擇一個班級。 / Select one class in Current Class first.');
-        return;
+        return [];
       }
       const list = Object.values(appData.students || {}).filter(s => studentIsInClass(s, selectedTeacherClass));
-      if (!list.length) return alert('這個班沒有學生。 / This class has no students.');
+      if (!list.length) alert('這個班沒有學生。 / This class has no students.');
+      return list;
+    }
+
+    function grantClassDungeonTickets() {
+      const list = classDungeonStudents();
+      if (!list.length) return;
       if (!confirm(`發 1 張迷宮券給【${selectedTeacherClass}】的 ${list.length} 位學生？\nGive 1 dungeon ticket to ${list.length} students in [${selectedTeacherClass}]?`)) return;
-      Promise.all(list.map(s => grantDungeonTicket(s.id, 1, true))).then(() => {
+      const jobs = list.map(s => grantDungeonTicket(s.id, 1, true));
+      showTeacherStatsNow();
+      Promise.all(jobs).then(() => {
         addBattleLog(`🎫 [DUNGEON] Teacher issued 1 Digital Matrix ticket to every student in [${selectedTeacherClass}].`, 'battle', selectedTeacherClass, true);
         showToast('迷宮券 / Dungeon Tickets', `已發給 ${list.length} 位學生。 / Issued to ${list.length} students.`, 'evolution');
-        renderTeacherGrid();
+        showTeacherStatsNow();
+      });
+    }
+
+    function deductClassDungeonTickets() {
+      const list = classDungeonStudents();
+      if (!list.length) return;
+      if (!confirm(`從【${selectedTeacherClass}】的 ${list.length} 位學生各扣 1 張迷宮券？已經是 0 的不會變成負數。\nRemove 1 dungeon ticket from each of the ${list.length} students in [${selectedTeacherClass}]? A student already at 0 stays at 0.`)) return;
+      const jobs = list.map(s => deductDungeonTicket(s.id, 1, true));
+      showTeacherStatsNow();
+      Promise.all(jobs).then(() => {
+        addBattleLog(`🎫 [DUNGEON] Teacher removed 1 Digital Matrix ticket from every student in [${selectedTeacherClass}].`, 'battle', selectedTeacherClass, true);
+        showToast('迷宮券 / Dungeon Tickets', `已從 ${list.length} 位學生扣除。 / Removed from ${list.length} students.`, 'damage');
+        showTeacherStatsNow();
       });
     }
 
@@ -11707,7 +11792,7 @@ else if (mode === 'pvp') {
           <span>Classes: <span class="text-cyan-300 font-mono">${formatStudentClassesDisplay(s)}</span></span>
           <div class="flex items-center gap-1">
             <span class="text-indigo-400 font-bold">Faction:</span>
-            <select onpointerdown="noteTeacherInteraction(5000)" onfocus="noteTeacherInteraction(5000)" onchange="teacherAssignStudentFaction('${s.id}', this.value)" class="min-h-11 bg-slate-900 border border-indigo-500/50 text-base rounded-lg px-2 py-1 text-indigo-200 outline-none">
+            <select onchange="teacherAssignStudentFaction('${s.id}', this.value)" class="min-h-11 bg-slate-900 border border-indigo-500/50 text-base rounded-lg px-2 py-1 text-indigo-200 outline-none">
               ${factionOptionsHtml}
             </select>
           </div>
@@ -11721,15 +11806,15 @@ else if (mode === 'pvp') {
           <div class="text-xs min-w-0">
             <div class="font-bold text-slate-200">${digi.name}</div>
             <div class="flex flex-wrap gap-1 mt-1">
-              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-emerald-800/60 text-emerald-300 font-mono text-[10px]">HP ${s.hp || 0}/${digi.maxHp}</span>
-              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-[10px]">EXP ${s.exp || 0}</span>
-              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-amber-800/60 text-amber-300 font-mono text-[10px]">攻擊 ${s.attackQuota || 0}</span>
-              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-purple-800/60 text-purple-300 font-mono text-[10px]">券 ${s.gachaTickets || 0}</span>
-              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-yellow-800/60 text-yellow-300 font-mono text-[10px]">幣 ${s.coins || 0}</span>
+              <span data-student="${s.id}" data-stat="hp" class="px-1.5 py-0.5 rounded bg-slate-900 border border-emerald-800/60 text-emerald-300 font-mono text-[10px]">HP ${s.hp || 0}/${digi.maxHp}</span>
+              <span data-student="${s.id}" data-stat="exp" class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-[10px]">EXP ${s.exp || 0}</span>
+              <span data-student="${s.id}" data-stat="quota" class="px-1.5 py-0.5 rounded bg-slate-900 border border-amber-800/60 text-amber-300 font-mono text-[10px]">攻擊 ${s.attackQuota || 0}</span>
+              <span data-student="${s.id}" data-stat="tickets" class="px-1.5 py-0.5 rounded bg-slate-900 border border-purple-800/60 text-purple-300 font-mono text-[10px]">券 ${s.gachaTickets || 0}</span>
+              <span data-student="${s.id}" data-stat="coins" class="px-1.5 py-0.5 rounded bg-slate-900 border border-yellow-800/60 text-yellow-300 font-mono text-[10px]">幣 ${s.coins || 0}</span>
+              <span data-student="${s.id}" data-stat="dungeon" class="px-1.5 py-0.5 rounded bg-slate-900 border border-violet-500/70 text-violet-200 font-mono text-[10px]">迷宮券 ${Math.max(0, Number(s.dungeonTickets) || 0)}</span>
             </div>
             <div class="text-emerald-300 font-mono text-[11px] mt-1">復活答題 Revive ${reviveQuizLeft(s)} / 3${autoReviveItemCount(s) ? ` · 自動復活核心 Auto Revive x${autoReviveItemCount(s)}` : ''}</div>
             <div class="text-amber-300 font-mono text-[11px]">每日試煉 Trial ${dailyTrialLeft(s)} / 10</div>
-            <div class="text-violet-300 font-mono text-[11px]">迷宮券 Dungeon ${s.dungeonTickets || 0}</div>
           </div>
         </div>
       </div>
@@ -11750,7 +11835,8 @@ else if (mode === 'pvp') {
           </button>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-1">
-          <button onclick="deductStudentTicket('${s.id}', 1)" class="px-1 py-1.5 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="扣除 1 張抽獎券 / Deduct 1 Ticket">-1 券 / Ticket</button>
+          <button onclick="deductStudentTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="扣除 1 張抽獎券 / Deduct 1 Ticket">-1 券 / Ticket</button>
+          <button onclick="deductDungeonTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-slate-900 hover:bg-violet-950 border border-violet-700 rounded-lg text-[10px] text-violet-200 font-bold cursor-pointer active:scale-95" title="扣除 1 張迷宮券 / Remove 1 dungeon ticket">-1 迷宮券</button>
           <button onclick="deductStudentQuota('${s.id}', 1)" class="px-1 py-1.5 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded-lg text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95" title="扣除 1 次攻擊 / Deduct 1 Attack">-1 攻擊 / Atk</button>
           <button onclick="healStudent('${s.id}', 50)" class="px-1 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
           <button onclick="penalizeHp('${s.id}', 30)" class="px-1 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-30 HP</button>
@@ -11802,6 +11888,10 @@ function teacherAdjustStudentCoins(studentId, mode = 'add') {
 
   if (!dbRootRef) return;
 
+  const shown = isAdd ? ((s.coins || 0) + amount) : Math.max(0, (s.coins || 0) - amount);
+  s.coins = shown;
+  showTeacherStatsNow();
+
   // 使用 Firebase Transaction 保證數值原子化計算，並防止扣成負數
   dbRootRef.child(`students/${studentId}/coins`).transaction((curCoins) => {
     const base = curCoins || 0;
@@ -11813,6 +11903,8 @@ function teacherAdjustStudentCoins(studentId, mode = 'add') {
   }, (err, committed, snap) => {
     if (committed && snap.exists()) {
       const finalCoins = snap.val();
+      s.coins = finalCoins;
+      showTeacherStatsNow();
       if (isAdd) {
         playSound('gacha');
         addBattleLog(`💰⭐ [COIN REWARD] 老師獎勵了學生 [${s.name}] +${amount} 數碼幣 (現有: ${finalCoins})！`, "gacha", s.classId);
@@ -11860,8 +11952,11 @@ function teacherPromptClassCoins(mode = 'reward') {
   const updates = {};
   myStudents.forEach(s => {
     const cur = s.coins || 0;
-    updates[`students/${s.id}/coins`] = isReward ? (cur + amount) : Math.max(0, cur - amount);
+    const next = isReward ? (cur + amount) : Math.max(0, cur - amount);
+    s.coins = next;
+    updates[`students/${s.id}/coins`] = next;
   });
+  showTeacherStatsNow();
 
   executeAtomicMultiPathUpdate(updates).then(() => {
     if (isReward) {
@@ -11937,7 +12032,7 @@ function teacherPromptCoinsByClassNumber() {
     addBattleLog(`💰 [CLASS NUMBER COINS] 老師向班級 [${targetClass}] 的學號 ${wanted.join(', ')} 各發放 +${amount} 金幣（${who}）。`, "gacha", targetClass);
     const missNote = missing.length ? ` 找不到學號 ${missing.join(', ')}。` : '';
     showToast("金幣已發放 / Coins Sent", `已給 ${targets.length} 位學生每人 +${amount} 金幣。 / +${amount} coins each.${missNote}`, "heal");
-    renderTeacherGrid();
+    showTeacherStatsNow();
   });
 }
 
@@ -12001,6 +12096,7 @@ function teacherToggleClassSpy(studentId, event) {
         exp: (s.exp || 0) + amt,
         statPool: (s.statPool || 0) + amt // 同步發放同等 trait point
       });
+      showTeacherStatsNow();
       playSound('heal');
       addBattleLog(`⭐ [REWARD] ${s.name} received +${amt} EXP & +${amt} Trait Points!`, "normal", s.classId);
       showToast("Reward Given", `Awarded +${amt} EXP & +${amt} Trait Points to ${s.name}!`, "info");
@@ -12033,9 +12129,12 @@ function teacherToggleClassSpy(studentId, event) {
       const amt = parseInt(exp, 10) || 10;
       const updates = {};
       myStudents.forEach(s => {
-        updates[`students/${s.id}/exp`] = (s.exp || 0) + amt;
-        updates[`students/${s.id}/statPool`] = (s.statPool || 0) + amt; // 全班同步發放 trait point
+        s.exp = (s.exp || 0) + amt;
+        s.statPool = (s.statPool || 0) + amt;
+        updates[`students/${s.id}/exp`] = s.exp;
+        updates[`students/${s.id}/statPool`] = s.statPool; // 全班同步發放 trait point
       });
+      showTeacherStatsNow();
 
       executeAtomicMultiPathUpdate(updates);
       playSound('evolve');
@@ -12108,6 +12207,7 @@ function teacherToggleClassSpy(studentId, event) {
       if (!s) return;
       const newQuota = (s.attackQuota || 0) + amount;
       patchStudentAtomic(studentId, { attackQuota: newQuota });
+      showTeacherStatsNow();
       playSound('shield');
       addBattleLog(`⚔️ [ACTION QUOTA] Granted +${amount} Attack Quota to ${s.name}.`, "normal", s.classId);
       showToast("Quota Granted", `Granted +${amount} quota to ${s.name}!`, "info");
@@ -12118,6 +12218,7 @@ function teacherToggleClassSpy(studentId, event) {
       if (!s) return;
       const newTix = (s.gachaTickets || 0) + amount;
       patchStudentAtomic(studentId, { gachaTickets: newTix });
+      showTeacherStatsNow();
       playSound('gacha');
       addBattleLog(`🎁 [GACHA TICKET] Rewarded +${amount} Ticket to ${s.name}.`, "gacha", s.classId);
       showToast("Ticket Rewarded", `Awarded +${amount} Ticket to ${s.name}!`, "gacha");
@@ -12963,7 +13064,7 @@ function teacherToggleClassSpy(studentId, event) {
               </div>
               <div class="text-[11px] text-slate-300">
                 <div><b>Classes:</b> <span class="text-cyan-300">${formatStudentClassesDisplay(s)}</span> | <b>Form:</b> ${digi.name}</div>
-                <div class="text-slate-400 font-mono text-[10px]">EXP: ${s.exp || 0} | HP: ${s.hp || 100} | Tickets: ${s.gachaTickets || 0}</div>
+                <div class="text-slate-400 font-mono text-[10px]">EXP: ${s.exp || 0} | HP: ${s.hp || 100} | 扭蛋券 Gacha: ${s.gachaTickets || 0} | 迷宮券 Dungeon: ${Math.max(0, Number(s.dungeonTickets) || 0)}</div>
               </div>
             </div>
           </div>
@@ -15464,15 +15565,6 @@ function startStudentExamTimer() {
     window.addEventListener('DOMContentLoaded', () => {
       initFirebase();
       ensureTerritoryDailyTimer();
-      document.addEventListener('pointerdown', (event) => {
-        const target = event.target && event.target.closest ? event.target.closest('#viewTeacher select, #modalTeacherTargetPicker') : null;
-        if (target) noteTeacherInteraction(6000);
-      }, true);
-      document.addEventListener('focusin', (event) => {
-        const el = event.target;
-        if (!el || !el.closest) return;
-        if (el.closest('#viewTeacher') || el.closest('#modalTeacherTargetPicker')) noteTeacherInteraction(6000);
-      }, true);
       const deathReviveBtn = document.getElementById('btnDeathReviveQuiz');
       if (deathReviveBtn) deathReviveBtn.addEventListener('pointerup', () => openReviveQuizFromDeath());
       const pInput = document.getElementById('loginPassword');
