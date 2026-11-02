@@ -1608,7 +1608,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.18";
+    const CURRENT_APP_VERSION = "2.7.19";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -7661,7 +7661,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.18</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.19</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
