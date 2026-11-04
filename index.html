@@ -268,7 +268,7 @@
       <p id="reviveQuizQuotaText" class="text-[11px] text-emerald-300 font-mono mb-3">復活答題 Revive：今日還可答 3 / 3 次<br>Revive answers left today: 3 / 3</p>
       <div id="reviveQuizQuestion" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm font-bold text-white mb-5 shadow-inner leading-relaxed">Loading question...</div>
       <div id="reviveQuizOptions" class="grid grid-cols-1 gap-2.5"></div>
-      <p class="text-[11px] text-slate-400 mt-4">答對會立刻滿血復活。不論答對或答錯，都會用掉今日 1 次。答錯這次不能再答。每日最多答 3 次，用完要等老師，明天重新計算。這 3 次只屬於復活，不會扣每日試煉的 10 次，也不會給金幣。<br>A correct answer revives you to full HP. A right or wrong answer uses 1 of today's 3 tries. A wrong answer cannot be tried again for this defeat. After 3 answers today, wait for the teacher. The count resets tomorrow. These 3 answers belong only to revive. They do not spend the daily trial's 10 tries and they do not give coins.</p>
+      <p class="text-[11px] text-slate-400 mt-4">答對會立刻滿血復活。答錯會立刻換下一題，直到今日 3 次用完。每次答對或答錯都用掉 1 次。用完要等老師，明天重新計算。這 3 次只屬於復活，不會扣每日試煉的 10 次，也不會給金幣。<br>A correct answer revives you to full HP. A wrong answer opens the next question right away until today's 3 tries are used. Each right or wrong answer uses 1 try. After 3 answers today, wait for the teacher. The count resets tomorrow. These 3 answers belong only to revive. They do not spend the daily trial's 10 tries and they do not give coins.</p>
     </div>
   </div>
 
@@ -732,6 +732,7 @@
               </button>
             </div>
             <p id="stFactionStatusText" class="text-[11px] text-slate-400 mt-1">Classmates in the same faction are allies and immune to friendly fire. / 同班同陣營為盟友，免疫傷害。</p>
+            <p id="stBattleItemStatus" class="text-[11px] text-amber-200 mt-1 leading-relaxed whitespace-pre-wrap"></p>
           </div>
         </div>
 
@@ -1028,12 +1029,12 @@
           </div>
 
           <div class="border-t border-slate-800 pt-3">
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-box-open mr-1.5"></i>Tamer Bag 道具背包</span>
-              <button onclick="openGachaModal()" class="text-[10px] text-cyan-400 hover:underline">Get Items 獲取道具 &rarr;</button>
-            </div>
-            <div id="stInventoryList" class="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar pr-1 text-xs">
-              <div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha! / 背包為空，可透過抽獎取得！</div>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <button type="button" id="btnOpenItemBag" onclick="toggleItemBag()" class="flex-1 min-h-11 px-3 py-2 rounded-xl bg-amber-950 border border-amber-500 text-amber-100 text-xs font-black text-left cursor-pointer active:scale-95">
+                <i class="fa-solid fa-box-open mr-1.5"></i>道具背包 / Item Bag
+                <span id="stBagCount" class="ml-1 font-mono text-amber-300">0</span>
+              </button>
+              <button type="button" onclick="openGachaModal()" class="min-h-11 px-3 py-2 rounded-xl bg-slate-800 border border-cyan-500/30 text-[11px] text-cyan-300 font-bold cursor-pointer active:scale-95">獲取道具 / Get Items</button>
             </div>
           </div>
 
@@ -1274,6 +1275,18 @@
       <span>★ 提示：擊殺同級/越級對手獲 10 金幣，擊殺懸賞目標獲 20 金幣！</span>
       <button onclick="toggleShopModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 cursor-pointer active:scale-95">關閉</button>
     </div>
+  </div>
+</div>
+<div id="modalItemBag" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+  <div class="bg-slate-900 border-t-2 sm:border-2 border-amber-500/60 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[100dvh] flex flex-col p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-200 shadow-2xl">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3 gap-3">
+      <div class="min-w-0">
+        <h3 class="font-black text-base text-amber-300">道具背包 / Item Bag</h3>
+        <p class="text-[11px] text-slate-400 leading-relaxed">名稱和功能會完整顯示。按使用才會消耗。 / The full name and function are shown. An item is used only when you press Use.</p>
+      </div>
+      <button type="button" onclick="toggleItemBag(false)" class="min-h-11 min-w-11 rounded-xl bg-slate-800 text-slate-200 cursor-pointer active:scale-95"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="bagItemsContainer" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-3 pr-1"></div>
   </div>
 </div>
   <div id="modalGacha" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
@@ -1616,7 +1629,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.24";
+    const CURRENT_APP_VERSION = "2.7.25";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -2295,6 +2308,34 @@
         effect: (st) => {
           return "這個核心會在被擊敗時自動使用。 / Used automatically when you are defeated.";
         }
+      },
+      "item_betrayal_blade": {
+        id: "item_betrayal_blade",
+        name: "背叛之刃 (Betrayal Blade)",
+        rarity: "Legendary",
+        rarityColor: "text-rose-300 border-rose-400 bg-rose-950/60 shadow-lg shadow-rose-500/20",
+        badgeBg: "bg-rose-700",
+        icon: "🗡️",
+        weight: 0,
+        description: "使用後永久生效。你可以主動攻擊同陣營的學生。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。兩位都使用了背叛之刃時，可以互相主動攻擊。都沒有使用時，同陣營仍然免疫，包括反擊。不同陣營的攻擊規則不變。已經生效時再按使用不會消耗。\nAfter use, this stays on. You can attack students in your faction. A same-faction student who has not used a Betrayal Blade cannot attack you, and can only counter. Two blade users can attack each other. If neither has used a blade, same-faction immunity stays, including counters. Other factions stay the same. Using it again while it is already on does not consume another blade.",
+        effect: (st) => {
+          st.betrayalBlade = true;
+          return "背叛之刃已生效。你可以主動攻擊同陣營學生。沒有刃的同陣營學生只能反擊你。 / Betrayal Blade is active. You can attack your faction. Faction mates without a blade can only counter you.";
+        }
+      },
+      "item_holy_barrier": {
+        id: "item_holy_barrier",
+        name: "神聖屏障 (Holy Barrier)",
+        rarity: "Legendary",
+        rarityColor: "text-sky-200 border-sky-300 bg-sky-950/60 shadow-lg shadow-sky-400/20",
+        badgeBg: "bg-sky-600",
+        icon: "🕊️",
+        weight: 0,
+        description: "使用後 8 小時內，你不能攻擊其他學生，其他學生也不能攻擊你或反擊你。老師的傷害、首領戰、商店、答題、迷宮、特質、聊天、每日試煉和復活仍然可用。再使用會從現在重新計算 8 小時。\nFor 8 hours you cannot attack other students, and other students cannot attack or counter you. Teacher damage, boss fights, the shop, quizzes, the dungeon, traits, chat, the daily trial, and revive still work. Using another barrier starts a new 8 hours from now.",
+        effect: (st) => {
+          st.holyBarrierUntil = syncedNow() + HOLY_BARRIER_MS;
+          return "神聖屏障生效 8 小時。這段時間你不能攻擊其他學生，其他學生也不能攻擊你。其他功能仍然可用。 / Holy Barrier lasts 8 hours. You cannot attack or be attacked by other students. Other functions still work.";
+        }
       }
     };
 
@@ -2306,6 +2347,20 @@ const SHOP_CATALOG = [
     cost: 500,
     icon: "💖",
     desc: "被擊敗時自動使用，立刻滿血復活一次。不用自己按 (Auto-uses on defeat, full HP revive, once per core)"
+  },
+  {
+    id: "item_betrayal_blade",
+    name: "背叛之刃 (Betrayal Blade)",
+    cost: 500,
+    icon: "🗡️",
+    desc: "使用後永久生效。你可以主動攻擊同陣營的學生。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。兩位都使用了背叛之刃時，可以互相主動攻擊。都沒有使用時，同陣營仍然免疫，包括反擊。不同陣營的攻擊規則不變。已經生效時再按使用不會消耗。 / After use, this stays on. You can attack students in your faction. A same-faction student who has not used a Betrayal Blade cannot attack you, and can only counter. Two blade users can attack each other. If neither has used a blade, same-faction immunity stays, including counters. Other factions stay the same. Using it again while it is already on does not consume another blade."
+  },
+  {
+    id: "item_holy_barrier",
+    name: "神聖屏障 (Holy Barrier)",
+    cost: 600,
+    icon: "🕊️",
+    desc: "使用後 8 小時內，你不能攻擊其他學生，其他學生也不能攻擊你或反擊你。老師的傷害、首領戰、商店、答題、迷宮、特質、聊天、每日試煉和復活仍然可用。再使用會從現在重新計算 8 小時。 / For 8 hours you cannot attack other students, and other students cannot attack or counter you. Teacher damage, boss fights, the shop, quizzes, the dungeon, traits, chat, the daily trial, and revive still work. Using another barrier starts a new 8 hours from now."
   },
   {
     id: "potion_small",
@@ -2401,18 +2456,18 @@ function renderShopItems() {
   SHOP_CATALOG.forEach(item => {
     const canAfford = (st.coins || 0) >= item.cost;
     const card = document.createElement('div');
-    card.className = "bg-slate-950 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-3 shadow hover:border-yellow-500/40 transition";
+    card.className = "bg-slate-950 border border-slate-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 shadow hover:border-yellow-500/40 transition";
     card.innerHTML = `
-      <div class="flex items-center gap-3">
-        <span class="text-3xl">${item.icon}</span>
-        <div>
-          <div class="font-bold text-xs text-white">${item.name}</div>
-          <div class="text-[11px] text-slate-400 mt-0.5">${item.desc}</div>
+      <div class="flex items-start gap-3 min-w-0">
+        <span class="text-3xl shrink-0">${item.icon}</span>
+        <div class="min-w-0">
+          <div class="font-bold text-sm text-white leading-snug">${item.name}</div>
+          <div class="text-[12px] text-slate-300 mt-1 leading-relaxed whitespace-pre-wrap">${item.desc}</div>
         </div>
       </div>
       <div class="flex items-center gap-3 shrink-0">
-        <span class="font-pixel text-xs text-amber-400 font-bold">${item.cost} Coins</span>
-        <button onclick="buyShopItem('${item.id}')" ${!canAfford ? 'disabled' : ''} class="px-3.5 py-1.5 rounded-xl font-bold text-xs ${canAfford ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 cursor-pointer active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed'} shadow">
+        <span class="font-pixel text-xs text-amber-400 font-bold whitespace-nowrap">${item.cost} Coins</span>
+        <button onclick="buyShopItem('${item.id}')" ${!canAfford ? 'disabled' : ''} class="min-h-11 px-3.5 py-2 rounded-xl font-bold text-xs ${canAfford ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 cursor-pointer active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed'} shadow">
           購買 (Buy)
         </button>
       </div>
@@ -4678,6 +4733,75 @@ function studentsAreFactionAllies(a, b, className) {
   return !!(a.factionId && b.factionId && String(a.factionId).trim().toLowerCase() === String(b.factionId).trim().toLowerCase());
 }
 
+const HOLY_BARRIER_MS = 8 * 60 * 60 * 1000;
+
+function holyBarrierUntil(student) {
+  const until = Number(student && student.holyBarrierUntil) || 0;
+  return until > syncedNow() ? until : 0;
+}
+
+function studentHasHolyBarrier(student) {
+  return holyBarrierUntil(student) > 0;
+}
+
+function studentHasBetrayalBlade(student) {
+  return !!(student && student.betrayalBlade);
+}
+
+function studentPvpBlock(attacker, target, className, isCounter) {
+  if (!attacker || !target) return { ok: false, reason: 'missing' };
+  if (studentHasHolyBarrier(attacker)) return { ok: false, reason: 'self-barrier' };
+  if (studentHasHolyBarrier(target)) return { ok: false, reason: 'target-barrier' };
+  if (!studentsAreFactionAllies(attacker, target, className)) return { ok: true };
+  const atkBlade = studentHasBetrayalBlade(attacker);
+  const tgtBlade = studentHasBetrayalBlade(target);
+  if (isCounter) {
+    if (atkBlade || tgtBlade) return { ok: true };
+    return { ok: false, reason: 'ally' };
+  }
+  if (atkBlade) return { ok: true };
+  if (tgtBlade) return { ok: false, reason: 'counter-only' };
+  return { ok: false, reason: 'ally' };
+}
+
+function explainStudentPvpBlock(block, target) {
+  const name = target && target.name ? target.name : '對方';
+  if (!block || block.ok) return false;
+  if (block.reason === 'self-barrier') {
+    showToast("神聖屏障 / Holy Barrier", "屏障期間不能攻擊其他學生。其他功能仍然可用。 / Holy Barrier is active. You cannot attack other students. Other functions still work.", "info");
+    return true;
+  }
+  if (block.reason === 'target-barrier') {
+    showToast("神聖屏障 / Holy Barrier", `${name} 正處於神聖屏障，這段時間不能被其他學生攻擊。 / ${name} is inside a Holy Barrier and cannot be attacked by other students.`, "info");
+    return true;
+  }
+  if (block.reason === 'counter-only') {
+    showToast("只能反擊 / Counter Only", "你沒有使用背叛之刃，不能主動攻擊，但可以反擊。 / You have not used a Betrayal Blade, so you cannot attack this student. You can still counter.", "info");
+    return true;
+  }
+  if (block.reason === 'ally') {
+    showToast("Faction Ally / 陣營盟友", `${name} 是同陣營盟友，免疫傷害。 / Same-faction ally. Immune to damage.`, "info");
+    return true;
+  }
+  return false;
+}
+
+function battleItemStatusText(student) {
+  if (!student) return '';
+  const lines = [];
+  if (studentHasBetrayalBlade(student)) {
+    lines.push('背叛之刃生效：你可以主動攻擊同陣營。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。 / Betrayal Blade is on: you can attack your faction. Faction mates without a blade cannot attack you, and can only counter.');
+  }
+  const until = holyBarrierUntil(student);
+  if (until) {
+    const total = Math.max(1, Math.ceil((until - syncedNow()) / 60000));
+    const hours = Math.floor(total / 60);
+    const minutes = total % 60;
+    lines.push(`神聖屏障剩餘 ${hours} 小時 ${minutes} 分：你不能攻擊其他學生，其他學生也不能攻擊或反擊你。其他功能仍然可用。 / Holy Barrier ${hours}h ${minutes}m left: you cannot attack or be attacked by other students. Other functions still work.`);
+  }
+  return lines.join('\n');
+}
+
 function studentClassNumber(student, className) {
   const raw = String((student && (student.username || student.id)) || '').trim();
   if (!raw) return null;
@@ -4816,7 +4940,9 @@ function normalizeStudent(s, keyId) {
     dailyTrialSeen: copyDailyTrialSeen(s.dailyTrialSeen),
     dailyTrialOpen: normalizeDailyTrialOpen(s.dailyTrialOpen),
     dungeonTickets: Math.max(0, Number(s.dungeonTickets) || 0),
-    friendshipCrests: Math.max(0, Number(s.friendshipCrests) || 0)
+    friendshipCrests: Math.max(0, Number(s.friendshipCrests) || 0),
+    betrayalBlade: !!s.betrayalBlade,
+    holyBarrierUntil: Number(s.holyBarrierUntil) || 0
   };
 }
 
@@ -5550,12 +5676,16 @@ function updateStudentFactionUI() {
   if (statusText) {
     if (myReq && (myReq.classTagKey === activeClassKey || myReq.classId === activeClass)) {
       statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] 轉移申請審核中: [${myReq.requestedFactionName}]</span>`;
+    } else if (myFactionInfo.factionName && studentHasBetrayalBlade(st)) {
+      statusText.textContent = `你在【${activeClass}】隸屬【${myFactionInfo.factionName}】。背叛之刃生效，你可以主動攻擊同陣營。`;
     } else if (myFactionInfo.factionName) {
       statusText.textContent = `你在【${activeClass}】隸屬【${myFactionInfo.factionName}】。同陣營同學為盟友，免疫傷害！`;
     } else {
       statusText.textContent = `你在【${activeClass}】尚未加入陣營。可於右側選擇陣營並提交申請。`;
     }
   }
+  const battleStatus = document.getElementById('stBattleItemStatus');
+  if (battleStatus) battleStatus.textContent = battleItemStatusText(st);
 
   // 5. 填入可申請之陣營下拉清單
   if (select) {
@@ -7735,7 +7865,12 @@ function getTeacherTemplate() {
     </div>
 
     <div id="teacherSubViewMain" class="space-y-6">
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="sticky top-[4.75rem] z-40 rounded-xl border border-cyan-500/50 bg-slate-950/95 backdrop-blur p-2 flex flex-wrap gap-2">
+        <button type="button" onclick="document.getElementById('teacherSectionClass').scrollIntoView({behavior:'smooth',block:'start'})" class="min-h-11 px-3 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-100 text-xs font-black cursor-pointer active:scale-95">班級 / Class</button>
+        <button type="button" onclick="document.getElementById('teacherSectionFactions').scrollIntoView({behavior:'smooth',block:'start'})" class="min-h-11 px-3 rounded-lg bg-indigo-950 border border-indigo-400 text-indigo-100 text-xs font-black cursor-pointer active:scale-95">陣營 / Factions</button>
+        <button type="button" onclick="document.getElementById('teacherSectionStudents').scrollIntoView({behavior:'smooth',block:'start'})" class="min-h-11 px-3 rounded-lg bg-amber-950 border border-amber-400 text-amber-100 text-xs font-black cursor-pointer active:scale-95">學生 / Students</button>
+      </div>
+      <div id="teacherSectionClass" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-cyan-500/40 rounded-2xl p-5 shadow-xl space-y-4 scroll-mt-36">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <div class="w-16 h-16 bg-slate-950 rounded-xl p-1.5 border border-cyan-400 flex items-center justify-center">
@@ -7752,7 +7887,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.24</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.25</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -7826,7 +7961,7 @@ function getTeacherTemplate() {
         </div>
       </div>
 
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/60 rounded-xl p-4 shadow-xl space-y-4">
+      <div id="teacherSectionFactions" class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/60 rounded-xl p-4 shadow-xl space-y-4 scroll-mt-36">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-flag text-indigo-400 text-base animate-pulse"></i>
@@ -7938,13 +8073,14 @@ function getTeacherTemplate() {
       </div>
 
       <div class="bg-slate-900 border border-emerald-500/40 rounded-xl p-4 shadow-lg space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <div>
-            <h4 class="text-xs font-black text-emerald-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-heart-pulse mr-1"></i>自動復活答題 (Auto Revive Quiz)</h4>
-            <p class="text-[11px] text-slate-400 mt-1">這個班的學生被擊敗時，會隨機跳出一題。答對立刻滿血復活。答對或答錯都會用掉今日 1 次。每位學生每日最多答 3 次，超過就要等老師復活，明天重新計算。這 3 次和題庫跟每日試煉的 10 次金幣題分開，不會共用。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的復活題庫。<br>When a student in this class is defeated, one random question pops up. A correct answer revives them to full HP. A right or wrong answer uses 1 of today's 3 tries. After 3 answers, wait for the teacher. The count resets tomorrow. These 3 tries and this question bank are separate from the daily trial's 10 coin questions. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's revive questions.</p>
-          </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h4 class="text-xs font-black text-emerald-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-heart-pulse mr-1"></i>自動復活答題 (Auto Revive Quiz)</h4>
           <span id="reviveQuizBankStatus" class="text-[11px] text-emerald-200 font-mono">請先選擇一個班級。 / Select a class first.</span>
         </div>
+        <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
+          <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-emerald-200">說明 / How this works</summary>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">這個班的學生被擊敗時，會跳出一題。答對立刻滿血復活。答錯會立刻換下一題，直到今日 3 次用完。每次答對或答錯都用掉 1 次。用完要等老師復活，明天重新計算。這 3 次和題庫跟每日試煉的 10 次金幣題分開，不會共用。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的復活題庫。<br>When a student in this class is defeated, one question pops up. A correct answer revives them to full HP. A wrong answer opens another question immediately until today's 3 tries are used. Each right or wrong answer uses 1 try. After 3 answers, wait for the teacher. The count resets tomorrow. These 3 tries and this question bank are separate from the daily trial's 10 coin questions. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's revive questions.</p>
+        </details>
         <div class="flex flex-wrap items-center gap-2">
           <button id="btnToggleReviveQuiz" type="button" onclick="toggleClassReviveQuiz()" class="px-3 py-1.5 rounded bg-slate-800 border border-emerald-600 text-emerald-300 text-xs font-bold cursor-pointer active:scale-95">開啟這個班的復活答題 / Turn On</button>
           <label for="reviveQuizExcelInput" class="cursor-pointer px-3 py-1.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
@@ -7955,13 +8091,14 @@ function getTeacherTemplate() {
       </div>
 
       <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-4 shadow-lg space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <div>
-            <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-scroll mr-1"></i>馴獸師每日試煉 (Tamer's Daily Trial)</h4>
-            <p class="text-[11px] text-slate-400 mt-1">學生還活著時，每天可以答 10 題。答對一題得 20 金幣。答錯不能再答同一題，並用掉 1 次。題目彈出後就不能免費離開，離開也會用掉 1 次。答完一題可以停止，剩下的次數留到今天稍後再答。香港時間午夜 00:00 重新有 10 次。倒下的學生不能參加每日試煉，倒下只使用復活答題的 3 次。這 10 次和題庫跟復活答題分開，不會共用，也不會扣攻擊次數。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的試煉題庫。<br>While a student is still alive, they can answer 10 questions a day. A correct answer gives 20 coins. A wrong answer cannot be tried again and uses 1 try. Once a question is open, leaving it also uses 1 try. After each answer they can stop and continue later today. The 10 tries return at 00:00 Hong Kong time. A fainted student cannot take the daily trial. A defeat uses only the revive quiz's 3 answers. These 10 tries and this question bank stay separate from the revive quiz, and they do not spend attack quota. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's trial questions.</p>
-          </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-scroll mr-1"></i>馴獸師每日試煉 (Tamer's Daily Trial)</h4>
           <span id="dailyTrialBankStatus" class="text-[11px] text-amber-200 font-mono">請先選擇一個班級。 / Select a class first.</span>
         </div>
+        <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
+          <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-amber-200">說明 / How this works</summary>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">學生還活著時，每天可以答 10 題。答對一題得 20 金幣。答錯不能再答同一題，並用掉 1 次。題目彈出後就不能免費離開，離開也會用掉 1 次。答完一題可以停止，剩下的次數留到今天稍後再答。香港時間午夜 00:00 重新有 10 次。倒下的學生不能參加每日試煉，倒下只使用復活答題的 3 次。這 10 次和題庫跟復活答題分開，不會共用，也不會扣攻擊次數。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的試煉題庫。<br>While a student is still alive, they can answer 10 questions a day. A correct answer gives 20 coins. A wrong answer cannot be tried again and uses 1 try. Once a question is open, leaving it also uses 1 try. After each answer they can stop and continue later today. The 10 tries return at 00:00 Hong Kong time. A fainted student cannot take the daily trial. A defeat uses only the revive quiz's 3 answers. These 10 tries and this question bank stay separate from the revive quiz, and they do not spend attack quota. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's trial questions.</p>
+        </details>
         <div class="flex flex-wrap items-center gap-2">
           <label for="dailyTrialExcelInput" class="cursor-pointer px-3 py-1.5 rounded bg-amber-950 border border-amber-500 text-amber-200 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1.5 active:scale-95">
             <i class="fa-solid fa-file-excel"></i> 上傳每日試煉題庫 / Upload Trial Questions
@@ -7971,13 +8108,14 @@ function getTeacherTemplate() {
       </div>
 
       <div class="bg-slate-900 border border-violet-500/40 rounded-xl p-4 shadow-lg space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <div>
-            <h4 class="text-xs font-black text-violet-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-dungeon mr-1"></i>數碼迷宮 (Digital Matrix)</h4>
-            <p class="text-[11px] text-slate-400 mt-1">持有迷宮券的學生可以從課堂頁的「迷宮」進入 dungeon.html，自己一個人或組最多 3 人。沒有券的同學可以被有券的隊長邀請。學術石碑題目和彈出搶答一樣：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的石碑題庫。<br>A student with a dungeon ticket opens the Dungeon tab and enters dungeon.html, alone or in a squad of up to 3. A classmate without a ticket can be invited by the ticket holder. Shrine questions use the same Excel shape as the pop-up quiz: A question, B correct answer, C D E wrong answers. A new upload replaces this class's shrine bank.</p>
-          </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h4 class="text-xs font-black text-violet-300 uppercase tracking-wider font-pixel"><i class="fa-solid fa-dungeon mr-1"></i>數碼迷宮 (Digital Matrix)</h4>
           <span id="dungeonBankStatus" class="text-[11px] text-violet-200 font-mono">請先選擇一個班級。 / Select a class first.</span>
         </div>
+        <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
+          <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-violet-200">說明 / How this works</summary>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">持有迷宮券的學生可以從課堂頁的「迷宮」進入 dungeon.html，自己一個人或組最多 3 人。沒有券的同學可以被有券的隊長邀請。學術石碑題目和彈出搶答一樣：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的石碑題庫。<br>A student with a dungeon ticket opens the Dungeon tab and enters dungeon.html, alone or in a squad of up to 3. A classmate without a ticket can be invited by the ticket holder. Shrine questions use the same Excel shape as the pop-up quiz: A question, B correct answer, C D E wrong answers. A new upload replaces this class's shrine bank.</p>
+        </details>
         <div class="flex flex-wrap items-center gap-2">
           <button type="button" onclick="grantClassDungeonTickets()" class="min-h-11 px-3 py-1.5 rounded bg-violet-950 border border-violet-500 text-violet-100 text-xs font-bold cursor-pointer active:scale-95">全班 +1 迷宮券 / Class +1</button>
           <button type="button" onclick="deductClassDungeonTickets()" class="min-h-11 px-3 py-1.5 rounded bg-slate-950 border border-violet-700 text-violet-200 text-xs font-bold cursor-pointer active:scale-95">全班 -1 迷宮券 / Class −1</button>
@@ -7988,24 +8126,27 @@ function getTeacherTemplate() {
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+      <div id="teacherSectionStudents" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 scroll-mt-36">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div class="flex flex-wrap items-center gap-2">
             <label class="text-xs font-bold text-cyan-400"><i class="fa-solid fa-school mr-1"></i>目前班級 / Current Class</label>
-            <select id="teacherClassFilter" onchange="onClassFilterChange(this.value)" class="bg-slate-950 border border-cyan-500/50 text-xs font-bold rounded-lg px-3 py-1.5 text-cyan-200 outline-none"></select>
-            <button onclick="promptCreateClass()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-plus mr-1"></i>新增班級 / Add</button>
-            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="px-2.5 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-xs text-rose-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-trash mr-1"></i>刪除班級 / Delete</button>
+            <select id="teacherClassFilter" onchange="onClassFilterChange(this.value)" class="min-h-11 bg-slate-950 border border-cyan-500/50 text-sm font-bold rounded-lg px-3 py-2 text-cyan-200 outline-none"></select>
+            <button onclick="promptCreateClass()" class="min-h-11 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-plus mr-1"></i>新增班級 / Add</button>
+            <button onclick="promptDeleteCurrentClass()" id="btnDeleteClass" class="min-h-11 px-3 py-2 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-xs text-rose-300 font-bold cursor-pointer active:scale-95"><i class="fa-solid fa-trash mr-1"></i>刪除班級 / Delete</button>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button onclick="openManageClassStudentsModal()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer active:scale-95">管理學生 / Manage</button>
-            <label for="excelFileInput" class="cursor-pointer px-3 py-1.5 rounded-lg bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
+            <button onclick="openManageClassStudentsModal()" class="min-h-11 px-3 py-2 rounded-lg bg-cyan-950 border border-cyan-600 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer active:scale-95">管理學生 / Manage</button>
+            <label for="excelFileInput" class="cursor-pointer min-h-11 px-3 py-2 rounded-lg bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95">
               <i class="fa-solid fa-file-excel"></i> 匯入 Excel / Import
             </label>
             <input id="excelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(event)" class="hidden">
-            <button onclick="promptRewardAllStudents()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black shadow-md cursor-pointer active:scale-95 flex items-center gap-1.5">
+            <button onclick="promptRewardAllStudents()" class="min-h-11 px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black shadow-md cursor-pointer active:scale-95 flex items-center gap-1.5">
               <i class="fa-solid fa-bolt"></i> 全班發放 EXP / Class EXP
             </button>
           </div>
+        </div>
+        <div class="mt-3">
+          <input id="teacherStudentSearch" type="search" oninput="onTeacherStudentSearch(this.value)" placeholder="搜尋姓名、帳號、學號 / Search name, id, number" class="min-h-11 w-full bg-slate-950 border border-cyan-500/50 rounded-lg px-3 text-sm text-cyan-100 outline-none">
         </div>
         <div id="teacherStudentGrid" class="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-5"></div>
       </div>
@@ -8487,6 +8628,10 @@ function logout() {
   attackAlertBaselineKeys = {};
   const counterModalOnLogout = document.getElementById('modalCounterAttack');
   if (counterModalOnLogout) counterModalOnLogout.classList.add('hidden');
+  ['modalItemBag', 'modalPvpTargetPicker', 'modalShop'].forEach(id => {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('hidden');
+  });
   const pendingCounterBtn = document.getElementById('btnPendingCounter');
   if (pendingCounterBtn) pendingCounterBtn.classList.add('hidden');
   document.getElementById('viewLogin').classList.remove('hidden');
@@ -8510,6 +8655,7 @@ function logout() {
       if (!el || !el.tagName) return false;
       const tag = el.tagName;
       if (tag !== 'SELECT' && tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
+      if (el.id === 'teacherStudentSearch') return false;
       if (tag === 'SELECT') {
         const grid = document.getElementById('teacherStudentGrid');
         return !!(grid && grid.contains(el));
@@ -9244,39 +9390,59 @@ function logout() {
       });
     }
 
-    function renderStudentInventory() {
-      if (!currentUser || currentUser.role !== 'student') return;
-      const st = appData.students[currentUser.id];
-      const invList = document.getElementById('stInventoryList');
-      if (!invList || !st) return;
-      invList.innerHTML = '';
-      const banned = isStudentBanned(st);
+    function toggleItemBag(forceOpen) {
+      const modal = document.getElementById('modalItemBag');
+      if (!modal) return;
+      const open = forceOpen === true || (forceOpen !== false && modal.classList.contains('hidden'));
+      modal.classList.toggle('hidden', !open);
+      if (open) renderItemBagModal();
+    }
 
-      const items = Object.entries(st.inventory || {}).filter(([k, count]) => count > 0);
-      if (items.length === 0) {
-        invList.innerHTML = '<div class="col-span-2 text-slate-500 italic text-center py-3">Bag empty. Draw items via Gacha!</div>';
+    function renderItemBagModal() {
+      const container = document.getElementById('bagItemsContainer');
+      if (!container || !currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+      const banned = isStudentBanned(st);
+      const items = Object.entries(st.inventory || {}).filter(([, count]) => count > 0);
+      container.innerHTML = '';
+      if (!items.length) {
+        container.innerHTML = '<div class="text-slate-400 text-sm leading-relaxed text-center py-8">背包是空的。可以在商店購買，或用抽獎取得道具。 / The bag is empty. Buy items in the shop, or draw them from gacha.</div>';
         return;
       }
-
       items.forEach(([itemId, qty]) => {
         const itemInfo = ITEMS_DB[itemId];
         if (!itemInfo) return;
         const card = document.createElement('div');
-        card.className = `p-2 rounded-xl border flex items-center justify-between gap-1.5 ${itemInfo.rarityColor}`;
+        card.className = `p-3 rounded-2xl border ${itemInfo.rarityColor}`;
+        const useLabel = itemId === 'item_auto_revive' ? '自動 / Auto' : '使用 / Use';
         card.innerHTML = `
-          <div class="flex items-center gap-1.5 min-w-0">
-            <span class="text-base shrink-0">${itemInfo.icon}</span>
-            <div class="truncate">
-              <div class="font-bold text-[11px] truncate text-slate-200">${itemInfo.name}</div>
-              <div class="text-[9px] text-slate-400">Qty: <span class="font-bold text-amber-300">x${qty}</span></div>
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-2 min-w-0">
+              <span class="text-2xl shrink-0">${itemInfo.icon}</span>
+              <div class="min-w-0">
+                <div class="font-black text-sm text-white leading-snug whitespace-normal">${escapeHtml(itemInfo.name)}</div>
+                <div class="text-[11px] text-amber-200 mt-1">數量 Qty: <span class="font-black">x${qty}</span></div>
+              </div>
             </div>
+            <button type="button" onclick="useItem('${itemId}')" ${banned ? 'disabled' : ''} class="min-h-11 px-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-black rounded-xl shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 active:scale-95">${useLabel}</button>
           </div>
-          <button onclick="useItem('${itemId}')" ${banned ? 'disabled' : ''} class="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-[10px] font-black rounded-lg shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 active:scale-95">
-            ${itemId === 'item_auto_revive' ? '自動 / Auto' : 'Use'}
-          </button>
+          <p class="text-[13px] text-slate-100 mt-2 leading-relaxed whitespace-pre-wrap">${escapeHtml(itemInfo.description || '')}</p>
         `;
-        invList.appendChild(card);
+        container.appendChild(card);
       });
+    }
+
+    function renderStudentInventory() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const st = appData.students[currentUser.id];
+      if (!st) return;
+      const countEl = document.getElementById('stBagCount');
+      const items = Object.entries(st.inventory || {}).filter(([, count]) => count > 0);
+      const total = items.reduce((sum, [, count]) => sum + (Number(count) || 0), 0);
+      if (countEl) countEl.textContent = String(total);
+      const modal = document.getElementById('modalItemBag');
+      if (modal && !modal.classList.contains('hidden')) renderItemBagModal();
     }
 
 function openMegaRebirthPrompt() {
@@ -9372,6 +9538,10 @@ function openMegaRebirthPrompt() {
 
       const itemInfo = ITEMS_DB[itemId];
       if (!itemInfo) return;
+      if (itemId === 'item_betrayal_blade' && studentHasBetrayalBlade(st)) {
+        showToast("背叛之刃 / Betrayal Blade", "背叛之刃已經生效，不會再消耗。 / The blade is already active, so this one was not used.", "info");
+        return;
+      }
 
       st.inventory[itemId]--;
       const resultText = itemInfo.effect(st);
@@ -9389,7 +9559,9 @@ function openMegaRebirthPrompt() {
         courage: st.courage,
         love: st.love,
         discipline: st.discipline,
-        wisdom: st.wisdom
+        wisdom: st.wisdom,
+        betrayalBlade: !!st.betrayalBlade,
+        holyBarrierUntil: Number(st.holyBarrierUntil) || 0
       });
 
       updateStudentUI();
@@ -9489,10 +9661,17 @@ else if (mode === 'pvp') {
           const tCurHp = target.hp !== undefined ? target.hp : tMaxHp;
           const isDead = target.isFainted || tCurHp <= 0;
 
-          const isAlly = studentsAreFactionAllies(st, target);
+          const strike = studentPvpBlock(st, target, undefined, false);
+          const canStrike = !isDead && strike.ok;
+          let actionLabel = '攻擊鎖定';
+          if (isDead) actionLabel = '已倒下';
+          else if (strike.reason === 'self-barrier' || strike.reason === 'target-barrier') actionLabel = '屏障 / Barrier';
+          else if (strike.reason === 'counter-only') actionLabel = '只能反擊';
+          else if (strike.reason === 'ally') actionLabel = '免疫';
+          else if (studentsAreFactionAllies(st, target)) actionLabel = '背刺 / Betray';
 
           const card = document.createElement('div');
-          card.className = `p-3 rounded-xl border flex items-center justify-between gap-3 transition ${isDead ? 'bg-slate-950/60 border-slate-800 opacity-50 cursor-not-allowed' : (isAlly ? 'bg-indigo-950/30 border-indigo-500/40' : 'bg-slate-950 border-cyan-500/40 hover:border-cyan-400 cursor-pointer')}`;
+          card.className = `p-3 rounded-xl border flex items-center justify-between gap-3 transition ${isDead ? 'bg-slate-950/60 border-slate-800 opacity-50 cursor-not-allowed' : (canStrike ? 'bg-slate-950 border-cyan-500/40 hover:border-cyan-400 cursor-pointer' : 'bg-indigo-950/30 border-indigo-500/40')}`;
           
           card.innerHTML = `
             <div class="flex items-center gap-3">
@@ -9500,10 +9679,11 @@ else if (mode === 'pvp') {
                 <img src="${getDigiImgSrc(target.currentDigiId)}" class="max-w-full max-h-full object-contain">
               </div>
               <div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <span class="font-bold text-xs text-white">${target.name}</span>
                   <span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold">${tDigi.stageName}</span>
-                  ${isAlly ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 border border-indigo-400 text-indigo-300 font-bold">同陣營盟友</span>' : ''}
+                  ${studentsAreFactionAllies(st, target) ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 border border-indigo-400 text-indigo-300 font-bold">同陣營</span>' : ''}
+                  ${studentHasHolyBarrier(target) ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-sky-950 border border-sky-400 text-sky-200 font-bold">屏障 / Barrier</span>' : ''}
                 </div>
                 <div class="text-[11px] font-mono text-emerald-400 mt-0.5">
                   HP: ${tCurHp} / ${tMaxHp} ${target.hasShield ? '🛡️ (聖盾防禦中)' : ''}
@@ -9511,13 +9691,13 @@ else if (mode === 'pvp') {
               </div>
             </div>
             <div>
-              <button ${isDead || isAlly ? 'disabled' : ''} class="px-3.5 py-1.5 rounded-xl font-bold text-xs ${isDead || isAlly ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow cursor-pointer active:scale-95'}">
-                ${isDead ? '已倒下' : (isAlly ? '免疫' : '攻擊鎖定')}
+              <button ${canStrike ? '' : 'disabled'} class="min-h-11 min-w-[5.75rem] px-3 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap ${canStrike ? 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow cursor-pointer active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed'}">
+                ${actionLabel}
               </button>
             </div>
           `;
 
-          if (!isDead && !isAlly) {
+          if (canStrike) {
             card.onclick = () => executePvPStrike(target.id);
           }
           container.appendChild(card);
@@ -9548,8 +9728,9 @@ else if (mode === 'pvp') {
         return;
       }
 
-      if (studentsAreFactionAllies(st, target)) {
-        showToast("Faction Ally / 陣營盟友", `${target.name} 是同陣營盟友，免疫傷害。 / Same-faction ally. Immune to damage.`, "info");
+      const pvpBlock = studentPvpBlock(st, target, undefined, !!isCounterAttack);
+      if (!pvpBlock.ok) {
+        explainStudentPvpBlock(pvpBlock, target);
         if (isCounterAttack) renderCounterAttackModalList();
         return;
       }
@@ -9890,7 +10071,9 @@ else if (mode === 'pvp') {
         const atkDigi = DIGIMON_DB[atkDigiId] || DIGIMON_DB['digitama1'];
         const atkCurHp = attacker && attacker.hp !== undefined ? attacker.hp : atkDigi.maxHp;
         const isAttackerDead = !attacker || attacker.isFainted || atkCurHp <= 0;
-        const isAlly = !!(attacker && st && studentsAreFactionAllies(st, attacker));
+        const counterBlock = attacker && st ? studentPvpBlock(st, attacker, undefined, true) : { ok: false, reason: 'missing' };
+        const counterLocked = isAttackerDead || !counterBlock.ok;
+        const counterLabel = isAttackerDead ? '對手已倒下' : (counterBlock.reason === 'self-barrier' || counterBlock.reason === 'target-barrier' ? '屏障' : (counterBlock.reason === 'ally' ? '盟友免疫' : '立即反擊'));
 
         html += `
           <div class="p-3 bg-slate-950 border border-rose-500/50 rounded-2xl flex items-center justify-between gap-3 shadow-md">
@@ -9913,8 +10096,8 @@ else if (mode === 'pvp') {
               </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button onclick="executePvPStrike('${alertItem.attackerId}', true, '${alertItem._key}')" ${isAttackerDead || isAlly ? 'disabled' : ''} class="px-3 py-2 rounded-xl font-black text-xs ${isAttackerDead || isAlly ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer active:scale-95'} flex items-center gap-1">
-                <i class="fa-solid fa-bolt"></i> ${isAttackerDead ? '對手已倒下' : (isAlly ? '盟友免疫' : '立即反擊')}
+              <button onclick="executePvPStrike('${alertItem.attackerId}', true, '${alertItem._key}')" ${counterLocked ? 'disabled' : ''} class="min-h-11 px-3 py-2 rounded-xl font-black text-xs ${counterLocked ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer active:scale-95'} flex items-center gap-1">
+                <i class="fa-solid fa-bolt"></i> ${counterLabel}
               </button>
               <button onclick="dismissSingleAttackAlert('${alertItem._key}')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs cursor-pointer" title="忽略此筆">
                 <i class="fa-solid fa-xmark"></i>
@@ -10382,6 +10565,28 @@ else if (mode === 'pvp') {
       return !!(flagged && flagged.text === text);
     }
 
+    function pickNextReviveQuestion(cur, previousText) {
+      const pendingClass = cur && cur.reviveQuizPending && cur.reviveQuizPending.className;
+      let className = reviveQuizClassFor(cur) || pendingClass || '';
+      let bank = className ? classReviveQuestions(className) : [];
+      if (!bank.length && pendingClass && pendingClass !== className) {
+        className = pendingClass;
+        bank = classReviveQuestions(className);
+      }
+      if (!bank.length) return null;
+      const prev = String(previousText || '').trim();
+      let pool = bank.filter(q => String(q.question).trim() !== prev);
+      if (!pool.length) pool = bank.slice();
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      if (!picked || !picked.question || !picked.correct) return null;
+      return {
+        className: className,
+        question: String(picked.question),
+        correctAnswer: String(picked.correct).trim(),
+        options: shuffleReviveOptions(picked)
+      };
+    }
+
     function applyReviveQuizResult(cur, answerText) {
       if (!cur || !cur.reviveQuizPending || !cur.reviveQuizPending.question) return null;
       const pending = cur.reviveQuizPending;
@@ -10389,13 +10594,14 @@ else if (mode === 'pvp') {
       if (already >= REVIVE_QUIZ_QUOTA) {
         delete cur.reviveQuizPending;
         cur.reviveQuizClosed = true;
-        return { correct: false, used: already, blocked: true, className: pending.className || '' };
+        return { correct: false, used: already, blocked: true, continued: false, className: pending.className || '' };
       }
       const correct = reviveChoiceIsCorrect(pending, answerText);
       const day = hongKongDateKey();
       const used = already + 1;
       cur.reviveDailyDay = day;
       cur.reviveDailyUsed = used;
+      const next = (!correct && used < REVIVE_QUIZ_QUOTA) ? pickNextReviveQuestion(cur, pending.question) : null;
       delete cur.reviveQuizPending;
       if (correct) {
         cur.hp = fullHpOfStudent(cur);
@@ -10403,10 +10609,15 @@ else if (mode === 'pvp') {
         delete cur.killedByName;
         delete cur.killedById;
         delete cur.reviveQuizClosed;
-      } else {
-        cur.reviveQuizClosed = true;
+        return { correct: true, used: used, blocked: false, continued: false, className: pending.className || '' };
       }
-      return { correct: correct, used: used, blocked: false, className: pending.className || '' };
+      if (next) {
+        delete cur.reviveQuizClosed;
+        cur.reviveQuizPending = next;
+        return { correct: false, used: used, blocked: false, continued: true, className: next.className || pending.className || '' };
+      }
+      cur.reviveQuizClosed = true;
+      return { correct: false, used: used, blocked: false, continued: false, className: pending.className || '' };
     }
 
     function rememberReviveQuizStudent(studentId, value) {
@@ -10428,10 +10639,18 @@ else if (mode === 'pvp') {
         playSound('heal');
         addBattleLog(`✨ [REVIVE QUIZ] ${student.name} 答對復活題，立刻滿血復活！今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "heal", className);
         showToast("復活成功 / Revived", leftNow > 0 ? `答對了，立刻滿血復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.` : "答對了，立刻滿血復活。今日 3 次答題已經用完，下次要等老師。 / Correct. Full HP restored. All 3 answers for today are used. Wait for the teacher next time.", "heal");
+      } else if (outcome.continued) {
+        playSound('faint');
+        addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，立刻換下一題。今次答題已經計算，今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. The next question opened. This answer used 1 try. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
+        showToast("下一題 / Next Question", `答錯了，已用掉 1 次。下一題已打開。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. 1 try used. The next question is open. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "damage");
+      } else if (leftNow > 0) {
+        playSound('faint');
+        addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，題庫沒有下一題。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. No next question is available. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
+        showToast("復活失敗 / Not Revived", `答錯了。題庫沒有下一題，請等老師復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. No next question is available. Wait for the teacher. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "damage");
       } else {
         playSound('faint');
-        addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，維持倒下。今次答題已經計算，今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. Still down. This answer used 1 try. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
-        showToast("復活失敗 / Not Revived", `答錯了，這次要等老師復活。今次答題已經計算，今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. Wait for the teacher this time. This answer used 1 try. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "damage");
+        addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，今日 3 次已經用完。 / Wrong answer. All 3 answers for today are used.`, "battle", className);
+        showToast("復活失敗 / Not Revived", `答錯了，今日 3 次已經用完，請等老師復活。 / Wrong answer. All 3 answers for today are used. Wait for the teacher.`, "damage");
       }
     }
 
@@ -10563,7 +10782,12 @@ else if (mode === 'pvp') {
       if (st.reviveQuizClosed && !(st.reviveQuizPending && st.reviveQuizPending.question)) {
         modal.classList.add('hidden');
         clearDeathReviveLive();
-        if (hint) hint.textContent = `這次倒下已經答過，今次答題已經計算。今日還可答題 ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA} 次。請等老師復活。 / This defeat was already answered and that try is used. Answers left today: ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA}. Wait for the teacher.`;
+        if (hint) {
+          const leftClosed = reviveQuizLeft(st);
+          hint.textContent = leftClosed > 0
+            ? `這次沒有下一題可以打開。今日還可答題 ${leftClosed} / ${REVIVE_QUIZ_QUOTA} 次。請等老師復活。 / No next question can be opened. Answers left today: ${leftClosed} / ${REVIVE_QUIZ_QUOTA}. Wait for the teacher.`
+            : `今日 3 次答題已經用完。請等老師復活，明天才可以再答。 / All 3 answers for today are used. Wait for the teacher. You can answer again tomorrow.`;
+        }
         return;
       }
 
@@ -10616,7 +10840,7 @@ else if (mode === 'pvp') {
       } else {
         st.reviveQuizPending = pending;
       }
-      if (hint) hint.textContent = '復活答題視窗已打開。答對會立刻滿血復活。答對或答錯都會用掉今日 1 次。 / The revive question is open. A correct answer restores full HP. A right or wrong answer uses 1 try today.';
+      if (hint) hint.textContent = '復活答題視窗已打開。答對會立刻滿血復活。答錯會立刻換下一題，直到今日次數用完。每次都用掉 1 次。 / The revive question is open. A correct answer restores full HP. A wrong answer opens the next question until today\'s tries are used. Each answer uses 1 try.';
       const quotaEl = document.getElementById('reviveQuizQuotaText');
       const questionEl = document.getElementById('reviveQuizQuestion');
       const optionsEl = document.getElementById('reviveQuizOptions');
@@ -10678,9 +10902,6 @@ else if (mode === 'pvp') {
       if (!answerText) return;
       const buttons = document.querySelectorAll('#reviveQuizOptions button, #deathReviveOptions button');
       buttons.forEach(btn => { btn.disabled = true; });
-      const modal = document.getElementById('modalReviveQuiz');
-      if (modal) modal.classList.add('hidden');
-      clearDeathReviveLive();
       const className = pending.className || st.classId;
       reviveQuizCommitDepth++;
 
@@ -10721,10 +10942,13 @@ else if (mode === 'pvp') {
           return;
         }
         const norm = rememberReviveQuizStudent(st.id, snap.val()) || st;
+        const stillDown = !!(norm.isFainted || Number(norm.hp) <= 0);
+        const hasNext = !!(norm.reviveQuizPending && norm.reviveQuizPending.question);
         finish(norm, {
-          correct: !norm.isFainted && Number(norm.hp) > 0,
+          correct: !stillDown,
           used: reviveDailyUsed(norm),
-          blocked: false,
+          blocked: stillDown && !hasNext && !!norm.reviveQuizClosed && reviveDailyUsed(norm) >= REVIVE_QUIZ_QUOTA,
+          continued: stillDown && hasNext && !norm.reviveQuizClosed,
           className: className
         }, true);
       });
@@ -11813,6 +12037,20 @@ else if (mode === 'pvp') {
       ].join(':');
     }
 
+    let teacherStudentQuery = '';
+
+    function onTeacherStudentSearch(value) {
+      teacherStudentQuery = String(value || '').trim().toLowerCase();
+      renderTeacherGrid();
+    }
+
+    function teacherStudentMatchesQuery(student, query) {
+      if (!query) return true;
+      const classNo = studentClassNumber(student, selectedTeacherClass);
+      const hay = [student.name, student.username, student.id, classNo != null ? String(classNo) : ''].join(' ').toLowerCase();
+      return hay.indexOf(query) !== -1;
+    }
+
     function renderTeacherGrid() {
   
   const container = document.getElementById('teacherStudentGrid');
@@ -11826,15 +12064,21 @@ else if (mode === 'pvp') {
     return;
   }
 
+  const query = teacherStudentQuery;
+  const visibleStudents = query ? myStudents.filter(s => teacherStudentMatchesQuery(s, query)) : myStudents;
   const currentBountyId = appData.bounties ? appData.bounties[sanitizeClassKey(selectedTeacherClass)] : null;
-  const gridSig = selectedTeacherClass + '|' + (currentBountyId || '') + '|' + myStudents.map(s => teacherCardSignature(s, currentBountyId)).join(';');
+  const gridSig = selectedTeacherClass + '|' + (query || '') + '|' + (currentBountyId || '') + '|' + visibleStudents.map(s => teacherCardSignature(s, currentBountyId)).join(';');
   if (container.dataset.sig === gridSig) return;
   container.dataset.sig = gridSig;
   container.innerHTML = '';
+  if (!visibleStudents.length) {
+    container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 text-sm">沒有符合搜尋的學生。清空搜尋即可看到全班。 / No students match this search. Clear the search to see the class.</div>';
+    return;
+  }
   const currentFactions = getFactionsForClass(selectedTeacherClass);
 
-  myStudents.forEach((s, index) => {
-    const studentIndex = index + 1;
+  visibleStudents.forEach((s) => {
+    const studentIndex = myStudents.indexOf(s) + 1;
     const digi = DIGIMON_DB[s.currentDigiId] || DIGIMON_DB['digitama1'];
     const card = document.createElement('div');
     const isDead = s.isFainted || (s.hp !== undefined && s.hp <= 0);
@@ -11917,40 +12161,40 @@ else if (mode === 'pvp') {
       </div>
 
       <div class="space-y-1.5 mt-2">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1">
-          <button onclick="promptRewardStudent('${s.id}')" class="min-h-11 px-1 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded-lg text-[10px] text-cyan-300 font-bold cursor-pointer active:scale-95">+經驗 / EXP</button>
-          <button onclick="grantGachaTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95">+1 券 / Ticket</button>
-          <button onclick="grantAttackQuota('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded-lg text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95">+1 攻擊 / Atk</button>
-          <button onclick="grantDungeonTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-violet-950 hover:bg-violet-900 border border-violet-700 rounded-lg text-[10px] text-violet-200 font-bold cursor-pointer active:scale-95">+1 迷宮券</button>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="promptRewardStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded-lg text-[11px] leading-tight whitespace-normal text-cyan-300 font-bold cursor-pointer active:scale-95">+經驗 / EXP</button>
+          <button onclick="grantGachaTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded-lg text-[11px] leading-tight whitespace-normal text-purple-300 font-bold cursor-pointer active:scale-95">+1 券 / Ticket</button>
+          <button onclick="grantAttackQuota('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded-lg text-[11px] leading-tight whitespace-normal text-amber-300 font-bold cursor-pointer active:scale-95">+1 攻擊 / Atk</button>
+          <button onclick="grantDungeonTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-violet-950 hover:bg-violet-900 border border-violet-700 rounded-lg text-[11px] leading-tight whitespace-normal text-violet-200 font-bold cursor-pointer active:scale-95">+1 迷宮券</button>
         </div>
         <div class="grid grid-cols-2 gap-1">
-          <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="px-1 py-1.5 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded-lg text-[10px] text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+          <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="min-h-11 px-2 py-2 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded-lg text-[11px] leading-tight whitespace-normal text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
             <i class="fa-solid fa-plus text-[9px]"></i> 獎勵金幣 / +Coins
           </button>
-          <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="px-1 py-1.5 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded-lg text-[10px] text-yellow-500 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
+          <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-yellow-500 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
             <i class="fa-solid fa-minus text-[9px]"></i> 扣除金幣 / -Coins
           </button>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1">
-          <button onclick="deductStudentTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded-lg text-[10px] text-purple-300 font-bold cursor-pointer active:scale-95" title="扣除 1 張抽獎券 / Deduct 1 Ticket">-1 券 / Ticket</button>
-          <button onclick="deductDungeonTicket('${s.id}', 1)" class="min-h-11 px-1 py-1.5 bg-slate-900 hover:bg-violet-950 border border-violet-700 rounded-lg text-[10px] text-violet-200 font-bold cursor-pointer active:scale-95" title="扣除 1 張迷宮券 / Remove 1 dungeon ticket">-1 迷宮券</button>
-          <button onclick="deductStudentQuota('${s.id}', 1)" class="px-1 py-1.5 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded-lg text-[10px] text-amber-300 font-bold cursor-pointer active:scale-95" title="扣除 1 次攻擊 / Deduct 1 Attack">-1 攻擊 / Atk</button>
-          <button onclick="healStudent('${s.id}', 50)" class="px-1 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-[10px] text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
-          <button onclick="promptPenalizeHp('${s.id}')" class="px-1 py-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-[10px] text-rose-300 font-bold cursor-pointer active:scale-95">-HP</button>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="deductStudentTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-purple-300 font-bold cursor-pointer active:scale-95" title="扣除 1 張抽獎券 / Deduct 1 Ticket">-1 券 / Ticket</button>
+          <button onclick="deductDungeonTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-violet-950 border border-violet-700 rounded-lg text-[11px] leading-tight whitespace-normal text-violet-200 font-bold cursor-pointer active:scale-95" title="扣除 1 張迷宮券 / Remove 1 dungeon ticket">-1 迷宮券</button>
+          <button onclick="deductStudentQuota('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-amber-300 font-bold cursor-pointer active:scale-95" title="扣除 1 次攻擊 / Deduct 1 Attack">-1 攻擊 / Atk</button>
+          <button onclick="healStudent('${s.id}', 50)" class="min-h-11 px-2 py-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-[11px] leading-tight whitespace-normal text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
+          <button onclick="promptPenalizeHp('${s.id}')" class="min-h-11 px-2 py-2 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-[11px] leading-tight whitespace-normal text-rose-300 font-bold cursor-pointer active:scale-95">-HP</button>
         </div>
         <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-800">
           ${isDead ? `
-            <button onclick="teacherReviveStudent('${s.id}')" class="py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded-lg text-[10px] transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
+            <button onclick="teacherReviveStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded-lg text-[11px] leading-tight whitespace-normal transition flex items-center justify-center gap-1 cursor-pointer animate-pulse active:scale-95">
               <i class="fa-solid fa-heart-pulse"></i> 復活 / Revive
             </button>
-            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1.5 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+            <button onclick="teacherDegradeStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-rose-900 hover:bg-rose-800 border border-rose-600 text-rose-200 rounded-lg text-[11px] leading-tight whitespace-normal font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
               <i class="fa-solid fa-arrow-down"></i> 退化 / De-Evolve
             </button>
           ` : `
-            <button onclick="teacherDegradeStudent('${s.id}')" class="py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+            <button onclick="teacherDegradeStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-[11px] leading-tight whitespace-normal font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
               <i class="fa-solid fa-arrow-down"></i> 退化 / De-Evolve
             </button>
-            <button onclick="teacherRebirthStudent('${s.id}')" class="py-1.5 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+            <button onclick="teacherRebirthStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-slate-800 border border-amber-600/50 text-amber-300 rounded-lg text-[11px] leading-tight whitespace-normal font-bold transition flex items-center justify-center gap-1 cursor-pointer active:scale-95">
               <i class="fa-solid fa-rotate-left"></i> 隨機蛋 / Random Egg
             </button>
           `}
@@ -15278,8 +15522,15 @@ function startStudentExamTimer() {
         const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
         const isFainted = target.isFainted || (target.hp !== undefined && target.hp <= 0);
         const tgtFac = getStudentFactionInClass(target, classFilter);
+        const strike = studentPvpBlock(me, target, classFilter, false);
         const isSameFaction = studentsAreFactionAllies(me, target, classFilter);
+        const canStrike = !isFainted && strike.ok;
         const isBounty = (activeBountyTargetId === target.id);
+        let pvpTag = '';
+        if (studentHasHolyBarrier(target) || strike.reason === 'self-barrier' || strike.reason === 'target-barrier') pvpTag = '<span class="text-[10px] px-2 py-0.5 rounded bg-sky-950 text-sky-200 border border-sky-400 block mt-1">屏障 / Barrier</span>';
+        else if (strike.reason === 'counter-only') pvpTag = '<span class="text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-200 border border-amber-500 block mt-1">只能反擊</span>';
+        else if (canStrike && isSameFaction) pvpTag = '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-200 border border-rose-500 block mt-1">背刺 / Betray</span>';
+        else if (isSameFaction) pvpTag = '<span class="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-600 block mt-1">同陣營盟友 (免傷)</span>';
 
         // 計算擊殺經驗值
         const killExpReward = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
@@ -15293,7 +15544,7 @@ function startStudentExamTimer() {
         else if (diffRank <= -2) { rankDiffLabel = "弱兩級+ (Weak/No EXP)"; rankColor = "text-purple-400"; }
 
         const card = document.createElement('div');
-        card.className = `p-3 rounded-2xl border ${isBounty ? 'border-rose-500 bg-rose-950/20' : (isSameFaction ? 'border-indigo-600/50 bg-indigo-950/20' : 'border-slate-800 bg-slate-950')} flex items-center justify-between gap-3 transition hover:border-cyan-400/80 cursor-pointer ${isFainted ? 'opacity-40 cursor-not-allowed' : ''}`;
+        card.className = `p-3 rounded-2xl border ${isBounty ? 'border-rose-500 bg-rose-950/20' : (canStrike ? 'border-slate-800 bg-slate-950 hover:border-cyan-400/80 cursor-pointer' : 'border-indigo-600/50 bg-indigo-950/20')} flex items-center justify-between gap-3 transition ${isFainted ? 'opacity-40 cursor-not-allowed' : ''}`;
 
         card.innerHTML = `
           <div class="flex items-center gap-3 min-w-0">
@@ -15324,12 +15575,12 @@ function startStudentExamTimer() {
           <div class="text-right shrink-0">
             <div class="font-pixel text-xs text-amber-300">擊殺: +${killExpReward} EXP</div>
             <div class="text-[10px] text-slate-400">Kill Reward</div>
-            ${isSameFaction ? '<span class="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-600 block mt-1">同陣營盟友 (免傷)</span>' : ''}
+            ${pvpTag}
             ${isFainted ? '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600 block mt-1">已倒下 Fainted</span>' : ''}
           </div>
         `;
 
-        if (!isFainted && !isSameFaction) {
+        if (canStrike) {
           card.onclick = () => executePvPAttack(target.id, classFilter);
         }
         container.appendChild(card);
@@ -15360,12 +15611,13 @@ function startStudentExamTimer() {
       const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
       const skill = (myDigi.skills && myDigi.skills[currentPendingSkillIndex !== null ? currentPendingSkillIndex : 0]) || { name: "Attack", power: 25 };
 
-      // 1. 同陣營盟友免傷判斷 (Friendly Fire Immunity)
+      // 1. 學生對學生：神聖屏障、背叛之刃，以及同陣營免傷
       const myFac = getStudentFactionInClass(me, targetClass);
       const tgtFac = getStudentFactionInClass(target, targetClass);
-      if (studentsAreFactionAllies(me, target, targetClass)) {
-        playSound('shield');
-        showToast("Faction Ally / 陣營盟友", `${target.name} is in your faction [${myFac.factionName || tgtFac.factionName || ''}]! Immune to friendly fire. / 同陣營盟友免疫傷害！`, "info");
+      const pvpBlock = studentPvpBlock(me, target, targetClass, false);
+      if (!pvpBlock.ok) {
+        if (pvpBlock.reason === 'ally' || pvpBlock.reason === 'counter-only') playSound('shield');
+        explainStudentPvpBlock(pvpBlock, target);
         return;
       }
 
