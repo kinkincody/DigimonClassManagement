@@ -1651,7 +1651,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.27";
+    const CURRENT_APP_VERSION = "2.7.28";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -2339,10 +2339,11 @@
         badgeBg: "bg-rose-700",
         icon: "🗡️",
         weight: 0,
-        description: "使用後永久生效。你可以主動攻擊同陣營的學生。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。兩位都使用了背叛之刃時，可以互相主動攻擊。都沒有使用時，同陣營仍然免疫，包括反擊。不同陣營的攻擊規則不變。已經生效時再按使用不會消耗。\nAfter use, this stays on. You can attack students in your faction. A same-faction student who has not used a Betrayal Blade cannot attack you, and can only counter. Two blade users can attack each other. If neither has used a blade, same-faction immunity stays, including counters. Other factions stay the same. Using it again while it is already on does not consume another blade.",
+        description: "使用後生效 2 小時。你可以主動攻擊同陣營的學生。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。兩位都使用了背叛之刃時，可以互相主動攻擊。都沒有使用時，同陣營仍然免疫，包括反擊。不同陣營的攻擊規則不變。生效期間再按使用不會消耗，也不會加時。\nAfter use, this lasts 2 hours. You can attack students in your faction. A same-faction student who has not used a Betrayal Blade cannot attack you, and can only counter. Two blade users can attack each other. If neither has used a blade, same-faction immunity stays, including counters. Other factions stay the same. Using it again while it is already on does not consume another blade and does not add time.",
         effect: (st) => {
           st.betrayalBlade = true;
-          return "背叛之刃已生效。你可以主動攻擊同陣營學生。沒有刃的同陣營學生只能反擊你。 / Betrayal Blade is active. You can attack your faction. Faction mates without a blade can only counter you.";
+          st.betrayalBladeUntil = syncedNow() + BETRAYAL_BLADE_MS;
+          return "背叛之刃生效 2 小時。你可以主動攻擊同陣營學生。沒有刃的同陣營學生只能反擊你。 / Betrayal Blade lasts 2 hours. You can attack your faction. Faction mates without a blade can only counter you.";
         }
       },
       "item_holy_barrier": {
@@ -2375,7 +2376,7 @@ const SHOP_CATALOG = [
     name: "背叛之刃 (Betrayal Blade)",
     cost: 500,
     icon: "🗡️",
-    desc: "使用後永久生效。你可以主動攻擊同陣營的學生。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。兩位都使用了背叛之刃時，可以互相主動攻擊。都沒有使用時，同陣營仍然免疫，包括反擊。不同陣營的攻擊規則不變。已經生效時再按使用不會消耗。 / After use, this stays on. You can attack students in your faction. A same-faction student who has not used a Betrayal Blade cannot attack you, and can only counter. Two blade users can attack each other. If neither has used a blade, same-faction immunity stays, including counters. Other factions stay the same. Using it again while it is already on does not consume another blade."
+    desc: "使用後生效 2 小時。你可以主動攻擊同陣營的學生。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。兩位都使用了背叛之刃時，可以互相主動攻擊。都沒有使用時，同陣營仍然免疫，包括反擊。不同陣營的攻擊規則不變。生效期間再按使用不會消耗，也不會加時。 / After use, this lasts 2 hours. You can attack students in your faction. A same-faction student who has not used a Betrayal Blade cannot attack you, and can only counter. Two blade users can attack each other. If neither has used a blade, same-faction immunity stays, including counters. Other factions stay the same. Using it again while it is already on does not consume another blade and does not add time."
   },
   {
     id: "item_holy_barrier",
@@ -4756,6 +4757,8 @@ function studentsAreFactionAllies(a, b, className) {
 }
 
 const HOLY_BARRIER_MS = 8 * 60 * 60 * 1000;
+const BETRAYAL_BLADE_MS = 2 * 60 * 60 * 1000;
+const betrayalBladeMigratePending = new Set();
 
 function holyBarrierUntil(student) {
   const until = Number(student && student.holyBarrierUntil) || 0;
@@ -4766,8 +4769,44 @@ function studentHasHolyBarrier(student) {
   return holyBarrierUntil(student) > 0;
 }
 
+function betrayalBladeUntil(student) {
+  const stored = Number(student && student.betrayalBladeUntil) || 0;
+  if (stored > syncedNow()) return stored;
+  if (student && student.betrayalBlade && stored <= 0) return syncedNow() + BETRAYAL_BLADE_MS;
+  return 0;
+}
+
 function studentHasBetrayalBlade(student) {
-  return !!(student && student.betrayalBlade);
+  return betrayalBladeUntil(student) > 0;
+}
+
+function betrayalBladeRemainLabel(student) {
+  const until = betrayalBladeUntil(student);
+  if (!until) return '';
+  const total = Math.max(1, Math.ceil((until - syncedNow()) / 60000));
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  return `${hours} 小時 ${minutes} 分 / ${hours}h ${minutes}m`;
+}
+
+function migrateLegacyBetrayalBlades(students) {
+  if (!dbRootRef || !students) return;
+  const now = syncedNow();
+  Object.values(students).forEach(st => {
+    if (!st || !st.id || !st.betrayalBlade) return;
+    const stored = Number(st.betrayalBladeUntil) || 0;
+    if (stored > 0 || betrayalBladeMigratePending.has(st.id)) return;
+    const nextUntil = now + BETRAYAL_BLADE_MS;
+    betrayalBladeMigratePending.add(st.id);
+    st.betrayalBladeUntil = nextUntil;
+    dbRootRef.child('students/' + st.id).update({
+      betrayalBlade: true,
+      betrayalBladeUntil: nextUntil
+    }).catch(() => {
+      betrayalBladeMigratePending.delete(st.id);
+      st.betrayalBladeUntil = 0;
+    });
+  });
 }
 
 function studentPvpBlock(attacker, target, className, isCounter) {
@@ -4812,7 +4851,7 @@ function battleItemStatusText(student) {
   if (!student) return '';
   const lines = [];
   if (studentHasBetrayalBlade(student)) {
-    lines.push('背叛之刃生效：你可以主動攻擊同陣營。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。 / Betrayal Blade is on: you can attack your faction. Faction mates without a blade cannot attack you, and can only counter.');
+    lines.push(`背叛之刃剩餘 ${betrayalBladeRemainLabel(student)}：你可以主動攻擊同陣營。沒有使用背叛之刃的同陣營學生不能主動攻擊你，只能反擊。 / Betrayal Blade ${betrayalBladeRemainLabel(student)} left: you can attack your faction. Faction mates without a blade cannot attack you, and can only counter.`);
   }
   const until = holyBarrierUntil(student);
   if (until) {
@@ -4964,6 +5003,7 @@ function normalizeStudent(s, keyId) {
     dungeonTickets: Math.max(0, Number(s.dungeonTickets) || 0),
     friendshipCrests: Math.max(0, Number(s.friendshipCrests) || 0),
     betrayalBlade: !!s.betrayalBlade,
+    betrayalBladeUntil: Number(s.betrayalBladeUntil) || 0,
     holyBarrierUntil: Number(s.holyBarrierUntil) || 0
   };
 }
@@ -5179,6 +5219,7 @@ function normalizeStudent(s, keyId) {
           });
           applyPendingFactionWrites(cleanStudents);
           appData.students = cleanStudents;
+          migrateLegacyBetrayalBlades(appData.students);
           saveLocalCache();
           paintOwnSpyMark();
           if (!currentUser) {
@@ -5699,7 +5740,7 @@ function updateStudentFactionUI() {
     if (myReq && (myReq.classTagKey === activeClassKey || myReq.classId === activeClass)) {
       statusText.innerHTML = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i>[${activeClass}] 轉移申請審核中: [${myReq.requestedFactionName}]</span>`;
     } else if (myFactionInfo.factionName && studentHasBetrayalBlade(st)) {
-      statusText.textContent = `你在【${activeClass}】隸屬【${myFactionInfo.factionName}】。背叛之刃生效，你可以主動攻擊同陣營。`;
+      statusText.textContent = `你在【${activeClass}】隸屬【${myFactionInfo.factionName}】。背叛之刃剩餘 ${betrayalBladeRemainLabel(st)}，你可以主動攻擊同陣營。`;
     } else if (myFactionInfo.factionName) {
       statusText.textContent = `你在【${activeClass}】隸屬【${myFactionInfo.factionName}】。同陣營同學為盟友，免疫傷害！`;
     } else {
@@ -7911,7 +7952,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.27</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.28</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -9528,7 +9569,7 @@ function openMegaRebirthPrompt() {
       const itemInfo = ITEMS_DB[itemId];
       if (!itemInfo) return;
       if (itemId === 'item_betrayal_blade' && studentHasBetrayalBlade(st)) {
-        showToast("背叛之刃 / Betrayal Blade", "背叛之刃已經生效，不會再消耗。 / The blade is already active, so this one was not used.", "info");
+        showToast("背叛之刃 / Betrayal Blade", `背叛之刃還剩 ${betrayalBladeRemainLabel(st)}，不會再消耗，也不會加時。 / The blade is already active for ${betrayalBladeRemainLabel(st)}, so this one was not used and the time was not extended.`, "info");
         return;
       }
 
@@ -9550,6 +9591,7 @@ function openMegaRebirthPrompt() {
         discipline: st.discipline,
         wisdom: st.wisdom,
         betrayalBlade: !!st.betrayalBlade,
+        betrayalBladeUntil: Number(st.betrayalBladeUntil) || 0,
         holyBarrierUntil: Number(st.holyBarrierUntil) || 0
       });
 
