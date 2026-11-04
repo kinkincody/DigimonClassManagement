@@ -1629,7 +1629,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.25";
+    const CURRENT_APP_VERSION = "2.7.26";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -7887,7 +7887,7 @@ function getTeacherTemplate() {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="teacherBroadcastLatestVersion()" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500 text-cyan-300 text-xs font-bold hover:bg-cyan-900 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.25</span>)
+              <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 強制更新 / Update (<span class="app-version-badge font-mono">v2.7.26</span>)
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs font-bold hover:border-amber-400 transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95">
               <i class="fa-solid fa-user-ninja text-slate-400"></i> <span id="lblStealthMode">隱藏模式：關閉 / Stealth Off</span>
@@ -12162,24 +12162,27 @@ else if (mode === 'pvp') {
 
       <div class="space-y-1.5 mt-2">
         <div class="grid grid-cols-2 gap-1">
-          <button onclick="promptRewardStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded-lg text-[11px] leading-tight whitespace-normal text-cyan-300 font-bold cursor-pointer active:scale-95">+經驗 / EXP</button>
-          <button onclick="grantGachaTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded-lg text-[11px] leading-tight whitespace-normal text-purple-300 font-bold cursor-pointer active:scale-95">+1 券 / Ticket</button>
-          <button onclick="grantAttackQuota('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded-lg text-[11px] leading-tight whitespace-normal text-amber-300 font-bold cursor-pointer active:scale-95">+1 攻擊 / Atk</button>
+          <button onclick="promptRewardStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 rounded-lg text-[11px] leading-tight whitespace-normal text-cyan-300 font-bold cursor-pointer active:scale-95">+經驗 / +EXP</button>
+          <button onclick="promptDeductStudentExp('${s.id}')" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-cyan-950 border border-cyan-900 rounded-lg text-[11px] leading-tight whitespace-normal text-cyan-200 font-bold cursor-pointer active:scale-95">-經驗 / -EXP</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="min-h-11 px-2 py-2 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded-lg text-[11px] leading-tight whitespace-normal text-yellow-300 font-bold cursor-pointer active:scale-95">+金幣 / +Coins</button>
+          <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-yellow-500 font-bold cursor-pointer active:scale-95">-金幣 / -Coins</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="grantAttackQuota('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-amber-950 hover:bg-amber-900 border border-amber-800 rounded-lg text-[11px] leading-tight whitespace-normal text-amber-300 font-bold cursor-pointer active:scale-95">+1 攻擊 / +Atk</button>
+          <button onclick="deductStudentQuota('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-amber-300 font-bold cursor-pointer active:scale-95" title="扣除 1 次攻擊 / Deduct 1 Attack">-1 攻擊 / -Atk</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="grantGachaTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-purple-950 hover:bg-purple-900 border border-purple-800 rounded-lg text-[11px] leading-tight whitespace-normal text-purple-300 font-bold cursor-pointer active:scale-95">+1 券 / +Ticket</button>
+          <button onclick="deductStudentTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-purple-300 font-bold cursor-pointer active:scale-95" title="扣除 1 張抽獎券 / Deduct 1 Ticket">-1 券 / -Ticket</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
           <button onclick="grantDungeonTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-violet-950 hover:bg-violet-900 border border-violet-700 rounded-lg text-[11px] leading-tight whitespace-normal text-violet-200 font-bold cursor-pointer active:scale-95">+1 迷宮券</button>
-        </div>
-        <div class="grid grid-cols-2 gap-1">
-          <button onclick="teacherAdjustStudentCoins('${s.id}', 'add')" class="min-h-11 px-2 py-2 bg-yellow-950 hover:bg-yellow-900 border border-yellow-600 rounded-lg text-[11px] leading-tight whitespace-normal text-yellow-300 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
-            <i class="fa-solid fa-plus text-[9px]"></i> 獎勵金幣 / +Coins
-          </button>
-          <button onclick="teacherAdjustStudentCoins('${s.id}', 'deduct')" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-yellow-950 border border-yellow-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-yellow-500 font-bold cursor-pointer active:scale-95 flex items-center justify-center gap-1">
-            <i class="fa-solid fa-minus text-[9px]"></i> 扣除金幣 / -Coins
-          </button>
-        </div>
-        <div class="grid grid-cols-2 gap-1">
-          <button onclick="deductStudentTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-purple-950 border border-purple-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-purple-300 font-bold cursor-pointer active:scale-95" title="扣除 1 張抽獎券 / Deduct 1 Ticket">-1 券 / Ticket</button>
           <button onclick="deductDungeonTicket('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-violet-950 border border-violet-700 rounded-lg text-[11px] leading-tight whitespace-normal text-violet-200 font-bold cursor-pointer active:scale-95" title="扣除 1 張迷宮券 / Remove 1 dungeon ticket">-1 迷宮券</button>
-          <button onclick="deductStudentQuota('${s.id}', 1)" class="min-h-11 px-2 py-2 bg-slate-900 hover:bg-amber-950 border border-amber-800/60 rounded-lg text-[11px] leading-tight whitespace-normal text-amber-300 font-bold cursor-pointer active:scale-95" title="扣除 1 次攻擊 / Deduct 1 Attack">-1 攻擊 / Atk</button>
-          <button onclick="healStudent('${s.id}', 50)" class="min-h-11 px-2 py-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-[11px] leading-tight whitespace-normal text-emerald-300 font-bold cursor-pointer active:scale-95">+50 HP</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="promptHealStudent('${s.id}')" class="min-h-11 px-2 py-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-[11px] leading-tight whitespace-normal text-emerald-300 font-bold cursor-pointer active:scale-95">+HP</button>
           <button onclick="promptPenalizeHp('${s.id}')" class="min-h-11 px-2 py-2 bg-rose-950 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-[11px] leading-tight whitespace-normal text-rose-300 font-bold cursor-pointer active:scale-95">-HP</button>
         </div>
         <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-800">
@@ -12426,6 +12429,53 @@ function teacherToggleClassSpy(studentId, event) {
       }
 
       rewardStudent(id, exp);
+    }
+
+    function promptDeductStudentExp(id) {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const s = appData.students[id];
+      if (!s) return;
+
+      const inputVal = prompt(`【個別扣除 EXP】\n為學生 [${s.name}] 扣除 EXP：\n請輸入扣除數值：`, "10");
+      if (inputVal === null || inputVal.trim() === '') return;
+
+      const exp = parseInt(inputVal.trim(), 10);
+      if (isNaN(exp) || exp <= 0) {
+        alert("請輸入大於 0 的有效整數！");
+        return;
+      }
+
+      deductStudentExp(id, exp);
+    }
+
+    function deductStudentExp(id, exp = 10) {
+      const s = appData.students[id];
+      if (!s) return;
+      const amt = parseInt(exp, 10) || 10;
+      const nextExp = Math.max(0, (Number(s.exp) || 0) - amt);
+      const nextPool = Math.max(0, (Number(s.statPool) || 0) - amt);
+      patchStudentAtomic(id, { exp: nextExp, statPool: nextPool });
+      showTeacherStatsNow();
+      playSound('attack');
+      addBattleLog(`🛑 [EXP DEDUCT] ${s.name} lost ${amt} EXP and unallocated trait points. Remaining EXP ${nextExp}.`, "battle", s.classId);
+      showToast("EXP Deducted", `Deducted ${amt} EXP from ${s.name}.`, "damage");
+    }
+
+    function readHealAmount(fallback) {
+      const raw = prompt('輸入要回復的 HP。預設 50。 / Enter the HP to restore. Default 50.', String(fallback == null ? 50 : fallback));
+      if (raw === null) return 0;
+      const amount = parseInt(String(raw).replace(/[^0-9]/g, ''), 10);
+      if (!amount || amount <= 0) {
+        alert('請輸入有效的 HP 數值。 / Enter a valid HP amount.');
+        return 0;
+      }
+      return amount;
+    }
+
+    function promptHealStudent(id) {
+      const amount = readHealAmount(50);
+      if (!amount) return;
+      healStudent(id, amount);
     }
 
     function rewardStudent(id, exp = 10) {
