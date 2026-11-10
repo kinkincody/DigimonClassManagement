@@ -74,7 +74,7 @@
     }
     .room-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; width: 100%; }
     .room-node {
-      min-width: 0; width: 100%; min-height: 48px; overflow: hidden;
+      min-width: 0; width: 100%; min-height: 48px; overflow: visible;
       display: flex; flex-direction: column; align-items: center; gap: 6px;
       padding: 8px; border-radius: 22px; color: #f8fafc; text-align: center;
       background: rgba(2, 12, 28, 0.78);
@@ -83,9 +83,10 @@
     }
     .room-node:disabled { opacity: 0.72; }
     .room-art { width: min(100%, 148px); max-width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 999px; border: 2px solid rgba(34, 211, 238, 0.7); background: #041226 center / cover no-repeat; color: transparent; font-size: 0; }
-    .room-title, .room-sub { max-width: 100%; overflow-wrap: anywhere; }
+    .room-title, .room-sub, .room-reward { max-width: 100%; overflow-wrap: anywhere; }
     .room-title { font-weight: 900; font-size: 12px; line-height: 1.25; }
     .room-sub { font-size: 10px; color: #a5f3fc; line-height: 1.3; }
+    .room-reward { width: 100%; font-size: 11px; line-height: 1.35; color: #fde68a; text-align: left; }
     .kind-elite { border-color: rgba(244, 63, 94, 0.8); box-shadow: 0 0 18px rgba(244, 63, 94, 0.28); }
     .kind-oasis { border-color: rgba(52, 211, 153, 0.8); box-shadow: 0 0 18px rgba(16, 185, 129, 0.28); }
     .kind-merchant { border-color: rgba(251, 191, 36, 0.9); }
@@ -810,9 +811,13 @@
     function resetActs(room) {
       Object.values(room.members || {}).forEach(member => { member.acted = false; });
     }
+    function runBitGain(kind, floor) {
+      const level = Math.max(1, Number(floor) || 1);
+      return kind === 'elite' ? 18 + level * 3 : kind === 'mimic' ? 14 + level * 2 : kind === 'boss' ? 0 : 12 + level * 2;
+    }
     function grantRunBits(room, kind) {
       const floor = room.floor || 1;
-      const gain = kind === 'elite' ? 18 + floor * 3 : kind === 'mimic' ? 14 + floor * 2 : kind === 'boss' ? 0 : 12 + floor * 2;
+      const gain = runBitGain(kind, floor);
       if (!gain) return 0;
       giveLivingBits(room, gain);
       pushFeed(room, '數碼碎晶 +' + gain + '（各自） / Digital Bits +' + gain + ' each');
@@ -842,6 +847,15 @@
     function fightExpGain(room, kind) {
       const floor = room.floor || 1;
       return kind === 'elite' ? 78 + floor * 4 : kind === 'boss' ? 96 : kind === 'mimic' ? 52 : 60 + floor * 3;
+    }
+    function quizBitGain(floor) {
+      return 10 + (Math.max(1, Number(floor) || 1)) * 2;
+    }
+    function shortcutBitGain(floor) {
+      return 6 + (Math.max(1, Number(floor) || 1));
+    }
+    function mysteryBitGain(floor) {
+      return 8 + (Math.max(1, Number(floor) || 1)) * 2;
     }
     function grantFightExp(room, kind) {
       const gain = fightExpGain(room, kind);
@@ -882,8 +896,12 @@
       }));
       finishNode(room);
     }
+    function catalogDigi(id) {
+      const key = String(id || '').toLowerCase();
+      return DIGI_CATALOG[key] || DIGI_CATALOG.agumon || DIGI_CATALOG[Object.keys(DIGI_CATALOG)[0]];
+    }
     function buildMember(student) {
-      const catalog = DIGI_CATALOG[student && student.currentDigiId] || DIGI_CATALOG.agumon || DIGI_CATALOG[Object.keys(DIGI_CATALOG)[0]];
+      const catalog = catalogDigi(student && student.currentDigiId);
       const id = String(student.id || student.username || '').toLowerCase();
       const damage = (catalog.skills || []).filter(skill => skill && skill.type !== 'heal');
       const opener = damage[0] || (catalog.skills || [])[0] || { power: 12 };
@@ -1030,7 +1048,7 @@
         const eventKind = next.event.kind;
         if (eventKind !== 'merchant' && eventKind !== 'vault' && eventKind !== 'shortcut' && eventKind !== 'cache' && eventKind !== 'supply') return null;
         if (eventKind === 'shortcut') {
-          const gain = 6 + (next.floor || 1);
+          const gain = shortcutBitGain(next.floor);
           Object.values(next.members).forEach(member => {
             if (!member || member.hp <= 0 || member.fainted) return;
             giveBits(member, gain);
@@ -1153,7 +1171,7 @@
           return room;
         }
         if (roll < 0.72) {
-          const gain = 8 + (room.floor || 1) * 2;
+          const gain = mysteryBitGain(room.floor);
           giveLivingBits(room, gain);
           room.status = 'event';
           room.event = { kind: 'cache', bits: gain, art: ROOM_ART.mystery };
@@ -1182,7 +1200,7 @@
     function grantQuizReward(room, member) {
       const roll = roomRng(room);
       if (roll < 0.25) {
-        const gain = 10 + (room.floor || 1) * 2;
+        const gain = quizBitGain(room.floor);
         giveBits(member, gain);
         return '數碼碎晶 +' + gain + ' / Digital Bits +' + gain;
       }
@@ -1952,12 +1970,12 @@
     function portraitSrc() {
       const member = myMember(currentRoom);
       if (member && member.img) return member.img;
-      const digi = meStudent && DIGI_CATALOG[meStudent.currentDigiId];
+      const digi = meStudent && catalogDigi(meStudent.currentDigiId);
       return digi ? digi.img : '';
     }
     function paintHeader() {
       const name = (meStudent && meStudent.name) || gate.name || gate.id;
-      const digiName = (myMember(currentRoom) && myMember(currentRoom).digiName) || ((meStudent && DIGI_CATALOG[meStudent.currentDigiId]) ? DIGI_CATALOG[meStudent.currentDigiId].name : '');
+      const digiName = (myMember(currentRoom) && myMember(currentRoom).digiName) || ((meStudent && catalogDigi(meStudent.currentDigiId)) ? catalogDigi(meStudent.currentDigiId).name : '');
       document.getElementById('tamerName').textContent = name + (digiName ? ' · ' + digiName : '');
       document.getElementById('classLabel').textContent = firstClass((meStudent && meStudent.classId) || gate.classId || '');
       const floor = currentRoom && currentRoom.floor ? currentRoom.floor : 0;
@@ -2059,17 +2077,96 @@
       img.removeAttribute('data-fallbacks');
       img.src = QUESTION_MARK_ART;
     }
+    function roomRewardLines(kind, floor) {
+      const level = Math.max(1, Number(floor) || 1);
+      const probe = { floor: level };
+      if (kind === 'combat') {
+        const exp = fightExpGain(probe, 'combat');
+        const bits = runBitGain('combat', level);
+        return [
+          '可能獲得 / Possible reward',
+          '勝利：戰鬥經驗 +' + exp + '，MP +8，數碼碎晶 +' + bits + '。',
+          'Win: Fight EXP +' + exp + ', MP +8, Bits +' + bits + '.',
+          '可能倒下。 / You can faint.'
+        ];
+      }
+      if (kind === 'elite') {
+        const exp = fightExpGain(probe, 'elite');
+        const bits = runBitGain('elite', level);
+        return [
+          '可能獲得 / Possible reward',
+          '勝利：戰鬥經驗 +' + exp + '，MP +8，數碼碎晶 +' + bits + '。比普通戰更強。',
+          'Win: Fight EXP +' + exp + ', MP +8, Bits +' + bits + '. Stronger than a normal fight.',
+          '可能倒下。 / You can faint.'
+        ];
+      }
+      if (kind === 'boss') {
+        return [
+          '可能獲得 / Possible reward',
+          '勝利：戰鬥經驗 +' + fightExpGain(probe, 'boss') + '。這場戰鬥不給碎晶。',
+          'Win: Fight EXP +' + fightExpGain(probe, 'boss') + '. This fight adds no Bits.',
+          '清除第二十層：每人課堂 EXP +1000、金幣 +1000、扭蛋券 +5。',
+          'Floor 20 clear: each tamer gets classroom EXP +1000, coins +1000, and 5 gacha tickets.',
+          '可能倒下。 / You can faint.'
+        ];
+      }
+      if (kind === 'riddle') {
+        return [
+          '可能獲得 / Possible reward',
+          '答對才有一份獎勵。答錯或逾時不會倒下。',
+          'A correct answer gets one reward. A wrong or slow answer does not faint you.',
+          '可能是：數碼碎晶 +' + quizBitGain(level) + '、攻擊 +20%（3 回合）、MP +14，或煙霧彈／護盾電池／肉塊。',
+          'One of: Bits +' + quizBitGain(level) + ', ATK +20% for 3 turns, MP +14, or a Smoke Bomb, Shield Battery, or Meat.'
+        ];
+      }
+      if (kind === 'oasis') {
+        return [
+          '可能獲得 / Possible reward',
+          '隊長二選一。 / The host picks one.',
+          '回復：存活的數碼獸 40% HP 與 MP +10，倒下的復活到 40% HP。',
+          'Heal: living Digimon gain 40% HP and MP +10. Fainted ones revive at 40% HP.',
+          '或專注 2 回合，存活的數碼獸 MP +6。',
+          'Or Focus for 2 turns and MP +6 for living Digimon.'
+        ];
+      }
+      if (kind === 'merchant') {
+        const goods = SHOP.map(item => item.name + ' ' + item.price).join('、');
+        return [
+          '可能獲得 / Possible reward',
+          '用自己的數碼碎晶購買，離開迷宮後清零。',
+          'Spend your own Bits. Items reset when the dungeon ends.',
+          goods + '。'
+        ];
+      }
+      if (kind === 'shortcut') {
+        return [
+          '可能獲得 / Possible reward',
+          '沒有戰鬥。每位存活隊員：數碼碎晶 +' + shortcutBitGain(level) + '、HP 10%、MP +6。',
+          'No fight. Each living tamer: Bits +' + shortcutBitGain(level) + ', 10% HP, MP +6.'
+        ];
+      }
+      const bits = mysteryBitGain(level);
+      return [
+        '可能獲得 / Possible reward',
+        '只會發生其中一種。 / Only one of these happens.',
+        '幼年數碼獸加入、光芒 +20、捷徑（HP 10%、MP +6、碎晶 +' + shortcutBitGain(level) + '）、碎晶 +' + bits + '、一件道具，或擬態戰鬥。',
+        'A baby ally, Light +20, a shortcut (10% HP, MP +6, Bits +' + shortcutBitGain(level) + '), Bits +' + bits + ', one item, or a mimic fight.'
+      ];
+    }
+    function roomRewardHtml(kind, floor) {
+      return roomRewardLines(kind, floor).map(line => esc(line)).join('<br>');
+    }
     function renderMap(room) {
       const host = isHost(room);
       const nodes = roomNodes(room);
       const cards = nodes.map(node => {
-        return '<button type="button" data-act="node" data-id="' + esc(node.id) + '" ' + (host ? '' : 'disabled') + ' class="room-node kind-' + esc(node.kind) + '">' + roomArtTag(node.art || ROOM_ART.combat) + '<span class="room-title">' + esc(node.title) + '</span><span class="room-sub">' + esc(node.sub || '') + '</span></button>';
+        return '<button type="button" data-act="node" data-id="' + esc(node.id) + '" ' + (host ? '' : 'disabled') + ' class="room-node kind-' + esc(node.kind) + '">' + roomArtTag(node.art || ROOM_ART.combat) + '<span class="room-title">' + esc(node.title) + '</span><span class="room-sub">' + esc(node.sub || '') + '</span><span class="room-reward">' + roomRewardHtml(node.kind, room.floor) + '</span></button>';
       }).join('');
       const chosen = nodes.find(node => node.id === pendingNode);
       const confirm = pendingNode
-        ? '<div class="sheet-wrap fixed inset-0 z-40 bg-slate-950/70 flex items-end sm:items-center justify-center p-3"><div class="sheet panel space-y-3">' + roomArtTag((chosen && chosen.art) || ROOM_ART.combat, 'mx-auto') + '<h3 class="font-black">進入這個房間？ / Enter this room?</h3><p class="text-sm text-slate-300">' + esc((chosen && chosen.title) || '') + '</p><div class="grid grid-cols-2 gap-2"><button id="btnConfirmNode" data-act="confirm" class="tap rounded-2xl bg-cyan-600 font-black">確認 / Confirm</button><button data-act="cancel" class="tap rounded-2xl bg-slate-800 font-black">返回 / Back</button></div></div></div>'
+        ? '<div id="roomConfirm" class="sheet-wrap fixed inset-0 z-40 bg-slate-950/70 flex items-end sm:items-center justify-center p-3"><div class="sheet panel space-y-3">' + roomArtTag((chosen && chosen.art) || ROOM_ART.combat, 'mx-auto') + '<h3 class="font-black">進入這個房間？ / Enter this room?</h3><p class="text-sm text-slate-300">' + esc((chosen && chosen.title) || '') + '</p><div id="roomRewardPreview" class="room-reward">' + roomRewardHtml(chosen && chosen.kind, room.floor) + '</div><div class="grid grid-cols-2 gap-2"><button id="btnConfirmNode" data-act="confirm" class="tap rounded-2xl bg-cyan-600 font-black">確認 / Confirm</button><button data-act="cancel" class="tap rounded-2xl bg-slate-800 font-black">返回 / Back</button></div></div></div>'
         : '';
-      return '<section class="space-y-3"><div class="flex items-center justify-between gap-2"><h2 class="font-black">選擇房間 / Choose a room</h2><span class="text-[11px] text-cyan-200">' + (host ? '你是隊長 / You are the host' : '隊長選擇 / The host chooses') + '</span></div><div id="nodeList" class="room-row">' + cards + '</div>' + partyStrip(room) + confirm + '</section>';
+      return '<section class="space-y-3"><div class="flex items-center justify-between gap-2"><h2 class="font-black">選擇房間 / Choose a room</h2><span class="text-[11px] text-cyan-200">' + (host ? '你是隊長 / You are the host' : '隊長選擇 / The host chooses') + '</span></div><p class="text-[11px] text-amber-100">先看每個房間可能得到什麼，再決定進入。 / Read what each room can give, then choose.</p><div id="nodeList" class="room-row">' + cards + '</div>' + partyStrip(room) + confirm + '</section>';
     }
     function partyStrip(room) {
       const buff = (room.atkBuffTurns ? ' 攻擊+' + room.atkBuffTurns + ' / ATK+' + room.atkBuffTurns : '') + (room.focusTurns ? ' 專注+' + room.focusTurns + ' / Focus+' + room.focusTurns : '') + (room.babyAlly ? ' 幼獸 / Baby' : '');
