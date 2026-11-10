@@ -1210,8 +1210,9 @@
       const entry = room.question.by[action.memberId];
       const member = room.members[action.memberId];
       if (!entry || !member || entry.answered || member.hp <= 0 || member.fainted) return null;
-      const picked = String(action.choice == null ? '' : action.choice).trim();
-      const correct = picked !== '__timeout__' && picked === String(entry.correct || '').trim();
+      const pickedRaw = String(action.choice == null ? '' : action.choice).trim();
+      const picked = pickedRaw === '__timeout__' ? pickedRaw : repairQuestionText(pickedRaw);
+      const correct = picked !== '__timeout__' && picked === repairQuestionText(String(entry.correct || '').trim());
       entry.answered = true;
       entry.right = !!correct;
       if (correct) {
@@ -1449,13 +1450,36 @@
       if (!name || name.toUpperCase() === 'ALL') return '';
       return sanitizeClassKey(name).toLowerCase();
     }
+    function repairQuestionText(value) {
+      const text = String(value == null ? '' : value);
+      if (!/[\u00C2\u00C3\u00E2]/.test(text)) return text;
+      const extra = {
+        0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87,
+        0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C, 0x017D: 0x8E, 0x2018: 0x91,
+        0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98,
+        0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B, 0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F
+      };
+      const bytes = [];
+      for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        if (extra[code] != null) bytes.push(extra[code]);
+        else if (code <= 0xFF) bytes.push(code);
+        else return text;
+      }
+      try {
+        const fixed = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
+        return fixed && fixed !== text ? fixed : text;
+      } catch (err) {
+        return text;
+      }
+    }
     function questionRows(raw) {
       if (!raw || typeof raw !== 'object') return [];
       const list = Array.isArray(raw) ? raw.slice() : Object.keys(raw).sort(optionKeyOrder).map(key => raw[key]);
       return list.filter(row => row && String(row.question == null ? '' : row.question).trim() && String(row.correct == null ? '' : row.correct).trim()).map(row => ({
-        question: String(row.question).trim(),
-        correct: String(row.correct).trim(),
-        wrongs: normalizeWrongs(row.wrongs)
+        question: repairQuestionText(String(row.question).trim()),
+        correct: repairQuestionText(String(row.correct).trim()),
+        wrongs: normalizeWrongs(row.wrongs).map(repairQuestionText)
       }));
     }
     function lookupBank(banks, className) {
@@ -2126,8 +2150,8 @@
           ? '<p class="text-sm text-emerald-200">答對了。你的獎勵：' + esc(mine.reward || '') + '。每人的題目和獎勵是分開的。 / Correct. Your reward: ' + esc(mine.reward || '') + '. Questions and rewards are separate.</p>'
           : '<p class="text-sm text-amber-200">答錯或逾時。你失去這間房的獎勵，數碼獸不會倒下。 / Wrong or too slow. You miss this room’s reward. Your Digimon stays up.</p>';
       } else {
-        const options = optionList(mine.options).map((option, index) => '<button type="button" data-act="choice" data-index="' + index + '" class="quiz-choice tap rounded-2xl bg-slate-900 border border-cyan-700 text-left px-3 font-bold">' + esc(option) + '</button>').join('');
-        body = '<h2 class="text-base font-black leading-snug">' + esc(mine.text) + '</h2><div class="hp-bar"><div id="quizTimerFill" class="hp-fill" style="width:' + pct + '%"></div></div><p id="quizTimerLabel" class="text-[11px] text-slate-400">' + Math.ceil(left / 1000) + 's · 答錯不會倒下。 / A wrong answer does not faint you.</p><div id="quizChoices" class="quiz-choices">' + options + '</div>';
+        const options = optionList(mine.options).map((option, index) => '<button type="button" data-act="choice" data-index="' + index + '" class="quiz-choice tap rounded-2xl bg-slate-900 border border-cyan-700 text-left px-3 font-bold">' + esc(repairQuestionText(option)) + '</button>').join('');
+        body = '<h2 class="text-base font-black leading-snug">' + esc(repairQuestionText(mine.text)) + '</h2><div class="hp-bar"><div id="quizTimerFill" class="hp-fill" style="width:' + pct + '%"></div></div><p id="quizTimerLabel" class="text-[11px] text-slate-400">' + Math.ceil(left / 1000) + 's · 答錯不會倒下。 / A wrong answer does not faint you.</p><div id="quizChoices" class="quiz-choices">' + options + '</div>';
       }
       return '<section id="riddleBox" class="sheet-wrap quiz-wrap fixed inset-0 z-30 bg-slate-950/80 flex items-center justify-center"><div class="sheet quiz-sheet panel"><div class="quiz-head"><div class="quiz-mark"><i class="fa-solid fa-question"></i></div><div class="min-w-0"><p class="text-xs font-black text-cyan-300">知識測驗 / Quiz</p><p class="text-[11px] text-slate-300 truncate">' + esc(cast.name || 'Quiz') + '</p></div></div>' + body + '<ul class="space-y-1">' + roster + '</ul></div></section>';
     }

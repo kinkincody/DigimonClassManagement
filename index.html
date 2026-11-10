@@ -1656,7 +1656,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.33";
+    const CURRENT_APP_VERSION = "2.7.35";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -5121,17 +5121,19 @@ function normalizeStudent(s, keyId) {
       const btnQuiz = document.getElementById('btnTeacherTabQuiz');
       const btnExam = document.getElementById('btnTeacherTabExam');
       const btnMsg = document.getElementById('btnTeacherTabMsg');
+      const btnTest = document.getElementById('btnTeacherTabTest');
       const viewMain = document.getElementById('teacherSubViewMain');
       const viewFaction = document.getElementById('teacherSubViewFaction');
       const viewQuiz = document.getElementById('teacherSubViewQuiz');
       const viewExam = document.getElementById('teacherSubViewExam');
       const viewMsg = document.getElementById('teacherSubViewMessage');
+      const viewTest = document.getElementById('teacherSubViewTest');
 
       // 重置所有樣式
-      [btnMain, btnFaction, btnQuiz, btnExam, btnMsg].forEach(b => {
+      [btnMain, btnFaction, btnQuiz, btnExam, btnMsg, btnTest].forEach(b => {
         if (b) b.className = "w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
       });
-      [viewMain, viewFaction, viewQuiz, viewExam, viewMsg].forEach(v => {
+      [viewMain, viewFaction, viewQuiz, viewExam, viewMsg, viewTest].forEach(v => {
         if (v) v.classList.add('hidden');
       });
 
@@ -5155,6 +5157,10 @@ function normalizeStudent(s, keyId) {
         if (viewMsg) viewMsg.classList.remove('hidden');
         chatRenderSignatures.teacherChatMessagesList = '';
         renderTeacherClassChat();
+      } else if (tabName === 'test') {
+        if (btnTest) btnTest.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
+        if (viewTest) viewTest.classList.remove('hidden');
+        paintTeacherTestSetup();
       }
     }
 
@@ -6326,6 +6332,9 @@ function readTeacherTest() {
   try { return JSON.parse(sessionStorage.getItem(TEACHER_TEST_KEY) || 'null'); } catch (e) { return null; }
 }
 function teacherTestClassId() {
+  const field = document.getElementById('teacherTestClass');
+  const picked = field && String(field.value || '').trim();
+  if (picked && picked.toUpperCase() !== 'ALL') return picked;
   const selected = selectedTeacherClass && selectedTeacherClass !== 'ALL' ? selectedTeacherClass : '';
   if (selected) return selected;
   const classes = currentUser && currentUser.role === 'teacher' ? getTeacherPermittedClasses(currentUser.id) : [];
@@ -6359,6 +6368,7 @@ function readTeacherTestFields() {
   const hpBlank = !hpEl || String(hpEl.value).trim() === '';
   return {
     currentDigiId: digiId,
+    classId: teacherTestClassId(),
     coins: teacherTestNumber('teacherTestCoins', 500),
     exp: teacherTestNumber('teacherTestExp', 0),
     hp: hpBlank ? null : teacherTestNumber('teacherTestHp', 0),
@@ -6370,7 +6380,13 @@ function readTeacherTestFields() {
 function fillTeacherTestFields(record) {
   const select = document.getElementById('teacherTestDigi');
   const digiId = record && DIGIMON_DB[record.currentDigiId] ? record.currentDigiId : 'agumon';
-  if (select) select.value = digiId;
+  if (select && DIGIMON_DB[digiId]) select.value = digiId;
+  const classSelect = document.getElementById('teacherTestClass');
+  if (classSelect && classSelect.options.length) {
+    const raw = record && record.classId ? String(record.classId).split(',')[0].trim() : teacherTestClassId();
+    const match = Array.from(classSelect.options).find(opt => opt.value.toLowerCase() === String(raw || '').toLowerCase());
+    if (match) classSelect.value = match.value;
+  }
   const set = (id, value) => { const el = document.getElementById(id); if (el) el.value = value; };
   set('teacherTestCoins', record ? (Number(record.coins) || 0) : 500);
   set('teacherTestExp', record ? (Number(record.exp) || 0) : 0);
@@ -6382,18 +6398,30 @@ function fillTeacherTestFields(record) {
 function paintTeacherTestSetup() {
   const select = document.getElementById('teacherTestDigi');
   if (!select) return;
-  if (select.dataset.ready !== '1') {
-    select.innerHTML = teacherTestDigimonOptions().map(digi => '<option value="' + digi.id + '">' + escapeHtml((digi.name || digi.id) + ' · ' + (digi.stageName || digi.stage || '')) + '</option>').join('');
-    const id = currentUser && currentUser.role === 'teacher' ? teacherTestSandboxId(currentUser.id) : '';
-    fillTeacherTestFields(id && appData.students ? appData.students[id] : null);
-    select.dataset.ready = '1';
+  const options = teacherTestDigimonOptions();
+  const keepDigi = select.value;
+  if (select.options.length !== options.length) {
+    select.innerHTML = options.map(digi => '<option value="' + digi.id + '">' + escapeHtml((digi.name || digi.id) + ' · ' + (digi.stageName || digi.stage || '')) + '</option>').join('');
   }
+  if (keepDigi && DIGIMON_DB[keepDigi]) select.value = keepDigi;
+  const classSelect = document.getElementById('teacherTestClass');
+  if (classSelect) {
+    const keepClass = classSelect.value;
+    const names = collectKnownClassNames();
+    classSelect.innerHTML = names.map(name => '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>').join('');
+    const classMatch = Array.from(classSelect.options).find(opt => opt.value.toLowerCase() === String(keepClass || '').toLowerCase());
+    if (classMatch) classSelect.value = classMatch.value;
+  }
+  const id = currentUser && currentUser.role === 'teacher' ? teacherTestSandboxId(currentUser.id) : '';
+  const record = id && appData.students ? appData.students[id] : null;
+  if (!keepDigi) fillTeacherTestFields(record);
+  else if (classSelect && !classSelect.value && record) fillTeacherTestFields(record);
 }
 function saveTeacherTestRecord(spec, enter) {
   if (!currentUser || currentUser.role !== 'teacher') return null;
   const teacherId = currentUser.id;
   const authToken = currentUser.authToken || '';
-  const classId = teacherTestClassId();
+  const classId = (spec && spec.classId) || teacherTestClassId();
   const id = teacherTestSandboxId(teacherId);
   const existing = appData.students && appData.students[id];
   const base = spec || {};
@@ -8164,7 +8192,7 @@ function toggleFactionBuffModal() {
 
 function getTeacherTemplate() {
   return `
-    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
       <button id="btnTeacherTabMain" onclick="switchTeacherSubTab('main')" class="w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
         <i class="fa-solid fa-chalkboard"></i> 課堂主控台 (Dashboard)
       </button>
@@ -8181,6 +8209,9 @@ function getTeacherTemplate() {
         <i class="fa-solid fa-comments text-cyan-400"></i>
         <span>聊天 (Chat)</span>
         <span id="teacherTabMsgUnreadBadge" class="hidden px-1.5 py-0.2 text-[10px] bg-rose-600 text-white rounded-full font-mono font-bold">0</span>
+      </button>
+      <button id="btnTeacherTabTest" onclick="switchTeacherSubTab('test')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
+        <i class="fa-solid fa-user-graduate text-violet-300"></i> 測試帳號 (Test)
       </button>
     </div>
 
@@ -8209,7 +8240,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.33</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.35</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -8223,43 +8254,11 @@ function getTeacherTemplate() {
             <button id="btnToggleClassBan" onclick="toggleCurrentClassBan()" class="pair-btn bg-rose-950 border border-rose-500 text-rose-300 active:scale-95">
               <span><i class="fa-solid fa-lock"></i> 鎖定全班</span><small id="lblToggleClassBan">Lock Class</small>
             </button>
-            <button id="btnTeacherStudentTest" type="button" onclick="applyTeacherStudentTest()" class="pair-btn pair-span bg-violet-950 border border-violet-400 text-violet-100 active:scale-95">
-              <span><i class="fa-solid fa-user-graduate"></i> 學生測試</span><small>Student Test</small>
+            <button id="btnTeacherStudentTest" type="button" onclick="switchTeacherSubTab('test')" class="pair-btn pair-span bg-violet-950 border border-violet-400 text-violet-100 active:scale-95">
+              <span><i class="fa-solid fa-user-graduate"></i> 學生測試</span><small>Test tab</small>
             </button>
           </div>
         </div>
-        <section id="teacherTestSetup" class="rounded-xl border border-violet-500/40 bg-slate-950/60 p-3 space-y-2">
-          <div class="text-[11px] font-black uppercase tracking-wider text-violet-200">學生測試帳號 / Student Test Account</div>
-          <p class="text-[10px] text-slate-400">重設會回到 Agumon、500 金幣、3 次攻擊。也可以先改數碼獸、金幣、EXP、HP、攻擊次數和券，再進入測試。 / Reset returns Agumon, 500 coins, and 3 attacks. Or set the Digimon, coins, EXP, HP, attacks, and tickets, then enter.</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <label class="text-[11px] font-bold text-violet-200 space-y-1">數碼獸 / Digimon
-              <select id="teacherTestDigi" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-slate-100"></select>
-            </label>
-            <label class="text-[11px] font-bold text-violet-200 space-y-1">金幣 / Coins
-              <input id="teacherTestCoins" type="number" min="0" value="500" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
-            </label>
-            <label class="text-[11px] font-bold text-violet-200 space-y-1">EXP
-              <input id="teacherTestExp" type="number" min="0" value="0" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
-            </label>
-            <label class="text-[11px] font-bold text-violet-200 space-y-1">HP（空白＝滿血） / HP, blank = full
-              <input id="teacherTestHp" type="number" min="0" value="" placeholder="滿血 / Full" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
-            </label>
-            <label class="text-[11px] font-bold text-violet-200 space-y-1">攻擊次數 / Attacks
-              <input id="teacherTestAttacks" type="number" min="0" value="3" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
-            </label>
-            <label class="text-[11px] font-bold text-violet-200 space-y-1">扭蛋券 / Gacha
-              <input id="teacherTestGacha" type="number" min="0" value="3" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
-            </label>
-            <label class="text-[11px] font-bold text-violet-200 space-y-1 sm:col-span-2">迷宮券 / Dungeon tickets
-              <input id="teacherTestDungeon" type="number" min="0" value="5" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
-            </label>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <button id="btnTeacherTestReset" type="button" onclick="resetTeacherStudentTest()" class="min-h-12 rounded-xl bg-slate-900 border border-violet-500 text-violet-100 text-xs font-black cursor-pointer active:scale-95">重設測試帳號 / Reset test account</button>
-            <button id="btnTeacherTestApply" type="button" onclick="applyTeacherStudentTest()" class="min-h-12 rounded-xl bg-violet-600 text-white text-xs font-black cursor-pointer active:scale-95">套用並進入 / Apply and enter</button>
-          </div>
-        </section>
-
         <section class="rounded-xl border border-cyan-500/30 bg-slate-950/60 p-3 space-y-2">
           <div class="text-[11px] font-black uppercase tracking-wider text-cyan-200">全班操作 / Class Actions</div>
           <div class="pair-grid">
@@ -8437,7 +8436,7 @@ function getTeacherTemplate() {
         </div>
         <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
           <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-violet-200">說明 / How this works</summary>
-          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">每個班各自一份石碑題庫。先在目前班級選一個班，再上傳 Excel。上傳只會換成這個班的題目，其他班維持自己的檔案。這個班的學生進入迷宮知識測驗時，會看到這份題目；同房的其他班學生看到自己班的題目。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的題庫。<br>Each class keeps its own shrine file. Select one class, then upload the Excel. The upload replaces only that class. Every other class keeps its own file. Students in the selected class see these questions in the dungeon quiz room. A classmate from another class, even in the same room, sees that class's file. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's file.</p>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">每個班各自一份石碑題庫。先在目前班級選一個班，再上傳 Excel 或 CSV。上傳只會換成這個班的題目，其他班維持自己的檔案。這個班的學生進入迷宮知識測驗時，會看到這份題目；同房的其他班學生看到自己班的題目。A 題目、B 正確答案、C D E 錯誤答案。CSV 以 UTF-8 讀取，分數和比較符號會原樣顯示。若之前的題目變成亂碼，請再上傳一次。<br>Each class keeps its own shrine file. Select one class, then upload the Excel or CSV. The upload replaces only that class. Every other class keeps its own file. Students in the selected class see these questions in the dungeon quiz room. A classmate from another class, even in the same room, sees that class's file. Column A is the question, B the correct answer, and C D E the wrong answers. CSV is read as UTF-8, so fractions and comparison signs stay as written. If an earlier upload turned the questions into stray symbols, upload the file again.</p>
         </details>
         <div class="pair-grid">
           <button type="button" onclick="grantClassDungeonTickets()" class="pair-btn bg-violet-950 border border-violet-500 text-violet-100 active:scale-95"><span>全班 +1 迷宮券</span><small>Class +1</small></button>
@@ -8733,6 +8732,50 @@ function getTeacherTemplate() {
           </div>
         </div>
       </div>
+    </div>
+    <div id="teacherSubViewTest" class="space-y-6 hidden">
+      <section id="teacherTestSetup" class="rounded-2xl border border-violet-500/40 bg-slate-950/70 p-4 space-y-3">
+        <div class="text-sm font-black uppercase tracking-wider text-violet-200">學生測試帳號 / Student Test Account</div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">這個分頁只設定測試帳號。可以改班級和數碼獸，再進入學生畫面。重設會回到 Agumon、500 金幣、3 次攻擊，並保留你選的班級。迷宮測驗會使用這個班級的題庫。<br>This tab sets the test account. Change the class and Digimon, then enter the student view. Reset returns Agumon, 500 coins, and 3 attacks, and keeps the class you chose. The dungeon quiz uses this class's question file.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">班級 / Class</div>
+            <select id="teacherTestClass" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-slate-100"></select>
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">數碼獸 / Digimon</div>
+            <select id="teacherTestDigi" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-slate-100"></select>
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">金幣 / Coins</div>
+            <input id="teacherTestCoins" type="number" min="0" value="500" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">EXP</div>
+            <input id="teacherTestExp" type="number" min="0" value="0" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">HP（空白＝滿血） / HP, blank = full</div>
+            <input id="teacherTestHp" type="number" min="0" value="" placeholder="滿血 / Full" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">攻擊次數 / Attacks</div>
+            <input id="teacherTestAttacks" type="number" min="0" value="3" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">扭蛋券 / Gacha</div>
+            <input id="teacherTestGacha" type="number" min="0" value="3" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
+          </div>
+          <div class="space-y-1">
+            <div class="text-[11px] font-bold text-violet-200">迷宮券 / Dungeon tickets</div>
+            <input id="teacherTestDungeon" type="number" min="0" value="5" class="w-full min-h-12 bg-slate-950 border border-violet-500/50 rounded-lg px-2 text-xs text-white">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button id="btnTeacherTestReset" type="button" onclick="resetTeacherStudentTest()" class="min-h-12 rounded-xl bg-slate-900 border border-violet-500 text-violet-100 text-xs font-black cursor-pointer active:scale-95">重設測試帳號 / Reset test account</button>
+          <button id="btnTeacherTestApply" type="button" onclick="applyTeacherStudentTest()" class="min-h-12 rounded-xl bg-violet-600 text-white text-xs font-black cursor-pointer active:scale-95">套用並進入 / Apply and enter</button>
+        </div>
+      </section>
     </div>
     <div id="teacherSubViewFaction" class="space-y-6 hidden">
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/50 rounded-2xl p-5 shadow-xl space-y-3">
@@ -10808,6 +10851,30 @@ else if (mode === 'pvp') {
       return sanitizeClassKey(name).toLowerCase();
     }
 
+    function repairQuestionText(value) {
+      const text = String(value == null ? '' : value);
+      if (!/[\u00C2\u00C3\u00E2]/.test(text)) return text;
+      const extra = {
+        0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87,
+        0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C, 0x017D: 0x8E, 0x2018: 0x91,
+        0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98,
+        0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B, 0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F
+      };
+      const bytes = [];
+      for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        if (extra[code] != null) bytes.push(extra[code]);
+        else if (code <= 0xFF) bytes.push(code);
+        else return text;
+      }
+      try {
+        const fixed = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
+        return fixed && fixed !== text ? fixed : text;
+      } catch (err) {
+        return text;
+      }
+    }
+
     function dungeonQuestionRows(raw) {
       if (!raw || typeof raw !== 'object') return [];
       const list = Array.isArray(raw) ? raw.slice() : Object.keys(raw).sort((a, b) => {
@@ -10819,9 +10886,9 @@ else if (mode === 'pvp') {
         return String(a).localeCompare(String(b));
       }).map(key => raw[key]);
       return list.filter(q => q && String(q.question == null ? '' : q.question).trim() && String(q.correct == null ? '' : q.correct).trim()).map(q => ({
-        question: String(q.question).trim(),
-        correct: String(q.correct).trim(),
-        wrongs: normalizeWrongAnswers(q.wrongs)
+        question: repairQuestionText(String(q.question).trim()),
+        correct: repairQuestionText(String(q.correct).trim()),
+        wrongs: normalizeWrongAnswers(q.wrongs).map(repairQuestionText)
       }));
     }
 
@@ -12131,6 +12198,21 @@ else if (mode === 'pvp') {
       });
     }
 
+    function readDungeonQuestionWorkbook(bytes, fileName) {
+      const name = String(fileName || '').toLowerCase();
+      const raw = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+      const zip = raw[0] === 0x50 && raw[1] === 0x4B;
+      const ole = raw[0] === 0xD0 && raw[1] === 0xCF;
+      const textFile = name.endsWith('.csv') || name.endsWith('.txt') || (!zip && !ole);
+      if (!textFile) return XLSX.read(raw, { type: 'array' });
+      let text;
+      if (raw.length >= 2 && raw[0] === 0xFF && raw[1] === 0xFE) text = new TextDecoder('utf-16le').decode(raw);
+      else if (raw.length >= 2 && raw[0] === 0xFE && raw[1] === 0xFF) text = new TextDecoder('utf-16be').decode(raw);
+      else text = new TextDecoder('utf-8').decode(raw);
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      return XLSX.read(text, { type: 'string' });
+    }
+
     function handleDungeonExcelImport(event) {
       const input = event.target;
       const file = input.files && input.files[0];
@@ -12144,7 +12226,7 @@ else if (mode === 'pvp') {
       reader.onload = function(e) {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
           const questions = [];
@@ -12158,7 +12240,11 @@ else if (mode === 'pvp') {
             [2, 3, 4].forEach(col => {
               if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(String(row[col]).trim());
             });
-            questions.push({ question: questionText, correct: correctOpt, wrongs: wrongs });
+            questions.push({
+              question: repairQuestionText(questionText),
+              correct: repairQuestionText(correctOpt),
+              wrongs: wrongs.map(repairQuestionText)
+            });
           }
           if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header.');
           saveClassDungeonQuestions(selectedTeacherClass, questions).then(saved => {
