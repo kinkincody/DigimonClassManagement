@@ -78,7 +78,7 @@
     @media (min-width: 1280px) {
       #teacherStudentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-    #mainHeader button, #btnTeacherTabMain, #btnTeacherTabFaction, #btnTeacherTabQuiz, #btnTeacherTabExam, #btnTeacherTabMsg, #btnStudentTabClass, #btnStudentTabChat, #btnStudentTabFaction, #btnStudentTabDungeon, #loginUsername, #loginPassword {
+    #mainHeader button, #btnTeacherTabMain, #btnTeacherTabFaction, #btnTeacherTabQuiz, #btnTeacherTabExam, #btnTeacherTabMsg, #btnTeacherTabRaid, #btnStudentTabClass, #btnStudentTabChat, #btnStudentTabFaction, #btnStudentTabDungeon, #loginUsername, #loginPassword {
       min-height: 44px;
     }
     #teacherStudentGrid select, #teacherBountyStudentSelect, #teacherTargetFactionSelect, #teacherClassFilter {
@@ -859,6 +859,7 @@
               <div id="stBossHpBar" class="bg-gradient-to-r from-rose-500 to-amber-500 h-full rounded-full transition-all duration-300" style="width: 100%"></div>
             </div>
             <div class="text-[10px] text-emerald-400 font-mono font-bold mt-0.5" id="stBossHpText">HP: 2000 / 2000</div>
+            <div id="stBossAttribute" class="text-[11px] leading-relaxed text-amber-100 mt-1"></div>
           </div>
         </div>
 
@@ -933,6 +934,7 @@
               <i class="fa-solid fa-egg mr-1 text-amber-300"></i> ✨ 超究極轉生 / Ultra Rebirth — 30 抽獎券 & 永久 +10% 攻擊力
             </button>
             
+            <div id="stAttributeGuide" class="w-full text-left"></div>
             <div id="stSkillsGrid" class="grid grid-cols-2 gap-2 w-full"></div>
             <div class="w-full space-y-1.5">
               <div class="flex flex-col sm:flex-row items-stretch gap-2">
@@ -1124,6 +1126,7 @@
       </div>
 
       <!-- 快捷班級切換標籤（若學生有多重班別） -->
+      <div id="pvpAttributeGuide" class="mt-3"></div>
       <div id="pvpPickerClassTabs" class="flex gap-2 pt-3 pb-1 overflow-x-auto text-xs font-bold"></div>
 
       <!-- 同學卡片選擇清單 -->
@@ -1150,12 +1153,16 @@
         </div>
         <button onclick="closeTeacherTargetPicker()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
+      <div id="teacherAttributeGuide" class="mt-3"></div>
       <div class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2 pr-1" id="teacherTargetListContainer"></div>
       <div class="pt-3 border-t border-slate-800 flex justify-between items-center gap-3 text-xs text-slate-400">
         <span>點一下學生卡片就發動攻擊。倒下的學生不能選。 / Tap a card to attack. Fainted students cannot be selected.</span>
         <button onclick="closeTeacherTargetPicker()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer active:scale-95 shrink-0">取消 / Cancel</button>
       </div>
     </div>
+  </div>
+  <div id="modalWorldRaid" class="fixed inset-0 z-[2000] hidden bg-slate-950/95 p-3 flex items-end sm:items-center justify-center">
+    <div id="worldRaidSheet" class="w-full max-w-3xl max-h-[92dvh] overflow-y-auto rounded-3xl border-2 border-rose-500 bg-slate-950 p-4 space-y-3 text-slate-100"></div>
   </div>
   <!-- Manage Class Students Modal -->
   <div id="modalClassStudentsManager" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -1656,7 +1663,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.36";
+    const CURRENT_APP_VERSION = "2.7.37";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -1966,6 +1973,7 @@
   groupChatManagers: {},
   messages: {},
   messageReads: {},
+  worldRaids: {},
   systemSettings: { bannedClasses: {} }
 };
 
@@ -5122,18 +5130,20 @@ function normalizeStudent(s, keyId) {
       const btnExam = document.getElementById('btnTeacherTabExam');
       const btnMsg = document.getElementById('btnTeacherTabMsg');
       const btnTest = document.getElementById('btnTeacherTabTest');
+      const btnRaid = document.getElementById('btnTeacherTabRaid');
       const viewMain = document.getElementById('teacherSubViewMain');
       const viewFaction = document.getElementById('teacherSubViewFaction');
       const viewQuiz = document.getElementById('teacherSubViewQuiz');
       const viewExam = document.getElementById('teacherSubViewExam');
       const viewMsg = document.getElementById('teacherSubViewMessage');
       const viewTest = document.getElementById('teacherSubViewTest');
+      const viewRaid = document.getElementById('teacherSubViewRaid');
 
       // 重置所有樣式
-      [btnMain, btnFaction, btnQuiz, btnExam, btnMsg, btnTest].forEach(b => {
+      [btnMain, btnFaction, btnQuiz, btnExam, btnMsg, btnTest, btnRaid].forEach(b => {
         if (b) b.className = "w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
       });
-      [viewMain, viewFaction, viewQuiz, viewExam, viewMsg, viewTest].forEach(v => {
+      [viewMain, viewFaction, viewQuiz, viewExam, viewMsg, viewTest, viewRaid].forEach(v => {
         if (v) v.classList.add('hidden');
       });
 
@@ -5161,6 +5171,10 @@ function normalizeStudent(s, keyId) {
         if (btnTest) btnTest.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
         if (viewTest) viewTest.classList.remove('hidden');
         paintTeacherTestSetup();
+      } else if (tabName === 'raid') {
+        if (btnRaid) btnRaid.className = "w-full py-2.5 rounded-lg text-xs font-black transition bg-gradient-to-r from-rose-600 to-orange-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center";
+        if (viewRaid) viewRaid.classList.remove('hidden');
+        paintTeacherWorldRaid();
       }
     }
 
@@ -5445,6 +5459,11 @@ function normalizeStudent(s, keyId) {
           if (currentUser && currentUser.role === 'teacher') {
             renderTeacherExamDashboard();
           }
+        });
+        dbRootRef.child('worldRaids').on('value', (snap) => {
+          appData.worldRaids = snap.val() || {};
+          paintWorldRaidOverlay();
+          if (currentUser && currentUser.role === 'teacher') paintTeacherWorldRaid();
         });
       // 🛡️ 在線被攻擊與反擊通知即時監聽 (attackAlerts)
         dbRootRef.child('attackAlerts').on('value', (snap) => {
@@ -5953,15 +5972,525 @@ function attributeDamageMultiplier(attackerType, defenderType) {
 }
 
 function attributeMatchNote(mult) {
-  if (mult > 1) return '克制 Advantage ×2';
-  if (mult < 1) return '抵抗 Resist ×0.5';
-  return '';
+  if (mult > 1) return '優勢 Advantage ×2';
+  if (mult < 1) return '劣勢 Disadvantage ×0.5';
+  return '相同 Same ×1';
 }
 
 function attributeStrike(base, attackerType, defenderType) {
   const mult = attributeDamageMultiplier(attackerType, defenderType);
   return { damage: Math.max(1, Math.round((Number(base) || 0) * mult)), mult: mult, note: attributeMatchNote(mult) };
 }
+
+function attributeOutlook(type) {
+  const canon = canonAttribute(type);
+  if (canon === 'Vaccine') return '疫苗 Vaccine 打病毒 Virus 是優勢 ×2，打數據 Data 是劣勢 ×0.5。';
+  if (canon === 'Virus') return '病毒 Virus 打數據 Data 是優勢 ×2，打疫苗 Vaccine 是劣勢 ×0.5。';
+  if (canon === 'Data') return '數據 Data 打疫苗 Vaccine 是優勢 ×2，打病毒 Virus 是劣勢 ×0.5。';
+  return '自由 Free 不吃屬性加減，傷害維持 ×1。';
+}
+
+function attributeGuideHtml() {
+  return '<div class="rounded-xl border border-amber-400/50 bg-slate-950/80 p-2 text-[11px] leading-relaxed text-amber-50"><div class="font-black text-amber-200">屬性克制 / Attribute triangle</div><div>疫苗 Vaccine 克 病毒 Virus ×2。病毒 Virus 克 數據 Data ×2。數據 Data 克 疫苗 Vaccine ×2。反過來是劣勢 ×0.5。相同或自由 Same or Free ×1。</div></div>';
+}
+
+function previewTypedDamage(attacker, defender, className, rawPower, kind) {
+  let dmg = Number(rawPower) || 0;
+  const atkFac = getStudentFactionInClass(attacker, className);
+  const factions = getFactionsForClass(className);
+  if (atkFac && atkFac.factionId) {
+    const buff = factions.find(f => f.id === atkFac.factionId);
+    if (buff && buff.buffType === 'atk_boost') dmg = Math.round(dmg * 1.2);
+  }
+  if (kind === 'pvp' && defender) {
+    const defFac = getStudentFactionInClass(defender, className);
+    if (defFac && defFac.factionId) {
+      const buff = factions.find(f => f.id === defFac.factionId);
+      if (buff && buff.buffType === 'vulnerable_debuff') dmg = Math.round(dmg * 2);
+      else if (buff && buff.buffType === 'def_boost') dmg = Math.max(1, Math.round(dmg * 0.8));
+    }
+  }
+  const rebirth = 1 + ((Number(attacker && attacker.rebirthCount) || 0) * 0.1);
+  dmg = Math.max(1, Math.round(dmg * rebirth * territoryDamageMultiplier(attacker, className)));
+  const atkDigi = DIGIMON_DB[attacker && attacker.currentDigiId] || DIGIMON_DB.digitama1;
+  const defType = kind === 'boss'
+    ? ((DIGIMON_DB[defender && defender.partnerDigiId] || DIGIMON_DB.wargreymon).type)
+    : ((DIGIMON_DB[defender && defender.currentDigiId] || DIGIMON_DB.digitama1).type);
+  return attributeStrike(dmg, atkDigi.type, defType);
+}
+
+let worldRaidQuestions = [];
+let worldRaidSort = 'correct';
+let worldRaidPaintKey = '';
+let teacherRaidPaintKey = '';
+const worldRaidClaiming = {};
+let worldRaidBusy = false;
+
+function raidQuestionList(raw) {
+  if (!raw) return [];
+  const list = Array.isArray(raw) ? raw : Object.keys(raw).sort((a, b) => Number(a) - Number(b)).map(key => raw[key]);
+  return list.filter(q => q && String(q.question || '').trim()).map(q => ({
+    question: repairQuestionText(String(q.question).trim()),
+    answer: repairQuestionText(String(q.answer || q.correct || '').trim()),
+    options: (Array.isArray(q.options) ? q.options : Object.values(q.options || {})).map(option => repairQuestionText(String(option))),
+    type: String(q.type || '').toUpperCase() === 'FILL' ? 'FILL' : 'MCQ',
+    explanation: repairQuestionText(String(q.explanation || ''))
+  }));
+}
+
+function raidAnswerMatches(question, submission) {
+  const expected = repairQuestionText(String(question && question.answer || '')).trim();
+  const given = repairQuestionText(String(submission == null ? '' : submission)).trim();
+  if (question && question.type === 'FILL') return expected.toLowerCase() === given.toLowerCase();
+  return expected === given;
+}
+
+function raidScoreKey(scores, studentId) {
+  const bag = scores && typeof scores === 'object' ? scores : {};
+  if (bag[studentId]) return String(studentId);
+  const found = Object.keys(bag).find(key => String(key).toLowerCase() === String(studentId || '').toLowerCase());
+  return found || String(studentId || '');
+}
+
+function reduceWorldRaidAnswer(raid, student, submission, now) {
+  if (!raid || raid.status !== 'live' || !student) return null;
+  const next = JSON.parse(JSON.stringify(raid));
+  const questions = raidQuestionList(next.questions);
+  if (!questions.length) return null;
+  next.questions = questions;
+  if (!next.scores || typeof next.scores !== 'object' || Array.isArray(next.scores)) next.scores = {};
+  const key = raidScoreKey(next.scores, student.id);
+  const row = Object.assign({ name: student.name || key, correct: 0, wrong: 0, answered: 0, lockUntil: 0, cursor: 0, joined: true }, next.scores[key] || {});
+  if (Number(row.lockUntil) > now) return null;
+  const question = questions[Number(row.cursor || 0) % questions.length];
+  const right = raidAnswerMatches(question, submission);
+  row.answered = (Number(row.answered) || 0) + 1;
+  row.cursor = (Number(row.cursor) || 0) + 1;
+  row.joined = true;
+  row.name = student.name || row.name || key;
+  if (right) {
+    row.correct = (Number(row.correct) || 0) + 1;
+    next.correctTotal = (Number(next.correctTotal) || 0) + 1;
+    next.hp = Math.max(0, (Number(next.hp) || 0) - 1);
+    if (next.hp <= 0) next.status = 'won';
+  } else {
+    row.wrong = (Number(row.wrong) || 0) + 1;
+    row.lockUntil = now + 30000;
+  }
+  next.scores[key] = row;
+  return next;
+}
+
+function reduceWorldRaidClock(raid, now) {
+  if (!raid || raid.status !== 'live') return raid;
+  const next = JSON.parse(JSON.stringify(raid));
+  if ((Number(next.hp) || 0) <= 0) next.status = 'won';
+  else if (now >= Number(next.endsAt || 0)) next.status = 'lost';
+  return next;
+}
+
+function studentWorldRaid() {
+  if (!currentUser || currentUser.role !== 'student') return null;
+  const student = appData.students && appData.students[currentUser.id];
+  if (!student) return null;
+  const raids = appData.worldRaids || {};
+  const keys = parseStudentClasses(student.classId).map(dungeonQuestionKey).filter(Boolean);
+  for (let i = 0; i < keys.length; i++) {
+    const raid = raids[keys[i]];
+    if (raid && raid.status && raid.status !== 'closed') return raid;
+  }
+  return null;
+}
+
+function teacherWorldRaid() {
+  const key = dungeonQuestionKey(selectedTeacherClass);
+  if (!key || !appData.worldRaids) return null;
+  const raid = appData.worldRaids[key];
+  return raid && raid.status && raid.status !== 'closed' ? raid : null;
+}
+
+function worldRaidParticipants(raid) {
+  return Object.values(appData.students || {}).filter(student => student && studentIsInClass(student, raid.classId));
+}
+
+function worldRaidRanking(raid) {
+  const map = {};
+  worldRaidParticipants(raid).forEach(student => {
+    map[student.id] = { id: student.id, name: student.name || student.id, correct: 0, wrong: 0, answered: 0 };
+  });
+  const scores = raid && raid.scores && typeof raid.scores === 'object' ? raid.scores : {};
+  Object.keys(scores).forEach(id => {
+    const row = scores[id] || {};
+    const slot = Object.keys(map).find(key => String(key).toLowerCase() === String(id).toLowerCase());
+    const target = slot || id;
+    if (!map[target]) map[target] = { id: target, name: row.name || target, correct: 0, wrong: 0, answered: 0 };
+    map[target].name = row.name || map[target].name;
+    map[target].correct = Number(row.correct) || 0;
+    map[target].wrong = Number(row.wrong) || 0;
+    map[target].answered = Number(row.answered) || 0;
+  });
+  const list = Object.values(map);
+  list.sort((a, b) => {
+    if (worldRaidSort === 'wrong') return b.wrong - a.wrong || a.answered - b.answered || String(a.name).localeCompare(String(b.name));
+    if (worldRaidSort === 'few') return a.answered - b.answered || b.wrong - a.wrong || String(a.name).localeCompare(String(b.name));
+    return b.correct - a.correct || b.answered - a.answered || String(a.name).localeCompare(String(b.name));
+  });
+  return list;
+}
+
+function worldRaidRankHtml(raid) {
+  const buttons = [
+    ['correct', '答對最多 / Most correct'],
+    ['wrong', '答錯最多 / Most wrong'],
+    ['few', '作答最少 / Fewest answers']
+  ].map(([key, label]) => '<button type="button" data-raid-sort="' + key + '" onclick="setWorldRaidSort(\'' + key + '\')" class="min-h-11 px-2 rounded-xl text-[11px] font-black ' + (worldRaidSort === key ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-amber-100') + '">' + label + '</button>').join('');
+  const rows = worldRaidRanking(raid).map((row, index) => '<tr class="border-t border-slate-800"><td class="p-2">' + (index + 1) + '</td><td class="p-2">' + escapeHtml(row.name) + '</td><td class="p-2 text-center text-emerald-300 font-black">' + row.correct + '</td><td class="p-2 text-center text-rose-300 font-black">' + row.wrong + '</td><td class="p-2 text-center text-amber-200 font-black">' + row.answered + '</td></tr>').join('');
+  return '<div class="flex flex-wrap gap-2">' + buttons + '</div><div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-slate-400"><th class="p-2 text-left">#</th><th class="p-2 text-left">學生 / Student</th><th class="p-2">答對 Correct</th><th class="p-2">答錯 Wrong</th><th class="p-2">已答 Answered</th></tr></thead><tbody>' + (rows || '<tr><td colspan="5" class="p-3 text-slate-400">這個班還沒有學生。 / No students in this class.</td></tr>') + '</tbody></table></div>';
+}
+
+function formatRaidClock(raid) {
+  const total = Math.max(0, Math.ceil((Number(raid.endsAt || 0) - syncedNow()) / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+}
+
+function worldRaidViewKey(raid, studentId) {
+  if (!raid) return '';
+  const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, studentId)]) || {};
+  const locked = raid.status === 'live' && Number(row.lockUntil) > syncedNow();
+  const questions = raidQuestionList(raid.questions);
+  const question = questions.length ? questions[Number(row.cursor || 0) % questions.length] : null;
+  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', worldRaidSort, raid.rewardsApplied ? 1 : 0].join('|');
+}
+
+function raidBossArt() {
+  return '<div class="relative w-36 h-36 mx-auto rounded-full border-2 border-rose-400 bg-slate-950 flex items-center justify-center overflow-hidden"><i class="fa-solid fa-skull text-5xl text-rose-300"></i><img src="./images/Apocalymon.png" alt="Apocalymon" class="absolute inset-0 w-full h-full object-contain bg-slate-950" onerror="this.remove()"></div>';
+}
+
+function paintWorldRaidNumbers() {
+  const raid = studentWorldRaid();
+  if (!raid) return;
+  const hp = document.getElementById('worldRaidHpText');
+  const goal = Math.max(1, Number(raid.goal) || 1);
+  const leftHp = Math.max(0, Number(raid.hp) || 0);
+  if (hp) hp.textContent = leftHp + ' / ' + goal;
+  const bar = document.getElementById('worldRaidHpBar');
+  if (bar) bar.style.width = Math.max(0, Math.min(100, Math.round(leftHp / goal * 100))) + '%';
+  const timer = document.getElementById('worldRaidTimer');
+  if (timer) timer.textContent = formatRaidClock(raid);
+  const lock = document.getElementById('worldRaidLockLeft');
+  if (lock && currentUser) {
+    const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, currentUser.id)]) || {};
+    lock.textContent = String(Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)));
+  }
+}
+
+function paintWorldRaidOverlay() {
+  const modal = document.getElementById('modalWorldRaid');
+  const sheet = document.getElementById('worldRaidSheet');
+  if (!modal || !sheet) return;
+  const raid = studentWorldRaid();
+  if (!raid) {
+    worldRaidPaintKey = '';
+    modal.classList.add('hidden');
+    return;
+  }
+  const key = worldRaidViewKey(raid, currentUser.id);
+  if (key === worldRaidPaintKey) {
+    paintWorldRaidNumbers();
+    modal.classList.remove('hidden');
+    return;
+  }
+  worldRaidPaintKey = key;
+  const goal = Math.max(1, Number(raid.goal) || 1);
+  const leftHp = Math.max(0, Number(raid.hp) || 0);
+  const hpBlock = raidBossArt() + '<h2 class="text-center text-xl font-black text-rose-200">Apocalymon</h2><p class="text-center text-[11px] text-slate-400">世界首領 / World Raid · ' + escapeHtml(raid.classId || '') + '</p><div class="h-3 rounded-full bg-slate-800 overflow-hidden"><div id="worldRaidHpBar" class="h-full bg-rose-500" style="width:' + Math.max(0, Math.min(100, Math.round(leftHp / goal * 100))) + '%"></div></div><p id="worldRaidHpText" class="text-center font-mono font-black text-rose-100">' + leftHp + ' / ' + goal + '</p><p class="text-center text-xs text-amber-200">剩餘時間 / Time left <span id="worldRaidTimer" class="font-mono font-black">' + formatRaidClock(raid) + '</span></p>';
+  if (raid.status === 'won' || raid.status === 'lost') {
+    const banner = raid.status === 'won'
+      ? '勝利。每位參加者 +1 迷宮券、+500 金幣。 / Victory. Each participant gains 1 dungeon ticket and 500 coins.'
+      : '失敗。每位參加者 -300 HP、-3 攻擊次數。 / Defeat. Each participant loses 300 HP and 3 attacks.';
+    sheet.innerHTML = hpBlock + '<p class="text-sm font-black text-amber-100">' + banner + '</p><p class="text-[11px] text-slate-400">老師結束事件前，這個排名會留在畫面上。 / This ranking stays until the teacher ends the event.</p>' + worldRaidRankHtml(raid);
+  } else {
+    const student = appData.students[currentUser.id] || { id: currentUser.id, name: currentUser.name };
+    const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, student.id)]) || {};
+    if (Number(row.lockUntil) > syncedNow()) {
+      sheet.innerHTML = hpBlock + '<p class="text-center text-sm font-black text-rose-200">答錯了。30 秒內不能作答，現在只看得到首領 HP。 / Wrong answer. You cannot answer for 30 seconds. Only the boss HP is shown.</p><p class="text-center font-mono text-2xl text-amber-200"><span id="worldRaidLockLeft">' + Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)) + '</span>s</p>';
+    } else {
+      const questions = raidQuestionList(raid.questions);
+      const question = questions[Number(row.cursor || 0) % questions.length];
+      let answerBox = '';
+      if (question && question.type === 'FILL') {
+        answerBox = '<form class="flex gap-2" onsubmit="event.preventDefault(); submitWorldRaidFill();"><input id="worldRaidFill" class="flex-1 min-h-12 rounded-xl bg-slate-900 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button></form>';
+      }
+      sheet.innerHTML = hpBlock + '<p class="text-base font-black leading-snug">' + escapeHtml(question ? question.question : '') + '</p><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox;
+      if (question && question.type !== 'FILL') {
+        const choices = document.getElementById('worldRaidChoices');
+        (question.options || []).forEach(option => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'min-h-12 rounded-xl border border-cyan-600 bg-slate-900 px-3 text-left font-bold';
+          button.textContent = option;
+          button.onclick = () => submitWorldRaidAnswer(option);
+          choices.appendChild(button);
+        });
+      }
+    }
+  }
+  modal.classList.remove('hidden');
+}
+
+function paintTeacherWorldRaid() {
+  const live = document.getElementById('teacherWorldRaidLive');
+  const rank = document.getElementById('teacherWorldRaidRank');
+  if (!live || !rank) return;
+  const raid = teacherWorldRaid();
+  const key = raid ? [raid.status, raid.hp, formatRaidClock(raid), worldRaidSort, raid.correctTotal || 0].join('|') : 'none';
+  if (key === teacherRaidPaintKey) return;
+  teacherRaidPaintKey = key;
+  if (!raid) {
+    live.textContent = '這個班還沒有世界首領事件。先選一個班級，匯入題目，再發起。 / This class has no World Raid. Choose one class, import questions, then start.';
+    rank.innerHTML = '';
+    return;
+  }
+  const outcome = raid.status === 'won' ? '勝利 / Victory' : (raid.status === 'lost' ? '失敗 / Defeat' : '進行中 / Live');
+  live.innerHTML = 'Apocalymon · ' + escapeHtml(raid.classId || '') + ' · ' + outcome + '<br>HP ' + Math.max(0, Number(raid.hp) || 0) + ' / ' + (Number(raid.goal) || 0) + ' · 答對 Correct ' + (Number(raid.correctTotal) || 0) + ' · 剩餘 / Left ' + formatRaidClock(raid);
+  rank.innerHTML = (raid.status === 'won' || raid.status === 'lost' || raid.status === 'live') ? worldRaidRankHtml(raid) : '';
+}
+
+function setWorldRaidSort(mode) {
+  worldRaidSort = mode === 'wrong' || mode === 'few' ? mode : 'correct';
+  worldRaidPaintKey = '';
+  teacherRaidPaintKey = '';
+  paintWorldRaidOverlay();
+  paintTeacherWorldRaid();
+}
+
+function raidTransaction(classKey, mutator, done) {
+  if (!dbRootRef || !classKey) {
+    if (done) done(new Error('offline'), false, null);
+    return;
+  }
+  const ref = dbRootRef.child('worldRaids/' + classKey);
+  let watched = (appData.worldRaids && appData.worldRaids[classKey]) || null;
+  const listener = ref.on('value', snap => {
+    const value = snap.val();
+    if (value) watched = value;
+  });
+  ref.transaction(cur => {
+    const base = cur || watched;
+    if (!base || typeof base !== 'object') return;
+    let draft;
+    try { draft = JSON.parse(JSON.stringify(base)); } catch (err) { return; }
+    const result = mutator(draft);
+    if (!result || typeof result !== 'object') return;
+    return result;
+  }, (err, committed, snap) => {
+    try { ref.off('value', listener); } catch (ignore) {}
+    if (done) done(err, committed, snap);
+  }, false);
+}
+
+function applyWorldRaidStudentChange(studentId, mutator) {
+  if (!dbRootRef || !studentId) return;
+  const ref = dbRootRef.child('students/' + studentId);
+  let watched = (appData.students && appData.students[studentId]) || null;
+  const listener = ref.on('value', snap => {
+    const value = snap.val();
+    if (value) watched = value;
+  });
+  ref.transaction(cur => {
+    const base = cur || watched;
+    if (!base || typeof base !== 'object') return;
+    const next = Object.assign({}, base);
+    mutator(next);
+    return next;
+  }, () => {
+    try { ref.off('value', listener); } catch (ignore) {}
+  }, false);
+}
+
+function applyWorldRaidPayout(raid) {
+  const won = raid.status === 'won';
+  worldRaidParticipants(raid).forEach(student => {
+    applyWorldRaidStudentChange(student.id, next => {
+      if (won) {
+        next.coins = Math.max(0, (Number(next.coins) || 0) + 500);
+        next.dungeonTickets = Math.max(0, (Number(next.dungeonTickets) || 0) + 1);
+      } else {
+        next.hp = Math.max(0, (Number(next.hp) || 0) - 300);
+        if (next.hp <= 0) next.isFainted = true;
+        next.attackQuota = Math.max(0, (Number(next.attackQuota) || 0) - 3);
+      }
+    });
+  });
+  addBattleLog(won
+    ? '👹 [WORLD RAID] ' + raid.classId + ' defeated Apocalymon. Each student gained 1 dungeon ticket and 500 coins.'
+    : '👹 [WORLD RAID] ' + raid.classId + ' lost to Apocalymon. Each student lost 300 HP and 3 attacks.',
+    won ? 'heal' : 'battle', raid.classId);
+}
+
+function claimWorldRaidRewards(raid, forcedStatus) {
+  const key = (raid && (raid.classKey || dungeonQuestionKey(raid.classId))) || '';
+  if (!key || worldRaidClaiming[key]) return;
+  worldRaidClaiming[key] = true;
+  raidTransaction(key, cur => {
+    if (!cur || cur.rewardsApplied || cur.status === 'closed') return;
+    if (cur.status === 'live') {
+      if (forcedStatus === 'won' || forcedStatus === 'lost') cur.status = forcedStatus;
+      else if ((Number(cur.hp) || 0) <= 0) cur.status = 'won';
+      else if (syncedNow() >= Number(cur.endsAt || 0)) cur.status = 'lost';
+      else return;
+    }
+    if (cur.status !== 'won' && cur.status !== 'lost') return;
+    cur.rewardsApplied = true;
+    cur.resolvedAt = syncedNow();
+    return cur;
+  }, (err, committed, snap) => {
+    worldRaidClaiming[key] = false;
+    if (committed && snap && snap.val()) {
+      const saved = snap.val();
+      if (!appData.worldRaids) appData.worldRaids = {};
+      appData.worldRaids[key] = saved;
+      applyWorldRaidPayout(saved);
+    }
+  });
+}
+
+function tickWorldRaids() {
+  const raids = appData.worldRaids || {};
+  Object.keys(raids).forEach(key => {
+    const raid = raids[key];
+    if (!raid || raid.status === 'closed' || raid.rewardsApplied) return;
+    if (raid.status === 'won' || raid.status === 'lost' || (raid.status === 'live' && ((Number(raid.hp) || 0) <= 0 || syncedNow() >= Number(raid.endsAt || 0)))) {
+      claimWorldRaidRewards(raid);
+    }
+  });
+  paintWorldRaidNumbers();
+  if (currentUser && currentUser.role === 'student') paintWorldRaidOverlay();
+  if (currentUser && currentUser.role === 'teacher') paintTeacherWorldRaid();
+}
+
+function submitWorldRaidAnswer(text) {
+  if (worldRaidBusy || !currentUser || currentUser.role !== 'student') return;
+  const raid = studentWorldRaid();
+  const student = appData.students && appData.students[currentUser.id];
+  if (!raid || !student || raid.status !== 'live') return;
+  const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, student.id)]) || {};
+  if (Number(row.lockUntil) > syncedNow()) return;
+  worldRaidBusy = true;
+  const now = syncedNow();
+  raidTransaction(raid.classKey, cur => reduceWorldRaidAnswer(cur, student, text, now), (err, committed, snap) => {
+    worldRaidBusy = false;
+    worldRaidPaintKey = '';
+    if (committed && snap && snap.val() && snap.val().status === 'won') claimWorldRaidRewards(snap.val());
+    paintWorldRaidOverlay();
+  });
+}
+
+function submitWorldRaidFill() {
+  const input = document.getElementById('worldRaidFill');
+  submitWorldRaidAnswer(input ? input.value : '');
+}
+
+function handleWorldRaidExcelImport(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (input) input.value = '';
+  if (!file || !currentUser || currentUser.role !== 'teacher') return;
+  if (typeof XLSX === 'undefined') return alert('Excel 讀取工具尚未載入，請重新整理後再試。 / The Excel reader is not loaded yet. Refresh and try again.');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const bytes = new Uint8Array(e.target.result);
+      const workbook = readDungeonQuestionWorkbook(bytes, file.name);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const questions = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row[0] === undefined || row[0] === null || String(row[0]).trim() === '') continue;
+        const question = repairQuestionText(String(row[0]).trim());
+        const answer = repairQuestionText(row[1] === undefined || row[1] === null ? '' : String(row[1]).trim());
+        if (!question || !answer) continue;
+        const wrongs = [row[2], row[3], row[4]].map(cell => cell === undefined || cell === null ? '' : repairQuestionText(String(cell).trim())).filter(Boolean);
+        const rawType = String(row[5] || '').trim().toLowerCase();
+        const fill = /fill|fill-in|fill_in|fillin|填空|填寫|填充/.test(rawType);
+        const options = [answer].concat(wrongs);
+        options.sort(() => Math.random() - 0.5);
+        questions.push({
+          question: question,
+          answer: answer,
+          options: fill ? [] : options,
+          type: fill ? 'FILL' : 'MCQ',
+          explanation: repairQuestionText(row[6] === undefined || row[6] === null ? '' : String(row[6]).trim())
+        });
+      }
+      if (!questions.length) return alert('題目是空的。請用考卷格式：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解。 / The file has no questions. Use the exam columns: A question, B answer, C-E wrong answers, F type, G explanation.');
+      worldRaidQuestions = questions;
+      const status = document.getElementById('worldRaidBankStatus');
+      if (status) status.textContent = '已載入 ' + questions.length + ' 題 / ' + questions.length + ' questions';
+    } catch (err) {
+      alert('世界首領題目匯入失敗 / World Raid import failed: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function teacherStartWorldRaid() {
+  if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
+  const classId = selectedTeacherClass;
+  const classKey = dungeonQuestionKey(classId);
+  if (!classKey) return alert('請先選擇一個班級。全部班級不能發起世界首領。 / Choose one class. All Classes cannot start a World Raid.');
+  if (!worldRaidQuestions.length) return alert('請先匯入題目。 / Import the question file first.');
+  const goalInput = document.getElementById('worldRaidGoal');
+  const minuteInput = document.getElementById('worldRaidMinutes');
+  const goal = Math.max(1, Math.floor(Number(goalInput && goalInput.value) || 150));
+  const minutes = Math.max(1, Math.floor(Number(minuteInput && minuteInput.value) || 10));
+  const existing = appData.worldRaids && appData.worldRaids[classKey];
+  if (existing && existing.status && existing.status !== 'closed' && !confirm('這個班已有世界首領事件。重新發起會取代它。 / This class already has a World Raid. Starting again replaces it.')) return;
+  const now = syncedNow();
+  const payload = {
+    classId: classId,
+    classKey: classKey,
+    bossName: 'Apocalymon',
+    bossImg: './images/Apocalymon.png',
+    goal: goal,
+    hp: goal,
+    correctTotal: 0,
+    durationMs: minutes * 60000,
+    startedAt: now,
+    endsAt: now + minutes * 60000,
+    status: 'live',
+    questions: worldRaidQuestions,
+    scores: {},
+    teacherId: currentUser.id,
+    rewardsApplied: false
+  };
+  dbRootRef.child('worldRaids/' + classKey).set(payload);
+  teacherRaidPaintKey = '';
+  paintTeacherWorldRaid();
+}
+
+function teacherEndWorldRaid() {
+  const raid = teacherWorldRaid();
+  if (!raid) return alert('這個班沒有世界首領事件。 / This class has no World Raid.');
+  if (raid.status === 'live') {
+    claimWorldRaidRewards(raid, (Number(raid.hp) || 0) <= 0 ? 'won' : 'lost');
+    return;
+  }
+  raidTransaction(raid.classKey, cur => {
+    if (!cur || cur.status === 'closed') return;
+    if (!cur.rewardsApplied) return;
+    cur.status = 'closed';
+    return cur;
+  }, () => {
+    teacherRaidPaintKey = '';
+    worldRaidPaintKey = '';
+  });
+}
+
+setInterval(() => { try { tickWorldRaids(); } catch (err) {} }, 500);
 
 function territoryContextClass(student, preferred) {
   if (!student) return '';
@@ -8259,7 +8788,7 @@ function toggleFactionBuffModal() {
 
 function getTeacherTemplate() {
   return `
-    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
+    <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-1.5 rounded-xl bg-slate-900 p-1.5 border border-cyan-500/40 shadow-lg">
       <button id="btnTeacherTabMain" onclick="switchTeacherSubTab('main')" class="w-full py-2.5 rounded-lg text-xs font-black transition bg-cyan-600 text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
         <i class="fa-solid fa-chalkboard"></i> 課堂主控台 (Dashboard)
       </button>
@@ -8279,6 +8808,9 @@ function getTeacherTemplate() {
       </button>
       <button id="btnTeacherTabTest" onclick="switchTeacherSubTab('test')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
         <i class="fa-solid fa-user-graduate text-violet-300"></i> 測試帳號 (Test)
+      </button>
+      <button id="btnTeacherTabRaid" onclick="switchTeacherSubTab('raid')" class="w-full py-2.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-white cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-center">
+        <i class="fa-solid fa-skull text-rose-300"></i> 世界首領 (World Raid)
       </button>
     </div>
 
@@ -8307,7 +8839,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.36</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.37</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -8859,6 +9391,31 @@ function getTeacherTemplate() {
         </div>
       </section>
     </div>
+    <div id="teacherSubViewRaid" class="space-y-6 hidden">
+      <section class="rounded-2xl border border-rose-500/50 bg-slate-950/80 p-4 space-y-3">
+        <div class="text-sm font-black uppercase tracking-wider text-rose-200">世界首領戰 / World Raid Event</div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。答錯的人 30 秒不能作答，畫面只剩首領 HP。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. A wrong answer locks that student for 30 seconds, and the screen shows only the boss HP. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <label for="worldRaidExcelInput" class="cursor-pointer min-h-11 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black flex items-center">匯入題目 / Import Excel</label>
+          <input id="worldRaidExcelInput" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="handleWorldRaidExcelImport(event)" class="hidden">
+          <span id="worldRaidBankStatus" class="text-xs font-mono text-slate-300">已載入 0 題 / 0 questions</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <label class="space-y-1 text-[11px] font-bold text-rose-100">需要答對的題數 / Correct answers to win
+            <input id="worldRaidGoal" type="number" min="1" value="150" class="w-full min-h-12 bg-slate-950 border border-rose-500/50 rounded-lg px-2 text-sm text-white">
+          </label>
+          <label class="space-y-1 text-[11px] font-bold text-rose-100">時限（分鐘） / Time limit in minutes
+            <input id="worldRaidMinutes" type="number" min="1" value="10" class="w-full min-h-12 bg-slate-950 border border-rose-500/50 rounded-lg px-2 text-sm text-white">
+          </label>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button id="btnWorldRaidStart" type="button" onclick="teacherStartWorldRaid()" class="min-h-12 rounded-xl bg-rose-600 text-white text-xs font-black">發起世界首領 / Start World Raid</button>
+          <button id="btnWorldRaidEnd" type="button" onclick="teacherEndWorldRaid()" class="min-h-12 rounded-xl bg-slate-800 border border-rose-400 text-rose-100 text-xs font-black">結束事件 / End event</button>
+        </div>
+        <div id="teacherWorldRaidLive" class="text-sm text-amber-100 leading-relaxed"></div>
+        <div id="teacherWorldRaidRank"></div>
+      </section>
+    </div>
     <div id="teacherSubViewFaction" class="space-y-6 hidden">
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-2 border-indigo-500/50 rounded-2xl p-5 shadow-xl space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -9047,6 +9604,8 @@ function getSuperAdminTemplate() {
 
 function logout() {
   currentUser = null;
+  worldRaidPaintKey = '';
+  paintWorldRaidOverlay();
   selectedTeacherChatClass = "";
   selectedTeacherChatStudent = "";
   selectedStudentChatClass = "";
@@ -9161,6 +9720,7 @@ function logout() {
     if (teacherControlsBusy()) {
       updateTeacherBossHeader();
       paintTeacherLiveStats();
+      paintTeacherWorldRaid();
       scheduleRefreshCurrentView();
     } else {
       updateTeacherBossHeader();
@@ -9170,6 +9730,7 @@ function logout() {
       renderTeacherFactionPanel();
       renderTeacherTerritory();
       renderTeacherGrid();
+      paintTeacherWorldRaid();
       const mgrModal = document.getElementById('modalClassStudentsManager');
       if (mgrModal && !mgrModal.classList.contains('hidden')) renderManagerStudentsList();
       if (activeTeacherSubTab === 'quiz') renderTeacherQuizLiveDashboard();
@@ -9225,6 +9786,13 @@ function logout() {
       document.getElementById('stBossStageBadge').textContent = digi.stageName || 'MEGA';
       document.getElementById('stBossHpText').textContent = `HP: ${curHp} / ${maxHp} (${hpPct}%)`;
       document.getElementById('stBossHpBar').style.width = `${hpPct}%`;
+      const attributeBox = document.getElementById('stBossAttribute');
+      const me = currentUser && appData.students[currentUser.id];
+      const myDigi = me ? (DIGIMON_DB[me.currentDigiId] || DIGIMON_DB.digitama1) : null;
+      if (attributeBox && myDigi) {
+        const note = attributeMatchNote(attributeDamageMultiplier(myDigi.type, digi.type));
+        attributeBox.innerHTML = escapeHtml(canonAttribute(myDigi.type) + ' → ' + canonAttribute(digi.type) + ' · ' + note) + '<div class="text-slate-300">' + escapeHtml(attributeOutlook(myDigi.type)) + '</div>';
+      }
 
       const bossImg = document.getElementById('stBossImg');
       setDigiImageTag(bossImg, tc.partnerDigiId);
@@ -9370,6 +9938,7 @@ function logout() {
     }
 
     function updateStudentUI() {
+      paintWorldRaidOverlay();
       paintTeacherTestBanner();
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
@@ -9812,23 +10381,30 @@ function logout() {
 
     function renderStudentSkills(digi, st) {
       const grid = document.getElementById('stSkillsGrid');
+      const guide = document.getElementById('stAttributeGuide');
+      if (guide) guide.innerHTML = attributeGuideHtml();
       if (!grid) return;
       grid.innerHTML = '';
       const skills = digi.skills || [{ name: "Tackle Strike", power: 20, type: "damage", icon: "fa-hand-fist" }];
       const banned = isStudentBanned(st);
+      const boss = appData.teachers[studentTargetTeacherId] || Object.values(appData.teachers || {})[0];
+      const bossClass = parseStudentClasses(st.classId)[0] || 'ALL';
 
       skills.forEach((sk, idx) => {
         const isHeal = sk.type === "heal";
         const btnColor = isHeal ? "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500" : "from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500";
         const disabledAttr = (st.hp <= 0 || st.isFainted || banned) ? 'disabled' : '';
+        const preview = !isHeal && boss ? previewTypedDamage(st, boss, bossClass, sk.power || 20, 'boss') : null;
+        const powerLabel = preview ? `${sk.power} → ${preview.damage} DMG · ${preview.note}` : `${sk.power} ${isHeal ? 'HEAL' : 'DMG'}`;
 
         grid.innerHTML += `
           <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
             <div>
-              <div class="flex justify-between items-center text-xs">
+              <div class="flex justify-between items-center text-xs gap-2">
                 <span class="font-bold text-slate-200 truncate"><i class="fa-solid ${sk.icon || 'fa-bolt'} mr-1 text-cyan-400"></i>${sk.name}</span>
-                <span class="text-[10px] font-mono ${isHeal ? 'text-emerald-400' : 'text-amber-400'} font-bold">${sk.power} ${isHeal ? 'HEAL' : 'DMG'}</span>
+                <span class="text-[10px] font-mono ${isHeal ? 'text-emerald-400' : 'text-amber-400'} font-bold text-right">${powerLabel}</span>
               </div>
+              ${preview ? `<div class="text-[10px] text-amber-100 mt-1 leading-relaxed">${escapeHtml(attributeOutlook(digi.type))}</div>` : ''}
             </div>
             <div class="grid grid-cols-2 gap-1 mt-2">
               <button onclick="castStudentSkill(${idx}, 'boss')" ${disabledAttr} class="py-1 px-1.5 rounded bg-gradient-to-r ${btnColor} text-white font-bold text-[10px] shadow cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-95">
@@ -10828,6 +11404,8 @@ else if (mode === 'pvp') {
       if (activeTeacherSubTab === 'quiz') {
         renderTeacherQuizLiveDashboard();
       }
+      teacherRaidPaintKey = '';
+      paintTeacherWorldRaid();
     }
 
 
@@ -12468,6 +13046,8 @@ else if (mode === 'pvp') {
       const sub = document.getElementById('teacherTargetPickerSubtitle');
       const classLabel = !strike.className || strike.className === 'ALL' ? '全部班級 / All Classes' : strike.className;
       if (sub) sub.textContent = `${strike.digiName} · ${strike.moveName} · ${strike.pwr} DMG · ${classLabel}`;
+      const guide = document.getElementById('teacherAttributeGuide');
+      if (guide) guide.innerHTML = attributeGuideHtml() + '<p class="text-[11px] text-amber-100 mt-1">' + escapeHtml(canonAttribute(strike.digiType) + ' · ' + attributeOutlook(strike.digiType)) + '</p>';
       renderTeacherTargetList();
       modal.classList.remove('hidden');
     }
@@ -12529,7 +13109,7 @@ else if (mode === 'pvp') {
           <div class="text-right shrink-0">
             ${isFainted
               ? '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600">已倒下 / Fainted</span>'
-              : `<div class="font-pixel text-xs text-rose-300">${attributeStrike(strike.pwr, strike.digiType, tgtDigi.type).damage} DMG</div><div class="text-[10px] text-slate-400">${escapeHtml(attributeMatchNote(attributeDamageMultiplier(strike.digiType, tgtDigi.type)) || 'Neutral')}</div>`}
+              : `<div class="font-pixel text-xs text-rose-300">${strike.pwr} → ${attributeStrike(strike.pwr, strike.digiType, tgtDigi.type).damage} DMG</div><div class="text-[10px] text-amber-100">${escapeHtml(canonAttribute(strike.digiType) + ' → ' + canonAttribute(tgtDigi.type))}</div><div class="text-[10px] text-slate-300">${escapeHtml(attributeMatchNote(attributeDamageMultiplier(strike.digiType, tgtDigi.type)))}</div>`}
           </div>
         `;
         if (!isFainted) card.onclick = () => executeTeacherSingleStrike(target.id);
@@ -16070,6 +16650,8 @@ function startStudentExamTimer() {
       }
 
       document.getElementById('pvpPickerClassSubtitle').textContent = `Targeting Classmates in [${pvpPickerActiveTabClass}] / 選擇【${pvpPickerActiveTabClass}】班級目標`;
+      const guide = document.getElementById('pvpAttributeGuide');
+      if (guide) guide.innerHTML = attributeGuideHtml();
       renderPvpTargetsList(pvpPickerActiveTabClass);
       modal.classList.remove('hidden');
     }
@@ -16120,6 +16702,8 @@ function startStudentExamTimer() {
         else if (isSameFaction) pvpTag = '<span class="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-600 block mt-1">同陣營盟友 (免傷)</span>';
 
         // 計算擊殺經驗值
+        const pendingSkill = (myDigi.skills && myDigi.skills[currentPendingSkillIndex !== null ? currentPendingSkillIndex : 0]) || { power: 25 };
+        const pvpPreview = previewTypedDamage(me, target, classFilter, pendingSkill.power || 25, 'pvp');
         const killExpReward = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
         const diffRank = (STAGE_ORDER[tgtDigi.stage] || 0) - (STAGE_ORDER[myDigi.stage] || 0);
 
@@ -16154,7 +16738,7 @@ function startStudentExamTimer() {
                 <span>|</span>
                 <span class="${rankColor}">階級: ${rankDiffLabel}</span>
                 <span>|</span>
-                <span>${myDigi.type || 'Free'} → ${tgtDigi.type || 'Free'}${attributeMatchNote(attributeDamageMultiplier(myDigi.type, tgtDigi.type)) ? ' · ' + attributeMatchNote(attributeDamageMultiplier(myDigi.type, tgtDigi.type)) : ''}</span>
+                <span>${escapeHtml(canonAttribute(myDigi.type))} → ${escapeHtml(canonAttribute(tgtDigi.type))} · ${escapeHtml(attributeMatchNote(pvpPreview.mult))} · ${pendingSkill.power || 25} → ${pvpPreview.damage} DMG</span>
               </div>
             </div>
           </div>

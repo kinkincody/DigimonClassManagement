@@ -2186,6 +2186,21 @@
     function roomPicture(src) {
       return roomArtTag(src || ROOM_ART.map, 'mx-auto');
     }
+    function attributeEffectLabel(mult) {
+      if (mult > 1) return '優勢 Advantage ×2';
+      if (mult > 0 && mult < 1) return '劣勢 Disadvantage ×0.5';
+      if (mult === 0) return '免疫 Immune ×0';
+      return '相同 Same ×1';
+    }
+    function previewDungeonHit(actor, foe, power, room) {
+      const buffed = (actor.atkBuffTurns || 0) > 0 || (room.atkBuffTurns || 0) > 0;
+      let raw = Math.max(1, Math.round(power * (buffed ? 1.2 : 1) * ((room.focusTurns || 0) > 0 ? 1.25 : 1)));
+      if (room.babyAlly) raw += 12;
+      if (foe.kind === 'boss' && room.combat && room.combat.phase === 2 && actor.type === room.combat.resist) return { dealt: 0, mult: 0, tag: '免疫' };
+      const hit = typedHit(actor.type, foe.type, raw);
+      hit.tag = hit.tag || '×1';
+      return hit;
+    }
     function renderCombat(room) {
       const foe = room.combat.foes[0];
       const me = myMember(room);
@@ -2197,12 +2212,13 @@
         : '';
       const resist = room.combat.phase === 2 ? '<p class="text-xs font-bold text-rose-300">第二階段 / Phase 2 · ' + esc(room.combat.resist) + ' 免疫 / immunity · 末日 / Doom ' + room.combat.doom + '/5</p>' : '';
       const skills = myTurn
-        ? '<button data-act="basic" class="tap rounded-2xl bg-slate-800 border border-cyan-600 font-black text-sm text-left px-3">普通攻擊 / Normal Attack<span class="block text-[11px] font-bold text-cyan-200">威力 / Power ' + normalPower(me) + ' · MP 0</span></button>' + (me.skills || []).map((skill, index) => {
+        ? '<button data-act="basic" class="tap rounded-2xl bg-slate-800 border border-cyan-600 font-black text-sm text-left px-3">普通攻擊 / Normal Attack<span class="block text-[11px] font-bold text-cyan-200">威力 / Power ' + normalPower(me) + ' → 實傷 / Dealt ' + previewDungeonHit(me, foe, normalPower(me), room).dealt + ' · ' + esc(attributeEffectLabel(previewDungeonHit(me, foe, normalPower(me), room).mult)) + ' · MP 0</span></button>' + (me.skills || []).map((skill, index) => {
           const cost = Number(skill.mp) || skillMpCost(skill.power);
           const ready = (me.mp || 0) >= cost;
           const power = scaledPower(me, skill.power);
-          const label = skill.type === 'heal' ? '回復 / Heal ' : '威力 / Power ';
-          return '<button data-act="skill" data-skill="' + index + '" ' + (ready ? '' : 'disabled') + ' class="tap rounded-2xl font-black text-sm text-left px-3 ' + (ready ? 'bg-cyan-700' : 'bg-slate-800 text-slate-500') + '">' + esc(skill.name) + '<span class="block text-[11px] font-bold">' + label + power + ' · MP ' + cost + '</span></button>';
+          const shown = skill.type === 'heal' ? null : previewDungeonHit(me, foe, power, room);
+          const label = skill.type === 'heal' ? '回復 / Heal ' + power : '威力 / Power ' + power + ' → 實傷 / Dealt ' + shown.dealt + ' · ' + attributeEffectLabel(shown.mult);
+          return '<button data-act="skill" data-skill="' + index + '" ' + (ready ? '' : 'disabled') + ' class="tap rounded-2xl font-black text-sm text-left px-3 ' + (ready ? 'bg-cyan-700' : 'bg-slate-800 text-slate-500') + '">' + esc(skill.name) + '<span class="block text-[11px] font-bold">' + esc(label) + ' · MP ' + cost + '</span></button>';
         }).join('')
         : '<p class="text-sm text-slate-300">' + (me && (me.fainted || me.hp <= 0)
           ? '你已倒下。隊友繼續戰鬥。只有全員倒下才會離開迷宮。休息培養艙可以復活。 / You are down. The squad keeps fighting. The dungeon ends only when every Digimon is down. Rest can revive you.'
@@ -2222,7 +2238,11 @@
       }
       const sprite = '<div class="w-36 h-36 mx-auto rounded-full bg-slate-950 border-2 border-rose-400 flex items-center justify-center text-4xl relative overflow-hidden shadow-[0_0_24px_rgba(244,63,94,0.35)]"><i class="fa-solid ' + esc(foe.icon || 'fa-paw') + '"></i>' + digiImgTag(foe.name, foe.img, 'absolute inset-0 w-full h-full object-contain bg-slate-950') + '</div>';
       const turnNote = '<p class="text-center text-xs font-black text-cyan-200">協力戰鬥 / Together · 輪到 / Turn: ' + esc(actor ? actor.name : '—') + '</p>';
-      return '<section id="combatArena" class="relative space-y-3"><div class="panel space-y-2">' + sprite + '<h2 class="text-center font-black">' + esc(foe.name) + '</h2><p class="text-center text-xs font-mono text-cyan-200">屬性 / Attribute · ' + esc(foe.type || 'Free') + '</p>' + turnNote + hpRow('敵方 / Enemy', foe.hp, foe.maxHp, true) + resist + bodies + '</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' + skills + '</div><div class="flex flex-wrap gap-2">' + items.join('') + '</div>' + partyStrip(room) + '<div class="panel text-[11px] text-cyan-100 space-y-1">' + (room.feed || []).slice(-4).map(line => '<p>' + esc(line) + '</p>').join('') + '</div></section>';
+      const viewer = me || actor;
+      const immune = !!(viewer && room.combat.phase === 2 && viewer.type === room.combat.resist);
+      const matchLine = viewer ? esc(canonAttribute(viewer.type)) + ' → ' + esc(canonAttribute(foe.type)) + ' · ' + esc(immune ? '免疫 Immune ×0' : attributeEffectLabel(attributeDamageMultiplier(viewer.type, foe.type))) : '';
+      const guide = '<div id="attributePanel" class="rounded-xl border border-amber-400/50 bg-slate-950 p-2 text-[11px] leading-relaxed text-amber-50"><p class="font-black text-amber-200">屬性克制 / Attribute triangle</p><p>疫苗 Vaccine 克 病毒 Virus ×2。病毒 Virus 克 數據 Data ×2。數據 Data 克 疫苗 Vaccine ×2。反過來是劣勢 ×0.5。相同或自由 Same or Free ×1。</p><p id="attributeMatchLine">' + matchLine + '</p></div>';
+      return '<section id="combatArena" class="relative space-y-3"><div class="panel space-y-2">' + sprite + '<h2 class="text-center font-black">' + esc(foe.name) + '</h2><p class="text-center text-xs font-mono text-cyan-200">屬性 / Attribute · ' + esc(foe.type || 'Free') + '</p>' + turnNote + hpRow('敵方 / Enemy', foe.hp, foe.maxHp, true) + resist + bodies + '</div>' + guide + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' + skills + '</div><div class="flex flex-wrap gap-2">' + items.join('') + '</div>' + partyStrip(room) + '<div class="panel text-[11px] text-cyan-100 space-y-1">' + (room.feed || []).slice(-4).map(line => '<p>' + esc(line) + '</p>').join('') + '</div></section>';
     }
     function optionList(options) { return textList(options); }
     function renderRiddle(room) {
@@ -2494,6 +2514,18 @@
     window.DungeonApi = { createRoom, reduce, buildMember, scaleOf, threatOf, foeStats, ROOM_WEIGHTS, RUN_FLOORS, BUILTIN_QUESTIONS, DIGI_CATALOG, attributeDamageMultiplier, ENCOUNTER_BOOK, megaRoster };
     if (window.__DIGI_TEST_DB) {
       window.__digiDungeonTest = {
+        forceCombat() {
+          if (!meStudent) return false;
+          const member = buildMember(meStudent);
+          let room = createRoom(member, '8841', true, 7);
+          room.nodes = [{ id: 'node-combat', kind: 'combat', title: 'Devimon', foe: { name: 'Devimon', type: 'Virus', icon: 'fa-hand-back-fist', img: './images/Devimon.png' } }];
+          room = reduce(room, { type: 'choose', memberId: member.id, nodeId: 'node-combat', now: Date.now() });
+          if (!room || room.status !== 'combat') return false;
+          currentRoom = room;
+          roomCode = room.code;
+          render();
+          return true;
+        },
         reviveJoin(room) {
           leavingClass = false;
           sawLiveRun = false;
