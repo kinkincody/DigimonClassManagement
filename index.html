@@ -1161,8 +1161,11 @@
       </div>
     </div>
   </div>
-  <div id="modalWorldRaid" class="fixed inset-0 z-[2000] hidden bg-slate-950/95 p-3 flex items-end sm:items-center justify-center">
-    <div id="worldRaidSheet" class="w-full max-w-3xl max-h-[92dvh] overflow-y-auto rounded-3xl border-2 border-rose-500 bg-slate-950 p-4 space-y-3 text-slate-100"></div>
+  <div id="modalWorldRaid" class="fixed inset-0 z-[2000] hidden bg-slate-950/95 p-2 sm:p-3">
+    <div class="h-full w-full flex items-stretch gap-2">
+      <div id="worldRaidSheet" class="grid h-full min-h-0 flex-1 grid-rows-2 overflow-hidden rounded-3xl border-2 border-rose-500 bg-slate-950 text-slate-100"></div>
+      <aside id="worldRaidSide" class="w-[42%] max-w-sm shrink-0 max-h-[96dvh] overflow-y-auto rounded-3xl border-2 border-amber-400 bg-slate-950 p-3 text-slate-100"></aside>
+    </div>
   </div>
   <!-- Manage Class Students Modal -->
   <div id="modalClassStudentsManager" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -1663,7 +1666,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.37";
+    const CURRENT_APP_VERSION = "2.7.40";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -6060,7 +6063,7 @@ function reduceWorldRaidAnswer(raid, student, submission, now) {
   next.questions = questions;
   if (!next.scores || typeof next.scores !== 'object' || Array.isArray(next.scores)) next.scores = {};
   const key = raidScoreKey(next.scores, student.id);
-  const row = Object.assign({ name: student.name || key, correct: 0, wrong: 0, answered: 0, lockUntil: 0, cursor: 0, joined: true }, next.scores[key] || {});
+  const row = Object.assign({ name: student.name || key, correct: 0, wrong: 0, answered: 0, damage: 0, lockUntil: 0, cursor: 0, joined: true }, next.scores[key] || {});
   if (Number(row.lockUntil) > now) return null;
   const question = questions[Number(row.cursor || 0) % questions.length];
   const right = raidAnswerMatches(question, submission);
@@ -6070,6 +6073,7 @@ function reduceWorldRaidAnswer(raid, student, submission, now) {
   row.name = student.name || row.name || key;
   if (right) {
     row.correct = (Number(row.correct) || 0) + 1;
+    row.damage = (Number(row.damage) || 0) + 1;
     next.correctTotal = (Number(next.correctTotal) || 0) + 1;
     next.hp = Math.max(0, (Number(next.hp) || 0) - 1);
     if (next.hp <= 0) next.status = 'won';
@@ -6116,18 +6120,19 @@ function worldRaidParticipants(raid) {
 function worldRaidRanking(raid) {
   const map = {};
   worldRaidParticipants(raid).forEach(student => {
-    map[student.id] = { id: student.id, name: student.name || student.id, correct: 0, wrong: 0, answered: 0 };
+    map[student.id] = { id: student.id, name: student.name || student.id, correct: 0, wrong: 0, answered: 0, damage: 0 };
   });
   const scores = raid && raid.scores && typeof raid.scores === 'object' ? raid.scores : {};
   Object.keys(scores).forEach(id => {
     const row = scores[id] || {};
     const slot = Object.keys(map).find(key => String(key).toLowerCase() === String(id).toLowerCase());
     const target = slot || id;
-    if (!map[target]) map[target] = { id: target, name: row.name || target, correct: 0, wrong: 0, answered: 0 };
+    if (!map[target]) map[target] = { id: target, name: row.name || target, correct: 0, wrong: 0, answered: 0, damage: 0 };
     map[target].name = row.name || map[target].name;
     map[target].correct = Number(row.correct) || 0;
     map[target].wrong = Number(row.wrong) || 0;
     map[target].answered = Number(row.answered) || 0;
+    map[target].damage = row.damage == null || row.damage === '' ? map[target].correct : (Number(row.damage) || 0);
   });
   const list = Object.values(map);
   list.sort((a, b) => {
@@ -6138,14 +6143,45 @@ function worldRaidRanking(raid) {
   return list;
 }
 
+function worldRaidHpPercent(raid) {
+  const goal = Math.max(1, Number(raid && raid.goal) || 1);
+  const left = Math.max(0, Number(raid && raid.hp) || 0);
+  return Math.max(0, Math.min(100, Math.round(left / goal * 100)));
+}
+
+function worldRaidDamagePercent(damage, goal) {
+  const total = Math.max(1, Number(goal) || 1);
+  const pct = (Number(damage) || 0) / total * 100;
+  const rounded = Math.round(pct * 10) / 10;
+  return (rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1)) + '%';
+}
+
+function worldRaidScoreStamp(raid) {
+  const scores = raid && raid.scores && typeof raid.scores === 'object' ? raid.scores : {};
+  return Object.keys(scores).sort().map(id => {
+    const row = scores[id] || {};
+    return id + ':' + (Number(row.correct) || 0) + '/' + (Number(row.wrong) || 0) + '/' + (Number(row.answered) || 0) + '/' + (Number(row.damage) || 0);
+  }).join(',');
+}
+
+function worldRaidPlacements(raid) {
+  const ranked = worldRaidRanking(raid).filter(row => row.damage > 0).sort((a, b) => {
+    return b.damage - a.damage || b.correct - a.correct || a.wrong - b.wrong || String(a.name).localeCompare(String(b.name));
+  });
+  const places = {};
+  ranked.slice(0, 3).forEach((row, index) => { places[row.id] = index + 1; });
+  return places;
+}
+
 function worldRaidRankHtml(raid) {
   const buttons = [
     ['correct', '答對最多 / Most correct'],
     ['wrong', '答錯最多 / Most wrong'],
     ['few', '作答最少 / Fewest answers']
   ].map(([key, label]) => '<button type="button" data-raid-sort="' + key + '" onclick="setWorldRaidSort(\'' + key + '\')" class="min-h-11 px-2 rounded-xl text-[11px] font-black ' + (worldRaidSort === key ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-amber-100') + '">' + label + '</button>').join('');
-  const rows = worldRaidRanking(raid).map((row, index) => '<tr class="border-t border-slate-800"><td class="p-2">' + (index + 1) + '</td><td class="p-2">' + escapeHtml(row.name) + '</td><td class="p-2 text-center text-emerald-300 font-black">' + row.correct + '</td><td class="p-2 text-center text-rose-300 font-black">' + row.wrong + '</td><td class="p-2 text-center text-amber-200 font-black">' + row.answered + '</td></tr>').join('');
-  return '<div class="flex flex-wrap gap-2">' + buttons + '</div><div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-slate-400"><th class="p-2 text-left">#</th><th class="p-2 text-left">學生 / Student</th><th class="p-2">答對 Correct</th><th class="p-2">答錯 Wrong</th><th class="p-2">已答 Answered</th></tr></thead><tbody>' + (rows || '<tr><td colspan="5" class="p-3 text-slate-400">這個班還沒有學生。 / No students in this class.</td></tr>') + '</tbody></table></div>';
+  const goal = Math.max(1, Number(raid && raid.goal) || 1);
+  const rows = worldRaidRanking(raid).map((row, index) => '<article class="rounded-xl border border-slate-800 bg-slate-900/70 p-2"><div class="font-black text-sm text-white">' + (index + 1) + '. ' + escapeHtml(row.name) + '</div><div class="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]"><span class="text-emerald-300">答對 Correct ' + row.correct + '</span><span class="text-rose-300">答錯 Wrong ' + row.wrong + '</span><span class="text-amber-200">已答 Answered ' + row.answered + '</span><span class="text-orange-300">傷害 Damage ' + worldRaidDamagePercent(row.damage, goal) + '</span></div></article>').join('');
+  return '<div class="flex flex-wrap gap-2">' + buttons + '</div><div class="mt-2 space-y-2">' + (rows || '<p class="text-xs text-slate-400">這個班還沒有學生。 / No students in this class.</p>') + '</div>';
 }
 
 function formatRaidClock(raid) {
@@ -6161,22 +6197,37 @@ function worldRaidViewKey(raid, studentId) {
   const locked = raid.status === 'live' && Number(row.lockUntil) > syncedNow();
   const questions = raidQuestionList(raid.questions);
   const question = questions.length ? questions[Number(row.cursor || 0) % questions.length] : null;
-  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', worldRaidSort, raid.rewardsApplied ? 1 : 0].join('|');
+  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', raid.rewardsApplied ? 1 : 0].join('|');
 }
 
-function raidBossArt() {
-  return '<div class="relative w-36 h-36 mx-auto rounded-full border-2 border-rose-400 bg-slate-950 flex items-center justify-center overflow-hidden"><i class="fa-solid fa-skull text-5xl text-rose-300"></i><img src="./images/Apocalymon.png" alt="Apocalymon" class="absolute inset-0 w-full h-full object-contain bg-slate-950" onerror="this.remove()"></div>';
+function raidBossStage(raid, pct) {
+  return '<section id="worldRaidBoss" class="relative min-h-0 overflow-hidden bg-slate-950"><i class="fa-solid fa-skull pointer-events-none absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 text-8xl text-rose-300/70"></i><img src="./images/Apocalymon.png" alt="Apocalymon" class="absolute inset-0 h-full w-full object-cover object-center" onerror="this.remove()"><div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent px-4 pb-3 pt-16"><div class="mb-2"><h2 class="text-2xl font-black leading-none text-rose-100">Apocalymon</h2><p class="mt-1 text-[11px] text-slate-300">世界首領 / World Raid · ' + escapeHtml(raid.classId || '') + '</p></div><div class="relative h-9 overflow-hidden rounded-full border border-rose-300/80 bg-slate-950/80"><div id="worldRaidHpBar" class="h-full bg-rose-500" style="width:' + pct + '%"></div><p id="worldRaidHpText" class="absolute inset-0 flex items-center justify-center text-sm font-black tracking-wide text-white">' + pct + '%</p></div></div></section>';
+}
+
+let worldRaidSideKey = '';
+
+function paintWorldRaidSide(raid) {
+  const side = document.getElementById('worldRaidSide');
+  if (!side || !raid) return;
+  const pct = worldRaidHpPercent(raid);
+  const key = [worldRaidSort, pct, worldRaidScoreStamp(raid), raid.status].join('|');
+  const label = document.getElementById('worldRaidSideHp');
+  if (key === worldRaidSideKey && label) {
+    label.textContent = pct + '%';
+    return;
+  }
+  worldRaidSideKey = key;
+  side.innerHTML = '<p class="text-[11px] font-black text-amber-200">即時排名 / Live ranking</p><p class="text-sm font-black text-rose-100">首領剩餘 / Boss HP <span id="worldRaidSideHp">' + pct + '%</span></p>' + worldRaidRankHtml(raid);
 }
 
 function paintWorldRaidNumbers() {
   const raid = studentWorldRaid();
   if (!raid) return;
+  const pct = worldRaidHpPercent(raid);
   const hp = document.getElementById('worldRaidHpText');
-  const goal = Math.max(1, Number(raid.goal) || 1);
-  const leftHp = Math.max(0, Number(raid.hp) || 0);
-  if (hp) hp.textContent = leftHp + ' / ' + goal;
+  if (hp) hp.textContent = pct + '%';
   const bar = document.getElementById('worldRaidHpBar');
-  if (bar) bar.style.width = Math.max(0, Math.min(100, Math.round(leftHp / goal * 100))) + '%';
+  if (bar) bar.style.width = pct + '%';
   const timer = document.getElementById('worldRaidTimer');
   if (timer) timer.textContent = formatRaidClock(raid);
   const lock = document.getElementById('worldRaidLockLeft');
@@ -6184,6 +6235,7 @@ function paintWorldRaidNumbers() {
     const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, currentUser.id)]) || {};
     lock.textContent = String(Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)));
   }
+  paintWorldRaidSide(raid);
 }
 
 function paintWorldRaidOverlay() {
@@ -6193,6 +6245,7 @@ function paintWorldRaidOverlay() {
   const raid = studentWorldRaid();
   if (!raid) {
     worldRaidPaintKey = '';
+    worldRaidSideKey = '';
     modal.classList.add('hidden');
     return;
   }
@@ -6203,19 +6256,19 @@ function paintWorldRaidOverlay() {
     return;
   }
   worldRaidPaintKey = key;
-  const goal = Math.max(1, Number(raid.goal) || 1);
-  const leftHp = Math.max(0, Number(raid.hp) || 0);
-  const hpBlock = raidBossArt() + '<h2 class="text-center text-xl font-black text-rose-200">Apocalymon</h2><p class="text-center text-[11px] text-slate-400">世界首領 / World Raid · ' + escapeHtml(raid.classId || '') + '</p><div class="h-3 rounded-full bg-slate-800 overflow-hidden"><div id="worldRaidHpBar" class="h-full bg-rose-500" style="width:' + Math.max(0, Math.min(100, Math.round(leftHp / goal * 100))) + '%"></div></div><p id="worldRaidHpText" class="text-center font-mono font-black text-rose-100">' + leftHp + ' / ' + goal + '</p><p class="text-center text-xs text-amber-200">剩餘時間 / Time left <span id="worldRaidTimer" class="font-mono font-black">' + formatRaidClock(raid) + '</span></p>';
+  const pct = worldRaidHpPercent(raid);
+  const stage = raidBossStage(raid, pct);
+  const lower = (body) => stage + '<div class="min-h-0 overflow-y-auto space-y-3 p-4"><p class="text-xs text-amber-200">剩餘時間 / Time left <span id="worldRaidTimer" class="font-mono font-black">' + formatRaidClock(raid) + '</span></p>' + body + '</div>';
   if (raid.status === 'won' || raid.status === 'lost') {
     const banner = raid.status === 'won'
-      ? '勝利。每位參加者 +1 迷宮券、+500 金幣。 / Victory. Each participant gains 1 dungeon ticket and 500 coins.'
+      ? '勝利。全班每人 +300 金幣。傷害第 1 名再 +1 扭蛋券、+1 迷宮券、+500 金幣。第 2 名再 +1 扭蛋券、+500 金幣。第 3 名再 +500 金幣。 / Victory. Every student gains 300 coins. 1st damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. 2nd gets 1 gacha ticket and 500 coins. 3rd gets 500 coins.'
       : '失敗。每位參加者 -300 HP、-3 攻擊次數。 / Defeat. Each participant loses 300 HP and 3 attacks.';
-    sheet.innerHTML = hpBlock + '<p class="text-sm font-black text-amber-100">' + banner + '</p><p class="text-[11px] text-slate-400">老師結束事件前，這個排名會留在畫面上。 / This ranking stays until the teacher ends the event.</p>' + worldRaidRankHtml(raid);
+    sheet.innerHTML = lower('<p class="text-sm font-black text-amber-100">' + banner + '</p><p class="text-[11px] text-slate-400">排名在右邊，老師結束事件前會一直留著，而且作答時就會即時更新。 / The ranking stays on the right, updates during the fight, and remains until the teacher ends the event.</p>');
   } else {
     const student = appData.students[currentUser.id] || { id: currentUser.id, name: currentUser.name };
     const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, student.id)]) || {};
     if (Number(row.lockUntil) > syncedNow()) {
-      sheet.innerHTML = hpBlock + '<p class="text-center text-sm font-black text-rose-200">答錯了。30 秒內不能作答，現在只看得到首領 HP。 / Wrong answer. You cannot answer for 30 seconds. Only the boss HP is shown.</p><p class="text-center font-mono text-2xl text-amber-200"><span id="worldRaidLockLeft">' + Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)) + '</span>s</p>';
+      sheet.innerHTML = lower('<p class="text-center text-sm font-black text-rose-200">答錯了。30 秒內不能作答。題目先收起，剩下首領 HP。右邊的排名仍會更新。 / Wrong answer. You cannot answer for 30 seconds. The question is hidden and the boss HP stays. The ranking on the right keeps updating.</p><p class="text-center font-mono text-2xl text-amber-200"><span id="worldRaidLockLeft">' + Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)) + '</span>s</p>');
     } else {
       const questions = raidQuestionList(raid.questions);
       const question = questions[Number(row.cursor || 0) % questions.length];
@@ -6223,7 +6276,7 @@ function paintWorldRaidOverlay() {
       if (question && question.type === 'FILL') {
         answerBox = '<form class="flex gap-2" onsubmit="event.preventDefault(); submitWorldRaidFill();"><input id="worldRaidFill" class="flex-1 min-h-12 rounded-xl bg-slate-900 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button></form>';
       }
-      sheet.innerHTML = hpBlock + '<p class="text-base font-black leading-snug">' + escapeHtml(question ? question.question : '') + '</p><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox;
+      sheet.innerHTML = lower('<p class="text-base font-black leading-snug">' + escapeHtml(question ? question.question : '') + '</p><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
       if (question && question.type !== 'FILL') {
         const choices = document.getElementById('worldRaidChoices');
         (question.options || []).forEach(option => {
@@ -6237,6 +6290,7 @@ function paintWorldRaidOverlay() {
       }
     }
   }
+  paintWorldRaidSide(raid);
   modal.classList.remove('hidden');
 }
 
@@ -6245,7 +6299,7 @@ function paintTeacherWorldRaid() {
   const rank = document.getElementById('teacherWorldRaidRank');
   if (!live || !rank) return;
   const raid = teacherWorldRaid();
-  const key = raid ? [raid.status, raid.hp, formatRaidClock(raid), worldRaidSort, raid.correctTotal || 0].join('|') : 'none';
+  const key = raid ? [raid.status, worldRaidHpPercent(raid), formatRaidClock(raid), worldRaidSort, worldRaidScoreStamp(raid)].join('|') : 'none';
   if (key === teacherRaidPaintKey) return;
   teacherRaidPaintKey = key;
   if (!raid) {
@@ -6254,15 +6308,15 @@ function paintTeacherWorldRaid() {
     return;
   }
   const outcome = raid.status === 'won' ? '勝利 / Victory' : (raid.status === 'lost' ? '失敗 / Defeat' : '進行中 / Live');
-  live.innerHTML = 'Apocalymon · ' + escapeHtml(raid.classId || '') + ' · ' + outcome + '<br>HP ' + Math.max(0, Number(raid.hp) || 0) + ' / ' + (Number(raid.goal) || 0) + ' · 答對 Correct ' + (Number(raid.correctTotal) || 0) + ' · 剩餘 / Left ' + formatRaidClock(raid);
+  live.innerHTML = 'Apocalymon · ' + escapeHtml(raid.classId || '') + ' · ' + outcome + '<br>剩餘 HP / HP left ' + worldRaidHpPercent(raid) + '% · 答對 Correct ' + (Number(raid.correctTotal) || 0) + ' · 剩餘 / Left ' + formatRaidClock(raid);
   rank.innerHTML = (raid.status === 'won' || raid.status === 'lost' || raid.status === 'live') ? worldRaidRankHtml(raid) : '';
 }
 
 function setWorldRaidSort(mode) {
   worldRaidSort = mode === 'wrong' || mode === 'few' ? mode : 'correct';
-  worldRaidPaintKey = '';
+  worldRaidSideKey = '';
   teacherRaidPaintKey = '';
-  paintWorldRaidOverlay();
+  paintWorldRaidNumbers();
   paintTeacherWorldRaid();
 }
 
@@ -6312,11 +6366,22 @@ function applyWorldRaidStudentChange(studentId, mutator) {
 
 function applyWorldRaidPayout(raid) {
   const won = raid.status === 'won';
+  const places = won ? worldRaidPlacements(raid) : {};
   worldRaidParticipants(raid).forEach(student => {
+    const place = places[student.id] || 0;
     applyWorldRaidStudentChange(student.id, next => {
       if (won) {
-        next.coins = Math.max(0, (Number(next.coins) || 0) + 500);
-        next.dungeonTickets = Math.max(0, (Number(next.dungeonTickets) || 0) + 1);
+        next.coins = Math.max(0, (Number(next.coins) || 0) + 300);
+        if (place === 1) {
+          next.coins += 500;
+          next.gachaTickets = Math.max(0, (Number(next.gachaTickets) || 0) + 1);
+          next.dungeonTickets = Math.max(0, (Number(next.dungeonTickets) || 0) + 1);
+        } else if (place === 2) {
+          next.coins += 500;
+          next.gachaTickets = Math.max(0, (Number(next.gachaTickets) || 0) + 1);
+        } else if (place === 3) {
+          next.coins += 500;
+        }
       } else {
         next.hp = Math.max(0, (Number(next.hp) || 0) - 300);
         if (next.hp <= 0) next.isFainted = true;
@@ -6325,7 +6390,7 @@ function applyWorldRaidPayout(raid) {
     });
   });
   addBattleLog(won
-    ? '👹 [WORLD RAID] ' + raid.classId + ' defeated Apocalymon. Each student gained 1 dungeon ticket and 500 coins.'
+    ? '👹 [WORLD RAID] ' + raid.classId + ' defeated Apocalymon. Each student gained 300 coins. Top damage earned the extra prizes.'
     : '👹 [WORLD RAID] ' + raid.classId + ' lost to Apocalymon. Each student lost 300 HP and 3 attacks.',
     won ? 'heal' : 'battle', raid.classId);
 }
@@ -8839,7 +8904,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.37</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.40</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -9394,7 +9459,7 @@ function getTeacherTemplate() {
     <div id="teacherSubViewRaid" class="space-y-6 hidden">
       <section class="rounded-2xl border border-rose-500/50 bg-slate-950/80 p-4 space-y-3">
         <div class="text-sm font-black uppercase tracking-wider text-rose-200">世界首領戰 / World Raid Event</div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。答錯的人 30 秒不能作答，畫面只剩首領 HP。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. A wrong answer locks that student for 30 seconds, and the screen shows only the boss HP. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
+        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。答錯的人 30 秒不能作答。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
         <div class="flex flex-wrap items-center gap-2">
           <label for="worldRaidExcelInput" class="cursor-pointer min-h-11 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black flex items-center">匯入題目 / Import Excel</label>
           <input id="worldRaidExcelInput" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="handleWorldRaidExcelImport(event)" class="hidden">
