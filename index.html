@@ -198,6 +198,7 @@
       pointer-events: all !important;
     }
     #deathScreenOverlay { z-index: 99999; }
+    #modalWorldRaid { z-index: 100018; }
     #modalReviveQuiz { z-index: 100000; }
     #modalDailyTrial { z-index: 100010; }
     #toastContainer { z-index: 100020; }
@@ -1666,7 +1667,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.40";
+    const CURRENT_APP_VERSION = "2.7.41";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -5463,11 +5464,11 @@ function normalizeStudent(s, keyId) {
             renderTeacherExamDashboard();
           }
         });
-        dbRootRef.child('worldRaids').on('value', (snap) => {
+        dbRootRef.child('systemSettings/worldRaids').on('value', (snap) => {
           appData.worldRaids = snap.val() || {};
           paintWorldRaidOverlay();
           if (currentUser && currentUser.role === 'teacher') paintTeacherWorldRaid();
-        });
+        }, () => {});
       // 🛡️ 在線被攻擊與反擊通知即時監聽 (attackAlerts)
         dbRootRef.child('attackAlerts').on('value', (snap) => {
           appData.attackAlerts = snap.val() || {};
@@ -6325,7 +6326,7 @@ function raidTransaction(classKey, mutator, done) {
     if (done) done(new Error('offline'), false, null);
     return;
   }
-  const ref = dbRootRef.child('worldRaids/' + classKey);
+  const ref = dbRootRef.child('systemSettings/worldRaids/' + classKey);
   let watched = (appData.worldRaids && appData.worldRaids[classKey]) || null;
   const listener = ref.on('value', snap => {
     const value = snap.val();
@@ -6532,9 +6533,16 @@ function teacherStartWorldRaid() {
     teacherId: currentUser.id,
     rewardsApplied: false
   };
-  dbRootRef.child('worldRaids/' + classKey).set(payload);
+  if (!appData.worldRaids) appData.worldRaids = {};
+  appData.worldRaids[classKey] = payload;
   teacherRaidPaintKey = '';
   paintTeacherWorldRaid();
+  dbRootRef.child('systemSettings/worldRaids/' + classKey).set(payload).catch(err => {
+    if (appData.worldRaids && appData.worldRaids[classKey] === payload) delete appData.worldRaids[classKey];
+    teacherRaidPaintKey = '';
+    paintTeacherWorldRaid();
+    alert('世界首領未能開始，請再試一次。 / The World Raid could not start. Try again.' + (err && err.message ? ' ' + err.message : ''));
+  });
 }
 
 function teacherEndWorldRaid() {
@@ -8904,7 +8912,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.40</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.41</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
