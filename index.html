@@ -1667,7 +1667,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.41";
+    const CURRENT_APP_VERSION = "2.7.43";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -6081,6 +6081,11 @@ function reduceWorldRaidAnswer(raid, student, submission, now) {
   } else {
     row.wrong = (Number(row.wrong) || 0) + 1;
     row.lockUntil = now + 30000;
+    next.wrongTotal = (Number(next.wrongTotal) || 0) + 1;
+    if (next.wrongTotal % 20 === 0) {
+      const goal = Math.max(1, Number(next.goal) || 1);
+      next.hp = Math.min(goal, (Number(next.hp) || 0) + goal * 0.1);
+    }
   }
   next.scores[key] = row;
   return next;
@@ -6181,7 +6186,13 @@ function worldRaidRankHtml(raid) {
     ['few', '作答最少 / Fewest answers']
   ].map(([key, label]) => '<button type="button" data-raid-sort="' + key + '" onclick="setWorldRaidSort(\'' + key + '\')" class="min-h-11 px-2 rounded-xl text-[11px] font-black ' + (worldRaidSort === key ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-amber-100') + '">' + label + '</button>').join('');
   const goal = Math.max(1, Number(raid && raid.goal) || 1);
-  const rows = worldRaidRanking(raid).map((row, index) => '<article class="rounded-xl border border-slate-800 bg-slate-900/70 p-2"><div class="font-black text-sm text-white">' + (index + 1) + '. ' + escapeHtml(row.name) + '</div><div class="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]"><span class="text-emerald-300">答對 Correct ' + row.correct + '</span><span class="text-rose-300">答錯 Wrong ' + row.wrong + '</span><span class="text-amber-200">已答 Answered ' + row.answered + '</span><span class="text-orange-300">傷害 Damage ' + worldRaidDamagePercent(row.damage, goal) + '</span></div></article>').join('');
+  const teacherPick = currentUser && currentUser.role === 'teacher';
+  const rows = worldRaidRanking(raid).map((row, index) => {
+    const hot = teacherPick && worldRaidSpotlightId && String(worldRaidSpotlightId).toLowerCase() === String(row.id).toLowerCase();
+    const open = teacherPick ? '<button type="button" onclick="spotlightWorldRaidStudent(\'' + encodeURIComponent(row.id) + '\')" class="w-full rounded-xl border p-2 text-left ' + (hot ? 'border-amber-300 bg-amber-400/20 ring-4 ring-amber-300' : 'border-slate-800 bg-slate-900/70') + '">' : '<article class="rounded-xl border border-slate-800 bg-slate-900/70 p-2">';
+    const close = teacherPick ? '</button>' : '</article>';
+    return open + '<div class="font-black text-white ' + (hot ? 'text-2xl' : 'text-sm') + '">' + (index + 1) + '. ' + escapeHtml(row.name) + '</div><div class="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]"><span class="text-emerald-300">答對 Correct ' + row.correct + '</span><span class="text-rose-300">答錯 Wrong ' + row.wrong + '</span><span class="text-amber-200">已答 Answered ' + row.answered + '</span><span class="text-orange-300">傷害 Damage ' + worldRaidDamagePercent(row.damage, goal) + '</span></div>' + close;
+  }).join('');
   return '<div class="flex flex-wrap gap-2">' + buttons + '</div><div class="mt-2 space-y-2">' + (rows || '<p class="text-xs text-slate-400">這個班還沒有學生。 / No students in this class.</p>') + '</div>';
 }
 
@@ -6202,7 +6213,48 @@ function worldRaidViewKey(raid, studentId) {
 }
 
 function raidBossStage(raid, pct) {
-  return '<section id="worldRaidBoss" class="relative min-h-0 overflow-hidden bg-slate-950"><i class="fa-solid fa-skull pointer-events-none absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 text-8xl text-rose-300/70"></i><img src="./images/Apocalymon.png" alt="Apocalymon" class="absolute inset-0 h-full w-full object-cover object-center" onerror="this.remove()"><div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent px-4 pb-3 pt-16"><div class="mb-2"><h2 class="text-2xl font-black leading-none text-rose-100">Apocalymon</h2><p class="mt-1 text-[11px] text-slate-300">世界首領 / World Raid · ' + escapeHtml(raid.classId || '') + '</p></div><div class="relative h-9 overflow-hidden rounded-full border border-rose-300/80 bg-slate-950/80"><div id="worldRaidHpBar" class="h-full bg-rose-500" style="width:' + pct + '%"></div><p id="worldRaidHpText" class="absolute inset-0 flex items-center justify-center text-sm font-black tracking-wide text-white">' + pct + '%</p></div></div></section>';
+  return '<section id="worldRaidBoss" class="flex min-h-0 flex-col overflow-hidden bg-slate-950"><div class="relative min-h-0 flex-1"><i class="fa-solid fa-skull pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-7xl text-rose-300/70"></i><img src="./images/Apocalymon.png" alt="Apocalymon" class="absolute inset-0 h-full w-full object-contain object-top" onerror="this.remove()"></div><div class="shrink-0 px-4 pb-3 pt-2"><h2 class="text-2xl font-black leading-none text-rose-100">Apocalymon</h2><p class="mt-1 text-[11px] text-slate-300">世界首領 / World Raid · ' + escapeHtml(raid.classId || '') + '</p><div class="relative mt-2 h-9 overflow-hidden rounded-full border border-rose-300/80 bg-slate-950"><div id="worldRaidHpBar" class="h-full bg-rose-500" style="width:' + pct + '%"></div><p id="worldRaidHpText" class="absolute inset-0 flex items-center justify-center text-sm font-black tracking-wide text-white">' + pct + '%</p></div><p id="worldRaidWrongMeter" class="mt-1 text-[11px] text-rose-200"></p></div></section>';
+}
+
+let worldRaidTeacherScreen = false;
+let worldRaidSpotlightId = '';
+
+function shownWorldRaid() {
+  if (!currentUser) return null;
+  if (currentUser.role === 'student') return studentWorldRaid();
+  if (currentUser.role === 'teacher' && worldRaidTeacherScreen) return teacherWorldRaid();
+  return null;
+}
+
+function setTeacherWorldRaidScreen(on) {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  if (on && !teacherWorldRaid()) return alert('這個班沒有世界首領事件。 / This class has no World Raid.');
+  worldRaidTeacherScreen = !!on;
+  if (!on) worldRaidSpotlightId = '';
+  worldRaidPaintKey = '';
+  worldRaidSideKey = '';
+  paintWorldRaidOverlay();
+}
+
+function spotlightWorldRaidStudent(encodedId) {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const id = encodedId ? decodeURIComponent(encodedId) : '';
+  if (!id || (worldRaidSpotlightId && String(worldRaidSpotlightId).toLowerCase() === id.toLowerCase())) worldRaidSpotlightId = '';
+  else worldRaidSpotlightId = id;
+  worldRaidTeacherScreen = true;
+  worldRaidPaintKey = '';
+  worldRaidSideKey = '';
+  teacherRaidPaintKey = '';
+  paintWorldRaidOverlay();
+  paintTeacherWorldRaid();
+}
+
+function worldRaidSpotlightHtml(raid) {
+  const row = worldRaidRanking(raid).find(item => worldRaidSpotlightId && String(item.id).toLowerCase() === String(worldRaidSpotlightId).toLowerCase());
+  if (!row) return '';
+  const goal = Math.max(1, Number(raid && raid.goal) || 1);
+  const cell = (id, label, value, color) => '<p class="rounded-2xl bg-slate-950/80 p-3 text-left"><span class="block text-[11px] ' + color + '">' + label + '</span><span id="' + id + '" class="text-4xl font-black ' + color + '">' + value + '</span></p>';
+  return '<section id="worldRaidSpotlight" class="rounded-3xl border-4 border-amber-300 bg-amber-300/15 px-4 py-5 text-center shadow-[0_0_36px_rgba(251,191,36,0.45)]"><p class="text-[11px] font-black uppercase tracking-[0.2em] text-amber-200">放大顯示 / Spotlight</p><p id="worldRaidSpotName" class="mt-2 text-5xl font-black leading-none text-white sm:text-7xl">' + escapeHtml(row.name) + '</p><div class="mt-4 grid grid-cols-2 gap-2">' + cell('worldRaidSpotCorrect', '答對 Correct', row.correct, 'text-emerald-200') + cell('worldRaidSpotWrong', '答錯 Wrong', row.wrong, 'text-rose-200') + cell('worldRaidSpotAnswered', '已答 Answered', row.answered, 'text-amber-100') + cell('worldRaidSpotDamage', '傷害 Damage', worldRaidDamagePercent(row.damage, goal), 'text-orange-200') + '</div><button type="button" onclick="spotlightWorldRaidStudent()" class="mt-4 min-h-12 w-full rounded-xl bg-slate-950 text-sm font-black text-amber-100">收回 / Close spotlight</button></section>';
 }
 
 let worldRaidSideKey = '';
@@ -6211,7 +6263,7 @@ function paintWorldRaidSide(raid) {
   const side = document.getElementById('worldRaidSide');
   if (!side || !raid) return;
   const pct = worldRaidHpPercent(raid);
-  const key = [worldRaidSort, pct, worldRaidScoreStamp(raid), raid.status].join('|');
+  const key = [worldRaidSort, pct, worldRaidScoreStamp(raid), raid.status, worldRaidSpotlightId || ''].join('|');
   const label = document.getElementById('worldRaidSideHp');
   if (key === worldRaidSideKey && label) {
     label.textContent = pct + '%';
@@ -6222,7 +6274,7 @@ function paintWorldRaidSide(raid) {
 }
 
 function paintWorldRaidNumbers() {
-  const raid = studentWorldRaid();
+  const raid = shownWorldRaid();
   if (!raid) return;
   const pct = worldRaidHpPercent(raid);
   const hp = document.getElementById('worldRaidHpText');
@@ -6232,9 +6284,30 @@ function paintWorldRaidNumbers() {
   const timer = document.getElementById('worldRaidTimer');
   if (timer) timer.textContent = formatRaidClock(raid);
   const lock = document.getElementById('worldRaidLockLeft');
-  if (lock && currentUser) {
+  if (lock && currentUser && currentUser.role === 'student') {
     const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, currentUser.id)]) || {};
     lock.textContent = String(Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)));
+  }
+  const meter = document.getElementById('worldRaidWrongMeter');
+  if (meter) {
+    const wrongs = Number(raid.wrongTotal) || 0;
+    const into = wrongs % 20;
+    meter.textContent = wrongs > 0 && into === 0
+      ? '首領回復了 10% HP。 / The boss recovered 10% HP.'
+      : '全班答錯 ' + wrongs + '。再錯 ' + (20 - into) + ' 次回復 10% HP。 / Class wrong ' + wrongs + '. ' + (20 - into) + ' more wrong answers recover 10% HP.';
+  }
+  const spot = document.getElementById('worldRaidSpotName');
+  if (spot) {
+    const row = worldRaidRanking(raid).find(item => worldRaidSpotlightId && String(item.id).toLowerCase() === String(worldRaidSpotlightId).toLowerCase());
+    if (row) {
+      const goal = Math.max(1, Number(raid.goal) || 1);
+      spot.textContent = row.name || row.id;
+      const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
+      set('worldRaidSpotCorrect', row.correct);
+      set('worldRaidSpotWrong', row.wrong);
+      set('worldRaidSpotAnswered', row.answered);
+      set('worldRaidSpotDamage', worldRaidDamagePercent(row.damage, goal));
+    }
   }
   paintWorldRaidSide(raid);
 }
@@ -6243,23 +6316,40 @@ function paintWorldRaidOverlay() {
   const modal = document.getElementById('modalWorldRaid');
   const sheet = document.getElementById('worldRaidSheet');
   if (!modal || !sheet) return;
-  const raid = studentWorldRaid();
+  const raid = shownWorldRaid();
   if (!raid) {
     worldRaidPaintKey = '';
     worldRaidSideKey = '';
+    sheet.style.gridTemplateRows = '';
     modal.classList.add('hidden');
     return;
   }
-  const key = worldRaidViewKey(raid, currentUser.id);
+  const teacherView = currentUser.role === 'teacher';
+  const key = teacherView ? ['teacher', raid.status, raid.classKey, raid.rewardsApplied ? 1 : 0, worldRaidSpotlightId || ''].join('|') : worldRaidViewKey(raid, currentUser.id);
   if (key === worldRaidPaintKey) {
     paintWorldRaidNumbers();
     modal.classList.remove('hidden');
     return;
   }
   worldRaidPaintKey = key;
+  sheet.style.gridTemplateRows = teacherView ? 'minmax(0, 1fr) auto' : '';
   const pct = worldRaidHpPercent(raid);
   const stage = raidBossStage(raid, pct);
   const lower = (body) => stage + '<div class="min-h-0 overflow-y-auto space-y-3 p-4"><p class="text-xs text-amber-200">剩餘時間 / Time left <span id="worldRaidTimer" class="font-mono font-black">' + formatRaidClock(raid) + '</span></p>' + body + '</div>';
+  const teacherSwitch = '<button id="btnWorldRaidTeacherBack" type="button" onclick="setTeacherWorldRaidScreen(false)" class="min-h-12 w-full rounded-xl border border-amber-300 bg-slate-800 text-sm font-black text-amber-100">回到老師介面 / Switch to teacher view</button>';
+  if (teacherView) {
+    const banner = raid.status === 'won'
+      ? '勝利。全班每人 +300 金幣。傷害第 1 名再 +1 扭蛋券、+1 迷宮券、+500 金幣。第 2 名再 +1 扭蛋券、+500 金幣。第 3 名再 +500 金幣。 / Victory. Every student gains 300 coins. 1st damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. 2nd gets 1 gacha ticket and 500 coins. 3rd gets 500 coins.'
+      : (raid.status === 'lost'
+        ? '失敗。每位參加者 -300 HP、-3 攻擊次數。 / Defeat. Each participant loses 300 HP and 3 attacks.'
+        : '全班畫面。學生正在各自的裝置答題，右邊排名會即時更新。 / Class screen. Students answer on their own devices. The ranking on the right updates live.');
+    const progress = '<p class="text-xs text-slate-300">答對 Correct ' + (Number(raid.correctTotal) || 0) + ' / ' + (Number(raid.goal) || 0) + '</p>';
+    const hint = worldRaidSpotlightId ? '' : '<p class="text-[11px] text-slate-400">點右邊的名字，可以把那位學生的名字和分數放大顯示。 / Tap a name on the right to enlarge and highlight that student and their score.</p>';
+    sheet.innerHTML = lower(worldRaidSpotlightHtml(raid) + '<p class="text-sm font-black text-amber-100">' + banner + '</p>' + progress + hint + teacherSwitch);
+    paintWorldRaidSide(raid);
+    modal.classList.remove('hidden');
+    return;
+  }
   if (raid.status === 'won' || raid.status === 'lost') {
     const banner = raid.status === 'won'
       ? '勝利。全班每人 +300 金幣。傷害第 1 名再 +1 扭蛋券、+1 迷宮券、+500 金幣。第 2 名再 +1 扭蛋券、+500 金幣。第 3 名再 +500 金幣。 / Victory. Every student gains 300 coins. 1st damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. 2nd gets 1 gacha ticket and 500 coins. 3rd gets 500 coins.'
@@ -6300,7 +6390,7 @@ function paintTeacherWorldRaid() {
   const rank = document.getElementById('teacherWorldRaidRank');
   if (!live || !rank) return;
   const raid = teacherWorldRaid();
-  const key = raid ? [raid.status, worldRaidHpPercent(raid), formatRaidClock(raid), worldRaidSort, worldRaidScoreStamp(raid)].join('|') : 'none';
+  const key = raid ? [raid.status, worldRaidHpPercent(raid), formatRaidClock(raid), worldRaidSort, worldRaidScoreStamp(raid), worldRaidSpotlightId || ''].join('|') : 'none';
   if (key === teacherRaidPaintKey) return;
   teacherRaidPaintKey = key;
   if (!raid) {
@@ -6433,7 +6523,7 @@ function tickWorldRaids() {
     }
   });
   paintWorldRaidNumbers();
-  if (currentUser && currentUser.role === 'student') paintWorldRaidOverlay();
+  paintWorldRaidOverlay();
   if (currentUser && currentUser.role === 'teacher') paintTeacherWorldRaid();
 }
 
@@ -6531,15 +6621,23 @@ function teacherStartWorldRaid() {
     questions: worldRaidQuestions,
     scores: {},
     teacherId: currentUser.id,
-    rewardsApplied: false
+    rewardsApplied: false,
+    wrongTotal: 0
   };
   if (!appData.worldRaids) appData.worldRaids = {};
   appData.worldRaids[classKey] = payload;
+  worldRaidTeacherScreen = true;
+  worldRaidPaintKey = '';
+  worldRaidSideKey = '';
   teacherRaidPaintKey = '';
+  paintWorldRaidOverlay();
   paintTeacherWorldRaid();
   dbRootRef.child('systemSettings/worldRaids/' + classKey).set(payload).catch(err => {
     if (appData.worldRaids && appData.worldRaids[classKey] === payload) delete appData.worldRaids[classKey];
+    worldRaidTeacherScreen = false;
+    worldRaidPaintKey = '';
     teacherRaidPaintKey = '';
+    paintWorldRaidOverlay();
     paintTeacherWorldRaid();
     alert('世界首領未能開始，請再試一次。 / The World Raid could not start. Try again.' + (err && err.message ? ' ' + err.message : ''));
   });
@@ -8912,7 +9010,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.41</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.43</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -9467,7 +9565,7 @@ function getTeacherTemplate() {
     <div id="teacherSubViewRaid" class="space-y-6 hidden">
       <section class="rounded-2xl border border-rose-500/50 bg-slate-950/80 p-4 space-y-3">
         <div class="text-sm font-black uppercase tracking-wider text-rose-200">世界首領戰 / World Raid Event</div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。答錯的人 30 秒不能作答。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
+        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 20 次，首領回復 10% HP。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 20 wrong answers from the class restore 10% of the boss HP. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
         <div class="flex flex-wrap items-center gap-2">
           <label for="worldRaidExcelInput" class="cursor-pointer min-h-11 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black flex items-center">匯入題目 / Import Excel</label>
           <input id="worldRaidExcelInput" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="handleWorldRaidExcelImport(event)" class="hidden">
@@ -9483,7 +9581,8 @@ function getTeacherTemplate() {
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button id="btnWorldRaidStart" type="button" onclick="teacherStartWorldRaid()" class="min-h-12 rounded-xl bg-rose-600 text-white text-xs font-black">發起世界首領 / Start World Raid</button>
-          <button id="btnWorldRaidEnd" type="button" onclick="teacherEndWorldRaid()" class="min-h-12 rounded-xl bg-slate-800 border border-rose-400 text-rose-100 text-xs font-black">結束事件 / End event</button>
+          <button id="btnWorldRaidShow" type="button" onclick="setTeacherWorldRaidScreen(true)" class="min-h-12 rounded-xl bg-amber-400 text-slate-950 text-xs font-black">顯示全班畫面 / Show class screen</button>
+          <button id="btnWorldRaidEnd" type="button" onclick="teacherEndWorldRaid()" class="min-h-12 rounded-xl bg-slate-800 border border-rose-400 text-rose-100 text-xs font-black sm:col-span-2">結束事件 / End event</button>
         </div>
         <div id="teacherWorldRaidLive" class="text-sm text-amber-100 leading-relaxed"></div>
         <div id="teacherWorldRaidRank"></div>
@@ -9677,7 +9776,10 @@ function getSuperAdminTemplate() {
 
 function logout() {
   currentUser = null;
+  worldRaidTeacherScreen = false;
+  worldRaidSpotlightId = '';
   worldRaidPaintKey = '';
+  worldRaidSideKey = '';
   paintWorldRaidOverlay();
   selectedTeacherChatClass = "";
   selectedTeacherChatStudent = "";
