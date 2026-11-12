@@ -199,6 +199,8 @@
     }
     #deathScreenOverlay { z-index: 99999; }
     #modalWorldRaid { z-index: 100018; }
+    @keyframes worldRaidFadeOut { from { opacity: 1; } to { opacity: 0; } }
+    .world-raid-fade { animation: worldRaidFadeOut 3s linear forwards; }
     #modalReviveQuiz { z-index: 100000; }
     #modalDailyTrial { z-index: 100010; }
     #toastContainer { z-index: 100020; }
@@ -1163,9 +1165,13 @@
     </div>
   </div>
   <div id="modalWorldRaid" class="fixed inset-0 z-[2000] hidden bg-slate-950/95 p-2 sm:p-3">
-    <div class="h-full w-full flex items-stretch gap-2">
-      <div id="worldRaidSheet" class="grid h-full min-h-0 flex-1 grid-rows-2 overflow-hidden rounded-3xl border-2 border-rose-500 bg-slate-950 text-slate-100"></div>
-      <aside id="worldRaidSide" class="w-[42%] max-w-sm shrink-0 max-h-[96dvh] overflow-y-auto rounded-3xl border-2 border-amber-400 bg-slate-950 p-3 text-slate-100"></aside>
+    <div class="relative h-full w-full">
+      <div class="h-full w-full flex items-stretch gap-2">
+        <div id="worldRaidSheet" class="grid h-full min-h-0 flex-1 grid-rows-2 overflow-hidden rounded-3xl border-2 border-rose-500 bg-slate-950 text-slate-100"></div>
+        <aside id="worldRaidSide" class="w-[42%] max-w-sm shrink-0 max-h-[96dvh] overflow-y-auto rounded-3xl border-2 border-amber-400 bg-slate-950 p-3 text-slate-100"></aside>
+      </div>
+      <div id="worldRaidEnding" class="absolute inset-0 z-20 hidden overflow-y-auto rounded-3xl"></div>
+      <div id="worldRaidSkillPop" class="absolute inset-0 z-30 hidden overflow-hidden rounded-3xl"></div>
     </div>
   </div>
   <!-- Manage Class Students Modal -->
@@ -1667,7 +1673,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.43";
+    const CURRENT_APP_VERSION = "2.7.45";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -6082,10 +6088,19 @@ function reduceWorldRaidAnswer(raid, student, submission, now) {
     row.wrong = (Number(row.wrong) || 0) + 1;
     row.lockUntil = now + 30000;
     next.wrongTotal = (Number(next.wrongTotal) || 0) + 1;
-    if (next.wrongTotal % 20 === 0) {
+    if (next.wrongTotal % 10 === 0) {
       const goal = Math.max(1, Number(next.goal) || 1);
       next.hp = Math.min(goal, (Number(next.hp) || 0) + goal * 0.1);
+      next.skillCharges = (Number(next.skillCharges) || 0) + 1;
     }
+  }
+  const darknessSeq = Number(next.darknessSeq) || 0;
+  if (darknessSeq && now >= (Number(next.darknessReadyAt) || 0)) {
+    if ((Number(row.darknessSeq) || 0) !== darknessSeq) {
+      row.darknessSeq = darknessSeq;
+      row.darknessLeft = 3;
+    }
+    if ((Number(row.darknessLeft) || 0) > 0) row.darknessLeft -= 1;
   }
   next.scores[key] = row;
   return next;
@@ -6203,13 +6218,187 @@ function formatRaidClock(raid) {
   return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 }
 
+function worldRaidFrozen(raid) {
+  return !!(raid && raid.status === 'live' && Number(raid.freezeUntil) > syncedNow());
+}
+
+function worldRaidMomentKey(raid) {
+  const pop = raid && raid.skillPopup;
+  const until = pop ? (Number(pop.at) || 0) + (Number(pop.ms) || 0) : 0;
+  const popOn = !!(pop && pop.img && syncedNow() < until);
+  return [popOn ? pop.skill + '@' + pop.at : '', worldRaidFrozen(raid) ? 'F' : '', Number(raid && raid.darknessSeq) || 0].join(':');
+}
+
+function worldRaidDarknessLeft(raid, row) {
+  const seq = Number(raid && raid.darknessSeq) || 0;
+  if (!seq || syncedNow() < (Number(raid.darknessReadyAt) || 0)) return 0;
+  if ((Number(row && row.darknessSeq) || 0) !== seq) return 3;
+  return Math.max(0, Number(row && row.darknessLeft) || 0);
+}
+
 function worldRaidViewKey(raid, studentId) {
   if (!raid) return '';
   const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, studentId)]) || {};
   const locked = raid.status === 'live' && Number(row.lockUntil) > syncedNow();
   const questions = raidQuestionList(raid.questions);
   const question = questions.length ? questions[Number(row.cursor || 0) % questions.length] : null;
-  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', raid.rewardsApplied ? 1 : 0].join('|');
+  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', raid.rewardsApplied ? 1 : 0, worldRaidMomentKey(raid)].join('|');
+}
+
+let worldRaidBlackoutMark = '';
+let worldRaidBlackoutTimer = 0;
+
+function worldRaidPlaceCard(raid, place, prize) {
+  const places = worldRaidPlacements(raid);
+  const id = Object.keys(places).find(key => places[key] === place);
+  const ranked = worldRaidRanking(raid).find(item => String(item.id).toLowerCase() === String(id || '').toLowerCase());
+  const tone = place === 1 ? 'border-amber-300 bg-amber-300/15' : 'border-slate-600 bg-slate-900';
+  return '<article class="rounded-3xl border-2 ' + tone + ' p-4"><p class="text-sm font-black text-amber-200">第 ' + place + ' 名 / ' + place + '</p><p class="mt-1 break-words text-3xl font-black text-white">' + escapeHtml(ranked ? ranked.name : '—') + '</p><p class="mt-2 text-sm leading-relaxed text-slate-200">' + prize + '</p></article>';
+}
+
+function worldRaidEndingHtml(raid) {
+  const back = currentUser && currentUser.role === 'teacher'
+    ? '<button type="button" onclick="setTeacherWorldRaidScreen(false)" class="mt-4 min-h-12 rounded-xl border border-amber-300 bg-slate-800 px-4 text-sm font-black text-amber-100">回到老師介面 / Switch to teacher view</button>'
+    : '';
+  if (raid.status === 'won') {
+    return '<div class="flex min-h-full flex-col items-center bg-slate-950 px-4 py-6 text-center">'
+      + '<img src="./images/Apocalymon_Win.png" alt="Apocalymon" class="max-h-[42vh] w-full object-contain object-top" onerror="this.remove()">'
+      + '<h2 class="mt-3 text-4xl font-black text-amber-200">勝利 / Victory</h2>'
+      + '<p class="mt-2 text-xl font-black text-white">全班每人 300 金幣<br>Every student gains 300 coins</p>'
+      + '<div class="mt-4 grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-3">'
+      + worldRaidPlaceCard(raid, 1, '再 +1 扭蛋券、+1 迷宮券、+500 金幣<br>+1 gacha, +1 dungeon, +500 coins')
+      + worldRaidPlaceCard(raid, 2, '再 +1 扭蛋券、+500 金幣<br>+1 gacha, +500 coins')
+      + worldRaidPlaceCard(raid, 3, '再 +500 金幣<br>+500 coins')
+      + '</div>' + back + '</div>';
+  }
+  return '<div class="flex min-h-full flex-col items-center justify-center bg-slate-950 px-4 py-6 text-center">'
+    + '<img src="./images/Apocalymon_Lose.png" alt="Apocalymon" class="max-h-[50vh] w-full object-contain object-top" onerror="this.remove()">'
+    + '<h2 class="mt-3 text-4xl font-black text-rose-200">失敗 / Defeat</h2>'
+    + '<p class="mt-3 text-xl font-black text-white">每位參加者 -300 HP、-3 攻擊次數<br>Each participant loses 300 HP and 3 attacks</p>'
+    + back + '</div>';
+}
+
+function paintWorldRaidEnding(raid) {
+  const ending = document.getElementById('worldRaidEnding');
+  if (!ending) return;
+  if (!raid || (raid.status !== 'won' && raid.status !== 'lost')) {
+    ending.classList.add('hidden');
+    ending.innerHTML = '';
+    ending.dataset.key = '';
+    return;
+  }
+  const key = raid.status + '|' + worldRaidScoreStamp(raid);
+  if (ending.dataset.key === key) return;
+  ending.dataset.key = key;
+  ending.classList.remove('hidden');
+  ending.innerHTML = worldRaidEndingHtml(raid);
+}
+
+function paintWorldRaidSkillPop(raid) {
+  const pop = document.getElementById('worldRaidSkillPop');
+  if (!pop) return;
+  const info = raid && raid.skillPopup;
+  const until = info ? (Number(info.at) || 0) + (Number(info.ms) || 0) : 0;
+  const show = !!(info && info.img && syncedNow() < until);
+  if (!show) {
+    pop.classList.add('hidden');
+    pop.innerHTML = '';
+    pop.dataset.key = '';
+    return;
+  }
+  const key = info.skill + '@' + info.at;
+  if (pop.dataset.key === key) return;
+  pop.dataset.key = key;
+  pop.classList.remove('hidden');
+  const fade = info.skill === 'darkness' ? 'world-raid-fade ' : '';
+  pop.innerHTML = '<div class="' + fade + 'flex h-full w-full flex-col items-center justify-center bg-slate-950 px-6 text-center"><img src="' + info.img + '" alt="" class="max-h-[70vh] w-full object-contain object-top" onerror="this.remove()"><p class="mt-4 text-4xl font-black text-white sm:text-6xl">' + escapeHtml(info.name || '') + '</p></div>';
+}
+
+function paintWorldRaidSkillButtons(raid) {
+  const charges = Number(raid && raid.skillCharges) || 0;
+  const live = !!(raid && raid.status === 'live');
+  document.querySelectorAll('[data-raid-charges]').forEach(el => { el.textContent = '技能次數 / Skill uses ' + charges; });
+  document.querySelectorAll('[data-raid-skill]').forEach(btn => { btn.disabled = !live || charges < 1; });
+}
+
+function armWorldRaidQuestionBlackout(raid) {
+  const question = document.getElementById('worldRaidQuestion');
+  if (!question || !raid || !currentUser || currentUser.role !== 'student') return;
+  const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, currentUser.id)]) || {};
+  const left = worldRaidDarknessLeft(raid, row);
+  const mark = (Number(raid.darknessSeq) || 0) + ':' + (Number(row.cursor) || 0) + ':' + (left > 0 ? '1' : '0');
+  if (worldRaidBlackoutMark === mark) return;
+  worldRaidBlackoutMark = mark;
+  clearTimeout(worldRaidBlackoutTimer);
+  worldRaidBlackoutTimer = 0;
+  if (left <= 0) return;
+  worldRaidBlackoutTimer = setTimeout(() => {
+    worldRaidBlackoutTimer = 0;
+    const live = document.getElementById('worldRaidQuestion');
+    if (!live) return;
+    live.style.color = '#000';
+    live.style.background = '#000';
+  }, 3000);
+}
+
+function paintWorldRaidPresentation(raid) {
+  paintWorldRaidEnding(raid);
+  paintWorldRaidSkillPop(raid);
+  paintWorldRaidSkillButtons(raid);
+  armWorldRaidQuestionBlackout(raid);
+}
+
+function applyWorldRaidSkill(cur, skill, now) {
+  if (!cur || cur.status !== 'live' || (Number(cur.skillCharges) || 0) < 1) return null;
+  const next = JSON.parse(JSON.stringify(cur));
+  next.skillCharges = (Number(next.skillCharges) || 0) - 1;
+  if (skill === 'darkness') {
+    next.darknessSeq = (Number(next.darknessSeq) || 0) + 1;
+    next.darknessReadyAt = now + 3000;
+    next.skillPopup = { skill: 'darkness', name: 'Darkness Zone / 黑暗領域', img: './images/Apocalymon_DarknessZone.png', at: now, ms: 3000 };
+  } else if (skill === 'death') {
+    next.freezeUntil = now + 10000;
+    next.skillPopup = { skill: 'death', name: 'Death Evolution / 死亡進化', img: './images/Apocalymon_DeathEvolution.png', at: now, ms: 10000 };
+  } else if (skill === 'recover') {
+    const goal = Math.max(1, Number(next.goal) || 1);
+    next.hp = Math.min(goal, (Number(next.hp) || 0) + goal * 0.2);
+    const pop = next.skillPopup;
+    const until = pop ? (Number(pop.at) || 0) + (Number(pop.ms) || 0) : 0;
+    if (!pop || now >= until) next.skillPopup = null;
+  } else return null;
+  return next;
+}
+
+function teacherCastWorldRaidSkill(skill) {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const raid = teacherWorldRaid();
+  if (!raid || raid.status !== 'live') return alert('世界首領事件進行中才能使用技能。 / Skills can be used while the World Raid is live.');
+  if ((Number(raid.skillCharges) || 0) < 1) return alert('技能次數不足。全班每答錯 10 次獲得 1 次。 / No skill uses yet. The class earns one use every 10 wrong answers.');
+  const now = syncedNow();
+  const optimistic = applyWorldRaidSkill(JSON.parse(JSON.stringify(raid)), skill, now);
+  if (!optimistic) return;
+  raidTransaction(raid.classKey, cur => applyWorldRaidSkill(cur, skill, now), () => {
+    worldRaidPaintKey = '';
+    teacherRaidPaintKey = '';
+    paintWorldRaidOverlay();
+    paintTeacherWorldRaid();
+  });
+  if (!appData.worldRaids) appData.worldRaids = {};
+  appData.worldRaids[raid.classKey] = optimistic;
+  if (skill === 'darkness' || skill === 'death') worldRaidTeacherScreen = true;
+  worldRaidPaintKey = '';
+  teacherRaidPaintKey = '';
+  paintWorldRaidOverlay();
+  paintTeacherWorldRaid();
+}
+
+function worldRaidSkillControls() {
+  return '<p data-raid-charges class="text-xs font-black text-fuchsia-200">技能次數 / Skill uses 0</p>'
+    + '<div class="grid grid-cols-1 gap-2">'
+    + '<button data-raid-skill="darkness" type="button" onclick="teacherCastWorldRaidSkill(\'darkness\')" class="min-h-12 rounded-xl bg-fuchsia-700 text-xs font-black text-white disabled:opacity-40">黑暗領域 / Darkness Zone</button>'
+    + '<button data-raid-skill="death" type="button" onclick="teacherCastWorldRaidSkill(\'death\')" class="min-h-12 rounded-xl bg-rose-800 text-xs font-black text-white disabled:opacity-40">死亡進化 / Death Evolution</button>'
+    + '<button data-raid-skill="recover" type="button" onclick="teacherCastWorldRaidSkill(\'recover\')" class="min-h-12 rounded-xl bg-emerald-700 text-xs font-black text-white disabled:opacity-40">回復 20% HP / Recover</button>'
+    + '</div>';
 }
 
 function raidBossStage(raid, pct) {
@@ -6291,10 +6480,10 @@ function paintWorldRaidNumbers() {
   const meter = document.getElementById('worldRaidWrongMeter');
   if (meter) {
     const wrongs = Number(raid.wrongTotal) || 0;
-    const into = wrongs % 20;
+    const into = wrongs % 10;
     meter.textContent = wrongs > 0 && into === 0
       ? '首領回復了 10% HP。 / The boss recovered 10% HP.'
-      : '全班答錯 ' + wrongs + '。再錯 ' + (20 - into) + ' 次回復 10% HP。 / Class wrong ' + wrongs + '. ' + (20 - into) + ' more wrong answers recover 10% HP.';
+      : '全班答錯 ' + wrongs + '。再錯 ' + (10 - into) + ' 次回復 10% HP。 / Class wrong ' + wrongs + '. ' + (10 - into) + ' more wrong answers recover 10% HP.';
   }
   const spot = document.getElementById('worldRaidSpotName');
   if (spot) {
@@ -6322,12 +6511,15 @@ function paintWorldRaidOverlay() {
     worldRaidSideKey = '';
     sheet.style.gridTemplateRows = '';
     modal.classList.add('hidden');
+    paintWorldRaidEnding(null);
+    paintWorldRaidSkillPop(null);
     return;
   }
   const teacherView = currentUser.role === 'teacher';
-  const key = teacherView ? ['teacher', raid.status, raid.classKey, raid.rewardsApplied ? 1 : 0, worldRaidSpotlightId || ''].join('|') : worldRaidViewKey(raid, currentUser.id);
+  const key = teacherView ? ['teacher', raid.status, raid.classKey, raid.rewardsApplied ? 1 : 0, worldRaidSpotlightId || '', Number(raid.skillCharges) || 0, worldRaidMomentKey(raid)].join('|') : worldRaidViewKey(raid, currentUser.id);
   if (key === worldRaidPaintKey) {
     paintWorldRaidNumbers();
+    paintWorldRaidPresentation(raid);
     modal.classList.remove('hidden');
     return;
   }
@@ -6345,8 +6537,9 @@ function paintWorldRaidOverlay() {
         : '全班畫面。學生正在各自的裝置答題，右邊排名會即時更新。 / Class screen. Students answer on their own devices. The ranking on the right updates live.');
     const progress = '<p class="text-xs text-slate-300">答對 Correct ' + (Number(raid.correctTotal) || 0) + ' / ' + (Number(raid.goal) || 0) + '</p>';
     const hint = worldRaidSpotlightId ? '' : '<p class="text-[11px] text-slate-400">點右邊的名字，可以把那位學生的名字和分數放大顯示。 / Tap a name on the right to enlarge and highlight that student and their score.</p>';
-    sheet.innerHTML = lower(worldRaidSpotlightHtml(raid) + '<p class="text-sm font-black text-amber-100">' + banner + '</p>' + progress + hint + teacherSwitch);
+    sheet.innerHTML = lower(worldRaidSpotlightHtml(raid) + '<p class="text-sm font-black text-amber-100">' + banner + '</p>' + progress + hint + (raid.status === 'live' ? worldRaidSkillControls() : '') + teacherSwitch);
     paintWorldRaidSide(raid);
+    paintWorldRaidPresentation(raid);
     modal.classList.remove('hidden');
     return;
   }
@@ -6367,7 +6560,7 @@ function paintWorldRaidOverlay() {
       if (question && question.type === 'FILL') {
         answerBox = '<form class="flex gap-2" onsubmit="event.preventDefault(); submitWorldRaidFill();"><input id="worldRaidFill" class="flex-1 min-h-12 rounded-xl bg-slate-900 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button></form>';
       }
-      sheet.innerHTML = lower('<p class="text-base font-black leading-snug">' + escapeHtml(question ? question.question : '') + '</p><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
+      sheet.innerHTML = lower('<p id="worldRaidQuestion" class="min-h-12 rounded-xl px-2 text-base font-black leading-snug">' + escapeHtml(question ? question.question : '') + '</p><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
       if (question && question.type !== 'FILL') {
         const choices = document.getElementById('worldRaidChoices');
         (question.options || []).forEach(option => {
@@ -6382,6 +6575,7 @@ function paintWorldRaidOverlay() {
     }
   }
   paintWorldRaidSide(raid);
+  paintWorldRaidPresentation(raid);
   modal.classList.remove('hidden');
 }
 
@@ -6390,7 +6584,8 @@ function paintTeacherWorldRaid() {
   const rank = document.getElementById('teacherWorldRaidRank');
   if (!live || !rank) return;
   const raid = teacherWorldRaid();
-  const key = raid ? [raid.status, worldRaidHpPercent(raid), formatRaidClock(raid), worldRaidSort, worldRaidScoreStamp(raid), worldRaidSpotlightId || ''].join('|') : 'none';
+  const key = raid ? [raid.status, worldRaidHpPercent(raid), formatRaidClock(raid), worldRaidSort, worldRaidScoreStamp(raid), worldRaidSpotlightId || '', Number(raid.skillCharges) || 0, worldRaidMomentKey(raid)].join('|') : 'none';
+  paintWorldRaidSkillButtons(raid);
   if (key === teacherRaidPaintKey) return;
   teacherRaidPaintKey = key;
   if (!raid) {
@@ -6531,9 +6726,10 @@ function submitWorldRaidAnswer(text) {
   if (worldRaidBusy || !currentUser || currentUser.role !== 'student') return;
   const raid = studentWorldRaid();
   const student = appData.students && appData.students[currentUser.id];
-  if (!raid || !student || raid.status !== 'live') return;
+  if (!raid || !student || raid.status !== 'live' || worldRaidFrozen(raid)) return;
   const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, student.id)]) || {};
   if (Number(row.lockUntil) > syncedNow()) return;
+  if (raid.skillPopup && raid.skillPopup.img && syncedNow() < (Number(raid.skillPopup.at) || 0) + (Number(raid.skillPopup.ms) || 0)) return;
   worldRaidBusy = true;
   const now = syncedNow();
   raidTransaction(raid.classKey, cur => reduceWorldRaidAnswer(cur, student, text, now), (err, committed, snap) => {
@@ -6622,7 +6818,9 @@ function teacherStartWorldRaid() {
     scores: {},
     teacherId: currentUser.id,
     rewardsApplied: false,
-    wrongTotal: 0
+    wrongTotal: 0,
+    skillCharges: 0,
+    darknessSeq: 0
   };
   if (!appData.worldRaids) appData.worldRaids = {};
   appData.worldRaids[classKey] = payload;
@@ -9010,7 +9208,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.43</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.45</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -9565,7 +9763,7 @@ function getTeacherTemplate() {
     <div id="teacherSubViewRaid" class="space-y-6 hidden">
       <section class="rounded-2xl border border-rose-500/50 bg-slate-950/80 p-4 space-y-3">
         <div class="text-sm font-black uppercase tracking-wider text-rose-200">世界首領戰 / World Raid Event</div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 20 次，首領回復 10% HP。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 20 wrong answers from the class restore 10% of the boss HP. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
+        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 10 次，首領回復 10% HP，老師獲得 1 次技能。黑暗領域會讓接下來 3 題先顯示 3 秒再把題目變黑，只留下答案。死亡進化會凍結全班 10 秒。回復會讓首領直接回復 20% HP。勝負會顯示全螢幕結算。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 10 wrong answers from the class restore 10% of the boss HP and give the teacher one skill use. Darkness Zone shows the next 3 questions for 3 seconds, then blacks out the question and leaves the answers. Death Evolution freezes the class for 10 seconds. Recover restores 20% HP immediately. Win and loss open a full-screen ending. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
         <div class="flex flex-wrap items-center gap-2">
           <label for="worldRaidExcelInput" class="cursor-pointer min-h-11 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black flex items-center">匯入題目 / Import Excel</label>
           <input id="worldRaidExcelInput" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="handleWorldRaidExcelImport(event)" class="hidden">
@@ -9583,6 +9781,14 @@ function getTeacherTemplate() {
           <button id="btnWorldRaidStart" type="button" onclick="teacherStartWorldRaid()" class="min-h-12 rounded-xl bg-rose-600 text-white text-xs font-black">發起世界首領 / Start World Raid</button>
           <button id="btnWorldRaidShow" type="button" onclick="setTeacherWorldRaidScreen(true)" class="min-h-12 rounded-xl bg-amber-400 text-slate-950 text-xs font-black">顯示全班畫面 / Show class screen</button>
           <button id="btnWorldRaidEnd" type="button" onclick="teacherEndWorldRaid()" class="min-h-12 rounded-xl bg-slate-800 border border-rose-400 text-rose-100 text-xs font-black sm:col-span-2">結束事件 / End event</button>
+        </div>
+        <div class="space-y-2 rounded-2xl border border-fuchsia-700 bg-fuchsia-950/40 p-3">
+          <p data-raid-charges class="text-xs font-black text-fuchsia-200">技能次數 / Skill uses 0</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button data-raid-skill="darkness" type="button" onclick="teacherCastWorldRaidSkill('darkness')" class="min-h-12 rounded-xl bg-fuchsia-700 text-xs font-black text-white disabled:opacity-40">黑暗領域 / Darkness Zone</button>
+            <button data-raid-skill="death" type="button" onclick="teacherCastWorldRaidSkill('death')" class="min-h-12 rounded-xl bg-rose-800 text-xs font-black text-white disabled:opacity-40">死亡進化 / Death Evolution</button>
+            <button data-raid-skill="recover" type="button" onclick="teacherCastWorldRaidSkill('recover')" class="min-h-12 rounded-xl bg-emerald-700 text-xs font-black text-white disabled:opacity-40">回復 20% HP / Recover</button>
+          </div>
         </div>
         <div id="teacherWorldRaidLive" class="text-sm text-amber-100 leading-relaxed"></div>
         <div id="teacherWorldRaidRank"></div>
