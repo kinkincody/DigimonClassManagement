@@ -2460,6 +2460,19 @@
         groupJoinCode = savedRoom ? '' : (sessionStorage.getItem('DIGIMON_DUNGEON_JOIN_V1') || '');
         if (sessionStorage.getItem('DIGIMON_DUNGEON_JOIN_V1')) sessionStorage.removeItem('DIGIMON_DUNGEON_JOIN_V1');
       } catch (err) {}
+      const dungeonOpenedAt = Date.now();
+      db.child('systemSettings/forceStudentLogout').on('value', snap => {
+        const signal = snap.val();
+        if (!signal || !signal.timestamp) return;
+        const openedAt = dungeonOpenedAt + (offsetReady ? offset : 0);
+        if (Number(signal.timestamp) <= openedAt) return;
+        try {
+          sessionStorage.removeItem('DIGIMON_CLASS_GATE_V1');
+          sessionStorage.removeItem('DIGIMON_DUNGEON_ROOM_V1');
+          sessionStorage.removeItem('DIGIMON_DUNGEON_DEFEAT_V1');
+        } catch (err) {}
+        location.replace('index.html');
+      });
       db.child('students/' + String(gate.id).toLowerCase()).on('value', snap => {
         meStudent = snap.val();
         if (meStudent) meStudent.id = String(gate.id).toLowerCase();

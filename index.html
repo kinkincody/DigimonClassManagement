@@ -1688,7 +1688,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.46";
+    const CURRENT_APP_VERSION = "2.7.47";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -5467,6 +5467,22 @@ function normalizeStudent(s, keyId) {
           if (isTeacherOrAdmin) return;
           triggerForceUpdateScreen(signal.version || CURRENT_APP_VERSION, signal.timestamp);
         });
+        dbRootRef.child('systemSettings/forceStudentLogout').on('value', (snap) => {
+          const signal = snap.val();
+          if (!signal || !signal.timestamp) return;
+          const openedAt = pageLaunchLocalMs + (firebaseServerTimeOffsetReady ? firebaseServerTimeOffset : 0);
+          if (Number(signal.timestamp) <= openedAt) return;
+          if (!currentUser || currentUser.role !== 'student' || currentUser.teacherTest) return;
+          alert('老師已將所有在線學生登出。請重新登入。 / The teacher logged every online student out. Please sign in again.');
+          logout();
+        });
+        dbRootRef.child('systemSettings/studentLoginBanned').on('value', (snap) => {
+          if (!appData.systemSettings) appData.systemSettings = {};
+          appData.systemSettings.studentLoginBanned = snap.val() ? true : null;
+          saveLocalCache();
+          updateStudentLoginBanButtonUI();
+          if (!currentUser && snap.val()) refuseStudentLoginResume();
+        });
 
         dbRootRef.child('activeQuiz').on('value', (snap) => {
           activeQuizInstance = snap.val();
@@ -5654,6 +5670,62 @@ function sanitizeClassKey(cls) {
         lbl.textContent = "Lock Class";
         btn.querySelector('i').className = "fa-solid fa-lock";
       }
+    }
+
+    function studentLoginIsClosed() {
+      return !!(appData.systemSettings && appData.systemSettings.studentLoginBanned);
+    }
+
+    function refuseStudentLoginResume() {
+      try { sessionStorage.removeItem('DIGIMON_CLASS_GATE_V1'); } catch (e) {}
+      document.documentElement.classList.remove('resume-student');
+      const login = document.getElementById('viewLogin');
+      if (login) login.classList.remove('hidden');
+    }
+
+    function updateStudentLoginBanButtonUI() {
+      const btn = document.getElementById('btnToggleStudentLogin');
+      const title = document.getElementById('lblStudentLoginBanTitle');
+      const lbl = document.getElementById('lblStudentLoginBan');
+      if (!btn || !title || !lbl) return;
+      if (studentLoginIsClosed()) {
+        btn.className = "pair-btn bg-amber-600 border border-amber-400 text-slate-950 animate-pulse active:scale-95";
+        title.innerHTML = '<i class="fa-solid fa-lock"></i> 已禁止登入';
+        lbl.textContent = "再按開放 / Tap to open";
+      } else {
+        btn.className = "pair-btn bg-rose-950 border border-rose-500 text-rose-300 active:scale-95";
+        title.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 禁止學生登入';
+        lbl.textContent = "登入開放 / Open";
+      }
+    }
+
+    function teacherToggleStudentLoginBan() {
+      if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
+      const next = !studentLoginIsClosed();
+      dbRootRef.child('systemSettings/studentLoginBanned').set(next ? true : null).then(() => {
+        if (!appData.systemSettings) appData.systemSettings = {};
+        appData.systemSettings.studentLoginBanned = next ? true : null;
+        updateStudentLoginBanButtonUI();
+        if (next) {
+          playSound('attack');
+          addBattleLog('🚫 [LOGIN CLOSED] 老師關閉了學生登入。學生不能再登入，直到重新開放。 / Student login is closed.', 'battle', 'ALL');
+          showToast('學生登入已關閉 / Login Closed', '學生不能再登入。再按一次可以重新開放。 / Students cannot log in. Press again to open it.', 'damage');
+        } else {
+          playSound('heal');
+          addBattleLog('✅ [LOGIN OPEN] 老師重新開放了學生登入。 / Student login is open.', 'heal', 'ALL');
+          showToast('學生登入已開放 / Login Open', '學生可以登入了。 / Students can log in again.', 'heal');
+        }
+      }).catch(err => alert('設定失敗 / Could not change login: ' + (err && err.message ? err.message : err)));
+    }
+
+    function teacherForceLogoutStudents() {
+      if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
+      if (!confirm('確定要登出所有在線學生嗎？已經打開遊戲的學生會回到登入畫面。 / Log out every student who is online? Their game will return to the login screen.')) return;
+      dbRootRef.child('systemSettings/forceStudentLogout').set({ timestamp: syncedNow(), by: currentUser.id }).then(() => {
+        playSound('attack');
+        addBattleLog('🚪 [FORCE LOGOUT] 老師登出了所有在線學生。 / The teacher logged out every online student.', 'battle', 'ALL');
+        showToast('已登出在線學生 / Students Logged Out', '所有正在遊戲中的學生會回到登入畫面。 / Online students return to the login screen.', 'damage');
+      }).catch(err => alert('登出失敗 / Logout failed: ' + (err && err.message ? err.message : err)));
     }
 // === FACTION WAR SYSTEM LOGIC ===
 
@@ -7228,12 +7300,29 @@ function resumeStudentGate() {
   if ((Date.now() - Number(gate.issuedAt)) >= 18 * 60 * 60 * 1000) return;
   const st = studentByGateId(gate.id);
   if (!st) return;
-  holdDungeonDefeat(st);
   studentGateResumeStarted = true;
-  const savedTest = readTeacherTest();
-  const teacherTest = !!(savedTest && String(savedTest.sandboxId || '').toLowerCase() === String(st.id).toLowerCase());
-  currentUser = { role: 'student', id: st.id, data: st, teacherTest: teacherTest, authToken: teacherTest ? 'test' : undefined };
-  enterDashboard();
+  const finishResume = () => {
+    if (currentUser && currentUser.role) return;
+    if (studentLoginIsClosed()) {
+      studentGateResumeStarted = false;
+      refuseStudentLoginResume();
+      return;
+    }
+    holdDungeonDefeat(st);
+    const savedTest = readTeacherTest();
+    const teacherTest = !!(savedTest && String(savedTest.sandboxId || '').toLowerCase() === String(st.id).toLowerCase());
+    currentUser = { role: 'student', id: st.id, data: st, teacherTest: teacherTest, authToken: teacherTest ? 'test' : undefined };
+    enterDashboard();
+  };
+  if (!dbRootRef) {
+    finishResume();
+    return;
+  }
+  dbRootRef.child('systemSettings/studentLoginBanned').once('value').then(snap => {
+    if (!appData.systemSettings) appData.systemSettings = {};
+    appData.systemSettings.studentLoginBanned = snap.val() ? true : null;
+    finishResume();
+  }).catch(() => finishResume());
 }
 
 const TEACHER_TEST_KEY = 'DIGIMON_TEACHER_TEST_V1';
@@ -9147,6 +9236,11 @@ function toggleFactionBuffModal() {
           if (sData) {
             const dbPass = String(sData.password !== undefined ? sData.password : '').trim();
             if (dbPass === p) {
+              const banSnap = await dbRootRef.child('systemSettings/studentLoginBanned').once('value');
+              if (banSnap.val()) {
+                alert('學生登入目前已關閉。請等老師重新開放。 / Student login is closed. Wait for the teacher to open it again.');
+                return;
+              }
               st = normalizeStudent(sData, u);
             }
           }
@@ -9223,7 +9317,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.46</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.47</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -9236,6 +9330,12 @@ function getTeacherTemplate() {
             </div>
             <button id="btnToggleClassBan" onclick="toggleCurrentClassBan()" class="pair-btn bg-rose-950 border border-rose-500 text-rose-300 active:scale-95">
               <span><i class="fa-solid fa-lock"></i> 鎖定全班</span><small id="lblToggleClassBan">Lock Class</small>
+            </button>
+            <button id="btnForceStudentLogout" type="button" onclick="teacherForceLogoutStudents()" class="pair-btn bg-slate-900 border border-rose-400 text-rose-100 active:scale-95">
+              <span><i class="fa-solid fa-door-open"></i> 登出全部學生</span><small>Log out online</small>
+            </button>
+            <button id="btnToggleStudentLogin" type="button" onclick="teacherToggleStudentLoginBan()" class="pair-btn bg-rose-950 border border-rose-500 text-rose-300 active:scale-95">
+              <span id="lblStudentLoginBanTitle"><i class="fa-solid fa-right-to-bracket"></i> 禁止學生登入</span><small id="lblStudentLoginBan">登入開放 / Open</small>
             </button>
             <button id="btnTeacherStudentTest" type="button" onclick="switchTeacherSubTab('test')" class="pair-btn pair-span bg-violet-950 border border-violet-400 text-violet-100 active:scale-95">
               <span><i class="fa-solid fa-user-graduate"></i> 學生測試</span><small>Test tab</small>
@@ -9947,6 +10047,7 @@ function getSuperAdminTemplate() {
     populateClassDropdown();
     populateTeacherBountySelect();
     updateClassBanButtonUI();
+    updateStudentLoginBanButtonUI();
     renderTeacherGrid();
     updateClassChatUnreadBadge();
     paintTeacherTestSetup();
@@ -10117,12 +10218,14 @@ function logout() {
       updateTeacherBossHeader();
       paintTeacherLiveStats();
       paintTeacherWorldRaid();
+      updateStudentLoginBanButtonUI();
       scheduleRefreshCurrentView();
     } else {
       updateTeacherBossHeader();
       populateClassDropdown();
       populateTeacherBountySelect();
       updateClassBanButtonUI();
+      updateStudentLoginBanButtonUI();
       renderTeacherFactionPanel();
       renderTeacherTerritory();
       renderTeacherGrid();
@@ -11767,6 +11870,7 @@ else if (mode === 'pvp') {
         sel.value = 'ALL';
       }
       updateClassBanButtonUI();
+      updateStudentLoginBanButtonUI();
       updateReviveQuizTeacherPanel();
       updateDailyTrialTeacherPanel();
       if (typeof updateDungeonTeacherPanel === 'function') updateDungeonTeacherPanel();
@@ -11783,6 +11887,7 @@ else if (mode === 'pvp') {
       resetPickerRoundPool();
       populateTeacherBountySelect();
       updateClassBanButtonUI();
+      updateStudentLoginBanButtonUI();
       renderTeacherFactionPanel(); // 👈 補上這一行，讓切換班別時即時更新陣營面板
       renderTeacherTerritory();
       renderTeacherGrid();
