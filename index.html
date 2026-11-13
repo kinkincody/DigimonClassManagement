@@ -1164,6 +1164,21 @@
       </div>
     </div>
   </div>
+  <div id="modalClassNumberCoins" class="fixed inset-0 z-[100015] hidden bg-slate-950/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border-2 border-amber-400/70 rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[92dvh] flex flex-col p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-200 shadow-2xl">
+      <div class="flex justify-between items-center gap-3 border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="font-black text-base text-amber-200">指定學號金幣 / Coins by class number</h3>
+          <p id="classNumberCoinTitle" class="text-[11px] text-slate-400">點學號，立刻給該學生 20 金幣。 / Tap a class number to give that student 20 coins.</p>
+        </div>
+        <button type="button" onclick="closeClassNumberCoinPicker()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="classNumberCoinList" class="my-3 grid flex-1 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4"></div>
+      <div class="flex justify-end border-t border-slate-800 pt-3">
+        <button type="button" onclick="closeClassNumberCoinPicker()" class="min-h-11 rounded-xl bg-slate-800 px-4 text-sm font-bold text-slate-200">關閉 / Close</button>
+      </div>
+    </div>
+  </div>
   <div id="modalWorldRaid" class="fixed inset-0 z-[2000] hidden bg-slate-950/95 p-2 sm:p-3">
     <div class="relative h-full w-full">
       <div class="h-full w-full flex items-stretch gap-2">
@@ -1673,7 +1688,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.45";
+    const CURRENT_APP_VERSION = "2.7.46";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -9208,7 +9223,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.45</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.46</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -9238,7 +9253,7 @@ function getTeacherTemplate() {
             <button onclick="teacherPromptClassCoins('deduct')" class="pair-btn bg-slate-900 border border-yellow-800 text-yellow-500"><span>-金幣</span><small>-Coins</small></button>
             <button onclick="teacherHealAll()" class="pair-btn bg-emerald-950 border border-emerald-500 text-emerald-300"><span>回復 HP</span><small>Restore HP</small></button>
             <button onclick="promptPenalizeAllHp()" class="pair-btn bg-purple-950 border border-purple-600 text-purple-300"><span>自訂扣血</span><small>-HP</small></button>
-            <button onclick="teacherPromptCoinsByClassNumber()" class="pair-btn pair-span bg-yellow-950 border border-amber-400 text-amber-200"><span>指定學號金幣</span><small>Coins by No.</small></button>
+            <button onclick="teacherPromptCoinsByClassNumber()" class="pair-btn pair-span bg-yellow-950 border border-amber-400 text-amber-200"><span>指定學號金幣</span><small>點學號 +20</small></button>
           </div>
         </section>
         <section class="rounded-xl border border-amber-500/40 bg-slate-950/60 p-3 space-y-2">
@@ -13813,11 +13828,18 @@ function teacherPromptClassCoins(mode = 'reward') {
   });
 }
 
+const classNumberCoinBusy = {};
+
+function closeClassNumberCoinPicker() {
+  const modal = document.getElementById('modalClassNumberCoins');
+  if (modal) modal.classList.add('hidden');
+}
+
 function teacherPromptCoinsByClassNumber() {
   if (!currentUser || currentUser.role !== 'teacher') return;
   const targetClass = selectedTeacherClass || 'ALL';
   if (targetClass === 'ALL') {
-    showToast("請先選擇班級 / Pick a Class", "請先在班級選單選一個班，再輸入學號。 / Choose one class, then enter class numbers.", "info");
+    showToast("請先選擇班級 / Pick a Class", "請先在班級選單選一個班。 / Choose one class first.", "info");
     return;
   }
   const myStudents = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
@@ -13825,56 +13847,57 @@ function teacherPromptCoinsByClassNumber() {
     showToast("班級操作 / Class", "這個班沒有學生。 / No students in this class.", "info");
     return;
   }
+  const modal = document.getElementById('modalClassNumberCoins');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  renderClassNumberCoinPicker();
+}
 
-  const numbersText = prompt(
-    `【指定學號發放金幣 / Coins by class number】\n班級 Class: ${targetClass}\n輸入學號，用逗號或空格分開。例如 1, 2, 3, 4。\n學號看學生 ID 最後的數字：5B01 = 1，5B12 = 12。\nEnter class numbers, for example 1, 2, 3, 4.\nThe class number is the digits at the end of the student ID.`,
-    ""
-  );
-  if (numbersText === null) return;
-  const wanted = Array.from(new Set(
-    String(numbersText).split(/[,，、;；\s]+/).map(s => s.trim()).filter(s => /^\d+$/.test(s)).map(s => parseInt(s, 10))
-  )).filter(n => n >= 0);
-  if (wanted.length === 0) {
-    alert("請輸入學號，例如 1, 2, 3, 4。 / Enter class numbers, for example 1, 2, 3, 4.");
-    return;
-  }
-
-  const targets = [];
-  const missing = [];
-  wanted.forEach(n => {
-    const hits = myStudents.filter(s => studentClassNumber(s, targetClass) === n);
-    if (hits.length === 0) missing.push(n);
-    else hits.forEach(s => { if (!targets.some(t => t.id === s.id)) targets.push(s); });
+function renderClassNumberCoinPicker() {
+  const list = document.getElementById('classNumberCoinList');
+  const title = document.getElementById('classNumberCoinTitle');
+  if (!list) return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  if (title) title.textContent = targetClass + ' · 點學號，立刻 +20 金幣。 / Tap a class number for +20 coins.';
+  const students = Object.values(appData.students || {}).filter(s => studentIsInClass(s, targetClass));
+  students.sort((a, b) => {
+    const na = studentClassNumber(a, targetClass);
+    const nb = studentClassNumber(b, targetClass);
+    if (na != null && nb != null && na !== nb) return na - nb;
+    if (na != null) return -1;
+    if (nb != null) return 1;
+    return String(a.name || a.id).localeCompare(String(b.name || b.id), 'zh-Hant');
   });
-  if (targets.length === 0) {
-    alert(`找不到這些學號：${wanted.join(', ')}。 / No students with class numbers ${wanted.join(', ')}.`);
-    return;
-  }
+  list.innerHTML = students.map(s => {
+    const no = studentClassNumber(s, targetClass);
+    const label = no != null ? String(no) : String(s.username || s.id || '');
+    return '<button type="button" data-class-number="' + escapeHtml(label) + '" onclick="teacherGrantClassNumberCoins(\'' + encodeURIComponent(s.id) + '\')" class="min-h-24 rounded-2xl border-2 border-amber-400 bg-yellow-950 px-2 py-2 text-center active:scale-95">'
+      + '<div class="text-3xl font-black leading-none text-amber-200">' + escapeHtml(label) + '</div>'
+      + '<div class="mt-2 truncate text-xs font-bold text-white">' + escapeHtml(s.name || s.id) + '</div>'
+      + '<div class="text-[11px] text-yellow-300">' + (Number(s.coins) || 0) + '</div>'
+      + '</button>';
+  }).join('');
+}
 
-  const who = targets.map(s => `No.${studentClassNumber(s, targetClass)} ${s.name}`).join(', ');
-  const amountText = prompt(
-    `發放多少金幣？預設 20。 / How many coins? Default 20.\n將發給 ${targets.length} 位 / Giving to ${targets.length}: ${who}${missing.length ? `\n找不到 / Not found: ${missing.join(', ')}` : ''}`,
-    "20"
-  );
-  if (amountText === null || String(amountText).trim() === '') return;
-  const amount = parseInt(String(amountText).trim(), 10);
-  if (isNaN(amount) || amount <= 0) {
-    alert("請輸入大於 0 的整數。 / Enter a whole number greater than 0.");
-    return;
-  }
-
-  const updates = {};
-  targets.forEach(s => {
-    const next = (Number(s.coins) || 0) + amount;
-    s.coins = next;
-    updates[`students/${s.id}/coins`] = next;
-  });
-  executeAtomicMultiPathUpdate(updates).then(() => {
+function teacherGrantClassNumberCoins(encodedId) {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  const studentId = decodeURIComponent(encodedId || '');
+  if (!studentId || classNumberCoinBusy[studentId]) return;
+  const targetClass = selectedTeacherClass || 'ALL';
+  const s = appData.students && appData.students[studentId];
+  if (!s || targetClass === 'ALL' || !studentIsInClass(s, targetClass)) return;
+  classNumberCoinBusy[studentId] = true;
+  const amount = 20;
+  const next = (Number(s.coins) || 0) + amount;
+  s.coins = next;
+  const no = studentClassNumber(s, targetClass);
+  renderClassNumberCoinPicker();
+  showTeacherStatsNow();
+  executeAtomicMultiPathUpdate({ ['students/' + s.id + '/coins']: next }).then(() => {
+    classNumberCoinBusy[studentId] = false;
     playSound('gacha');
-    addBattleLog(`💰 [CLASS NUMBER COINS] 老師向班級 [${targetClass}] 的學號 ${wanted.join(', ')} 各發放 +${amount} 金幣（${who}）。`, "gacha", targetClass);
-    const missNote = missing.length ? ` 找不到學號 ${missing.join(', ')}。` : '';
-    showToast("金幣已發放 / Coins Sent", `已給 ${targets.length} 位學生每人 +${amount} 金幣。 / +${amount} coins each.${missNote}`, "heal");
-    showTeacherStatsNow();
+    addBattleLog('💰 [CLASS NUMBER COINS] 老師向班級 [' + targetClass + '] 的學號 ' + (no != null ? no : s.id) + '（' + (s.name || s.id) + '）發放 +' + amount + ' 金幣。', 'gacha', targetClass);
+    showToast('金幣已發放 / Coins Sent', '學號 ' + (no != null ? no : s.id) + ' ' + (s.name || '') + ' +' + amount + ' 金幣，現有 ' + s.coins + '。 / +' + amount + ' coins.', 'heal');
   });
 }
 
