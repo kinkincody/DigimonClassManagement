@@ -23,11 +23,13 @@
       background-color: var(--bg-dark);
       color: var(--text-light);
       font-family: "Courier New", Courier, monospace;
-      height: 100vh;
-      overflow: hidden;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 3.2rem 0;
       position: relative;
       user-select: none;
     }
@@ -105,7 +107,7 @@
       background: rgba(12, 0, 0, 0.92);
       border: 3px solid var(--red-bright);
       box-shadow: 0 0 40px rgba(255, 30, 39, 0.65), inset 0 0 25px rgba(255, 30, 39, 0.25);
-      padding: 2.2rem 2.5rem;
+      padding: 2rem 2.3rem;
       text-align: center;
       animation: jitter 4s infinite;
     }
@@ -126,7 +128,7 @@
       padding: 6px 16px;
       font-size: 1rem;
       letter-spacing: 3px;
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
       animation: blink 0.9s steps(2, start) infinite;
     }
 
@@ -136,21 +138,21 @@
 
     /* Glitch Headline */
     .glitch-title {
-      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-size: clamp(2rem, 5vw, 3.2rem);
       font-weight: 900;
       color: var(--red-bright);
       text-transform: uppercase;
       letter-spacing: 3px;
       position: relative;
-      margin-bottom: 1rem;
+      margin-bottom: 0.9rem;
       text-shadow: 2px 0 #00ffff, -2px 0 #ff00ff;
     }
 
     .main-message {
-      font-size: clamp(1.15rem, 2.5vw, 1.55rem);
-      line-height: 1.6;
+      font-size: clamp(1.1rem, 2.4vw, 1.45rem);
+      line-height: 1.55;
       color: #ffffff;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.2rem;
       font-weight: bold;
     }
 
@@ -161,15 +163,33 @@
       border: 1px solid var(--amber);
     }
 
+    /* Suspect Characteristic Paragraph */
+    .suspect-notice {
+      background: rgba(255, 176, 0, 0.08);
+      border-left: 4px solid var(--amber);
+      border-right: 4px solid var(--amber);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.2rem;
+      color: #fff3d1;
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    .suspect-notice strong {
+      color: var(--amber);
+      text-transform: uppercase;
+    }
+
     .status-panel {
       background: #050000;
       border: 1px solid var(--red-dim);
-      padding: 1rem 1.2rem;
+      padding: 0.95rem 1.2rem;
       text-align: left;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       color: #ff7b80;
-      margin-bottom: 1.5rem;
-      line-height: 1.65;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
     }
 
     .status-panel span.label {
@@ -178,8 +198,8 @@
 
     .monday-notice {
       border-top: 2px dashed var(--red-bright);
-      padding-top: 1.2rem;
-      font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+      padding-top: 1rem;
+      font-size: clamp(1.05rem, 2.2vw, 1.35rem);
       color: var(--amber);
       font-weight: 900;
       letter-spacing: 1px;
@@ -232,10 +252,14 @@
       The entire system is now <strong>totally crashed and unfixable</strong>.
     </p>
 
+    <p class="suspect-notice">
+      <strong>Suspect Description:</strong> Security logs indicate the hacker is a J4 girl with <strong>brown skin</strong> who <strong>wears glasses</strong>. Please tell the teacher immediately if you know who did this!
+    </p>
+
     <div class="status-panel">
       <div><span class="label">[INTRUDER_ID]:</span> J4_GIRL_ROOT_ACCESS</div>
+      <div><span class="label">[SUSPECT_PROFILE]:</span> BROWN SKIN // WEARS GLASSES</div>
       <div><span class="label">[SYSTEM_INTEGRITY]:</span> 0.00% (CRITICAL CORRUPTION)</div>
-      <div><span class="label">[BACKUP_RECOVERY]:</span> FAILED &mdash; ALL RESTORE POINTS WIPED</div>
       <div><span class="label">[REPAIR_STATUS]:</span> PERMANENTLY UNFIXABLE</div>
     </div>
 
@@ -247,7 +271,7 @@
   <!-- Bottom Hazard Marquee -->
   <div class="hazard-banner bottom">
     <div class="marquee-track">
-      ERROR 500: KERNEL PANIC // DATABASE DESTROYED // NO FIX AVAILABLE // STAND BY UNTIL MONDAY FOR DETAILS // ERROR 500: KERNEL PANIC // DATABASE DESTROYED // NO FIX AVAILABLE // STAND BY UNTIL MONDAY FOR DETAILS //
+      ERROR 500: KERNEL PANIC // DATABASE DESTROYED // REPORT SUSPECT TO TEACHER // STAND BY UNTIL MONDAY FOR DETAILS // ERROR 500: KERNEL PANIC // DATABASE DESTROYED // REPORT SUSPECT TO TEACHER // STAND BY UNTIL MONDAY FOR DETAILS //
     </div>
   </div>
 
@@ -296,7 +320,7 @@
       "SECURITY ALERT: J4 override active.",
       "ERROR: System repair tools missing.",
       "CRITICAL: Memory dump failed (0x00J4).",
-      "WARNING: Server permanently locked."
+      "WARNING: Report suspect to teacher."
     ];
 
     function spawnBackgroundPopup() {
