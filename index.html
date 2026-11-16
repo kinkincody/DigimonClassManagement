@@ -1705,7 +1705,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.61";
+    const CURRENT_APP_VERSION = "2.7.62";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -9952,6 +9952,23 @@ function rejectFactionRequest(reqKey) {
       return Promise.resolve();
     }
 
+    async function commitPlayUpdate(updates) {
+      const keys = updates ? Object.keys(updates) : [];
+      if (!keys.length) return true;
+      if (currentUser && currentUser.role === 'student' && !currentUser.teacherTest) {
+        try { await ensurePlaySession(); } catch (err) {}
+      }
+      if (!dbRootRef) return true;
+      try {
+        await dbRootRef.update(updates);
+        return true;
+      } catch (err) {
+        notePlayWriteError(err);
+        console.warn("Play update was not saved:", err);
+        return false;
+      }
+    }
+
     // 🥷 核心更新：加入老師隱藏模式檢查，若開啟則直接攔截不記錄任何 Log
     function addBattleLog(text, type = "normal", classTag = null, force = false) {
       if (!force && currentUser && currentUser.role === 'teacher' && isTeacherStealthMode) {
@@ -10511,7 +10528,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.61</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.62</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -12458,7 +12475,7 @@ else if (mode === 'pvp') {
     }
 
   // 真正執行同學擊打與結算 (支援主動攻擊與免費反擊 isCounterAttack + 擊殺者顯示 + 警報推送)
-    function executePvPStrike(targetStudentId, isCounterAttack = false, alertKeyToClear = null) {
+    async function executePvPStrike(targetStudentId, isCounterAttack = false, alertKeyToClear = null) {
       if (!isCounterAttack) {
         closePvpTargetModal();
       }
@@ -12533,14 +12550,17 @@ else if (mode === 'pvp') {
       calculatedDmg = attrHit.damage;
       const attrNote = attrHit.note ? ` · ${attrHit.note}` : '';
 
-      // 扣除攻擊次數（僅主動攻擊扣除，反擊不扣）
+      // 扣除攻擊次數（僅主動攻擊扣除，反擊不扣）。先算好，寫入成功才改畫面和紀錄。
       const newQuota = isCounterAttack ? (st.attackQuota || 0) : Math.max(0, (st.attackQuota || 0) - 1);
-      st.attackQuota = newQuota;
 
       const actionTag = isCounterAttack ? "⚡[反擊 COUNTER]" : "⚔️[PVP ATTACK]";
 
       if (territoryBlocksAttack(target, myClasses[0])) {
-        if (!isCounterAttack) patchStudentAtomic(currentUser.id, { attackQuota: newQuota });
+        if (!isCounterAttack) {
+          const blocked = await commitPlayUpdate({ [`students/${st.id}/attackQuota`]: newQuota });
+          if (!blocked) return;
+          st.attackQuota = newQuota;
+        }
         playSound('shield');
         addBattleLog(`🌳 [WORLD TREE] ${target.name} 的世界樹權柄完全格擋了 ${st.name} 的 ${actionTag}。`, "battle", st.classId);
         showToast("世界樹格擋 / World Tree", `${target.name} 完全格擋了這次攻擊。 / The attack was fully blocked.`, "info");
@@ -12553,14 +12573,15 @@ else if (mode === 'pvp') {
       if (readShieldCharges(target) > 0) {
         const spent = spendShieldCharge(target);
         const leftCharges = spent.shieldCharges;
-
-        if (!isCounterAttack) {
-          patchStudentAtomic(currentUser.id, { attackQuota: newQuota });
-        }
-        patchStudentAtomic(target.id, {
-          shieldCharges: leftCharges,
-          hasShield: spent.hasShield
-        });
+        const shieldUpdates = {};
+        if (!isCounterAttack) shieldUpdates[`students/${st.id}/attackQuota`] = newQuota;
+        shieldUpdates[`students/${target.id}/shieldCharges`] = leftCharges;
+        shieldUpdates[`students/${target.id}/hasShield`] = spent.hasShield;
+        const blocked = await commitPlayUpdate(shieldUpdates);
+        if (!blocked) return;
+        if (!isCounterAttack) st.attackQuota = newQuota;
+        target.shieldCharges = leftCharges;
+        target.hasShield = spent.hasShield;
 
         playSound('shield');
         addBattleLog(`🛡️ [PVP BLOCKED] ${target.name} 的聖盾抵擋了 ${st.name} 的 ${actionTag}【${sk.name}】！(剩餘盾防: ${leftCharges})`, "battle", st.classId);
@@ -12575,11 +12596,6 @@ else if (mode === 'pvp') {
       const curSelfHp = (st.hp !== undefined && st.hp !== null) ? Math.floor(Number(st.hp)) : (myDigi.maxHp || 100);
       const finalSelfHp = Math.max(1, curSelfHp - recoilDmg);
 
-      st.hp = finalSelfHp;
-      if (appData.students[currentUser.id]) {
-        appData.students[currentUser.id].hp = finalSelfHp;
-      }
-
       // 5. 對手扣血與擊殺判定
       const finalTargetHp = Math.max(0, curTargetHp - calculatedDmg);
       const isKill = (finalTargetHp === 0);
@@ -12589,6 +12605,12 @@ else if (mode === 'pvp') {
       let earnedExp = 0;
       let bountyBonusExp = 0;
       let bountyBonusTickets = 0;
+      let totalExpAward = 0;
+      let worldTreeCoins = 0;
+      let nextCoins = st.coins || 0;
+      let nextExp = st.exp || 0;
+      let nextPool = st.statPool || 0;
+      let nextTickets = st.gachaTickets || 0;
 
       if (isKill) {
         earnedCoins = Number(calculatePvPBaseKillCoins(atkDigiId, tgtDigiId));
@@ -12603,54 +12625,76 @@ else if (mode === 'pvp') {
           bountyBonusTickets = 1;
         }
 
-        const totalExpAward = Math.round((earnedExp + bountyBonusExp) * territoryExpMultiplier(st, myClasses[0]));
-        let worldTreeCoins = 0;
+        totalExpAward = Math.round((earnedExp + bountyBonusExp) * territoryExpMultiplier(st, myClasses[0]));
         if (studentHoldsTerritoryNode(st, myClasses[0], 'core')) {
           earnedCoins += 5;
           worldTreeCoins = 5;
         }
+        nextCoins = (st.coins || 0) + earnedCoins;
+        nextExp = (st.exp || 0) + totalExpAward;
+        nextPool = (st.statPool || 0) + totalExpAward;
+        if (bountyBonusTickets > 0) nextTickets = (st.gachaTickets || 0) + bountyBonusTickets;
+      }
 
-        st.coins = (st.coins || 0) + earnedCoins;
-        st.exp = (st.exp || 0) + totalExpAward;
-        st.statPool = (st.statPool || 0) + totalExpAward;
-        if (bountyBonusTickets > 0) {
-          st.gachaTickets = (st.gachaTickets || 0) + bountyBonusTickets;
+      const strikeUpdates = {};
+      strikeUpdates[`students/${st.id}/hp`] = finalSelfHp;
+      strikeUpdates[`students/${st.id}/attackQuota`] = newQuota;
+      if (isKill) {
+        strikeUpdates[`students/${st.id}/coins`] = nextCoins;
+        strikeUpdates[`students/${st.id}/exp`] = nextExp;
+        strikeUpdates[`students/${st.id}/statPool`] = nextPool;
+        if (bountyBonusTickets > 0) strikeUpdates[`students/${st.id}/gachaTickets`] = nextTickets;
+      }
+      const counterCharges = autoReviveItemCount(target);
+      const counterRevived = isKill && counterCharges > 0;
+      if (counterRevived) {
+        const full = fullHpOfStudent(target);
+        const inv = Object.assign({}, target.inventory || {});
+        if (counterCharges - 1 <= 0) delete inv.item_auto_revive;
+        else inv.item_auto_revive = counterCharges - 1;
+        strikeUpdates[`students/${target.id}/hp`] = full;
+        strikeUpdates[`students/${target.id}/isFainted`] = false;
+        strikeUpdates[`students/${target.id}/killedByName`] = null;
+        strikeUpdates[`students/${target.id}/killedById`] = null;
+        strikeUpdates[`students/${target.id}/inventory`] = inv;
+      } else {
+        strikeUpdates[`students/${target.id}/hp`] = finalTargetHp;
+        strikeUpdates[`students/${target.id}/isFainted`] = isKill;
+        if (isKill) {
+          strikeUpdates[`students/${target.id}/killedByName`] = `${st.name} (${myDigi.name})`;
+          strikeUpdates[`students/${target.id}/killedById`] = st.id;
         }
+      }
+      const strikeSaved = await commitPlayUpdate(strikeUpdates);
+      if (!strikeSaved) return;
+      st.attackQuota = newQuota;
+      st.hp = finalSelfHp;
+      if (isKill) {
+        st.coins = nextCoins;
+        st.exp = nextExp;
+        st.statPool = nextPool;
+        if (bountyBonusTickets > 0) st.gachaTickets = nextTickets;
+      }
+      target.hp = strikeUpdates[`students/${target.id}/hp`];
+      target.isFainted = !!strikeUpdates[`students/${target.id}/isFainted`];
+      if (counterRevived) {
+        target.inventory = strikeUpdates[`students/${target.id}/inventory`];
+        logAutoRevive(target, st.classId, counterCharges - 1);
+        showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
+      } else if (isKill && dbRootRef) {
+        dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
+      }
 
+      if (isKill && !counterRevived) {
         playSound('faint');
         addBattleLog(`☠️💥 ${actionTag} ${st.name} 擊敗了 ${target.name}！自身受反傷 -${recoilDmg} HP，獲得 +${totalExpAward} EXP 與 +${earnedCoins} 金幣！`, "battle", st.classId);
         if (worldTreeCoins) addBattleLog(`🌳 [WORLD TREE] ${st.name} 擊倒 ${target.name}，世界樹權柄額外 +5 金幣。 / World Tree bonus: +5 coins.`, "heal", st.classId, true);
         showToast("擊敗對手！", `${isCounterAttack ? '反擊' : '擊殺'}成功！獲得 +${earnedCoins} 金幣，自身受反傷 -${recoilDmg} HP`, "heal");
-      } else {
+      } else if (!counterRevived) {
         playSound('attack');
         addBattleLog(`${actionTag} ${st.name} 對 ${target.name} 使用【${sk.name}】造成 ${calculatedDmg} 傷害${attrNote}，自身受反傷 -${recoilDmg} HP！`, "battle", st.classId);
         showToast(isCounterAttack ? "反擊命中！" : "命中並受反傷！", `造成 ${calculatedDmg} 傷害，自身受反傷 -${recoilDmg} HP (剩餘 ${finalSelfHp})！`, "damage");
       }
-
-      // 7. 分開獨立更新自己與對手
-      const myUpdates = {
-        hp: finalSelfHp,
-        attackQuota: newQuota
-      };
-      if (isKill) {
-        myUpdates.coins = st.coins;
-        myUpdates.exp = st.exp;
-        myUpdates.statPool = st.statPool;
-        if (bountyBonusTickets > 0) {
-          myUpdates.gachaTickets = st.gachaTickets;
-        }
-      }
-
-      patchStudentAtomic(currentUser.id, myUpdates);
-      applyDamageToStudent(target.id, calculatedDmg, { name: `${st.name} (${myDigi.name})`, id: st.id }).then(result => {
-        if (result && result.itemUsed) {
-          logAutoRevive(target, st.classId, result.charges);
-          showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
-        }
-        if (result && (result.fainted || result.itemUsed) && dbRootRef) {
-          dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
-        }
-      });
 
       // 8. 🔔 若對手未死亡，且這是「主動攻擊 (非反擊)」，發送被攻擊警報給對手，讓在線的對手彈出視窗反擊！
       if (!isKill && !isCounterAttack && dbRootRef) {
@@ -18377,11 +18421,14 @@ function startStudentExamTimer() {
         healAmt = territoryBoostHeal(st, healAmt);
         const maxHp = digi.maxHp || 100;
         const newHp = Math.min(maxHp, (st.hp || 0) + healAmt);
-        patchStudentAtomic(currentUser.id, { hp: newHp });
-        playSound('heal');
-        addBattleLog(`💚 [HEAL / 回復] ${st.name} used [${skill.name}], recovered +${healAmt} HP! (HP: ${newHp}/${maxHp})`, "heal", st.classId);
-        showToast("Recovery / 回復成功", `+${healAmt} HP restored! / 成功回復 +${healAmt} HP！`, "heal");
-        updateStudentUI();
+        commitPlayUpdate({ [`students/${currentUser.id}/hp`]: newHp }).then(saved => {
+          if (!saved) return;
+          st.hp = newHp;
+          playSound('heal');
+          addBattleLog(`💚 [HEAL / 回復] ${st.name} used [${skill.name}], recovered +${healAmt} HP! (HP: ${newHp}/${maxHp})`, "heal", st.classId);
+          showToast("Recovery / 回復成功", `+${healAmt} HP restored! / 成功回復 +${healAmt} HP！`, "heal");
+          updateStudentUI();
+        });
         return;
       }
 
@@ -18405,7 +18452,7 @@ function startStudentExamTimer() {
     // ========================================================
     // ⚔️ 學生攻擊老師 Partner 首領 (Attack Teacher Boss)
     // ========================================================
-    function executeAttackTeacherBoss(skill) {
+    async function executeAttackTeacherBoss(skill) {
       const st = appData.students[currentUser.id];
       const tcId = studentTargetTeacherId || 'teacher1';
       const tc = appData.teachers[tcId] || Object.values(appData.teachers || {})[0];
@@ -18432,15 +18479,19 @@ function startStudentExamTimer() {
       const curHp = tc.hp !== undefined ? tc.hp : (tc.maxHp || 2000);
       const nextHp = Math.max(0, curHp - dmg);
 
-      // 扣除攻擊次數並獎勵命中 EXP
+      // 扣除攻擊次數並獎勵命中 EXP。紀錄只在次數和首領 HP 都寫入之後才留下。
       const newQuota = Math.max(0, (st.attackQuota || 1) - 1);
-      patchStudentAtomic(currentUser.id, {
-        attackQuota: newQuota,
-        exp: (st.exp || 0) + bossExp,
-        statPool: (st.statPool || 0) + bossExp
-      });
-
-      patchTeacherAtomic(tc.id, { hp: nextHp });
+      const bossUpdates = {};
+      bossUpdates[`students/${st.id}/attackQuota`] = newQuota;
+      bossUpdates[`students/${st.id}/exp`] = (st.exp || 0) + bossExp;
+      bossUpdates[`students/${st.id}/statPool`] = (st.statPool || 0) + bossExp;
+      bossUpdates[`teachers/${tc.id}/hp`] = nextHp;
+      const saved = await commitPlayUpdate(bossUpdates);
+      if (!saved) return;
+      st.attackQuota = newQuota;
+      st.exp = (st.exp || 0) + bossExp;
+      st.statPool = (st.statPool || 0) + bossExp;
+      tc.hp = nextHp;
       playSound('attack');
       addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG${bossHit.note ? ' · ' + bossHit.note : ''}! (+${bossExp} EXP)`, "battle", st.classId);
       showToast("Hit Boss / 命中首領", `Dealt ${dmg} DMG to ${tcDigi.name}! (+${bossExp} EXP) / 對首領造成 ${dmg} 點傷害！(+${bossExp} EXP)`, "damage");
@@ -18593,7 +18644,7 @@ function startStudentExamTimer() {
     // ========================================================
     // ⚔️ 執行學生對學生攻擊與擊殺結算核心 (PvP Execution & Kill EXP)
     // ========================================================
-    function executePvPAttack(targetId, targetClass) {
+    async function executePvPAttack(targetId, targetClass) {
       if (!currentUser || currentUser.role !== 'student') return;
       const me = appData.students[currentUser.id];
       const target = appData.students[targetId];
@@ -18652,16 +18703,19 @@ function startStudentExamTimer() {
       dmg = pvpHit.damage;
       const pvpNote = pvpHit.note ? ` · ${pvpHit.note}` : '';
 
-      // 扣除攻擊次數
+      // 扣除攻擊次數。紀錄只在攻擊次數和目標 HP 都寫入之後才留下。
       const newQuota = Math.max(0, (me.attackQuota || 1) - 1);
       const updates = {};
       updates[`students/${me.id}/attackQuota`] = newQuota;
 
       if (territoryBlocksAttack(target, targetClass)) {
-        executeAtomicMultiPathUpdate(updates).then(() => updateStudentUI());
+        const blocked = await commitPlayUpdate(updates);
+        if (!blocked) return;
+        me.attackQuota = newQuota;
         playSound('shield');
         addBattleLog(`🌳 [WORLD TREE] ${target.name} 的世界樹權柄完全格擋了 ${me.name} 的攻擊。`, "battle", targetClass);
         showToast("世界樹格擋 / World Tree", `${target.name} 完全格擋了這次攻擊。 / The attack was fully blocked.`, "info");
+        updateStudentUI();
         return;
       }
 
@@ -18669,15 +18723,18 @@ function startStudentExamTimer() {
       if (readShieldCharges(target) > 0) {
             const spent = spendShieldCharge(target);
             const leftCharges = spent.shieldCharges;
-            patchStudentAtomic(me.id, { attackQuota: newQuota });
-            patchStudentAtomic(target.id, { 
-              shieldCharges: leftCharges,
-              hasShield: spent.hasShield 
-            });
+            updates[`students/${target.id}/shieldCharges`] = leftCharges;
+            updates[`students/${target.id}/hasShield`] = spent.hasShield;
+            const blocked = await commitPlayUpdate(updates);
+            if (!blocked) return;
+            me.attackQuota = newQuota;
+            target.shieldCharges = leftCharges;
+            target.hasShield = spent.hasShield;
             notifyTargetOfAttack(target.id, 0, `${skill.name}（聖盾抵擋）`);
             addBattleLog(`🛡️ [BLOCKED] ${target.name} 聖盾抵擋了攻擊！(護盾剩餘抵擋次數: ${leftCharges})`, "battle", target.classId);
             showToast("Blocked!", `防禦成功！護盾剩餘 ${leftCharges} 次抵擋。`, "info");
             playSound('shield');
+            updateStudentUI();
             return;
           
       }
@@ -18698,11 +18755,8 @@ function startStudentExamTimer() {
       }
 
       // 6. 擊殺判定 (Kill Confirmation)
+      let bountyClaimed = false;
       if (nextHp <= 0) {
-        if (dbRootRef) {
-          dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
-        }
-
         // 計算階級差距經驗 (同級 100, 越一級 150, 越兩級 200, 弱一級 50, 弱兩級 0)
         const baseKillExp = calculatePvPBaseKillExp(me.currentDigiId, target.currentDigiId);
         killExp = baseKillExp;
@@ -18728,38 +18782,75 @@ function startStudentExamTimer() {
           coinsGained += 20;
           updates[`students/${me.id}/gachaTickets`] = (me.gachaTickets || 0) + 1;
           updates[`bounties/${sanitizeClassKey(targetClass)}`] = null; // 結算並清除懸賞
-          addBattleLog(`🎯🏆 [BOUNTY CLAIMED / 懸賞達成] ${me.name} eliminated Bounty Target [${target.name}]! Awarded +300 EXP, +1 Ticket & +20 Coins!`, "evolution", targetClass);
+          bountyClaimed = true;
         }
       }
 
       expGained = Math.round(expGained * territoryExpMultiplier(me, targetClass));
-      if (nextHp <= 0) {
-        playSound('faint');
-        addBattleLog(`☠️⚔️ [PVP KILL / 對決擊殺] ${me.name}'s [${myDigi.name}] defeated ${target.name}'s [${tgtDigi.name}]! (Kill EXP: +${killExp}, Total EXP: +${expGained}, +${coinsGained} Coins)`, "battle", targetClass);
-        if (worldTreeCoins) addBattleLog(`🌳 [WORLD TREE] ${me.name} 擊倒 ${target.name}，世界樹權柄額外 +5 金幣。 / World Tree bonus: +5 coins.`, "heal", targetClass, true);
-        showToast("Target Defeated! / 擊殺對手！", `Defeated ${target.name}! Gained +${expGained} EXP & +${coinsGained} Coins! / 成功擊殺 ${target.name}！獲得 +${expGained} EXP 與 +${coinsGained} 金幣！`, "evolution");
-      } else {
-        playSound('attack');
-        notifyTargetOfAttack(target.id, dmg, skill.name);
-        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG${pvpNote}! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
-        showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
-      }
-      // 更新攻擊者經驗值、點數池與金幣
       updates[`students/${me.id}/exp`] = (me.exp || 0) + expGained;
       updates[`students/${me.id}/statPool`] = (me.statPool || 0) + expGained;
       if (coinsGained > 0) {
         updates[`students/${me.id}/coins`] = (me.coins || 0) + coinsGained;
       }
-
-      executeAtomicMultiPathUpdate(updates).then(() => {
-        updateStudentUI();
-      });
-      applyDamageToStudent(target.id, dmg, { name: `${me.name} (${myDigi.name})`, id: me.id }).then(result => {
-        if (result && result.itemUsed) {
-          logAutoRevive(target, targetClass, result.charges);
-          showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
+      const reviveCharges = autoReviveItemCount(target);
+      const revived = nextHp <= 0 && reviveCharges > 0;
+      if (revived) {
+        const full = fullHpOfStudent(target);
+        const inv = Object.assign({}, target.inventory || {});
+        if (reviveCharges - 1 <= 0) delete inv.item_auto_revive;
+        else inv.item_auto_revive = reviveCharges - 1;
+        updates[`students/${target.id}/hp`] = full;
+        updates[`students/${target.id}/isFainted`] = false;
+        updates[`students/${target.id}/killedByName`] = null;
+        updates[`students/${target.id}/killedById`] = null;
+        updates[`students/${target.id}/inventory`] = inv;
+      } else {
+        updates[`students/${target.id}/hp`] = nextHp;
+        updates[`students/${target.id}/isFainted`] = nextHp <= 0;
+        if (nextHp <= 0) {
+          updates[`students/${target.id}/reviveQuizClosed`] = null;
+          updates[`students/${target.id}/reviveQuizPending`] = null;
+          updates[`students/${target.id}/killedByName`] = `${me.name} (${myDigi.name})`;
+          updates[`students/${target.id}/killedById`] = me.id;
         }
-      });
+      }
+      const saved = await commitPlayUpdate(updates);
+      if (!saved) return;
+      me.attackQuota = newQuota;
+      me.exp = (me.exp || 0) + expGained;
+      me.statPool = (me.statPool || 0) + expGained;
+      if (coinsGained > 0) me.coins = (me.coins || 0) + coinsGained;
+      if (updates[`students/${me.id}/gachaTickets`] != null) me.gachaTickets = updates[`students/${me.id}/gachaTickets`];
+      target.hp = updates[`students/${target.id}/hp`];
+      target.isFainted = !!updates[`students/${target.id}/isFainted`];
+      if (revived) {
+        target.inventory = updates[`students/${target.id}/inventory`];
+        target.killedByName = null;
+        target.killedById = null;
+        logAutoRevive(target, targetClass, reviveCharges - 1);
+        showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
+      } else if (nextHp <= 0) {
+        target.reviveQuizClosed = null;
+        target.reviveQuizPending = null;
+        target.killedByName = `${me.name} (${myDigi.name})`;
+        target.killedById = me.id;
+        if (dbRootRef) dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
+      }
+      if (bountyClaimed) {
+        addBattleLog(`🎯🏆 [BOUNTY CLAIMED / 懸賞達成] ${me.name} eliminated Bounty Target [${target.name}]! Awarded +300 EXP, +1 Ticket & +20 Coins!`, "evolution", targetClass);
+      }
+      if (nextHp <= 0 && !revived) {
+        playSound('faint');
+        addBattleLog(`☠️⚔️ [PVP KILL / 對決擊殺] ${me.name}'s [${myDigi.name}] defeated ${target.name}'s [${tgtDigi.name}]! (Kill EXP: +${killExp}, Total EXP: +${expGained}, +${coinsGained} Coins)`, "battle", targetClass);
+        if (worldTreeCoins) addBattleLog(`🌳 [WORLD TREE] ${me.name} 擊倒 ${target.name}，世界樹權柄額外 +5 金幣。 / World Tree bonus: +5 coins.`, "heal", targetClass, true);
+        showToast("Target Defeated! / 擊殺對手！", `Defeated ${target.name}! Gained +${expGained} EXP & +${coinsGained} Coins! / 成功擊殺 ${target.name}！獲得 +${expGained} EXP 與 +${coinsGained} 金幣！`, "evolution");
+      } else if (!revived) {
+        playSound('attack');
+        notifyTargetOfAttack(target.id, dmg, skill.name);
+        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG${pvpNote}! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
+        showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
+      }
+      updateStudentUI();
     }
 
     // 取得指定班級中當前有效的 Bounty ID
