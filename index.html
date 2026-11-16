@@ -1705,7 +1705,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.60";
+    const CURRENT_APP_VERSION = "2.7.61";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -5278,7 +5278,12 @@ const PASSWORD_KDF_ITERS = 40000;
       if (matched) await publishLoginSession(category, id, attempt, record);
       const hashMissing = !(record && record.passwordHash && record.passwordSalt);
       if (matched && hashMissing && record && record.password != null && String(record.password) !== '') {
-        try { await storeAccountPassword(category, id, attempt); } catch (err) {}
+        try {
+          if (await storeAccountPassword(category, id, attempt)) {
+            const fresh = await readNode(category + '/' + id);
+            await publishLoginSession(category, id, attempt, fresh || record);
+          }
+        } catch (err) {}
       }
       return matched;
     }
@@ -5288,6 +5293,21 @@ const PASSWORD_KDF_ITERS = 40000;
     let firebaseAuthUid = '';
     let authReadyPromise = null;
     let lastAuthProof = null;
+    let playWriteWarned = false;
+
+    function notePlayWriteError(err) {
+      if (playWriteWarned || !currentUser || currentUser.role !== 'student' || currentUser.teacherTest) return;
+      const text = String((err && (err.code || err.message)) || err || '');
+      if (text.indexOf('PERMISSION_DENIED') === -1 && text.indexOf('permission_denied') === -1) return;
+      playWriteWarned = true;
+      showToast('動作沒有儲存 / Not Saved', '請貼上新的 Firebase rules，然後重新登入。攻擊、回復、抽卡和每日試煉才會寫進資料庫。 / Paste the new Firebase rules, then sign in again. Attacks, healing, gacha, and the daily trial can then be saved.', 'damage');
+    }
+
+    function ensurePlaySession() {
+      if (!currentUser || currentUser.teacherTest || !lastAuthProof) return Promise.resolve(false);
+      if (String(lastAuthProof.id) !== String(currentUser.id)) return Promise.resolve(false);
+      return publishAuthSession(lastAuthProof.role || currentUser.role, currentUser.id, lastAuthProof.proof);
+    }
 
     function ensureAnonymousAuth() {
       if (window.__DIGI_TEST_DB) {
@@ -5341,14 +5361,21 @@ const PASSWORD_KDF_ITERS = 40000;
 
     async function publishLoginSession(category, id, attempt, record) {
       let role = 'superadmin';
-      let proof = String(attempt || '');
       if (category === 'students') role = 'student';
       else if (category === 'teachers') role = 'teacher';
-      if (role !== 'superadmin') {
+      const candidates = [];
+      if (role === 'superadmin') {
+        candidates.push(String(attempt || ''));
+      } else {
         const salt = record && record.passwordSalt ? String(record.passwordSalt) : undefined;
-        try { proof = (await sealPassword(String(attempt || ''), salt)).hash; } catch (err) { proof = ''; }
+        try { candidates.push((await sealPassword(String(attempt || ''), salt)).hash); } catch (err) {}
+        const plain = String(attempt || '');
+        if (plain && candidates.indexOf(plain) < 0) candidates.push(plain);
       }
-      return publishAuthSession(role, id, proof);
+      for (let i = 0; i < candidates.length; i++) {
+        if (await publishAuthSession(role, id, candidates[i])) return true;
+      }
+      return false;
     }
 
     function staffSessionActive() {
@@ -9895,6 +9922,7 @@ function rejectFactionRequest(reqKey) {
   if (dbRootRef) {
     // 針對多人高頻操作，使用安全多鍵覆蓋更新
     dbRootRef.child('students/' + studentId).update(partialData).catch(e => {
+      notePlayWriteError(e);
       console.warn("Atomic patch student failed:", e);
     });
   }
@@ -10483,7 +10511,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.60</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.61</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -12240,6 +12268,7 @@ function openMegaRebirthPrompt() {
 
     function useItem(itemId) {
       if (!currentUser || currentUser.role !== 'student') return;
+      ensurePlaySession();
       if (itemId === 'item_auto_revive') {
         showToast("自動使用 / Auto Use", "自動復活核心會在你被擊敗時直接用掉，並立刻滿血復活。不用自己按。 / This core is used automatically when you are defeated and restores full HP. No button needed.", "info");
         return;
@@ -14280,6 +14309,7 @@ function publishEvoEdges() {
 
     function openDailyTrial() {
       if (!currentUser || currentUser.role !== 'student') return;
+      ensurePlaySession();
       if (dailyTrialCommitDepth) return;
       const st = appData.students[currentUser.id];
       if (!st) return;
@@ -14363,6 +14393,7 @@ function publishEvoEdges() {
       }, (err, committed, snap) => {
         dailyTrialCommitDepth = 0;
         if (err || !committed || !snap || !snap.exists()) {
+          if (err) notePlayWriteError(err);
           showToast('題目沒有打開 / Question Not Opened', '請再按一次每日試煉。 / Press the daily trial again.', 'info');
           updateDailyTrialStudentBadge();
           return;
@@ -16044,6 +16075,7 @@ function teacherToggleClassSpy(studentId, event) {
 
     async function drawGacha(times = 1) {
       if (!currentUser || currentUser.role !== 'student') return;
+      await ensurePlaySession();
       const st = appData.students[currentUser.id];
       if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) return alert("Action unavailable in current state!");
 
@@ -16068,6 +16100,7 @@ function teacherToggleClassSpy(studentId, event) {
               inventory: st.inventory
             });
           } catch (err) {
+            notePlayWriteError(err);
             st.gachaTickets = (st.gachaTickets || 0) + 1;
             inv[item.id] = Math.max(0, (inv[item.id] || 1) - 1);
             st.inventory = inv;
@@ -18319,6 +18352,7 @@ function startStudentExamTimer() {
     // ========================================================
     function castStudentSkill(skillIdx, targetMode) {
       if (!currentUser || currentUser.role !== 'student') return;
+      ensurePlaySession();
       const st = appData.students[currentUser.id];
       if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
         showToast("Action Locked / 行動受限", "Digimon is fainted or banned! / 數碼暴龍已倒下或已被老師鎖定！", "damage");
