@@ -1705,7 +1705,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.62";
+    const CURRENT_APP_VERSION = "2.7.65";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4997,16 +4997,16 @@ function reviveOptionList(options) {
 function normalizeRevivePending(raw) {
   if (!raw || typeof raw !== 'object' || !raw.question) return null;
   const options = reviveOptionList(raw.options);
-  let correctAnswer = raw.correctAnswer != null ? String(raw.correctAnswer).trim() : '';
+  let correctAnswer = raw.correctAnswer != null ? repairQuestionText(String(raw.correctAnswer).trim()) : '';
   if (!correctAnswer) {
     const flagged = options.find(opt => opt.correct);
-    if (flagged) correctAnswer = flagged.text;
+    if (flagged) correctAnswer = repairQuestionText(flagged.text);
   }
   return {
     className: raw.className ? String(raw.className) : '',
-    question: String(raw.question),
+    question: repairQuestionText(String(raw.question)),
     correctAnswer: correctAnswer,
-    options: options
+    options: options.map(opt => ({ text: repairQuestionText(opt.text), correct: !!opt.correct }))
   };
 }
 
@@ -5438,10 +5438,31 @@ const PASSWORD_KDF_ITERS = 40000;
         if (user.role === 'superadmin') {
           await dbRootRef.child(path).set({ id: user.id, proof: String(user.authToken) });
         } else {
-          const salt = await readNode('teachers/' + user.id + '/passwordSalt');
-          const sealed = await sealPassword(user.authToken, salt ? String(salt) : undefined);
-          try { await dbRootRef.child('authVault/teachers/' + user.id).set(sealed.hash); } catch (err) {}
-          await dbRootRef.child(path).set({ id: user.id, hash: sealed.hash });
+          const id = String(user.id);
+          const candidates = [];
+          if (lastAuthProof && String(lastAuthProof.id) === id && lastAuthProof.proof) candidates.push(String(lastAuthProof.proof));
+          const salt = await readNode('teachers/' + id + '/passwordSalt');
+          if (salt) {
+            try {
+              const sealed = await sealPassword(user.authToken, String(salt));
+              if (sealed && sealed.hash && candidates.indexOf(sealed.hash) < 0) candidates.push(sealed.hash);
+              try { await dbRootRef.child('authVault/teachers/' + id).set(sealed.hash); } catch (err) {}
+            } catch (err) {}
+          }
+          const plain = String(user.authToken || '');
+          if (plain && candidates.indexOf(plain) < 0) candidates.push(plain);
+          let armed = false;
+          let lastErr = null;
+          for (let i = 0; i < candidates.length; i++) {
+            try {
+              await dbRootRef.child(path).set({ id: id, hash: candidates[i] });
+              armed = true;
+              break;
+            } catch (err) {
+              lastErr = err;
+            }
+          }
+          if (!armed) throw lastErr || new Error('staff proof denied');
         }
       } catch (err) {
         dbWriteBypass = false;
@@ -6161,6 +6182,7 @@ const PASSWORD_KDF_ITERS = 40000;
 
   return {
     id: id,
+    firebaseKey: String(keyId || id),
     username: String(s.username || id),
     name: String(s.name || s.username || id),
     classId: cleanClassStr,
@@ -8368,7 +8390,7 @@ function issueTerritoryDailyRewards() {
       const applyClaim = (cur) => {
         changed = false;
         if (!cur) return;
-        if (String(cur.territoryDailyDay || '') === today) return cur;
+        if (String(cur.territoryDailyDay || '') === today) return;
         const next = Object.assign({}, cur);
         next.territoryDailyDay = today;
         next.territoryDailyEpoch = hongKongDayIndex();
@@ -9912,16 +9934,25 @@ function rejectFactionRequest(reqKey) {
       }
     }
 
+    function studentSaveKey(studentOrId) {
+      if (studentOrId && typeof studentOrId === 'object') return String(studentOrId.firebaseKey || studentOrId.id || '');
+      const id = String(studentOrId || '');
+      const direct = appData.students && appData.students[id];
+      if (direct && direct.firebaseKey) return String(direct.firebaseKey);
+      const found = Object.values(appData.students || {}).find(row => row && (String(row.id) === id || String(row.firebaseKey) === id));
+      return String((found && (found.firebaseKey || found.id)) || id);
+    }
+
     function patchStudentAtomic(studentId, partialData) {
   if (!studentId || !partialData) return;
-  const s = appData.students[studentId];
+  const s = appData.students[studentId] || Object.values(appData.students || {}).find(row => row && (String(row.id) === String(studentId) || String(row.firebaseKey) === String(studentId)));
   if (s) {
     Object.assign(s, partialData);
     saveLocalCache();
   }
   if (dbRootRef) {
     // 針對多人高頻操作，使用安全多鍵覆蓋更新
-    dbRootRef.child('students/' + studentId).update(partialData).catch(e => {
+    dbRootRef.child('students/' + studentSaveKey(s || studentId)).update(partialData).catch(e => {
       notePlayWriteError(e);
       console.warn("Atomic patch student failed:", e);
     });
@@ -9952,7 +9983,7 @@ function rejectFactionRequest(reqKey) {
       return Promise.resolve();
     }
 
-    async function commitPlayUpdate(updates) {
+    async function commitPlayUpdate(updates, expect) {
       const keys = updates ? Object.keys(updates) : [];
       if (!keys.length) return true;
       if (currentUser && currentUser.role === 'student' && !currentUser.teacherTest) {
@@ -9961,6 +9992,16 @@ function rejectFactionRequest(reqKey) {
       if (!dbRootRef) return true;
       try {
         await dbRootRef.update(updates);
+        const checks = expect || {};
+        const paths = Object.keys(checks);
+        for (let i = 0; i < paths.length; i++) {
+          const snap = await dbRootRef.child(paths[i]).once('value');
+          const got = snap && snap.val ? snap.val() : undefined;
+          if (Number(got) !== Number(checks[paths[i]])) {
+            notePlayWriteError({ code: 'PERMISSION_DENIED', message: 'PERMISSION_DENIED' });
+            return false;
+          }
+        }
         return true;
       } catch (err) {
         notePlayWriteError(err);
@@ -10528,7 +10569,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.62</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.65</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -12334,7 +12375,7 @@ function openMegaRebirthPrompt() {
     // ==========================================
     let currentSelectedSkillIdx = 0;
 
-    function castStudentSkill(skillIdx, mode) {
+    function unusedLegacyCastStudentSkill(skillIdx, mode) {
       if (!currentUser || currentUser.role !== 'student') return;
       const st = appData.students[currentUser.id];
       if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
@@ -12384,7 +12425,6 @@ function openMegaRebirthPrompt() {
         patchTeacherAtomic(tc.id, { hp: nextHp });
 
         playSound('attack');
-        addBattleLog(`⚔️💥 [BOSS BATTLE] ${st.name} 使用【${sk.name}】造成 ${dmg} 傷害，受到反震扣除 -${recoilDmg} HP！(自身剩餘 HP: ${selfNextHp})`, "battle", st.classId);
         showToast("受到反彈傷害！", `造成 ${dmg} 傷害，自身受到 ${recoilDmg} 點反傷！`, "damage");
         
         renderStudentBossBar();
@@ -13015,18 +13055,17 @@ else if (mode === 'pvp') {
       });
     }
 
-    function superadminFullResetStudent(studentId) {
-      const s = appData.students[studentId];
-      if (!s) return;
-      if (prompt(`Type 'RESET' to confirm factory reset for [${s.name}]:`) !== 'RESET') return;
+    function confirmResetPhrase(message, expected) {
+      return String(prompt(message) || '').trim().toUpperCase() === expected;
+    }
 
-      const randomEgg = getRandomEggId();
-      playSound('faint');
-      addBattleLog(`⚡ [RESET] Student account [${s.name}] was factory-reset!`, "battle", s.classId);
-      showToast("Student Reset", `${s.name}'s account data wiped!`, "damage");
+    function safeResetKey(value) {
+      return /^[A-Za-z0-9_-]+$/.test(String(value || ''));
+    }
 
-      patchStudentAtomic(studentId, {
-        currentDigiId: randomEgg,
+    function studentResetFields(eggId) {
+      return {
+        currentDigiId: eggId,
         hp: 100,
         exp: 0,
         statPool: 0,
@@ -13036,47 +13075,102 @@ else if (mode === 'pvp') {
         isBanned: false,
         attackQuota: 0,
         gachaTickets: 0,
-        skinId: "skin-classic",
-        inventory: {},
-        unlockedDex: { [randomEgg]: true },
+        skinId: 'skin-classic',
         courage: 0,
         love: 0,
         discipline: 0,
         wisdom: 0
-      });
+      };
     }
 
-    function superadminFullResetAllStudents() {
-      if (prompt(`Type 'RESET ALL' to confirm reset for ALL students:`) !== 'RESET ALL') return;
+    function buildStudentResetUpdate(student, eggId) {
+      const key = String((student && (student.firebaseKey || student.id)) || '');
       const updates = {};
-      let count = 0;
-
-      Object.keys(appData.students || {}).forEach(id => {
-        const randomEgg = getRandomEggId();
-        updates[`students/${id}/currentDigiId`] = randomEgg;
-        updates[`students/${id}/hp`] = 100;
-        updates[`students/${id}/exp`] = 0;
-        updates[`students/${id}/statPool`] = 0;
-        updates[`students/${id}/isFainted`] = false;
-        updates[`students/${id}/hasShield`] = false;
-        updates[`students/${id}/isStarred`] = false;
-        updates[`students/${id}/isBanned`] = false;
-        updates[`students/${id}/attackQuota`] = 0;
-        updates[`students/${id}/gachaTickets`] = 0;
-        updates[`students/${id}/skinId`] = "skin-classic";
-        updates[`students/${id}/inventory`] = {};
-        updates[`students/${id}/unlockedDex`] = { [randomEgg]: true };
-        updates[`students/${id}/courage`] = 0;
-        updates[`students/${id}/love`] = 0;
-        updates[`students/${id}/discipline`] = 0;
-        updates[`students/${id}/wisdom`] = 0;
-        count++;
+      if (!safeResetKey(key)) return updates;
+      const base = 'students/' + key;
+      const fields = studentResetFields(eggId);
+      Object.keys(fields).forEach(name => { updates[base + '/' + name] = fields[name]; });
+      const inventory = student && student.inventory && typeof student.inventory === 'object' ? student.inventory : {};
+      Object.keys(inventory).forEach(itemId => {
+        if (safeResetKey(itemId)) updates[base + '/inventory/' + itemId] = null;
       });
+      Object.keys(typeof ITEMS_DB === 'object' && ITEMS_DB ? ITEMS_DB : {}).forEach(itemId => {
+        if (safeResetKey(itemId)) updates[base + '/inventory/' + itemId] = null;
+      });
+      const dex = student && student.unlockedDex && typeof student.unlockedDex === 'object' ? student.unlockedDex : {};
+      Object.keys(dex).forEach(form => {
+        if (form !== eggId && safeResetKey(form)) updates[base + '/unlockedDex/' + form] = null;
+      });
+      if (safeResetKey(eggId)) updates[base + '/unlockedDex/' + eggId] = true;
+      return updates;
+    }
 
+    async function commitSuperadminReset(updates, sampleKey) {
+      const paths = Object.keys(updates || {});
+      if (!dbRootRef || !paths.length || !sampleKey) return false;
+      try {
+        await dbRootRef.update(updates);
+        const saved = await dbRootRef.child('students/' + sampleKey + '/exp').once('value');
+        const form = await dbRootRef.child('students/' + sampleKey + '/currentDigiId').once('value');
+        const hp = await dbRootRef.child('students/' + sampleKey + '/hp').once('value');
+        const egg = String(form && form.val ? form.val() : '');
+        return Number(saved && saved.val ? saved.val() : NaN) === 0 && Number(hp && hp.val ? hp.val() : NaN) === 100 && egg.indexOf('digitama') === 0;
+      } catch (err) {
+        console.warn('Student reset was not saved:', err);
+        return false;
+      }
+    }
+
+    function applyStudentResetLocal(student, eggId) {
+      if (!student) return;
+      Object.assign(student, studentResetFields(eggId));
+      student.inventory = {};
+      student.unlockedDex = { [eggId]: true };
+    }
+
+    async function superadminFullResetStudent(studentId) {
+      if (!currentUser || currentUser.role !== 'superadmin') return;
+      const s = appData.students[studentId];
+      if (!s) return;
+      if (!confirmResetPhrase("Type RESET to reset " + (s.name || studentId) + " to a new egg. EXP, points, HP, and inventory will be cleared.", 'RESET')) return;
+      const eggId = getRandomEggId();
+      const key = String(s.firebaseKey || s.id || '');
+      const saved = await commitSuperadminReset(buildStudentResetUpdate(s, eggId), key);
+      if (!saved) {
+        showToast('重設沒有儲存 / Reset was not saved', '請貼上新的 Firebase rules，然後重新登入最高管理員。 / Paste the new Firebase rules, then sign in again as superadmin.', 'damage');
+        return;
+      }
+      applyStudentResetLocal(s, eggId);
       playSound('faint');
-      addBattleLog(`⚡ [FULL RESET] All ${count} student accounts were reset!`, "battle", "ALL");
-      showToast("Class Reset Complete", `All ${count} students have been reset!`, "evolution");
-      executeAtomicMultiPathUpdate(updates);
+      addBattleLog(`⚡ [RESET] Student account [${s.name}] was factory-reset!`, "battle", s.classId);
+      showToast('Student Reset', s.name + ' returned to a new egg.', 'evolution');
+      renderSuperAdminDashboard();
+    }
+
+    async function superadminFullResetAllStudents() {
+      if (!currentUser || currentUser.role !== 'superadmin') return;
+      const ids = Object.keys(appData.students || {});
+      if (!ids.length) return;
+      if (!confirmResetPhrase("This clears EVERY student's digimon, EXP, points, HP, and inventory. Type RESET ALL to continue.", 'RESET ALL')) return;
+      const eggs = {};
+      const updates = {};
+      ids.forEach(id => {
+        const student = appData.students[id];
+        const eggId = getRandomEggId();
+        eggs[id] = eggId;
+        Object.assign(updates, buildStudentResetUpdate(student, eggId));
+      });
+      const first = appData.students[ids[0]];
+      const saved = await commitSuperadminReset(updates, String(first.firebaseKey || first.id || ''));
+      if (!saved) {
+        showToast('重設沒有儲存 / Reset was not saved', '請貼上新的 Firebase rules，然後重新登入最高管理員。 / Paste the new Firebase rules, then sign in again as superadmin.', 'damage');
+        return;
+      }
+      ids.forEach(id => applyStudentResetLocal(appData.students[id], eggs[id]));
+      playSound('faint');
+      addBattleLog(`⚡ [FULL RESET] All ${ids.length} student accounts were reset!`, "battle", "ALL");
+      showToast('Class Reset Complete', 'All ' + ids.length + ' students returned to new eggs.', 'evolution');
+      renderSuperAdminDashboard();
     }
 
     function updateTeacherBossHeader() {
@@ -13235,6 +13329,8 @@ else if (mode === 'pvp') {
 
     const REVIVE_QUIZ_QUOTA = 3;
     let reviveQuizCommitDepth = 0;
+    let heldReviveQuiz = null;
+    let reviveQuizForceRender = false;
 
     function autoReviveItemCount(student) {
       const inv = student && student.inventory;
@@ -13364,9 +13460,9 @@ function publishEvoEdges() {
       if (!raw) return [];
       const rows = Array.isArray(raw) ? raw : Object.keys(raw).sort().map(k => raw[k]);
       return rows.filter(q => q && q.question && q.correct).map(q => ({
-        question: String(q.question),
-        correct: String(q.correct),
-        wrongs: normalizeWrongAnswers(q.wrongs)
+        question: repairQuestionText(String(q.question).trim()),
+        correct: repairQuestionText(String(q.correct).trim()),
+        wrongs: normalizeWrongAnswers(q.wrongs).map(text => repairQuestionText(text))
       }));
     }
 
@@ -13467,6 +13563,7 @@ function publishEvoEdges() {
       const day = hongKongDateKey();
       const used = already + 1;
       cur.reviveDailyDay = day;
+      cur.reviveDailyEpoch = hongKongDayIndex();
       cur.reviveDailyUsed = used;
       const next = (!correct && used < REVIVE_QUIZ_QUOTA) ? pickNextReviveQuestion(cur, pending.question) : null;
       delete cur.reviveQuizPending;
@@ -13631,6 +13728,7 @@ function publishEvoEdges() {
       if (!st || !modal) return;
       const dead = (Number(st.hp) <= 0) || !!st.isFainted;
       if (!dead) {
+        heldReviveQuiz = null;
         modal.classList.add('hidden');
         clearDeathReviveLive();
         const clear = {};
@@ -13647,6 +13745,7 @@ function publishEvoEdges() {
         return;
       }
       if (st.reviveQuizClosed && !(st.reviveQuizPending && st.reviveQuizPending.question)) {
+        heldReviveQuiz = null;
         modal.classList.add('hidden');
         clearDeathReviveLive();
         if (hint) {
@@ -13661,6 +13760,7 @@ function publishEvoEdges() {
       const className = reviveQuizClassFor(st);
       const left = reviveQuizLeft(st);
       if (!className || left <= 0) {
+        heldReviveQuiz = null;
         modal.classList.add('hidden');
         clearDeathReviveLive();
         if (hint) {
@@ -13673,6 +13773,10 @@ function publishEvoEdges() {
       }
 
       let pending = normalizeRevivePending(st.reviveQuizPending);
+      const fromServer = !!(pending && pending.question && pending.options && pending.options.length);
+      if (!fromServer && heldReviveQuiz && heldReviveQuiz.studentId === String(st.id) && heldReviveQuiz.pending && heldReviveQuiz.pending.question) {
+        pending = heldReviveQuiz.pending;
+      }
       if (!pending || !pending.question || !pending.options || !pending.options.length) {
         const questions = classReviveQuestions(className);
         const picked = questions[Math.floor(Math.random() * questions.length)];
@@ -13688,43 +13792,36 @@ function publishEvoEdges() {
           correctAnswer: String(picked.correct).trim(),
           options: shuffleReviveOptions(picked)
         };
-        st.reviveQuizPending = pending;
-        if (dbRootRef) {
-          const snapshot = JSON.parse(JSON.stringify(pending));
-          dbRootRef.child('students/' + st.id).transaction(cur => {
-            if (!cur) return;
-            const hpNow = (cur.hp !== undefined && cur.hp !== null) ? Number(cur.hp) : 0;
-            if ((!cur.isFainted && hpNow > 0) || cur.reviveQuizClosed) return;
-            if (cur.reviveQuizPending && cur.reviveQuizPending.question) return;
-            cur.reviveQuizPending = snapshot;
-            return cur;
-          }, (err, committed, snap) => {
-            if (reviveQuizCommitDepth || !committed || !snap || !snap.exists()) return;
-            const norm = rememberReviveQuizStudent(st.id, snap.val());
-            if (norm && currentUser && currentUser.role === 'student' && currentUser.id === st.id) updateStudentUI();
-          });
-        }
-      } else {
-        st.reviveQuizPending = pending;
       }
-      if (hint) hint.textContent = '復活答題視窗已打開。答對會立刻滿血復活。答錯會立刻換下一題，直到今日次數用完。每次都用掉 1 次。 / The revive question is open. A correct answer restores full HP. A wrong answer opens the next question until today\'s tries are used. Each answer uses 1 try.';
-      const quotaEl = document.getElementById('reviveQuizQuotaText');
+      pending = normalizeRevivePending(pending) || pending;
+      heldReviveQuiz = { studentId: String(st.id), pending: pending };
+      st.reviveQuizPending = pending;
+      if (!fromServer && dbRootRef) {
+        const snapshot = JSON.parse(JSON.stringify(pending));
+        dbRootRef.child('students/' + studentSaveKey(st) + '/reviveQuizPending').set(snapshot).catch(() => {});
+      }
       const questionEl = document.getElementById('reviveQuizQuestion');
       const optionsEl = document.getElementById('reviveQuizOptions');
+      const sameQuestion = !reviveQuizForceRender && questionEl && optionsEl && !modal.classList.contains('hidden') && questionEl.textContent === pending.question && optionsEl.querySelectorAll('button').length === pending.options.length && Array.from(optionsEl.querySelectorAll('button')).every((btn, index) => !btn.disabled && btn.textContent === pending.options[index].text);
+      reviveQuizForceRender = false;
+      if (hint) hint.textContent = '復活答題視窗已打開。答對會立刻滿血復活。答錯會立刻換下一題，直到今日次數用完。每次都用掉 1 次。 / The revive question is open. A correct answer restores full HP. A wrong answer opens the next question until today\'s tries are used. Each answer uses 1 try.';
+      const quotaEl = document.getElementById('reviveQuizQuotaText');
       if (quotaEl) quotaEl.textContent = `復活答題 Revive：今日還可答 ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA} 次 / Revive answers left today: ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA}`;
-      if (questionEl) questionEl.textContent = pending.question;
-      if (optionsEl) {
-        optionsEl.innerHTML = '';
-        pending.options.forEach((opt) => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'w-full min-h-[48px] px-3 py-3 rounded-xl bg-slate-950 border border-emerald-500/50 text-emerald-100 text-sm font-bold leading-snug text-left break-words hover:bg-emerald-950 cursor-pointer active:scale-95';
-          btn.textContent = opt.text;
-          btn.onclick = () => submitReviveQuizAnswer(opt.text);
-          optionsEl.appendChild(btn);
-        });
+      if (!sameQuestion) {
+        if (questionEl) questionEl.textContent = pending.question;
+        if (optionsEl) {
+          optionsEl.innerHTML = '';
+          pending.options.forEach((opt) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'w-full min-h-[48px] px-3 py-3 rounded-xl bg-slate-950 border border-emerald-500/50 text-emerald-100 text-sm font-bold leading-snug text-left break-words hover:bg-emerald-950 cursor-pointer active:scale-95';
+            btn.textContent = opt.text;
+            btn.onclick = () => submitReviveQuizAnswer(opt.text);
+            optionsEl.appendChild(btn);
+          });
+        }
+        renderDeathReviveLive(pending, reviveQuizLeft(st));
       }
-      renderDeathReviveLive(pending, reviveQuizLeft(st));
       modal.classList.remove('hidden');
     }
 
@@ -13775,6 +13872,7 @@ function publishEvoEdges() {
       const finish = (student, outcome, committed) => {
         reviveQuizCommitDepth = 0;
         if (!committed || !outcome) {
+          reviveQuizForceRender = true;
           const still = appData.students[st.id];
           const stillDead = still && ((Number(still.hp) <= 0) || !!still.isFainted);
           if (stillDead) showToast('復活沒有儲存 / Revive Not Saved', '答案未能寫入，請再答一次。 / The answer was not saved. Please try again.', 'damage');
@@ -13788,29 +13886,39 @@ function publishEvoEdges() {
       if (!dbRootRef) {
         const outcome = applyReviveQuizResult(st, answerText);
         if (outcome) outcome.className = outcome.className || className;
+        if (st.reviveQuizPending && st.reviveQuizPending.question) heldReviveQuiz = { studentId: String(st.id), pending: normalizeRevivePending(st.reviveQuizPending) };
+        else heldReviveQuiz = null;
         finish(st, outcome, !!outcome);
         return;
       }
 
-      const snapshot = JSON.parse(JSON.stringify(pending));
-      dbRootRef.child('students/' + st.id).transaction(cur => {
-        if (!cur) return;
-        const hpNow = (cur.hp !== undefined && cur.hp !== null) ? Number(cur.hp) : 0;
-        const dead = !!cur.isFainted || hpNow <= 0;
-        if (!dead) return;
-        if (cur.reviveQuizClosed && !(cur.reviveQuizPending && cur.reviveQuizPending.question)) return;
-        if (!(cur.reviveQuizPending && cur.reviveQuizPending.question)) cur.reviveQuizPending = snapshot;
-        const outcome = applyReviveQuizResult(cur, answerText);
-        if (!outcome) return;
-        return cur;
-      }, (err, committed, snap) => {
-        if (err || !committed || !snap || !snap.exists()) {
-          finish(st, null, false);
-          return;
-        }
+      const draft = JSON.parse(JSON.stringify(st));
+      const outcome = applyReviveQuizResult(draft, answerText);
+      if (!outcome) {
+        finish(st, null, false);
+        return;
+      }
+      const base = 'students/' + studentSaveKey(st) + '/';
+      const updates = {};
+      updates[base + 'reviveDailyDay'] = draft.reviveDailyDay;
+      updates[base + 'reviveDailyEpoch'] = draft.reviveDailyEpoch || hongKongDayIndex();
+      updates[base + 'reviveDailyUsed'] = draft.reviveDailyUsed;
+      updates[base + 'reviveQuizPending'] = draft.reviveQuizPending || null;
+      updates[base + 'reviveQuizClosed'] = draft.reviveQuizClosed ? true : null;
+      if (outcome.correct) {
+        updates[base + 'hp'] = draft.hp;
+        updates[base + 'isFainted'] = false;
+        updates[base + 'killedByName'] = null;
+        updates[base + 'killedById'] = null;
+      }
+      dbRootRef.update(updates).then(() => dbRootRef.child('students/' + studentSaveKey(st)).once('value')).then(snap => {
         const norm = rememberReviveQuizStudent(st.id, snap.val()) || st;
+        if (norm.reviveQuizPending && norm.reviveQuizPending.question) heldReviveQuiz = { studentId: String(st.id), pending: normalizeRevivePending(norm.reviveQuizPending) };
+        else heldReviveQuiz = null;
         const stillDown = !!(norm.isFainted || Number(norm.hp) <= 0);
         const hasNext = !!(norm.reviveQuizPending && norm.reviveQuizPending.question);
+        if (outcome.correct && stillDown) throw new Error('revive was not saved');
+        if (!outcome.correct && Number(norm.reviveDailyUsed) < Number(draft.reviveDailyUsed)) throw new Error('revive answer was not saved');
         finish(norm, {
           correct: !stillDown,
           used: reviveDailyUsed(norm),
@@ -13818,6 +13926,8 @@ function publishEvoEdges() {
           continued: stillDown && hasNext && !norm.reviveQuizClosed,
           className: className
         }, true);
+      }).catch(() => {
+        finish(st, null, false);
       });
     }
 
@@ -13874,19 +13984,19 @@ function publishEvoEdges() {
       reader.onload = function(e) {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
             const row = jsonRows[i];
             if (!row || row[0] === undefined || row[0] === null || row[1] === undefined || row[1] === null) continue;
-            const questionText = String(row[0]).trim();
-            const correctOpt = String(row[1]).trim();
+            const questionText = repairQuestionText(String(row[0]).trim());
+            const correctOpt = repairQuestionText(String(row[1]).trim());
             if (!questionText || !correctOpt) continue;
             const wrongs = [];
             [2, 3, 4].forEach(col => {
-              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(String(row[col]).trim());
+              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(repairQuestionText(String(row[col]).trim()));
             });
             questions.push({ question: questionText, correct: correctOpt, wrongs: wrongs });
           }
@@ -13942,13 +14052,13 @@ function publishEvoEdges() {
         const flagged = options.find(opt => opt.correct);
         if (flagged) correctAnswer = flagged.text;
       }
-      const question = String(raw.question);
+      const question = repairQuestionText(String(raw.question));
       return {
         className: raw.className ? String(raw.className) : '',
         questionKey: raw.questionKey ? String(raw.questionKey) : trialQuestionKey(question),
         question: question,
-        correctAnswer: correctAnswer,
-        options: options
+        correctAnswer: repairQuestionText(correctAnswer),
+        options: options.map(opt => ({ text: repairQuestionText(opt.text), correct: !!opt.correct }))
       };
     }
 
@@ -13977,12 +14087,15 @@ function publishEvoEdges() {
       const raw = reviveBucketValue(bank, className);
       if (!raw) return [];
       const rows = Array.isArray(raw) ? raw : Object.keys(raw).sort().map(k => raw[k]);
-      return rows.filter(q => q && q.question && q.correct).map(q => ({
-        question: String(q.question),
-        correct: String(q.correct),
-        wrongs: normalizeWrongAnswers(q.wrongs),
-        questionKey: trialQuestionKey(q.question)
-      }));
+      return rows.filter(q => q && q.question && q.correct).map(q => {
+        const question = repairQuestionText(String(q.question).trim());
+        return {
+          question: question,
+          correct: repairQuestionText(String(q.correct).trim()),
+          wrongs: normalizeWrongAnswers(q.wrongs).map(text => repairQuestionText(text)),
+          questionKey: trialQuestionKey(question)
+        };
+      });
     }
 
     function dailyTrialClassesFor(student) {
@@ -14064,7 +14177,7 @@ function publishEvoEdges() {
       if (revive) revive.classList.add('hidden');
       const left = dailyTrialLeft(student);
       if (quotaEl) quotaEl.innerHTML = `每日試煉 Trial：今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題<br>Trial questions left today: ${left} / ${DAILY_TRIAL_QUOTA}`;
-      if (questionEl) questionEl.textContent = open.question;
+      if (questionEl) questionEl.textContent = repairQuestionText(open.question);
       if (result) result.classList.add('hidden');
       if (giveUp) giveUp.classList.remove('hidden');
       if (optionsEl) {
@@ -14074,8 +14187,8 @@ function publishEvoEdges() {
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'w-full min-h-[48px] px-3 py-3 rounded-xl bg-slate-950 border border-amber-500/50 text-amber-100 text-sm font-bold leading-snug text-left break-words hover:bg-amber-950 cursor-pointer active:scale-95';
-          btn.textContent = opt.text;
-          btn.onclick = () => submitDailyTrialAnswer(opt.text);
+          btn.textContent = repairQuestionText(opt.text);
+          btn.onclick = () => submitDailyTrialAnswer(repairQuestionText(opt.text));
           optionsEl.appendChild(btn);
         });
       }
@@ -14197,18 +14310,17 @@ function publishEvoEdges() {
         return;
       }
       dailyTrialCommitDepth++;
-      dbRootRef.child('students/' + student.id).transaction(cur => {
-        if (!cur) return;
-        if (String(cur.dailyTrialDay || '') === today) return cur;
-        cur.dailyTrialDay = today;
-        cur.dailyTrialEpoch = hongKongDayIndex();
-        cur.dailyTrialUsed = 0;
-        cur.dailyTrialSeen = null;
-        cur.dailyTrialOpen = null;
-        return cur;
-      }, (err, committed, snap) => {
+      const base = 'students/' + studentSaveKey(student) + '/';
+      const updates = {};
+      updates[base + 'dailyTrialDay'] = today;
+      updates[base + 'dailyTrialEpoch'] = hongKongDayIndex();
+      updates[base + 'dailyTrialUsed'] = 0;
+      updates[base + 'dailyTrialSeen'] = null;
+      updates[base + 'dailyTrialOpen'] = null;
+      dbRootRef.update(updates).then(() => dbRootRef.child('students/' + studentSaveKey(student)).once('value')).then(snap => {
+        if (snap && snap.exists()) rememberDailyTrialStudent(student.id, snap.val());
+      }).catch(() => {}).finally(() => {
         dailyTrialCommitDepth = 0;
-        if (committed && snap && snap.exists()) rememberDailyTrialStudent(student.id, snap.val());
         finish();
       });
     }
@@ -14266,21 +14378,33 @@ function publishEvoEdges() {
         return;
       }
 
-      let outcomeBox = null;
-      dbRootRef.child('students/' + st.id).transaction(cur => {
-        if (!cur) return;
+      const base = 'students/' + studentSaveKey(st) + '/';
+      dbRootRef.child('students/' + studentSaveKey(st)).once('value').then(snap => {
+        const cur = snap.val();
+        if (!cur) throw new Error('missing student');
+        const beforeCoins = Number(cur.coins) || 0;
+        const beforeUsed = Math.max(0, Number(cur.dailyTrialUsed) || 0);
         const outcome = applyDailyTrialResult(cur, mode, answerText);
-        if (!outcome) return;
-        outcomeBox = outcome;
-        return cur;
-      }, (err, committed, snap) => {
-        if (err || !committed || !snap || !snap.exists() || !outcomeBox) {
-          const norm = appData.students[st.id] || st;
-          finish(norm, null, false);
-          return;
-        }
-        const norm = rememberDailyTrialStudent(st.id, snap.val()) || st;
-        finish(norm, outcomeBox, true);
+        if (!outcome) throw new Error('not open');
+        const updates = {};
+        updates[base + 'dailyTrialDay'] = cur.dailyTrialDay;
+        updates[base + 'dailyTrialEpoch'] = cur.dailyTrialEpoch != null ? cur.dailyTrialEpoch : hongKongDayIndex();
+        updates[base + 'dailyTrialUsed'] = cur.dailyTrialUsed;
+        updates[base + 'dailyTrialOpen'] = cur.dailyTrialOpen || null;
+        if (!cur.dailyTrialSeen) updates[base + 'dailyTrialSeen'] = null;
+        else Object.keys(cur.dailyTrialSeen).forEach(key => {
+          if (cur.dailyTrialSeen[key]) updates[base + 'dailyTrialSeen/' + key] = true;
+        });
+        const coinsNow = Number(cur.coins) || 0;
+        if (coinsNow !== beforeCoins) updates[base + 'coins'] = coinsNow;
+        return dbRootRef.update(updates).then(() => dbRootRef.child('students/' + studentSaveKey(st)).once('value')).then(saved => {
+          const norm = rememberDailyTrialStudent(st.id, saved.val()) || st;
+          if (outcome.correct && (Number(norm.coins) || 0) < beforeCoins + DAILY_TRIAL_COINS) throw new Error('coins were not saved');
+          if (!outcome.expired && !outcome.blocked && (Number(norm.dailyTrialUsed) || 0) < beforeUsed + 1 && String(norm.dailyTrialDay || '') === String(cur.dailyTrialDay || '')) throw new Error('try was not saved');
+          finish(norm, outcome, true);
+        });
+      }).catch(() => {
+        finish(appData.students[st.id] || st, null, false);
       });
     }
 
@@ -14385,7 +14509,7 @@ function publishEvoEdges() {
       beginDailyTrialQuestion(st, className);
     }
 
-    function beginDailyTrialQuestion(student, className) {
+    async function beginDailyTrialQuestion(student, className) {
       const state = trialState(student);
       if (state.used >= DAILY_TRIAL_QUOTA) {
         showToast('今日試煉已用完 / No Tries Left', '今日 10 次已經用完，香港時間午夜 00:00 才會再有。 / All 10 tries for today are used. They return at 00:00 Hong Kong time.', 'info');
@@ -14413,47 +14537,52 @@ function publishEvoEdges() {
         return;
       }
       dailyTrialCommitDepth++;
-      dbRootRef.child('students/' + student.id).transaction(cur => {
-        if (!cur) return;
+      try {
+        const snap = await dbRootRef.child('students/' + studentSaveKey(student)).once('value');
+        const cur = snap.val();
+        if (!cur) throw new Error('missing student');
         const today = hongKongDateKey();
         const same = String(cur.dailyTrialDay || '') === today;
-        if (!same) {
-          cur.dailyTrialDay = today;
-          cur.dailyTrialEpoch = hongKongDayIndex();
-          cur.dailyTrialUsed = 0;
-          cur.dailyTrialSeen = null;
-          cur.dailyTrialOpen = null;
-        }
         const used = same ? Math.max(0, Number(cur.dailyTrialUsed) || 0) : 0;
-        if (used >= DAILY_TRIAL_QUOTA) return;
-        if (same && cur.dailyTrialOpen && cur.dailyTrialOpen.question) return cur;
+        if (used >= DAILY_TRIAL_QUOTA) {
+          showToast('今日試煉已用完 / No Tries Left', '今日 10 次已經用完，香港時間午夜 00:00 才會再有。 / All 10 tries for today are used. They return at 00:00 Hong Kong time.', 'info');
+          return;
+        }
+        if (same && cur.dailyTrialOpen && cur.dailyTrialOpen.question) {
+          const norm = rememberDailyTrialStudent(student.id, cur);
+          const opened = norm && trialState(norm).open;
+          if (opened) {
+            renderDailyTrialQuestion(norm, opened);
+            updateStudentUI();
+            return;
+          }
+        }
         const seen = (same && cur.dailyTrialSeen && typeof cur.dailyTrialSeen === 'object') ? cur.dailyTrialSeen : {};
-        if (seen[snapshot.questionKey]) return;
-        cur.dailyTrialDay = today;
-        cur.dailyTrialEpoch = hongKongDayIndex();
-        cur.dailyTrialUsed = used;
-        cur.dailyTrialOpen = snapshot;
-        return cur;
-      }, (err, committed, snap) => {
-        dailyTrialCommitDepth = 0;
-        if (err || !committed || !snap || !snap.exists()) {
-          if (err) notePlayWriteError(err);
-          showToast('題目沒有打開 / Question Not Opened', '請再按一次每日試煉。 / Press the daily trial again.', 'info');
-          updateDailyTrialStudentBadge();
+        if (seen[snapshot.questionKey]) {
+          showToast('今天沒有新題目 / No New Questions', '今天還沒答過的題目已經沒有了。香港時間午夜 00:00 會重新計算。 / No unseen questions are left today. They reset at 00:00 Hong Kong time.', 'info');
           return;
         }
-        const norm = rememberDailyTrialStudent(student.id, snap.val());
+        const base = 'students/' + studentSaveKey(student) + '/';
+        const updates = {};
+        updates[base + 'dailyTrialDay'] = today;
+        updates[base + 'dailyTrialEpoch'] = hongKongDayIndex();
+        updates[base + 'dailyTrialUsed'] = used;
+        updates[base + 'dailyTrialOpen'] = snapshot;
+        if (!same) updates[base + 'dailyTrialSeen'] = null;
+        await dbRootRef.update(updates);
+        const saved = await dbRootRef.child('students/' + studentSaveKey(student)).once('value');
+        const norm = rememberDailyTrialStudent(student.id, saved.val());
         const opened = norm && trialState(norm).open;
-        if (!opened) {
-          const usedNow = norm ? trialState(norm).used : DAILY_TRIAL_QUOTA;
-          if (usedNow >= DAILY_TRIAL_QUOTA) showToast('今日試煉已用完 / No Tries Left', '今日 10 次已經用完，香港時間午夜 00:00 才會再有。 / All 10 tries for today are used. They return at 00:00 Hong Kong time.', 'info');
-          else showToast('今天沒有新題目 / No New Questions', '今天還沒答過的題目已經沒有了。香港時間午夜 00:00 會重新計算。 / No unseen questions are left today. They reset at 00:00 Hong Kong time.', 'info');
-          updateStudentUI();
-          return;
-        }
+        if (!opened || String(opened.question) !== String(snapshot.question)) throw new Error('question was not saved');
         renderDailyTrialQuestion(norm, opened);
         updateStudentUI();
-      });
+      } catch (err) {
+        notePlayWriteError(err);
+        showToast('題目沒有打開 / Question Not Opened', '請再按一次每日試煉。 / Press the daily trial again.', 'info');
+        updateDailyTrialStudentBadge();
+      } finally {
+        dailyTrialCommitDepth = 0;
+      }
     }
 
     function handleDailyTrialExcelImport(event) {
@@ -14470,19 +14599,19 @@ function publishEvoEdges() {
       reader.onload = function(e) {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
             const row = jsonRows[i];
             if (!row || row[0] === undefined || row[0] === null || row[1] === undefined || row[1] === null) continue;
-            const questionText = String(row[0]).trim();
-            const correctOpt = String(row[1]).trim();
+            const questionText = repairQuestionText(String(row[0]).trim());
+            const correctOpt = repairQuestionText(String(row[1]).trim());
             if (!questionText || !correctOpt) continue;
             const wrongs = [];
             [2, 3, 4].forEach(col => {
-              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(String(row[col]).trim());
+              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(repairQuestionText(String(row[col]).trim()));
             });
             questions.push({ question: questionText, correct: correctOpt, wrongs: wrongs });
           }
@@ -16680,7 +16809,7 @@ function teacherToggleClassSpy(studentId, event) {
       reader.onload = function(e) {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
@@ -16690,13 +16819,13 @@ function teacherToggleClassSpy(studentId, event) {
             const row = jsonRows[i];
             if (!row || !row[0] || !row[1]) continue;
 
-            const questionText = String(row[0]).trim();
-            const correctOpt = String(row[1]).trim();
+            const questionText = repairQuestionText(String(row[0]).trim());
+            const correctOpt = repairQuestionText(String(row[1]).trim());
             const wrongOpts = [];
 
-            if (row[2] && String(row[2]).trim()) wrongOpts.push(String(row[2]).trim());
-            if (row[3] && String(row[3]).trim()) wrongOpts.push(String(row[3]).trim());
-            if (row[4] && String(row[4]).trim()) wrongOpts.push(String(row[4]).trim());
+            if (row[2] && String(row[2]).trim()) wrongOpts.push(repairQuestionText(String(row[2]).trim()));
+            if (row[3] && String(row[3]).trim()) wrongOpts.push(repairQuestionText(String(row[3]).trim()));
+            if (row[4] && String(row[4]).trim()) wrongOpts.push(repairQuestionText(String(row[4]).trim()));
 
             if (questionText && correctOpt) {
               importedQuizBank.push({
@@ -16788,14 +16917,14 @@ function teacherToggleClassSpy(studentId, event) {
       return limitMs - (syncedNow() - start);
     }
 
-    function teacherLaunchQuiz() {
+    async function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
 
-      const q = document.getElementById('teacherQuizQuestionInput').value.trim();
-      const correct = document.getElementById('teacherQuizOpt1').value.trim();
-      const w1 = document.getElementById('teacherQuizOpt2').value.trim();
-      const w2 = document.getElementById('teacherQuizOpt3').value.trim();
-      const w3 = document.getElementById('teacherQuizOpt4').value.trim();
+      const q = repairQuestionText(document.getElementById('teacherQuizQuestionInput').value.trim());
+      const correct = repairQuestionText(document.getElementById('teacherQuizOpt1').value.trim());
+      const w1 = repairQuestionText(document.getElementById('teacherQuizOpt2').value.trim());
+      const w2 = repairQuestionText(document.getElementById('teacherQuizOpt3').value.trim());
+      const w3 = repairQuestionText(document.getElementById('teacherQuizOpt4').value.trim());
       
       const timeLimitSelect = document.getElementById('teacherQuizTimeLimitSelect');
       // 解析選定時間（0 代表無限時間）
@@ -16837,12 +16966,20 @@ function teacherToggleClassSpy(studentId, event) {
       };
 
       if (dbRootRef) {
-        dbRootRef.child('activeQuiz').set(quizData).then(() => {
+        const teacher = (appData.teachers && appData.teachers[currentUser.id]) || currentUser.data || {};
+        try { await publishLoginSession('teachers', currentUser.id, currentUser.authToken, teacher); } catch (err) {}
+        try {
+          await dbRootRef.child('activeQuiz').set(quizData);
+          const saved = await dbRootRef.child('activeQuiz').once('value');
+          const live = saved.val();
+          if (!live || !live.active || String(live.quizId) !== String(quizData.quizId)) throw new Error('the quiz was not saved');
           const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒 (${timeLimitSec}s)` : '無限時間 (No Limit)';
           addBattleLog(`⚡ [LIVE QUIZ] 老師發布搶答 (${limitMsg}): "${q}"! 1st: +2 次攻擊, 2nd: +1 次攻擊, 3rd: +30 EXP, 其餘答對: +10 EXP!`, "evolution", targetClass);
           showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！ / Speed Quiz Launched!`, "evolution");
           renderTeacherQuizLiveDashboard();
-        });
+        } catch (err) {
+          alert('發布失敗: ' + (err && err.message ? err.message : err));
+        }
       }
     }
 
@@ -16954,7 +17091,7 @@ function teacherToggleClassSpy(studentId, event) {
         : "text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-bold";
 
       if (qSnippet) {
-        qSnippet.textContent = `目前問題: ${activeQuizInstance.question || ''}`;
+        qSnippet.textContent = `目前問題: ${repairQuestionText(activeQuizInstance.question || '')}`;
       }
 
       const winners = activeQuizInstance.winners || {};
@@ -17113,7 +17250,7 @@ function teacherToggleClassSpy(studentId, event) {
         const barWrapper = document.getElementById('quizTimerBarWrapper');
         const barFill = document.getElementById('quizTimerBarFill');
 
-        document.getElementById('quizQuestionBox').textContent = activeQuizInstance.question;
+        document.getElementById('quizQuestionBox').textContent = repairQuestionText(activeQuizInstance.question);
 
         // 取得限時秒數（0 代表無限制）
         const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? Number(activeQuizInstance.timeLimit) : 30;
@@ -17178,8 +17315,9 @@ function teacherToggleClassSpy(studentId, event) {
               <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-pixel text-[10px] text-amber-300 shrink-0">
                 ${String.fromCharCode(65 + optIdx)}
               </span>
-              <span class="truncate">${optText}</span>
+              <span class="truncate"></span>
             `;
+            btn.querySelector('.truncate').textContent = repairQuestionText(optText);
             btn.onclick = () => submitQuizAnswer(optIdx, false);
             grid.appendChild(btn);
           });
@@ -17361,7 +17499,7 @@ function onExamTimePresetChange(val) {
   reader.onload = function(e) {
     try {
       const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
+      const workbook = readDungeonQuestionWorkbook(data, file.name);
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
@@ -17376,12 +17514,12 @@ function onExamTimePresetChange(val) {
         const row = jsonRows[i];
         if (!row || row[0] === undefined || row[0] === null || String(row[0]).trim() === '') continue;
 
-        const qText = String(row[0]).trim();
-        const correctAns = (row[1] !== undefined && row[1] !== null) ? String(row[1]).trim() : "";
-        const opt2 = row[2] !== undefined ? String(row[2]).trim() : "";
-        const opt3 = row[3] !== undefined ? String(row[3]).trim() : "";
-        const opt4 = row[4] !== undefined ? String(row[4]).trim() : "";
-                const explain = row[6] !== undefined ? String(row[6]).trim() : "";
+        const qText = repairQuestionText(String(row[0]).trim());
+        const correctAns = (row[1] !== undefined && row[1] !== null) ? repairQuestionText(String(row[1]).trim()) : "";
+        const opt2 = row[2] !== undefined ? repairQuestionText(String(row[2]).trim()) : "";
+        const opt3 = row[3] !== undefined ? repairQuestionText(String(row[3]).trim()) : "";
+        const opt4 = row[4] !== undefined ? repairQuestionText(String(row[4]).trim()) : "";
+                const explain = row[6] !== undefined ? repairQuestionText(String(row[6]).trim()) : "";
         // 讀取題型 (Column F) - 智慧辨識 fill, fill-in, fillin, 填空, 填寫 等字眼
             const rawTypeStr = String(row[5] || '').trim().toLowerCase();
             const isFillType = /fill|fill-in|fill_in|fillin|填空|填寫|填充/.test(rawTypeStr);
@@ -17412,7 +17550,7 @@ function onExamTimePresetChange(val) {
 }
 
     // 3. 老師發布全卷
-    function teacherLaunchExam() {
+    async function teacherLaunchExam() {
   if (!currentUser || currentUser.role !== 'teacher') return;
   if (!importedExamQuestions || importedExamQuestions.length === 0) {
     return alert("請先匯入 Excel 考卷題目！(Please import exam questions first)");
@@ -17450,7 +17588,14 @@ function onExamTimePresetChange(val) {
     durationMinutes: durationMins,
     startTime: now,
     endTime: now + durationMs,
-    questions: importedExamQuestions,
+    questions: (importedExamQuestions || []).map(item => ({
+      question: repairQuestionText(item.question),
+      answer: repairQuestionText(item.answer),
+      options: (item.options || []).map(opt => repairQuestionText(opt)),
+      type: item.type,
+      explanation: repairQuestionText(item.explanation || '')
+    })),
+    launchedAt: now,
     teacherId: currentUser.id,
     teacherName: (appData.teachers[currentUser.id] || currentUser.data)?.name || 'Teacher',
     submissions: {},
@@ -17458,14 +17603,20 @@ function onExamTimePresetChange(val) {
   };
 
   if (dbRootRef) {
-    dbRootRef.child('activeExam').set(newExamPayload).then(() => {
+    const teacher = (appData.teachers && appData.teachers[currentUser.id]) || currentUser.data || {};
+    try { await publishLoginSession('teachers', currentUser.id, currentUser.authToken, teacher); } catch (err) {}
+    try {
+      await dbRootRef.child('activeExam').set(newExamPayload);
+      const saved = await dbRootRef.child('activeExam').once('value');
+      const live = saved.val();
+      if (!live || !live.isOpen || String(live.examId) !== String(examId)) throw new Error('the exam was not saved');
       playSound('evolve');
       addBattleLog(`📝 [EXAM LAUNCHED] 老師發布了考卷【${title}】(限時: ${durationMins} 分鐘，班級: ${targetClass})！`, "evolution", targetClass);
       showToast("考卷發布成功", `【${title}】已開考！時長：${durationMins} 分鐘`, "heal");
       renderTeacherExamDashboard();
-    }).catch(err => {
-      alert("發布失敗: " + err.message);
-    });
+    } catch (err) {
+      alert("發布失敗: " + (err && err.message ? err.message : err));
+    }
   }
 }
 
@@ -17723,7 +17874,7 @@ function renderStudentExamQuestion() {
   const qText = q.question || q.text || q.content || q.title || `題目 ${currentExamQIndex + 1}`;
   const contentBox = document.getElementById('examQuestionContent');
   if (contentBox) {
-    contentBox.textContent = qText;
+    contentBox.textContent = repairQuestionText(qText);
   }
 
   // 3. 處理選擇題 vs 填空題容器
@@ -17762,7 +17913,7 @@ function renderStudentExamQuestion() {
       }
 
       // 去重保證選項完整
-      const uniqueOptions = Array.from(new Set(rawOptions.map(o => String(o).trim())));
+      const uniqueOptions = Array.from(new Set(rawOptions.map(o => repairQuestionText(String(o).trim()))));
 
       uniqueOptions.forEach((opt, idx) => {
         const isSelected = String(currentSavedAns).trim() === opt;
@@ -18040,13 +18191,13 @@ function startStudentExamTimer() {
   questions.forEach((q, idx) => {
     // 取得學生作答內容
     const rawStuAns = studentExamAnswers[idx];
-    const stuAns = (rawStuAns !== undefined && rawStuAns !== null) ? String(rawStuAns).trim() : "";
+    const stuAns = (rawStuAns !== undefined && rawStuAns !== null) ? repairQuestionText(String(rawStuAns).trim()) : "";
 
     // 容錯提取正確答案（相容 answer, ans, correct, opt1）
     let correctAns = "";
-    if (q.answer !== undefined && q.answer !== null) correctAns = String(q.answer).trim();
-    else if (q.ans !== undefined && q.ans !== null) correctAns = String(q.ans).trim();
-    else if (q.correct !== undefined && q.correct !== null) correctAns = String(q.correct).trim();
+    if (q.answer !== undefined && q.answer !== null) correctAns = repairQuestionText(String(q.answer).trim());
+    else if (q.ans !== undefined && q.ans !== null) correctAns = repairQuestionText(String(q.ans).trim());
+    else if (q.correct !== undefined && q.correct !== null) correctAns = repairQuestionText(String(q.correct).trim());
 
     // 核心判定修復：學生未作答（空白）或題庫無正解時，嚴格判定為錯誤
     let isCorrect = false;
@@ -18486,7 +18637,12 @@ function startStudentExamTimer() {
       bossUpdates[`students/${st.id}/exp`] = (st.exp || 0) + bossExp;
       bossUpdates[`students/${st.id}/statPool`] = (st.statPool || 0) + bossExp;
       bossUpdates[`teachers/${tc.id}/hp`] = nextHp;
-      const saved = await commitPlayUpdate(bossUpdates);
+      const hpNow = Number(st.hp);
+      if (Number.isFinite(hpNow)) bossUpdates[`students/${st.id}/hp`] = hpNow;
+      const saved = await commitPlayUpdate(bossUpdates, {
+        [`students/${st.id}/attackQuota`]: newQuota,
+        [`teachers/${tc.id}/hp`]: nextHp
+      });
       if (!saved) return;
       st.attackQuota = newQuota;
       st.exp = (st.exp || 0) + bossExp;
@@ -18814,7 +18970,10 @@ function startStudentExamTimer() {
           updates[`students/${target.id}/killedById`] = me.id;
         }
       }
-      const saved = await commitPlayUpdate(updates);
+      const saved = await commitPlayUpdate(updates, {
+        [`students/${me.id}/attackQuota`]: newQuota,
+        [`students/${target.id}/hp`]: updates[`students/${target.id}/hp`]
+      });
       if (!saved) return;
       me.attackQuota = newQuota;
       me.exp = (me.exp || 0) + expGained;
