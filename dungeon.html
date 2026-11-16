@@ -24,6 +24,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
@@ -1691,13 +1692,37 @@
         return next;
       });
     }
-    async function spendTicket() {
-      const result = await transact('students/' + gate.id + '/dungeonTickets', cur => {
-        const count = Number(cur) || 0;
-        if (count < 1) return;
-        return count - 1;
-      });
-      return result.committed;
+    async function payForRoom(code) {
+      const updates = {};
+      const tickets = ticketsOf();
+      if (tickets < 1 || !code) return false;
+      updates['students/' + gate.id + '/dungeonTickets'] = tickets - 1;
+      updates['students/' + gate.id + '/dungeonRuns'] = (Number(meStudent && meStudent.dungeonRuns) || 0) + 1;
+      updates['students/' + gate.id + '/dungeonPayCode'] = code;
+      updates['systemSettings/labyrinthRooms/' + code + '/paidBy'] = gate.id;
+      await db.update(updates);
+      if (meStudent) {
+        meStudent.dungeonTickets = tickets - 1;
+        meStudent.dungeonRuns = (Number(meStudent.dungeonRuns) || 0) + 1;
+        meStudent.dungeonPayCode = code;
+      }
+      return true;
+    }
+    async function refundRoom(code) {
+      const tickets = ticketsOf();
+      const runs = Number(meStudent && meStudent.dungeonRuns) || 0;
+      if (!code || runs < 1) return;
+      const updates = {};
+      updates['students/' + gate.id + '/dungeonTickets'] = tickets + 1;
+      updates['students/' + gate.id + '/dungeonRuns'] = runs - 1;
+      updates['students/' + gate.id + '/dungeonPayCode'] = null;
+      updates['systemSettings/labyrinthRooms/' + code + '/paidBy'] = null;
+      await db.update(updates);
+      if (meStudent) {
+        meStudent.dungeonTickets = tickets + 1;
+        meStudent.dungeonRuns = runs - 1;
+        meStudent.dungeonPayCode = null;
+      }
     }
     function studentIsDown() {
       return !!(meStudent && (meStudent.isFainted || Number(meStudent.hp) === 0));
@@ -1812,11 +1837,16 @@
     }
     async function startSolo() {
       if (ticketsOf() < 1) return toast('需要迷宮券。請老師發放。 / Ask your teacher for a dungeon ticket.');
-      if (!(await spendTicket())) return toast('需要迷宮券。 / A dungeon ticket is required.');
       const opened = await openFreshRoom(true);
-      if (!opened) {
-        await addField(gate.id, 'dungeonTickets', 1);
-        toast('房間暫時開不了。券已退回。 / Could not open a room. The ticket was returned.');
+      if (!opened) return toast('房間暫時開不了。 / Could not open a room.');
+      try {
+        if (!(await payForRoom(roomCode))) {
+          await db.child('systemSettings/labyrinthRooms/' + roomCode).remove();
+          toast('需要迷宮券。 / A dungeon ticket is required.');
+        }
+      } catch (err) {
+        try { await db.child('systemSettings/labyrinthRooms/' + roomCode).remove(); } catch (ignore) {}
+        toast('需要迷宮券。 / A dungeon ticket is required.');
       }
     }
     async function createLobby() {
@@ -1827,10 +1857,10 @@
     async function startSquad() {
       if (!currentRoom || !isHost(currentRoom)) return;
       if (ticketsOf() < 1) return toast('開始遠征需要迷宮券。 / Starting the expedition spends one dungeon ticket.');
-      if (!(await spendTicket())) return toast('需要迷宮券。 / A dungeon ticket is required.');
+      if (!(await payForRoom(currentRoom.code))) return toast('需要迷宮券。 / A dungeon ticket is required.');
       const result = await commit({ type: 'start', memberId: gate.id });
       if (!result.committed) {
-        await addField(gate.id, 'dungeonTickets', 1);
+        await refundRoom(currentRoom.code);
         toast('遠征沒有開始，券已退回。 / The run did not start. The ticket was returned.');
       }
     }
@@ -1949,9 +1979,15 @@
         if (payout.kind === 'defeat') return;
         for (let i = 0; i < payout.ids.length; i++) {
           const id = payout.ids[i];
-          if (payout.exp) await addField(id, 'exp', payout.exp);
-          if (payout.coins) await addField(id, 'coins', payout.coins);
-          if (payout.tickets) await addField(id, 'gachaTickets', payout.tickets);
+          await transact('students/' + id, cur => {
+            if (!cur || typeof cur !== 'object') return;
+            if (String(cur.dungeonRewardCode || '') === String(room.code || '')) return;
+            cur.dungeonRewardCode = String(room.code || '');
+            if (payout.exp) cur.exp = (Number(cur.exp) || 0) + payout.exp;
+            if (payout.coins) cur.coins = (Number(cur.coins) || 0) + payout.coins;
+            if (payout.tickets) cur.gachaTickets = (Number(cur.gachaTickets) || 0) + payout.tickets;
+            return cur;
+          });
         }
         if (payout.kind === 'victory') {
           await db.child('battleLogs').push().set({
@@ -2438,7 +2474,7 @@
       if (act === 'sacrifice') return commit({ type: 'act', memberId: gate.id, kind: 'sacrifice', allyId: button.dataset.ally });
     }
 
-    function boot() {
+    async function boot() {
       if (!gate) return;
       document.getElementById('app').addEventListener('click', onAppClick);
       document.getElementById('app').addEventListener('input', event => {
@@ -2447,7 +2483,20 @@
       db = window.__DIGI_TEST_DB || null;
       if (!db) {
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+        try {
+          if (firebase.auth) {
+            try { await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (err) {}
+            if (!firebase.auth().currentUser) await firebase.auth().signInAnonymously();
+          }
+        } catch (err) {}
         db = firebase.database().ref();
+        try {
+          const saved = JSON.parse(sessionStorage.getItem('DIGIMON_CLASS_GATE_V1') || 'null');
+          const uid = firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid;
+          if (saved && saved.proof && saved.id && uid) {
+            await db.child('sessions/' + uid).set({ role: 'student', userId: String(saved.id).toLowerCase(), proof: saved.proof });
+          }
+        } catch (err) {}
       }
       db.child('.info/serverTimeOffset').on('value', snap => {
         if (!snap.exists()) return;
@@ -2475,7 +2524,12 @@
       });
       db.child('students/' + String(gate.id).toLowerCase()).on('value', snap => {
         meStudent = snap.val();
-        if (meStudent) meStudent.id = String(gate.id).toLowerCase();
+        if (meStudent) {
+          meStudent.id = String(gate.id).toLowerCase();
+          delete meStudent.password;
+          delete meStudent.passwordHash;
+          delete meStudent.passwordSalt;
+        }
         if (groupJoinCode && !roomCode) {
           const code = groupJoinCode;
           groupJoinCode = '';
