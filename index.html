@@ -1638,7 +1638,10 @@
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Password</label>
-          <input id="modalTcPass" type="text" placeholder="目前密碼 / Current password" autocomplete="off" class="w-full bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-amber-200">
+          <div class="flex gap-2">
+            <input id="modalTcPass" type="password" placeholder="點一下顯示才看得到 / Hidden until shown" autocomplete="off" class="flex-1 bg-slate-950 border border-slate-700 rounded p-2 focus:border-amber-400 outline-none text-amber-200">
+            <button id="modalTcPassToggle" type="button" onclick="toggleSecretInput('modalTcPass', this)" class="px-3 rounded bg-slate-800 border border-slate-600 text-slate-200 font-bold cursor-pointer active:scale-95">顯示</button>
+          </div>
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Display Name</label>
@@ -1705,7 +1708,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.66";
+    const CURRENT_APP_VERSION = "2.7.69";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -2561,39 +2564,44 @@ function buyShopItem(shopItemId) {
   if (!currentUser || currentUser.role !== 'student') return;
   const item = SHOP_CATALOG.find(i => i.id === shopItemId);
   if (!item) return;
-
-  if (!dbRootRef) return;
-  dbRootRef.child(`students/${currentUser.id}`).transaction(cur => {
-    if (!cur) return cur;
-    const currentCoins = cur.coins || 0;
-    if (currentCoins < item.cost) return cur; // 攔截餘額不足
-
-    cur.coins = currentCoins - item.cost;
-
-    // 存入背包
-    if (!cur.inventory) cur.inventory = {};
-    cur.inventory[item.id] = (cur.inventory[item.id] || 0) + 1;
-    return cur;
-  }, (err, committed, snap) => {
-    if (committed && snap.exists()) {
-      const updatedVal = snap.val();
-      const st = appData.students[currentUser.id];
-      if (st) {
-        st.coins = updatedVal.coins;
-        st.inventory = updatedVal.inventory || {};
+  const st = appData.students[currentUser.id];
+  if (!st || !dbRootRef) return;
+  if ((Number(st.coins) || 0) < item.cost) {
+    showToast("購買失敗", "數碼幣餘額不足！(Insufficient Coins)", "damage");
+    return;
+  }
+  const key = studentSaveKey(st);
+  ensurePlaySession().then(() => {
+    dbRootRef.child('students/' + key).transaction(cur => {
+      if (!cur) return;
+      const currentCoins = Number(cur.coins) || 0;
+      if (currentCoins < item.cost) return;
+      cur.coins = currentCoins - item.cost;
+      if (!cur.inventory || typeof cur.inventory !== 'object') cur.inventory = {};
+      cur.inventory[item.id] = (Number(cur.inventory[item.id]) || 0) + 1;
+      return cur;
+    }, (err, committed, snap) => {
+      if (err || !committed || !snap || !snap.exists()) {
+        showToast("購買失敗 / Not Saved", "這次購買沒有寫入。請貼上新的 Firebase rules 後再試。 / The purchase was not saved. Paste the new Firebase rules and try again.", "damage");
+        return;
       }
-
+      const updatedVal = snap.val() || {};
+      const paid = (Number(st.coins) || 0) - (Number(updatedVal.coins) || 0);
+      const held = updatedVal.inventory && Number(updatedVal.inventory[item.id]);
+      if (paid < item.cost || !(held > (Number(st.inventory && st.inventory[item.id]) || 0))) {
+        showToast("購買失敗", "數碼幣餘額不足！(Insufficient Coins)", "damage");
+        return;
+      }
+      st.coins = updatedVal.coins;
+      st.inventory = updatedVal.inventory || {};
       addBattleLog(`🛒 [SHOP BUY] ${st.name} 花費 ${item.cost} 金幣購買了 [${item.name}]，已存入背包！`, "normal", st.classId);
       const boughtMsg = item.id === 'item_auto_revive'
         ? `[${item.name}] 已放入背包。被擊敗時會自動使用，立刻滿血復活。 / Added to your bag. It is used automatically on defeat and restores full HP.`
         : `[${item.name}] 已放入道具背包，可隨時使用！`;
       showToast("購買成功！", boughtMsg, "heal");
-      
       updateStudentUI();
       renderShopItems();
-    } else {
-      showToast("購買失敗", "數碼幣餘額不足！(Insufficient Coins)", "damage");
-    }
+    });
   });
 }
 
@@ -3704,8 +3712,10 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       }
       const canonical = canonicalClassName(className);
       // classChats 沒有寫入權限。沿用原本已允許的 messages/{學生}，用 className 把不同班的私訊分開。
-      const msgRef = dbRootRef.child(`messages/${studentKey}`);
-      msgRef.once('value').then(snap => {
+      ensurePlaySession().then(() => {
+        attachClassChatListeners();
+        const msgRef = dbRootRef.child(`messages/${studentKey}`);
+        return msgRef.once('value').then(snap => {
         const currentData = snap.val() || {};
         const keys = Object.keys(currentData).filter(k => {
           const row = currentData[k];
@@ -3729,6 +3739,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
           className: canonical
         };
         return msgRef.update(updates);
+        });
       }).then(() => {
         playSound('shield');
         if (callback) callback();
@@ -4230,7 +4241,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
         createdBy: currentUser.id,
         createdAt: syncedNow()
       };
-      dbRootRef.child(`systemSettings/classGroups/${classKey}/${groupId}`).set(entry).then(() => {
+      ensurePlaySession().then(() => dbRootRef.child(`systemSettings/classGroups/${classKey}/${groupId}`).set(entry)).then(() => {
         teacherChatMode = 'group';
         selectedTeacherGroupId = groupId;
         chatRenderSignatures.teacherChatMessagesList = '';
@@ -4252,7 +4263,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       const updates = {};
       updates[`systemSettings/classGroups/${classKey}/${group.id}`] = null;
       if (nodeKey) updates[`messages/${nodeKey}`] = null;
-      dbRootRef.update(updates).then(() => {
+      ensurePlaySession().then(() => dbRootRef.update(updates)).then(() => {
         selectedTeacherGroupId = '';
         chatRenderSignatures.teacherChatMessagesList = '';
         showToast('Group deleted', `已刪除【${group.name}】。`, 'damage');
@@ -4359,7 +4370,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       const student = appData.students && appData.students[studentId];
       if (!student || !studentIsInClass(student, className) || !dbRootRef) return;
       const classKey = classChatKey(className);
-      dbRootRef.child(`systemSettings/classGroups/${classKey}/${groupId}/memberIds/${studentId}`).set(allowed ? true : null).catch(err => {
+      ensurePlaySession().then(() => dbRootRef.child(`systemSettings/classGroups/${classKey}/${groupId}/memberIds/${studentId}`).set(allowed ? true : null)).catch(err => {
         alert('更新群組成員失敗: ' + (err && err.message ? err.message : err));
       });
     }
@@ -4607,8 +4618,10 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       } else {
         return;
       }
-      const msgRef = dbRootRef.child(`messages/${nodeKey}`);
-      msgRef.once('value').then(snap => {
+      ensurePlaySession().then(() => {
+        attachClassChatListeners();
+        const msgRef = dbRootRef.child(`messages/${nodeKey}`);
+        return msgRef.once('value').then(snap => {
         const currentData = snap.val() || {};
         const keys = Object.keys(currentData).filter(k => currentData[k] && typeof currentData[k] === 'object' && currentData[k].text)
           .sort((a, b) => (Number(currentData[a].timestamp) || 0) - (Number(currentData[b].timestamp) || 0));
@@ -4631,6 +4644,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
           groupId: group.id
         };
         return msgRef.update(updates);
+        });
       }).then(() => {
         playSound('shield');
         if (callback) callback();
@@ -5291,6 +5305,7 @@ const PASSWORD_KDF_ITERS = 40000;
     let staffProofArmed = false;
     let dbWriteBypass = false;
     let firebaseAuthUid = '';
+    let classChatListenToken = '';
     let authReadyPromise = null;
     let lastAuthProof = null;
     let playWriteWarned = false;
@@ -5304,9 +5319,14 @@ const PASSWORD_KDF_ITERS = 40000;
     }
 
     function ensurePlaySession() {
-      if (!currentUser || currentUser.teacherTest || !lastAuthProof) return Promise.resolve(false);
-      if (String(lastAuthProof.id) !== String(currentUser.id)) return Promise.resolve(false);
-      return publishAuthSession(lastAuthProof.role || currentUser.role, currentUser.id, lastAuthProof.proof);
+      if (!currentUser || currentUser.teacherTest) return Promise.resolve(false);
+      if (lastAuthProof && String(lastAuthProof.id) === String(currentUser.id) && lastAuthProof.proof) {
+        return publishAuthSession(lastAuthProof.role || currentUser.role, currentUser.id, lastAuthProof.proof);
+      }
+      if (!currentUser.authToken) return Promise.resolve(false);
+      const role = currentUser.role === 'teacher' ? 'teachers' : (currentUser.role === 'student' ? 'students' : 'superAdmins');
+      const record = (appData[role] && appData[role][currentUser.id]) || currentUser.data || {};
+      return publishLoginSession(role, currentUser.id, currentUser.authToken, record);
     }
 
     function ensureAnonymousAuth() {
@@ -5342,6 +5362,7 @@ const PASSWORD_KDF_ITERS = 40000;
         await dbRootRef.child('sessions/' + firebaseAuthUid).set(payload);
         lastAuthProof = { role: payload.role, id: payload.userId, proof: payload.proof };
         if (currentUser && String(currentUser.id) === payload.userId) currentUser.authProof = payload.proof;
+        try { attachClassChatListeners(); } catch (err) {}
         return true;
       } catch (err) {
         return false;
@@ -5357,6 +5378,7 @@ const PASSWORD_KDF_ITERS = 40000;
       try { await dbRootRef.child('sessions/' + uid).remove(); } catch (err) {}
       finally { dbWriteBypass = false; }
       lastAuthProof = null;
+      classChatListenToken = '';
     }
 
     async function publishLoginSession(category, id, attempt, record) {
@@ -5554,6 +5576,7 @@ const PASSWORD_KDF_ITERS = 40000;
         <div class="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs">
           <div class="font-bold text-amber-200">${escapeHtml(account.name || account.id)}</div>
           <div class="font-mono text-slate-300 mt-0.5">${escapeHtml(account.username || account.id)} · ${escapeHtml(account.id)}</div>
+          ${adminPasswordButton('superAdmins', account.id)}
         </div>
       `).join('');
     }
@@ -5592,6 +5615,57 @@ const PASSWORD_KDF_ITERS = 40000;
 
     function adminPasswordText(category, id) {
       return adminPasswordValue(category, id) || '原密碼已加密，重設後顯示';
+    }
+
+    function toggleSecretInput(id, button) {
+      const input = document.getElementById(id);
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      if (button) button.textContent = show ? '隱藏' : '顯示';
+      if (show) input.focus();
+    }
+
+    function concealTeacherPasswordField() {
+      const input = document.getElementById('modalTcPass');
+      const button = document.getElementById('modalTcPassToggle');
+      if (input) input.type = 'password';
+      if (button) button.textContent = '顯示';
+    }
+
+    function openAdminPasswordEditor(button) {
+      if (!button || !currentUser || currentUser.role !== 'superadmin') return;
+      const category = button.getAttribute('data-pass-cat');
+      const id = button.getAttribute('data-pass-id');
+      if (!category || !id) return;
+      const known = adminPasswordValue(category, id);
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      input.value = known;
+      input.placeholder = known ? '修改後離開即儲存 / Edit, then leave the box to save' : '輸入新密碼 / Type a new password';
+      input.className = 'mt-1 w-full max-w-xs bg-slate-950 border border-amber-500 rounded px-2 py-1 text-[11px] font-mono text-amber-200 outline-none';
+      button.replaceWith(input);
+      input.focus();
+      if (known) input.select();
+      let done = false;
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+        if (event.key === 'Escape') { input.value = known; input.blur(); }
+      });
+      input.addEventListener('blur', async () => {
+        if (done) return;
+        done = true;
+        const next = input.value.trim();
+        if (next && next !== known) await updateAccountPwd(category, id, next);
+        if (category === 'superAdmins') renderSuperAdminAccounts();
+        else if (document.getElementById('superAdminTeacherGrid')) renderSuperAdminDashboard();
+      });
+    }
+
+    function adminPasswordButton(category, id) {
+      return `<button type="button" data-pass-cat="${escapeHtml(category)}" data-pass-id="${escapeHtml(id)}" onclick="openAdminPasswordEditor(this)" class="mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer active:scale-95">密碼 •••••••• / Click to show</button>`;
     }
 
     function paintAdminPasswords() {
@@ -6373,6 +6447,32 @@ const PASSWORD_KDF_ITERS = 40000;
       }
     }
 
+    function attachClassChatListeners() {
+      if (!dbRootRef || typeof dbRootRef.child !== 'function') return;
+      const token = String(firebaseAuthUid || '') + '|' + (lastAuthProof && lastAuthProof.proof ? '1' : '0');
+      if (classChatListenToken === token) return;
+      classChatListenToken = token;
+      let ready = false;
+      try { dbRootRef.child('messages').off(); } catch (err) {}
+      try { dbRootRef.child('systemSettings/classMessageReads').off(); } catch (err) {}
+      dbRootRef.child('messages').on('value', (snap) => {
+        const prevMessages = appData.messages || {};
+        appData.messages = snap.val() || {};
+        saveLocalCache();
+        if (ready) notifyNewClassChatMessages(prevMessages, appData.messages);
+        ready = true;
+        scheduleClassChatRefresh();
+      }, () => {
+        classChatListenToken = '';
+      });
+      dbRootRef.child('systemSettings/classMessageReads').on('value', (snap) => {
+        mergeServerClassChatReads(snap.val() || {});
+        refreshClassChatUI();
+      }, () => {
+        classChatListenToken = '';
+      });
+    }
+
     // === 強化版 Firebase 連線與除錯機制 ===
     async function initFirebase() {
       loadLocalCache();
@@ -6651,11 +6751,18 @@ const PASSWORD_KDF_ITERS = 40000;
           if (isTeacherOrAdmin) return;
           triggerForceUpdateScreen(signal.version || CURRENT_APP_VERSION, signal.timestamp);
         });
+        let forceLogoutReady = false;
+        let seenForceLogoutStamp = null;
         dbRootRef.child('systemSettings/forceStudentLogout').on('value', (snap) => {
           const signal = snap.val();
-          if (!signal || !signal.timestamp) return;
-          const openedAt = pageLaunchLocalMs + (firebaseServerTimeOffsetReady ? firebaseServerTimeOffset : 0);
-          if (Number(signal.timestamp) <= openedAt) return;
+          const stamp = signal && Number(signal.timestamp);
+          if (!forceLogoutReady) {
+            forceLogoutReady = true;
+            seenForceLogoutStamp = stamp || null;
+            return;
+          }
+          if (!stamp || stamp === seenForceLogoutStamp) return;
+          seenForceLogoutStamp = stamp;
           if (!currentUser || currentUser.role !== 'student' || currentUser.teacherTest) return;
           alert('老師已將所有在線學生登出。請重新登入。 / The teacher logged every online student out. Please sign in again.');
           logout();
@@ -6715,20 +6822,8 @@ const PASSWORD_KDF_ITERS = 40000;
             handleIncomingAttackAlerts();
           }
         });
-      // 💬 學生個別私訊寫在 messages。已讀時間寫在 systemSettings/classMessageReads，重新整理後不會再把讀過的訊息標成紅點。
-        let classChatSnapshotReady = false;
-        dbRootRef.child('messages').on('value', (snap) => {
-          const prevMessages = appData.messages || {};
-          appData.messages = snap.val() || {};
-          saveLocalCache();
-          if (classChatSnapshotReady) notifyNewClassChatMessages(prevMessages, appData.messages);
-          classChatSnapshotReady = true;
-          scheduleClassChatRefresh();
-        }, () => {});
-        dbRootRef.child('systemSettings/classMessageReads').on('value', (snap) => {
-          mergeServerClassChatReads(snap.val() || {});
-          refreshClassChatUI();
-        }, () => {});
+      // 💬 私訊和群組都寫在 messages。登入前沒有 session，這時的監聽會被規則拒絕，登入後要重新聽。
+        attachClassChatListeners();
       } catch (err) {
         console.error("Fatal Firebase Init Error:", err);
         updateSyncStatusUI(false, `❌ Init Crash: ${err.message}`);
@@ -6916,7 +7011,7 @@ function sanitizeClassKey(cls) {
     function teacherToggleStudentLoginBan() {
       if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
       const next = !studentLoginIsClosed();
-      dbRootRef.child('systemSettings/studentLoginBanned').set(next ? true : null).then(() => {
+      ensurePlaySession().then(() => dbRootRef.child('systemSettings/studentLoginBanned').set(next ? true : null)).then(() => {
         if (!appData.systemSettings) appData.systemSettings = {};
         appData.systemSettings.studentLoginBanned = next ? true : null;
         updateStudentLoginBanButtonUI();
@@ -6932,14 +7027,22 @@ function sanitizeClassKey(cls) {
       }).catch(err => alert('設定失敗 / Could not change login: ' + (err && err.message ? err.message : err)));
     }
 
-    function teacherForceLogoutStudents() {
+    async function teacherForceLogoutStudents() {
       if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
       if (!confirm('確定要登出所有在線學生嗎？已經打開遊戲的學生會回到登入畫面。 / Log out every student who is online? Their game will return to the login screen.')) return;
-      dbRootRef.child('systemSettings/forceStudentLogout').set({ timestamp: syncedNow(), by: currentUser.id }).then(() => {
+      const stamp = syncedNow();
+      try {
+        await ensurePlaySession();
+        await dbRootRef.child('systemSettings/forceStudentLogout').set({ timestamp: stamp, by: currentUser.id });
+        const saved = await dbRootRef.child('systemSettings/forceStudentLogout').once('value');
+        const live = saved.val();
+        if (!live || Number(live.timestamp) !== Number(stamp)) throw new Error('the logout was not saved');
         playSound('attack');
         addBattleLog('🚪 [FORCE LOGOUT] 老師登出了所有在線學生。 / The teacher logged out every online student.', 'battle', 'ALL');
         showToast('已登出在線學生 / Students Logged Out', '所有正在遊戲中的學生會回到登入畫面。 / Online students return to the login screen.', 'damage');
-      }).catch(err => alert('登出失敗 / Logout failed: ' + (err && err.message ? err.message : err)));
+      } catch (err) {
+        alert('登出失敗 / Logout failed: ' + (err && err.message ? err.message : err));
+      }
     }
 // === FACTION WAR SYSTEM LOGIC ===
 
@@ -8060,7 +8163,7 @@ function handleWorldRaidExcelImport(event) {
       const bytes = new Uint8Array(e.target.result);
       const workbook = readDungeonQuestionWorkbook(bytes, file.name);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const rows = questionSheetRows(sheet);
       const questions = [];
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
@@ -9043,7 +9146,7 @@ function studentTerritoryAction(nodeId, mode) {
       after(res);
       return;
     }
-    dbRootRef.child(`students/${st.id}/attackQuota`).transaction(q => {
+    dbRootRef.child(`students/${studentSaveKey(st)}/attackQuota`).transaction(q => {
       const n = Number(q) || 0;
       if (n < 1) return;
       return n - 1;
@@ -10498,7 +10601,7 @@ function toggleFactionBuffModal() {
       }
 
       if (st) {
-        currentUser = { role: 'student', id: st.id, data: st };
+        currentUser = { role: 'student', id: st.id, data: st, authToken: p };
         if (lastAuthProof && String(lastAuthProof.id) === String(st.id)) currentUser.authProof = lastAuthProof.proof;
         stampDungeonGate(st);
         await enterDashboard();
@@ -10569,7 +10672,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.66</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.69</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -11237,6 +11340,7 @@ function getSuperAdminTemplate() {
             <span>Select All</span>
           </label>
           <button onclick="superadminBatchDeleteStudents()" id="btnBatchDeleteStudents" disabled class="px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed">Batch Delete</button>
+          <button onclick="superadminFullResetSelectedStudents()" id="btnResetSelectedStudents" disabled class="px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed">重設已選 / Reset Selected</button>
         </div>
       </div>
       <div id="superAdminStudentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -12344,30 +12448,39 @@ function openMegaRebirthPrompt() {
         return;
       }
 
-      st.inventory[itemId]--;
-      const resultText = itemInfo.effect(st);
-      addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal", st.classId);
-      showToast("Item Consumed!", `${itemInfo.name}: ${resultText}`, "heal");
-
-      patchStudentAtomic(currentUser.id, {
-        inventory: st.inventory,
-        exp: st.exp,
-        statPool: st.statPool,
-        hp: st.hp,
-        hasShield: !!st.hasShield,
-        shieldCharges: Math.max(0, Math.floor(Number(st.shieldCharges) || 0)),
-        skinId: st.skinId,
-        attackQuota: st.attackQuota,
-        courage: st.courage,
-        love: st.love,
-        discipline: st.discipline,
-        wisdom: st.wisdom,
-        betrayalBlade: !!st.betrayalBlade,
-        betrayalBladeUntil: Number(st.betrayalBladeUntil) || 0,
-        holyBarrierUntil: Number(st.holyBarrierUntil) || 0
+      const draft = JSON.parse(JSON.stringify(st));
+      draft.inventory[itemId] = Math.max(0, (Number(draft.inventory[itemId]) || 0) - 1);
+      const resultText = itemInfo.effect(draft);
+      const key = studentSaveKey(st);
+      const patch = {
+        inventory: draft.inventory,
+        exp: draft.exp,
+        statPool: draft.statPool,
+        hp: draft.hp,
+        hasShield: !!draft.hasShield,
+        shieldCharges: Math.max(0, Math.floor(Number(draft.shieldCharges) || 0)),
+        skinId: draft.skinId || null,
+        attackQuota: draft.attackQuota,
+        courage: draft.courage,
+        love: draft.love,
+        discipline: draft.discipline,
+        wisdom: draft.wisdom,
+        betrayalBlade: !!draft.betrayalBlade,
+        betrayalBladeUntil: Number(draft.betrayalBladeUntil) || 0,
+        holyBarrierUntil: Number(draft.holyBarrierUntil) || 0
+      };
+      const updates = {};
+      Object.keys(patch).forEach(field => { updates['students/' + key + '/' + field] = patch[field]; });
+      ensurePlaySession().then(() => commitPlayUpdate(updates, {
+        ['students/' + key + '/inventory/' + itemId]: patch.inventory[itemId] || 0,
+        ['students/' + key + '/hp']: patch.hp
+      })).then(saved => {
+        if (!saved) return;
+        Object.assign(st, patch);
+        addBattleLog(`🎒 [ITEM USED] ${st.name} consumed [${itemInfo.name}]: ${resultText}`, "heal", st.classId);
+        showToast("Item Consumed!", `${itemInfo.name}: ${resultText}`, "heal");
+        updateStudentUI();
       });
-
-      updateStudentUI();
     }
 
     // ==========================================
@@ -12516,6 +12629,7 @@ else if (mode === 'pvp') {
 
   // 真正執行同學擊打與結算 (支援主動攻擊與免費反擊 isCounterAttack + 擊殺者顯示 + 警報推送)
     async function executePvPStrike(targetStudentId, isCounterAttack = false, alertKeyToClear = null) {
+      await ensurePlaySession();
       if (!isCounterAttack) {
         closePvpTargetModal();
       }
@@ -12597,7 +12711,7 @@ else if (mode === 'pvp') {
 
       if (territoryBlocksAttack(target, myClasses[0])) {
         if (!isCounterAttack) {
-          const blocked = await commitPlayUpdate({ [`students/${st.id}/attackQuota`]: newQuota });
+          const blocked = await commitPlayUpdate({ [`students/${studentSaveKey(st)}/attackQuota`]: newQuota });
           if (!blocked) return;
           st.attackQuota = newQuota;
         }
@@ -12614,9 +12728,9 @@ else if (mode === 'pvp') {
         const spent = spendShieldCharge(target);
         const leftCharges = spent.shieldCharges;
         const shieldUpdates = {};
-        if (!isCounterAttack) shieldUpdates[`students/${st.id}/attackQuota`] = newQuota;
-        shieldUpdates[`students/${target.id}/shieldCharges`] = leftCharges;
-        shieldUpdates[`students/${target.id}/hasShield`] = spent.hasShield;
+        if (!isCounterAttack) shieldUpdates[`students/${studentSaveKey(st)}/attackQuota`] = newQuota;
+        shieldUpdates[`students/${studentSaveKey(target)}/shieldCharges`] = leftCharges;
+        shieldUpdates[`students/${studentSaveKey(target)}/hasShield`] = spent.hasShield;
         const blocked = await commitPlayUpdate(shieldUpdates);
         if (!blocked) return;
         if (!isCounterAttack) st.attackQuota = newQuota;
@@ -12677,32 +12791,31 @@ else if (mode === 'pvp') {
       }
 
       const strikeUpdates = {};
-      strikeUpdates[`students/${st.id}/hp`] = finalSelfHp;
-      strikeUpdates[`students/${st.id}/attackQuota`] = newQuota;
+      strikeUpdates[`students/${studentSaveKey(st)}/hp`] = finalSelfHp;
+      strikeUpdates[`students/${studentSaveKey(st)}/attackQuota`] = newQuota;
       if (isKill) {
-        strikeUpdates[`students/${st.id}/coins`] = nextCoins;
-        strikeUpdates[`students/${st.id}/exp`] = nextExp;
-        strikeUpdates[`students/${st.id}/statPool`] = nextPool;
-        if (bountyBonusTickets > 0) strikeUpdates[`students/${st.id}/gachaTickets`] = nextTickets;
+        strikeUpdates[`students/${studentSaveKey(st)}/coins`] = nextCoins;
+        strikeUpdates[`students/${studentSaveKey(st)}/exp`] = nextExp;
+        strikeUpdates[`students/${studentSaveKey(st)}/statPool`] = nextPool;
+        if (bountyBonusTickets > 0) strikeUpdates[`students/${studentSaveKey(st)}/gachaTickets`] = nextTickets;
       }
       const counterCharges = autoReviveItemCount(target);
       const counterRevived = isKill && counterCharges > 0;
       if (counterRevived) {
         const full = fullHpOfStudent(target);
         const inv = Object.assign({}, target.inventory || {});
-        if (counterCharges - 1 <= 0) delete inv.item_auto_revive;
-        else inv.item_auto_revive = counterCharges - 1;
-        strikeUpdates[`students/${target.id}/hp`] = full;
-        strikeUpdates[`students/${target.id}/isFainted`] = false;
-        strikeUpdates[`students/${target.id}/killedByName`] = null;
-        strikeUpdates[`students/${target.id}/killedById`] = null;
-        strikeUpdates[`students/${target.id}/inventory`] = inv;
+        inv.item_auto_revive = Math.max(0, counterCharges - 1);
+        strikeUpdates[`students/${studentSaveKey(target)}/hp`] = full;
+        strikeUpdates[`students/${studentSaveKey(target)}/isFainted`] = false;
+        strikeUpdates[`students/${studentSaveKey(target)}/killedByName`] = null;
+        strikeUpdates[`students/${studentSaveKey(target)}/killedById`] = null;
+        strikeUpdates[`students/${studentSaveKey(target)}/inventory`] = inv;
       } else {
-        strikeUpdates[`students/${target.id}/hp`] = finalTargetHp;
-        strikeUpdates[`students/${target.id}/isFainted`] = isKill;
+        strikeUpdates[`students/${studentSaveKey(target)}/hp`] = finalTargetHp;
+        strikeUpdates[`students/${studentSaveKey(target)}/isFainted`] = isKill;
         if (isKill) {
-          strikeUpdates[`students/${target.id}/killedByName`] = `${st.name} (${myDigi.name})`;
-          strikeUpdates[`students/${target.id}/killedById`] = st.id;
+          strikeUpdates[`students/${studentSaveKey(target)}/killedByName`] = `${st.name} (${myDigi.name})`;
+          strikeUpdates[`students/${studentSaveKey(target)}/killedById`] = st.id;
         }
       }
       const strikeSaved = await commitPlayUpdate(strikeUpdates);
@@ -12715,10 +12828,10 @@ else if (mode === 'pvp') {
         st.statPool = nextPool;
         if (bountyBonusTickets > 0) st.gachaTickets = nextTickets;
       }
-      target.hp = strikeUpdates[`students/${target.id}/hp`];
-      target.isFainted = !!strikeUpdates[`students/${target.id}/isFainted`];
+      target.hp = strikeUpdates[`students/${studentSaveKey(target)}/hp`];
+      target.isFainted = !!strikeUpdates[`students/${studentSaveKey(target)}/isFainted`];
       if (counterRevived) {
-        target.inventory = strikeUpdates[`students/${target.id}/inventory`];
+        target.inventory = strikeUpdates[`students/${studentSaveKey(target)}/inventory`];
         logAutoRevive(target, st.classId, counterCharges - 1);
         showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
       } else if (isKill && dbRootRef) {
@@ -13170,6 +13283,33 @@ else if (mode === 'pvp') {
       playSound('faint');
       addBattleLog(`⚡ [FULL RESET] All ${ids.length} student accounts were reset!`, "battle", "ALL");
       showToast('Class Reset Complete', 'All ' + ids.length + ' students returned to new eggs.', 'evolution');
+      renderSuperAdminDashboard();
+    }
+
+    async function superadminFullResetSelectedStudents() {
+      if (!currentUser || currentUser.role !== 'superadmin') return;
+      const ids = Array.from(selectedStudentIds).filter(id => appData.students && appData.students[id]);
+      if (!ids.length) return;
+      if (!confirmResetPhrase('Type RESET to reset the ' + ids.length + ' selected students to new eggs. EXP, points, HP, and inventory will be cleared.', 'RESET')) return;
+      const eggs = {};
+      const updates = {};
+      ids.forEach(id => {
+        const student = appData.students[id];
+        const eggId = getRandomEggId();
+        eggs[id] = eggId;
+        Object.assign(updates, buildStudentResetUpdate(student, eggId));
+      });
+      const first = appData.students[ids[0]];
+      const saved = await commitSuperadminReset(updates, String(first.firebaseKey || first.id || ''));
+      if (!saved) {
+        showToast('重設沒有儲存 / Reset was not saved', '請貼上新的 Firebase rules，然後重新登入最高管理員。 / Paste the new Firebase rules, then sign in again as superadmin.', 'damage');
+        return;
+      }
+      ids.forEach(id => applyStudentResetLocal(appData.students[id], eggs[id]));
+      selectedStudentIds.clear();
+      playSound('faint');
+      addBattleLog('⚡ [RESET] ' + ids.length + ' selected student accounts were factory-reset.', 'battle', 'ALL');
+      showToast('Selected Reset', ids.length + ' selected students returned to new eggs.', 'evolution');
       renderSuperAdminDashboard();
     }
 
@@ -13631,8 +13771,7 @@ function publishEvoEdges() {
         const charges = autoReviveItemCount(local);
         if (lethal && charges > 0) {
           if (!local.inventory) local.inventory = {};
-          if (charges - 1 <= 0) delete local.inventory.item_auto_revive;
-          else local.inventory.item_auto_revive = charges - 1;
+          local.inventory.item_auto_revive = Math.max(0, charges - 1);
           local.hp = fullHpOfStudent(local);
           local.isFainted = false;
           local.killedByName = null;
@@ -13677,8 +13816,7 @@ function publishEvoEdges() {
           const charges = (cur.inventory && Number(cur.inventory.item_auto_revive)) || 0;
           if (next <= 0 && charges > 0) {
             if (!cur.inventory) cur.inventory = {};
-            if (charges - 1 <= 0) delete cur.inventory.item_auto_revive;
-            else cur.inventory.item_auto_revive = charges - 1;
+            cur.inventory.item_auto_revive = Math.max(0, charges - 1);
             cur.hp = maxHp;
             cur.isFainted = false;
             cur.killedByName = null;
@@ -13986,7 +14124,7 @@ function publishEvoEdges() {
           const data = new Uint8Array(e.target.result);
           const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          const jsonRows = questionSheetRows(firstSheet);
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
             const row = jsonRows[i];
@@ -14601,7 +14739,7 @@ function publishEvoEdges() {
           const data = new Uint8Array(e.target.result);
           const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          const jsonRows = questionSheetRows(firstSheet);
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
             const row = jsonRows[i];
@@ -14781,7 +14919,24 @@ function publishEvoEdges() {
       else if (raw.length >= 2 && raw[0] === 0xFE && raw[1] === 0xFF) text = new TextDecoder('utf-16be').decode(raw);
       else text = new TextDecoder('utf-8').decode(raw);
       if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-      return XLSX.read(text, { type: 'string' });
+      return XLSX.read(text, { type: 'string', raw: true });
+    }
+
+    function questionCellText(value) {
+      if (value === undefined || value === null) return '';
+      let text = repairQuestionText(String(value)).replace(/\u00a0/g, ' ').trim();
+      if (/^\d+\s+\d+\s*\/\s*\d+$/.test(text) || /^\d+\s*\/\s*\d+$/.test(text)) {
+        text = text.replace(/\s*\/\s*/, '/').replace(/\s+/g, ' ');
+      }
+      return text;
+    }
+
+    function questionSheetRows(sheet) {
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: null });
+      return (rows || []).map(row => {
+        if (!Array.isArray(row)) return row;
+        return row.map(cell => (cell === undefined || cell === null || cell === '') ? null : questionCellText(cell));
+      });
     }
 
     function handleDungeonExcelImport(event) {
@@ -14799,7 +14954,7 @@ function publishEvoEdges() {
           const data = new Uint8Array(e.target.result);
           const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          const jsonRows = questionSheetRows(firstSheet);
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
             const row = jsonRows[i];
@@ -16397,12 +16552,20 @@ function teacherToggleClassSpy(studentId, event) {
     function updateSelectedStudentCountUI() {
       const countEl = document.getElementById('selectedStudentsCount');
       if (countEl) countEl.textContent = selectedStudentIds.size;
+      const idle = "px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed transition";
       const btnBatch = document.getElementById('btnBatchDeleteStudents');
       if (btnBatch) {
         btnBatch.disabled = selectedStudentIds.size === 0;
         btnBatch.className = selectedStudentIds.size === 0
-          ? "px-3 py-1.5 bg-slate-800 text-slate-500 font-bold rounded text-xs cursor-not-allowed transition"
+          ? idle
           : "px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded text-xs shadow-md cursor-pointer transition active:scale-95";
+      }
+      const btnReset = document.getElementById('btnResetSelectedStudents');
+      if (btnReset) {
+        btnReset.disabled = selectedStudentIds.size === 0;
+        btnReset.className = selectedStudentIds.size === 0
+          ? idle
+          : "px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-xs shadow-md cursor-pointer transition active:scale-95";
       }
     }
 
@@ -16475,7 +16638,7 @@ function teacherToggleClassSpy(studentId, event) {
               </button>
             </div>
             </div>
-            <div class="text-[11px] font-mono text-amber-200 break-all">密碼 Password: ${escapeHtml(adminPasswordText('teachers', t.id))}</div>
+            ${adminPasswordButton('teachers', t.id)}
           </div>
         `;
       });
@@ -16507,7 +16670,7 @@ function teacherToggleClassSpy(studentId, event) {
                 <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleStudentSelection('${s.id}', this.checked)" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer">
                 <span class="font-bold ${isChecked ? 'text-cyan-300' : 'text-slate-200'} text-sm">${s.name}</span>
                 <span class="text-[10px] text-slate-500 font-mono">(${s.username})</span>
-                <span class="text-[10px] font-mono text-amber-200 basis-full pl-6 break-all">密碼 ${escapeHtml(adminPasswordText('students', s.id))}</span>
+                <span class="basis-full pl-6">${adminPasswordButton('students', s.id)}</span>
               </label>
               <button onclick="deleteStudent('${s.id}')" class="text-rose-400 hover:text-rose-300 p-1 cursor-pointer transition active:scale-90" title="Delete Student"><i class="fa-solid fa-trash"></i></button>
             </div>
@@ -16566,6 +16729,7 @@ function teacherToggleClassSpy(studentId, event) {
       document.getElementById('modalTeacherHeaderTitle').innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i>Add Teacher';
       document.getElementById('modalTcUser').value = "";
       document.getElementById('modalTcPass').value = "";
+      concealTeacherPasswordField();
       document.getElementById('modalTcName').value = "";
       document.getElementById('modalTcHp').value = "2000";
       document.getElementById('modalTcPower').value = "220";
@@ -16587,6 +16751,7 @@ function teacherToggleClassSpy(studentId, event) {
       document.getElementById('modalTeacherHeaderTitle').innerHTML = `<i class="fa-solid fa-user-pen mr-2"></i>Edit Teacher: ${tc.name}`;
       document.getElementById('modalTcUser').value = tc.username || tc.id;
       document.getElementById('modalTcPass').value = adminPasswordValue('teachers', teacherId);
+      concealTeacherPasswordField();
       document.getElementById('modalTcName').value = tc.name || '';
       document.getElementById('modalTcHp').value = tc.maxHp || 2000;
       document.getElementById('modalTcPower').value = tc.skillPower || 220;
@@ -16663,11 +16828,15 @@ function teacherToggleClassSpy(studentId, event) {
       const accountId = account.id || account.username;
       const shown = adminPasswordValue(category, accountId);
       const input = document.createElement('input');
-      input.type = 'text';
+      input.type = 'password';
       input.autocomplete = 'off';
       input.value = shown;
-      input.placeholder = shown ? '' : '重設後顯示 / Hidden until reset';
-      input.className = 'bg-slate-950 border border-slate-700 px-2 py-1 rounded text-amber-200 w-40 font-mono';
+      input.placeholder = '點一下顯示並修改 / Click to show and edit';
+      input.className = 'bg-slate-950 border border-slate-700 px-2 py-1 rounded text-amber-200 w-44 font-mono';
+      input.addEventListener('focus', () => { input.type = 'text'; });
+      input.addEventListener('blur', () => {
+        if (input.value.trim() === shown) input.type = 'password';
+      });
       input.addEventListener('change', () => {
         if (input.value.trim() === shown) return;
         updateAccountPwd(category, accountId, input.value);
@@ -16811,7 +16980,7 @@ function teacherToggleClassSpy(studentId, event) {
           const data = new Uint8Array(e.target.result);
           const workbook = readDungeonQuestionWorkbook(data, file.name);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          const jsonRows = questionSheetRows(firstSheet);
 
           importedQuizBank = [];
 
@@ -16983,13 +17152,20 @@ function teacherToggleClassSpy(studentId, event) {
       }
     }
 
-    function teacherCloseLiveQuiz() {
+    async function teacherCloseLiveQuiz() {
+      if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
       if (!confirm("Are you sure you want to CLOSE the active Speed Quiz challenge?")) return;
-      if (dbRootRef) {
-        dbRootRef.child('activeQuiz/active').set(false).then(() => {
-          showToast("Quiz Ended", "Speed quiz challenge closed.", "info");
-          addBattleLog(`⚡ [QUIZ CLOSED] Live speed quiz has been closed by Teacher.`, "normal", selectedTeacherClass);
-        });
+      if (!dbRootRef) return;
+      try {
+        await ensurePlaySession();
+        await dbRootRef.child('activeQuiz/active').set(false);
+        const saved = await dbRootRef.child('activeQuiz/active').once('value');
+        if (saved.val() !== false) throw new Error('the quiz was not closed');
+        showToast("Quiz Ended", "Speed quiz challenge closed.", "info");
+        addBattleLog(`⚡ [QUIZ CLOSED] Live speed quiz has been closed by Teacher.`, "normal", selectedTeacherClass);
+        if (typeof renderTeacherQuizLiveDashboard === 'function') renderTeacherQuizLiveDashboard();
+      } catch (err) {
+        alert('結束失敗: ' + (err && err.message ? err.message : err));
       }
     }
 
@@ -17501,7 +17677,7 @@ function onExamTimePresetChange(val) {
       const data = new Uint8Array(e.target.result);
       const workbook = readDungeonQuestionWorkbook(data, file.name);
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      const jsonRows = questionSheetRows(firstSheet);
 
       if (!jsonRows || jsonRows.length <= 1) {
         alert("Excel 題庫為空！");
@@ -17665,20 +17841,27 @@ function onExamTimePresetChange(val) {
 
         const updates = {};
         updates['activeExam/status'] = 'closed';
+        updates['activeExam/isOpen'] = false;
+        updates['activeExam/active'] = false;
         updates['activeExam/closedAt'] = syncedNow();
         updates['activeExam/isForceClosed'] = true;
 
-        dbRootRef.update(updates).then(() => {
+        ensurePlaySession().then(() => dbRootRef.update(updates)).then(() => {
+          return dbRootRef.child('activeExam').once('value');
+        }).then(saved => {
+          const live = saved.val() || {};
+          if (live.status !== 'closed' || live.isOpen !== false) throw new Error('the exam was not closed');
           playSound('attack');
           showToast("考卷已結束", "已成功強制收卷，學生端已停止作答！", "damage");
           addBattleLog(`🛑 [EXAM CLOSED] 老師強制結束了考卷【${examData.title || '考卷'}】，全班已停止作答並封存！`, "battle", selectedTeacherClass);
-          
           if (activeExamInstance) {
             activeExamInstance.status = 'closed';
+            activeExamInstance.isOpen = false;
+            activeExamInstance.active = false;
           }
           renderTeacherExamDashboard();
         }).catch(err => {
-          alert("強制收卷失敗: " + err.message);
+          alert("強制收卷失敗: " + (err && err.message ? err.message : err));
         });
       }).catch(err => {
         alert("讀取考卷資料失敗: " + err.message);
@@ -18604,6 +18787,7 @@ function startStudentExamTimer() {
     // ⚔️ 學生攻擊老師 Partner 首領 (Attack Teacher Boss)
     // ========================================================
     async function executeAttackTeacherBoss(skill) {
+      await ensurePlaySession();
       const st = appData.students[currentUser.id];
       const tcId = studentTargetTeacherId || 'teacher1';
       const tc = appData.teachers[tcId] || Object.values(appData.teachers || {})[0];
@@ -18633,14 +18817,14 @@ function startStudentExamTimer() {
       // 扣除攻擊次數並獎勵命中 EXP。紀錄只在次數和首領 HP 都寫入之後才留下。
       const newQuota = Math.max(0, (st.attackQuota || 1) - 1);
       const bossUpdates = {};
-      bossUpdates[`students/${st.id}/attackQuota`] = newQuota;
-      bossUpdates[`students/${st.id}/exp`] = (st.exp || 0) + bossExp;
-      bossUpdates[`students/${st.id}/statPool`] = (st.statPool || 0) + bossExp;
+      bossUpdates[`students/${studentSaveKey(st)}/attackQuota`] = newQuota;
+      bossUpdates[`students/${studentSaveKey(st)}/exp`] = (st.exp || 0) + bossExp;
+      bossUpdates[`students/${studentSaveKey(st)}/statPool`] = (st.statPool || 0) + bossExp;
       bossUpdates[`teachers/${tc.id}/hp`] = nextHp;
       const hpNow = Number(st.hp);
-      if (Number.isFinite(hpNow)) bossUpdates[`students/${st.id}/hp`] = hpNow;
+      if (Number.isFinite(hpNow)) bossUpdates[`students/${studentSaveKey(st)}/hp`] = hpNow;
       const saved = await commitPlayUpdate(bossUpdates, {
-        [`students/${st.id}/attackQuota`]: newQuota,
+        [`students/${studentSaveKey(st)}/attackQuota`]: newQuota,
         [`teachers/${tc.id}/hp`]: nextHp
       });
       if (!saved) return;
@@ -18801,6 +18985,7 @@ function startStudentExamTimer() {
     // ⚔️ 執行學生對學生攻擊與擊殺結算核心 (PvP Execution & Kill EXP)
     // ========================================================
     async function executePvPAttack(targetId, targetClass) {
+      await ensurePlaySession();
       if (!currentUser || currentUser.role !== 'student') return;
       const me = appData.students[currentUser.id];
       const target = appData.students[targetId];
@@ -18862,7 +19047,7 @@ function startStudentExamTimer() {
       // 扣除攻擊次數。紀錄只在攻擊次數和目標 HP 都寫入之後才留下。
       const newQuota = Math.max(0, (me.attackQuota || 1) - 1);
       const updates = {};
-      updates[`students/${me.id}/attackQuota`] = newQuota;
+      updates[`students/${studentSaveKey(me)}/attackQuota`] = newQuota;
 
       if (territoryBlocksAttack(target, targetClass)) {
         const blocked = await commitPlayUpdate(updates);
@@ -18879,8 +19064,8 @@ function startStudentExamTimer() {
       if (readShieldCharges(target) > 0) {
             const spent = spendShieldCharge(target);
             const leftCharges = spent.shieldCharges;
-            updates[`students/${target.id}/shieldCharges`] = leftCharges;
-            updates[`students/${target.id}/hasShield`] = spent.hasShield;
+            updates[`students/${studentSaveKey(target)}/shieldCharges`] = leftCharges;
+            updates[`students/${studentSaveKey(target)}/hasShield`] = spent.hasShield;
             const blocked = await commitPlayUpdate(updates);
             if (!blocked) return;
             me.attackQuota = newQuota;
@@ -18936,54 +19121,53 @@ function startStudentExamTimer() {
         if (activeBountyTargetId === target.id) {
           expGained += 300;
           coinsGained += 20;
-          updates[`students/${me.id}/gachaTickets`] = (me.gachaTickets || 0) + 1;
+          updates[`students/${studentSaveKey(me)}/gachaTickets`] = (me.gachaTickets || 0) + 1;
           updates[`bounties/${sanitizeClassKey(targetClass)}`] = null; // 結算並清除懸賞
           bountyClaimed = true;
         }
       }
 
       expGained = Math.round(expGained * territoryExpMultiplier(me, targetClass));
-      updates[`students/${me.id}/exp`] = (me.exp || 0) + expGained;
-      updates[`students/${me.id}/statPool`] = (me.statPool || 0) + expGained;
+      updates[`students/${studentSaveKey(me)}/exp`] = (me.exp || 0) + expGained;
+      updates[`students/${studentSaveKey(me)}/statPool`] = (me.statPool || 0) + expGained;
       if (coinsGained > 0) {
-        updates[`students/${me.id}/coins`] = (me.coins || 0) + coinsGained;
+        updates[`students/${studentSaveKey(me)}/coins`] = (me.coins || 0) + coinsGained;
       }
       const reviveCharges = autoReviveItemCount(target);
       const revived = nextHp <= 0 && reviveCharges > 0;
       if (revived) {
         const full = fullHpOfStudent(target);
         const inv = Object.assign({}, target.inventory || {});
-        if (reviveCharges - 1 <= 0) delete inv.item_auto_revive;
-        else inv.item_auto_revive = reviveCharges - 1;
-        updates[`students/${target.id}/hp`] = full;
-        updates[`students/${target.id}/isFainted`] = false;
-        updates[`students/${target.id}/killedByName`] = null;
-        updates[`students/${target.id}/killedById`] = null;
-        updates[`students/${target.id}/inventory`] = inv;
+        inv.item_auto_revive = Math.max(0, reviveCharges - 1);
+        updates[`students/${studentSaveKey(target)}/hp`] = full;
+        updates[`students/${studentSaveKey(target)}/isFainted`] = false;
+        updates[`students/${studentSaveKey(target)}/killedByName`] = null;
+        updates[`students/${studentSaveKey(target)}/killedById`] = null;
+        updates[`students/${studentSaveKey(target)}/inventory`] = inv;
       } else {
-        updates[`students/${target.id}/hp`] = nextHp;
-        updates[`students/${target.id}/isFainted`] = nextHp <= 0;
+        updates[`students/${studentSaveKey(target)}/hp`] = nextHp;
+        updates[`students/${studentSaveKey(target)}/isFainted`] = nextHp <= 0;
         if (nextHp <= 0) {
-          updates[`students/${target.id}/reviveQuizClosed`] = null;
-          updates[`students/${target.id}/reviveQuizPending`] = null;
-          updates[`students/${target.id}/killedByName`] = `${me.name} (${myDigi.name})`;
-          updates[`students/${target.id}/killedById`] = me.id;
+          updates[`students/${studentSaveKey(target)}/reviveQuizClosed`] = null;
+          updates[`students/${studentSaveKey(target)}/reviveQuizPending`] = null;
+          updates[`students/${studentSaveKey(target)}/killedByName`] = `${me.name} (${myDigi.name})`;
+          updates[`students/${studentSaveKey(target)}/killedById`] = me.id;
         }
       }
       const saved = await commitPlayUpdate(updates, {
-        [`students/${me.id}/attackQuota`]: newQuota,
-        [`students/${target.id}/hp`]: updates[`students/${target.id}/hp`]
+        [`students/${studentSaveKey(me)}/attackQuota`]: newQuota,
+        [`students/${studentSaveKey(target)}/hp`]: updates[`students/${studentSaveKey(target)}/hp`]
       });
       if (!saved) return;
       me.attackQuota = newQuota;
       me.exp = (me.exp || 0) + expGained;
       me.statPool = (me.statPool || 0) + expGained;
       if (coinsGained > 0) me.coins = (me.coins || 0) + coinsGained;
-      if (updates[`students/${me.id}/gachaTickets`] != null) me.gachaTickets = updates[`students/${me.id}/gachaTickets`];
-      target.hp = updates[`students/${target.id}/hp`];
-      target.isFainted = !!updates[`students/${target.id}/isFainted`];
+      if (updates[`students/${studentSaveKey(me)}/gachaTickets`] != null) me.gachaTickets = updates[`students/${studentSaveKey(me)}/gachaTickets`];
+      target.hp = updates[`students/${studentSaveKey(target)}/hp`];
+      target.isFainted = !!updates[`students/${studentSaveKey(target)}/isFainted`];
       if (revived) {
-        target.inventory = updates[`students/${target.id}/inventory`];
+        target.inventory = updates[`students/${studentSaveKey(target)}/inventory`];
         target.killedByName = null;
         target.killedById = null;
         logAutoRevive(target, targetClass, reviveCharges - 1);
@@ -19047,7 +19231,7 @@ function startStudentExamTimer() {
       const defDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
       calcDmg = attributeStrike(calcDmg, atkDigi.type, defDigi.type).damage;
 
-      dbRootRef.child(`students/${target.id}`).transaction((targetData) => {
+      dbRootRef.child(`students/${studentSaveKey(target)}`).transaction((targetData) => {
         if (!targetData) return targetData;
         
         // 若防守者有護盾，優先消耗護盾抵擋傷害
@@ -19097,7 +19281,7 @@ function startStudentExamTimer() {
 
         // 🎯 命中懸賞目標：每次攻擊立即給予攻擊者 +30 EXP 命中獎勵
         if (isTargetingBounty) {
-          dbRootRef.child(`students/${st.id}`).transaction((curSt) => {
+          dbRootRef.child(`students/${studentSaveKey(st)}`).transaction((curSt) => {
             if (!curSt) return curSt;
             curSt.exp = (curSt.exp || 0) + 30;
             curSt.statPool = (curSt.statPool || 0) + 30;
@@ -19115,7 +19299,7 @@ function startStudentExamTimer() {
 
           if (isTargetingBounty) {
             // 🎯 擊殺懸賞目標：發放 300 EXP 與 1 張抽獎券
-            dbRootRef.child(`students/${st.id}`).transaction((curSt) => {
+            dbRootRef.child(`students/${studentSaveKey(st)}`).transaction((curSt) => {
               if (!curSt) return curSt;
               curSt.exp = (curSt.exp || 0) + 300;
               curSt.statPool = (curSt.statPool || 0) + 300;
@@ -19149,7 +19333,7 @@ function startStudentExamTimer() {
             }
 
             if (finalKillExp > 0) {
-              dbRootRef.child(`students/${st.id}`).transaction((curSt) => {
+              dbRootRef.child(`students/${studentSaveKey(st)}`).transaction((curSt) => {
                 if (!curSt) return curSt;
                 curSt.exp = (curSt.exp || 0) + finalKillExp;
                 curSt.statPool = (curSt.statPool || 0) + finalKillExp;
