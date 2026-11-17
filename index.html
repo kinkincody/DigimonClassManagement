@@ -1708,7 +1708,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.69";
+    const CURRENT_APP_VERSION = "2.7.70";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -5227,6 +5227,7 @@ const PASSWORD_KDF_ITERS = 40000;
     async function passwordProbeValue(category, id, value) {
       if (!dbRootRef || value == null || value === '') return false;
       const ref = dbRootRef.child('authGate/' + category + '/' + id);
+      try { await ref.remove(); } catch (err) {}
       try {
         await ref.set(value);
       } catch (err) {
@@ -5264,14 +5265,12 @@ const PASSWORD_KDF_ITERS = 40000;
       if (category !== 'students' && category !== 'teachers' && category !== 'superAdmins') return false;
       if (category === 'superAdmins') {
         if (await passwordProbe('superAdmins', id, attempt)) {
-          await publishLoginSession(category, id, attempt, knownRecord);
-          return true;
+          if (await publishLoginSession(category, id, attempt, knownRecord)) return true;
         }
         const numeric = superadminNumericPassword(attempt);
         if (numeric != null && await passwordProbeValue('superAdmins', id, numeric)) {
           try { await coerceSuperadminPasswordToString(id, numeric, attempt); } catch (err) {}
-          await publishLoginSession(category, id, attempt, knownRecord);
-          return true;
+          if (await publishLoginSession(category, id, attempt, knownRecord)) return true;
         }
         const record = knownRecord || await readNode('superAdmins/' + id);
         const matched = await passwordMatches(record, attempt);
@@ -5283,8 +5282,7 @@ const PASSWORD_KDF_ITERS = 40000;
         try {
           const sealed = await sealPassword(attempt, String(record.passwordSalt));
           if (await passwordProbe(category, id, sealed.hash)) {
-            await publishLoginSession(category, id, attempt, record);
-            return true;
+            if (await publishLoginSession(category, id, attempt, record)) return true;
           }
         } catch (err) {}
       }
@@ -10086,6 +10084,47 @@ function rejectFactionRequest(reqKey) {
       return Promise.resolve();
     }
 
+    async function readServerNumber(path) {
+      if (!dbRootRef || !path) return null;
+      try {
+        const snap = await dbRootRef.child(path).once('value');
+        const value = snap && snap.val ? snap.val() : null;
+        if (typeof value === 'number' && Number.isFinite(value)) return value;
+        if (typeof value === 'string' && String(value).trim() !== '') {
+          const n = Number(value);
+          if (Number.isFinite(n)) return n;
+        }
+        return null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function attackerServerBase(student) {
+      const key = studentSaveKey(student);
+      const quota = await readServerNumber('students/' + key + '/attackQuota');
+      const exp = await readServerNumber('students/' + key + '/exp');
+      const coins = await readServerNumber('students/' + key + '/coins');
+      const tickets = await readServerNumber('students/' + key + '/gachaTickets');
+      const hp = await readServerNumber('students/' + key + '/hp');
+      return {
+        key: key,
+        quota: quota == null ? Math.max(0, Math.floor(Number(student && student.attackQuota) || 0)) : Math.max(0, Math.floor(quota)),
+        exp: exp == null ? Math.max(0, Math.floor(Number(student && student.exp) || 0)) : Math.floor(exp),
+        coins: coins == null ? Math.max(0, Math.floor(Number(student && student.coins) || 0)) : Math.floor(coins),
+        tickets: tickets == null ? Math.max(0, Math.floor(Number(student && student.gachaTickets) || 0)) : Math.floor(tickets),
+        hp: hp == null ? Math.max(0, Math.floor(Number(student && student.hp) || 0)) : Math.floor(hp)
+      };
+    }
+
+    async function releaseStaleFaint(student) {
+      if (!student || !(Number(student.hp) > 0) || !student.isFainted) return true;
+      const saved = await commitPlayUpdate({ ['students/' + studentSaveKey(student) + '/isFainted']: false });
+      if (!saved) return false;
+      student.isFainted = false;
+      return true;
+    }
+
     async function commitPlayUpdate(updates, expect) {
       const keys = updates ? Object.keys(updates) : [];
       if (!keys.length) return true;
@@ -10672,7 +10711,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.69</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.70</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -12268,7 +12307,7 @@ function logout() {
       skills.forEach((sk, idx) => {
         const isHeal = sk.type === "heal";
         const btnColor = isHeal ? "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500" : "from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500";
-        const disabledAttr = (st.hp <= 0 || st.isFainted || banned) ? 'disabled' : '';
+        const disabledAttr = (!(Number(st.hp) > 0) || banned) ? 'disabled' : '';
         const preview = !isHeal && boss ? previewTypedDamage(st, boss, bossClass, sk.power || 20, 'boss') : null;
         const powerLabel = preview ? `${sk.power} → ${preview.damage} DMG · ${preview.note}` : `${sk.power} ${isHeal ? 'HEAL' : 'DMG'}`;
 
@@ -12574,7 +12613,7 @@ else if (mode === 'pvp') {
           const tDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
           const tMaxHp = tDigi.maxHp || 100;
           const tCurHp = target.hp !== undefined ? target.hp : tMaxHp;
-          const isDead = target.isFainted || tCurHp <= 0;
+          const isDead = !(Number(tCurHp) > 0);
 
           const strike = studentPvpBlock(st, target, undefined, false);
           const canStrike = !isDead && strike.ok;
@@ -12642,11 +12681,12 @@ else if (mode === 'pvp') {
         return;
       }
 
-      // 檢查自己是否處於倒下狀態
-      if (st.isFainted || (st.hp !== undefined && st.hp <= 0)) {
+      // 檢查自己是否處於倒下狀態。HP 還在但倒下旗標沒清掉時，先清旗標再攻擊。
+      if (!(Number(st.hp) > 0) || isStudentBanned(st)) {
         showToast("無法行動", "你的數碼暴龍已經倒下，無法攻擊或反擊！", "damage");
         return;
       }
+      if (!(await releaseStaleFaint(st))) return;
 
       const pvpBlock = studentPvpBlock(st, target, undefined, !!isCounterAttack);
       if (!pvpBlock.ok) {
@@ -12656,8 +12696,11 @@ else if (mode === 'pvp') {
       }
 
       // 若為一般主動攻擊，需檢查攻擊次數；若為「反擊 (isCounterAttack = true)」則不佔用攻擊次數！
-      if (!isCounterAttack && (st.attackQuota || 0) <= 0) {
+      const strikeBase = await attackerServerBase(st);
+      if (!isCounterAttack && strikeBase.quota < 1) {
+        st.attackQuota = 0;
         showToast("次數不足", "攻擊次數 (Attack Quotas) 不足！", "damage");
+        updateStudentUI();
         return;
       }
 
@@ -12675,9 +12718,15 @@ else if (mode === 'pvp') {
       const myDigi = DIGIMON_DB[atkDigiId] || DIGIMON_DB['digitama1'];
       const tgtDigi = DIGIMON_DB[tgtDigiId] || DIGIMON_DB['digitama1'];
 
-      // 目標已經倒下防呆
-      const curTargetHp = (target.hp !== undefined && target.hp !== null) ? Math.floor(Number(target.hp)) : (tgtDigi.maxHp || 100);
-      if (target.isFainted || curTargetHp <= 0) {
+      // 目標已經倒下防呆。用資料庫 HP，避免畫面血量比實際高時最後一擊被拒絕。
+      const strikeTargetKey = studentSaveKey(target);
+      const serverTargetHp = await readServerNumber('students/' + strikeTargetKey + '/hp');
+      const curTargetHp = serverTargetHp == null
+        ? ((target.hp !== undefined && target.hp !== null) ? Math.floor(Number(target.hp)) : (tgtDigi.maxHp || 100))
+        : Math.floor(serverTargetHp);
+      if (curTargetHp <= 0) {
+        target.hp = 0;
+        target.isFainted = true;
         showToast("無效目標", `${target.name} 已經倒下，無法對其發動攻擊！`, "info");
         if (isCounterAttack) renderCounterAttackModalList();
         return;
@@ -12705,7 +12754,7 @@ else if (mode === 'pvp') {
       const attrNote = attrHit.note ? ` · ${attrHit.note}` : '';
 
       // 扣除攻擊次數（僅主動攻擊扣除，反擊不扣）。先算好，寫入成功才改畫面和紀錄。
-      const newQuota = isCounterAttack ? (st.attackQuota || 0) : Math.max(0, (st.attackQuota || 0) - 1);
+      const newQuota = isCounterAttack ? strikeBase.quota : strikeBase.quota - 1;
 
       const actionTag = isCounterAttack ? "⚡[反擊 COUNTER]" : "⚔️[PVP ATTACK]";
 
@@ -12747,7 +12796,7 @@ else if (mode === 'pvp') {
 
       // 4. 💥【反噬傷害計算】：取整數，最低 3 點，自身最多扣到剩 1 HP
       const recoilDmg = Math.max(3, Math.floor(calculatedDmg * 0.15));
-      const curSelfHp = (st.hp !== undefined && st.hp !== null) ? Math.floor(Number(st.hp)) : (myDigi.maxHp || 100);
+      const curSelfHp = strikeBase.hp > 0 ? strikeBase.hp : ((st.hp !== undefined && st.hp !== null) ? Math.floor(Number(st.hp)) : (myDigi.maxHp || 100));
       const finalSelfHp = Math.max(1, curSelfHp - recoilDmg);
 
       // 5. 對手扣血與擊殺判定
@@ -12761,10 +12810,10 @@ else if (mode === 'pvp') {
       let bountyBonusTickets = 0;
       let totalExpAward = 0;
       let worldTreeCoins = 0;
-      let nextCoins = st.coins || 0;
-      let nextExp = st.exp || 0;
-      let nextPool = st.statPool || 0;
-      let nextTickets = st.gachaTickets || 0;
+      let nextCoins = strikeBase.coins;
+      let nextExp = strikeBase.exp;
+      let nextPool = Math.floor(Number(st.statPool) || 0);
+      let nextTickets = strikeBase.tickets;
 
       if (isKill) {
         earnedCoins = Number(calculatePvPBaseKillCoins(atkDigiId, tgtDigiId));
@@ -12784,41 +12833,32 @@ else if (mode === 'pvp') {
           earnedCoins += 5;
           worldTreeCoins = 5;
         }
-        nextCoins = (st.coins || 0) + earnedCoins;
-        nextExp = (st.exp || 0) + totalExpAward;
-        nextPool = (st.statPool || 0) + totalExpAward;
-        if (bountyBonusTickets > 0) nextTickets = (st.gachaTickets || 0) + bountyBonusTickets;
+        nextCoins = strikeBase.coins + earnedCoins;
+        nextExp = strikeBase.exp + totalExpAward;
+        nextPool = Math.floor(Number(st.statPool) || 0) + totalExpAward;
+        if (bountyBonusTickets > 0) nextTickets = strikeBase.tickets + bountyBonusTickets;
       }
 
       const strikeUpdates = {};
-      strikeUpdates[`students/${studentSaveKey(st)}/hp`] = finalSelfHp;
-      strikeUpdates[`students/${studentSaveKey(st)}/attackQuota`] = newQuota;
+      strikeUpdates[`students/${strikeBase.key}/hp`] = finalSelfHp;
+      if (!isCounterAttack) strikeUpdates[`students/${strikeBase.key}/attackQuota`] = newQuota;
       if (isKill) {
-        strikeUpdates[`students/${studentSaveKey(st)}/coins`] = nextCoins;
-        strikeUpdates[`students/${studentSaveKey(st)}/exp`] = nextExp;
-        strikeUpdates[`students/${studentSaveKey(st)}/statPool`] = nextPool;
-        if (bountyBonusTickets > 0) strikeUpdates[`students/${studentSaveKey(st)}/gachaTickets`] = nextTickets;
+        strikeUpdates[`students/${strikeBase.key}/coins`] = nextCoins;
+        strikeUpdates[`students/${strikeBase.key}/exp`] = nextExp;
+        strikeUpdates[`students/${strikeBase.key}/statPool`] = nextPool;
+        if (bountyBonusTickets > 0) strikeUpdates[`students/${strikeBase.key}/gachaTickets`] = nextTickets;
       }
       const counterCharges = autoReviveItemCount(target);
-      const counterRevived = isKill && counterCharges > 0;
-      if (counterRevived) {
-        const full = fullHpOfStudent(target);
-        const inv = Object.assign({}, target.inventory || {});
-        inv.item_auto_revive = Math.max(0, counterCharges - 1);
-        strikeUpdates[`students/${studentSaveKey(target)}/hp`] = full;
-        strikeUpdates[`students/${studentSaveKey(target)}/isFainted`] = false;
-        strikeUpdates[`students/${studentSaveKey(target)}/killedByName`] = null;
-        strikeUpdates[`students/${studentSaveKey(target)}/killedById`] = null;
-        strikeUpdates[`students/${studentSaveKey(target)}/inventory`] = inv;
-      } else {
-        strikeUpdates[`students/${studentSaveKey(target)}/hp`] = finalTargetHp;
-        strikeUpdates[`students/${studentSaveKey(target)}/isFainted`] = isKill;
-        if (isKill) {
-          strikeUpdates[`students/${studentSaveKey(target)}/killedByName`] = `${st.name} (${myDigi.name})`;
-          strikeUpdates[`students/${studentSaveKey(target)}/killedById`] = st.id;
-        }
+      const canCounterRevive = isKill && counterCharges > 0;
+      strikeUpdates[`students/${strikeTargetKey}/hp`] = finalTargetHp;
+      strikeUpdates[`students/${strikeTargetKey}/isFainted`] = isKill;
+      if (isKill) {
+        strikeUpdates[`students/${strikeTargetKey}/killedByName`] = `${st.name} (${myDigi.name})`;
+        strikeUpdates[`students/${strikeTargetKey}/killedById`] = st.id;
       }
-      const strikeSaved = await commitPlayUpdate(strikeUpdates);
+      const strikeSaved = await commitPlayUpdate(strikeUpdates, {
+        [`students/${strikeTargetKey}/hp`]: finalTargetHp
+      });
       if (!strikeSaved) return;
       st.attackQuota = newQuota;
       st.hp = finalSelfHp;
@@ -12828,13 +12868,30 @@ else if (mode === 'pvp') {
         st.statPool = nextPool;
         if (bountyBonusTickets > 0) st.gachaTickets = nextTickets;
       }
-      target.hp = strikeUpdates[`students/${studentSaveKey(target)}/hp`];
-      target.isFainted = !!strikeUpdates[`students/${studentSaveKey(target)}/isFainted`];
-      if (counterRevived) {
-        target.inventory = strikeUpdates[`students/${studentSaveKey(target)}/inventory`];
-        logAutoRevive(target, st.classId, counterCharges - 1);
-        showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
-      } else if (isKill && dbRootRef) {
+      target.hp = finalTargetHp;
+      target.isFainted = isKill;
+      let counterRevived = false;
+      if (canCounterRevive) {
+        const full = fullHpOfStudent(target);
+        const reviveUpdates = {};
+        reviveUpdates[`students/${strikeTargetKey}/hp`] = full;
+        reviveUpdates[`students/${strikeTargetKey}/isFainted`] = false;
+        reviveUpdates[`students/${strikeTargetKey}/killedByName`] = null;
+        reviveUpdates[`students/${strikeTargetKey}/killedById`] = null;
+        reviveUpdates[`students/${strikeTargetKey}/inventory/item_auto_revive`] = Math.max(0, counterCharges - 1);
+        counterRevived = await commitPlayUpdate(reviveUpdates, { [`students/${strikeTargetKey}/hp`]: full });
+        if (counterRevived) {
+          if (!target.inventory) target.inventory = {};
+          target.inventory.item_auto_revive = Math.max(0, counterCharges - 1);
+          target.hp = full;
+          target.isFainted = false;
+          target.killedByName = null;
+          target.killedById = null;
+          logAutoRevive(target, st.classId, counterCharges - 1);
+          showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
+        }
+      }
+      if (isKill && !counterRevived && dbRootRef) {
         dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
       }
 
@@ -18728,14 +18785,15 @@ function startStudentExamTimer() {
     // ========================================================
     // 學生發動技能按鈕 (vs Boss 或 vs Classmate 同學)
     // ========================================================
-    function castStudentSkill(skillIdx, targetMode) {
+    async function castStudentSkill(skillIdx, targetMode) {
       if (!currentUser || currentUser.role !== 'student') return;
       ensurePlaySession();
       const st = appData.students[currentUser.id];
-      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
+      if (!st || !(Number(st.hp) > 0) || isStudentBanned(st)) {
         showToast("Action Locked / 行動受限", "Digimon is fainted or banned! / 數碼暴龍已倒下或已被老師鎖定！", "damage");
         return;
       }
+      if (!(await releaseStaleFaint(st))) return;
 
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const skill = (digi.skills && digi.skills[skillIdx]) ? digi.skills[skillIdx] : { name: "Attack", power: 20, type: "damage" };
@@ -18789,6 +18847,8 @@ function startStudentExamTimer() {
     async function executeAttackTeacherBoss(skill) {
       await ensurePlaySession();
       const st = appData.students[currentUser.id];
+      if (!st || !(Number(st.hp) > 0) || isStudentBanned(st)) return;
+      if (!(await releaseStaleFaint(st))) return;
       const tcId = studentTargetTeacherId || 'teacher1';
       const tc = appData.teachers[tcId] || Object.values(appData.teachers || {})[0];
       if (!tc) return alert("No active Teacher Boss! / 無可攻擊的老師首領！");
@@ -18811,26 +18871,32 @@ function startStudentExamTimer() {
       const bossHit = attributeStrike(dmg, myDigi.type, tcDigi.type);
       dmg = bossHit.damage;
       const bossExp = Math.round(15 * territoryExpMultiplier(st, bossClass));
-      const curHp = tc.hp !== undefined ? tc.hp : (tc.maxHp || 2000);
-      const nextHp = Math.max(0, curHp - dmg);
+      const base = await attackerServerBase(st);
+      if (base.quota < 1) {
+        st.attackQuota = 0;
+        showToast("No Attacks Left / 攻擊次數不足", "You have 0 attacks left! / 攻擊次數為 0！", "damage");
+        updateStudentUI();
+        return;
+      }
+      const serverBossHp = await readServerNumber(`teachers/${tc.id}/hp`);
+      const curHp = serverBossHp == null ? (tc.hp !== undefined ? Number(tc.hp) : (tc.maxHp || 2000)) : serverBossHp;
+      const nextHp = Math.max(0, Math.floor(Number(curHp) || 0) - dmg);
 
       // 扣除攻擊次數並獎勵命中 EXP。紀錄只在次數和首領 HP 都寫入之後才留下。
-      const newQuota = Math.max(0, (st.attackQuota || 1) - 1);
+      const newQuota = base.quota - 1;
       const bossUpdates = {};
-      bossUpdates[`students/${studentSaveKey(st)}/attackQuota`] = newQuota;
-      bossUpdates[`students/${studentSaveKey(st)}/exp`] = (st.exp || 0) + bossExp;
-      bossUpdates[`students/${studentSaveKey(st)}/statPool`] = (st.statPool || 0) + bossExp;
+      bossUpdates[`students/${base.key}/attackQuota`] = newQuota;
+      bossUpdates[`students/${base.key}/exp`] = base.exp + bossExp;
+      bossUpdates[`students/${base.key}/statPool`] = Math.floor(Number(st.statPool) || 0) + bossExp;
       bossUpdates[`teachers/${tc.id}/hp`] = nextHp;
-      const hpNow = Number(st.hp);
-      if (Number.isFinite(hpNow)) bossUpdates[`students/${studentSaveKey(st)}/hp`] = hpNow;
       const saved = await commitPlayUpdate(bossUpdates, {
         [`students/${studentSaveKey(st)}/attackQuota`]: newQuota,
         [`teachers/${tc.id}/hp`]: nextHp
       });
       if (!saved) return;
       st.attackQuota = newQuota;
-      st.exp = (st.exp || 0) + bossExp;
-      st.statPool = (st.statPool || 0) + bossExp;
+      st.exp = base.exp + bossExp;
+      st.statPool = Math.floor(Number(st.statPool) || 0) + bossExp;
       tc.hp = nextHp;
       playSound('attack');
       addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG${bossHit.note ? ' · ' + bossHit.note : ''}! (+${bossExp} EXP)`, "battle", st.classId);
@@ -18912,7 +18978,7 @@ function startStudentExamTimer() {
 
       candidates.forEach(target => {
         const tgtDigi = DIGIMON_DB[target.currentDigiId] || DIGIMON_DB['digitama1'];
-        const isFainted = target.isFainted || (target.hp !== undefined && target.hp <= 0);
+        const isFainted = !(Number(target.hp) > 0);
         const tgtFac = getStudentFactionInClass(target, classFilter);
         const strike = studentPvpBlock(me, target, classFilter, false);
         const isSameFaction = studentsAreFactionAllies(me, target, classFilter);
@@ -18996,13 +19062,26 @@ function startStudentExamTimer() {
         return;
       }
 
-      if ((me.attackQuota || 0) <= 0) {
+      if (!(Number(me.hp) > 0) || isStudentBanned(me)) {
+        showToast("Action Locked / 行動受限", "Digimon is fainted or banned! / 數碼暴龍已倒下或已被老師鎖定！", "damage");
+        return;
+      }
+      if (!(await releaseStaleFaint(me))) return;
+      const base = await attackerServerBase(me);
+      if (base.quota < 1) {
+        me.attackQuota = 0;
         showToast("No Attacks / 攻擊次數不足", "No attack quota left! / 攻擊次數已用盡！", "damage");
         closePvpTargetModal();
+        updateStudentUI();
         return;
       }
 
-      if (target.isFainted || (target.hp !== undefined && target.hp <= 0)) {
+      const targetKey = studentSaveKey(target);
+      const serverTargetHp = await readServerNumber('students/' + targetKey + '/hp');
+      const shownTargetHp = target.hp !== undefined ? Number(target.hp) : null;
+      if ((serverTargetHp != null && serverTargetHp <= 0) || (serverTargetHp == null && !(Number(shownTargetHp) > 0))) {
+        target.hp = 0;
+        target.isFainted = true;
         showToast("Already Fainted / 目標已倒下", `${target.name} is already fainted! / ${target.name} 已經倒下，無法再受攻擊！`, "info");
         return;
       }
@@ -19045,9 +19124,10 @@ function startStudentExamTimer() {
       const pvpNote = pvpHit.note ? ` · ${pvpHit.note}` : '';
 
       // 扣除攻擊次數。紀錄只在攻擊次數和目標 HP 都寫入之後才留下。
-      const newQuota = Math.max(0, (me.attackQuota || 1) - 1);
+      const newQuota = base.quota - 1;
+      const meKey = base.key;
       const updates = {};
-      updates[`students/${studentSaveKey(me)}/attackQuota`] = newQuota;
+      updates[`students/${meKey}/attackQuota`] = newQuota;
 
       if (territoryBlocksAttack(target, targetClass)) {
         const blocked = await commitPlayUpdate(updates);
@@ -19064,8 +19144,8 @@ function startStudentExamTimer() {
       if (readShieldCharges(target) > 0) {
             const spent = spendShieldCharge(target);
             const leftCharges = spent.shieldCharges;
-            updates[`students/${studentSaveKey(target)}/shieldCharges`] = leftCharges;
-            updates[`students/${studentSaveKey(target)}/hasShield`] = spent.hasShield;
+            updates[`students/${targetKey}/shieldCharges`] = leftCharges;
+            updates[`students/${targetKey}/hasShield`] = spent.hasShield;
             const blocked = await commitPlayUpdate(updates);
             if (!blocked) return;
             me.attackQuota = newQuota;
@@ -19080,9 +19160,9 @@ function startStudentExamTimer() {
           
       }
 
-      // 4. 計算剩餘生命值
-      const curHp = target.hp !== undefined ? target.hp : (tgtDigi.maxHp || 100);
-      const nextHp = Math.max(0, curHp - dmg);
+      // 4. 用資料庫上的 HP 結算，畫面如果比資料庫高，也不會把最後一擊拒下來。
+      const curHp = serverTargetHp == null ? (shownTargetHp != null ? shownTargetHp : (tgtDigi.maxHp || 100)) : serverTargetHp;
+      const nextHp = Math.max(0, Math.floor(Number(curHp) || 0) - dmg);
 
       // 5. 命中獎勵（懸賞目標每次命中額外 +30 EXP）
       const activeBountyTargetId = appData.bounties ? (appData.bounties[sanitizeClassKey(targetClass)] || appData.bounties['ALL']) : null;
@@ -19121,58 +19201,60 @@ function startStudentExamTimer() {
         if (activeBountyTargetId === target.id) {
           expGained += 300;
           coinsGained += 20;
-          updates[`students/${studentSaveKey(me)}/gachaTickets`] = (me.gachaTickets || 0) + 1;
-          updates[`bounties/${sanitizeClassKey(targetClass)}`] = null; // 結算並清除懸賞
+          updates[`students/${meKey}/gachaTickets`] = base.tickets + 1;
           bountyClaimed = true;
         }
       }
 
       expGained = Math.round(expGained * territoryExpMultiplier(me, targetClass));
-      updates[`students/${studentSaveKey(me)}/exp`] = (me.exp || 0) + expGained;
-      updates[`students/${studentSaveKey(me)}/statPool`] = (me.statPool || 0) + expGained;
+      updates[`students/${meKey}/exp`] = base.exp + expGained;
+      updates[`students/${meKey}/statPool`] = Math.floor(Number(me.statPool) || 0) + expGained;
       if (coinsGained > 0) {
-        updates[`students/${studentSaveKey(me)}/coins`] = (me.coins || 0) + coinsGained;
+        updates[`students/${meKey}/coins`] = base.coins + coinsGained;
       }
       const reviveCharges = autoReviveItemCount(target);
-      const revived = nextHp <= 0 && reviveCharges > 0;
-      if (revived) {
-        const full = fullHpOfStudent(target);
-        const inv = Object.assign({}, target.inventory || {});
-        inv.item_auto_revive = Math.max(0, reviveCharges - 1);
-        updates[`students/${studentSaveKey(target)}/hp`] = full;
-        updates[`students/${studentSaveKey(target)}/isFainted`] = false;
-        updates[`students/${studentSaveKey(target)}/killedByName`] = null;
-        updates[`students/${studentSaveKey(target)}/killedById`] = null;
-        updates[`students/${studentSaveKey(target)}/inventory`] = inv;
-      } else {
-        updates[`students/${studentSaveKey(target)}/hp`] = nextHp;
-        updates[`students/${studentSaveKey(target)}/isFainted`] = nextHp <= 0;
-        if (nextHp <= 0) {
-          updates[`students/${studentSaveKey(target)}/reviveQuizClosed`] = null;
-          updates[`students/${studentSaveKey(target)}/reviveQuizPending`] = null;
-          updates[`students/${studentSaveKey(target)}/killedByName`] = `${me.name} (${myDigi.name})`;
-          updates[`students/${studentSaveKey(target)}/killedById`] = me.id;
-        }
+      const canRevive = nextHp <= 0 && reviveCharges > 0;
+      updates[`students/${targetKey}/hp`] = nextHp;
+      updates[`students/${targetKey}/isFainted`] = nextHp <= 0;
+      if (nextHp <= 0) {
+        updates[`students/${targetKey}/reviveQuizPending`] = null;
+        updates[`students/${targetKey}/killedByName`] = `${me.name} (${myDigi.name})`;
+        updates[`students/${targetKey}/killedById`] = me.id;
       }
       const saved = await commitPlayUpdate(updates, {
-        [`students/${studentSaveKey(me)}/attackQuota`]: newQuota,
-        [`students/${studentSaveKey(target)}/hp`]: updates[`students/${studentSaveKey(target)}/hp`]
+        [`students/${meKey}/attackQuota`]: newQuota,
+        [`students/${targetKey}/hp`]: nextHp
       });
       if (!saved) return;
       me.attackQuota = newQuota;
-      me.exp = (me.exp || 0) + expGained;
-      me.statPool = (me.statPool || 0) + expGained;
-      if (coinsGained > 0) me.coins = (me.coins || 0) + coinsGained;
-      if (updates[`students/${studentSaveKey(me)}/gachaTickets`] != null) me.gachaTickets = updates[`students/${studentSaveKey(me)}/gachaTickets`];
-      target.hp = updates[`students/${studentSaveKey(target)}/hp`];
-      target.isFainted = !!updates[`students/${studentSaveKey(target)}/isFainted`];
-      if (revived) {
-        target.inventory = updates[`students/${studentSaveKey(target)}/inventory`];
-        target.killedByName = null;
-        target.killedById = null;
-        logAutoRevive(target, targetClass, reviveCharges - 1);
-        showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
-      } else if (nextHp <= 0) {
+      me.exp = base.exp + expGained;
+      me.statPool = Math.floor(Number(me.statPool) || 0) + expGained;
+      if (coinsGained > 0) me.coins = base.coins + coinsGained;
+      if (updates[`students/${meKey}/gachaTickets`] != null) me.gachaTickets = updates[`students/${meKey}/gachaTickets`];
+      target.hp = nextHp;
+      target.isFainted = nextHp <= 0;
+      let revived = false;
+      if (canRevive) {
+        const full = fullHpOfStudent(target);
+        const reviveUpdates = {};
+        reviveUpdates[`students/${targetKey}/hp`] = full;
+        reviveUpdates[`students/${targetKey}/isFainted`] = false;
+        reviveUpdates[`students/${targetKey}/killedByName`] = null;
+        reviveUpdates[`students/${targetKey}/killedById`] = null;
+        reviveUpdates[`students/${targetKey}/inventory/item_auto_revive`] = Math.max(0, reviveCharges - 1);
+        revived = await commitPlayUpdate(reviveUpdates, { [`students/${targetKey}/hp`]: full });
+        if (revived) {
+          if (!target.inventory) target.inventory = {};
+          target.inventory.item_auto_revive = Math.max(0, reviveCharges - 1);
+          target.hp = full;
+          target.isFainted = false;
+          target.killedByName = null;
+          target.killedById = null;
+          logAutoRevive(target, targetClass, reviveCharges - 1);
+          showToast('對方自動復活 / Auto Revived', `${target.name} 的自動復活核心已使用，立刻滿血復活。 / ${target.name}'s core was used and they are at full HP.`, 'heal');
+        }
+      }
+      if (nextHp <= 0 && !revived) {
         target.reviveQuizClosed = null;
         target.reviveQuizPending = null;
         target.killedByName = `${me.name} (${myDigi.name})`;
@@ -19180,7 +19262,12 @@ function startStudentExamTimer() {
         if (dbRootRef) dbRootRef.child(`attackAlerts/${target.id}`).remove().catch(() => {});
       }
       if (bountyClaimed) {
+        if (dbRootRef) dbRootRef.child('bounties/' + sanitizeClassKey(targetClass)).remove().catch(() => {});
+        if (appData.bounties) delete appData.bounties[sanitizeClassKey(targetClass)];
         addBattleLog(`🎯🏆 [BOUNTY CLAIMED / 懸賞達成] ${me.name} eliminated Bounty Target [${target.name}]! Awarded +300 EXP, +1 Ticket & +20 Coins!`, "evolution", targetClass);
+      }
+      if (nextHp <= 0 && !revived && dbRootRef) {
+        dbRootRef.child('students/' + targetKey + '/reviveQuizClosed').remove().catch(() => {});
       }
       if (nextHp <= 0 && !revived) {
         playSound('faint');
