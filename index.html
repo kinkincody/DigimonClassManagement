@@ -204,7 +204,7 @@
     .world-raid-fade { animation: worldRaidFadeOut 3s linear forwards; }
     #modalReviveQuiz { z-index: 100040; }
     #modalDailyTrial { z-index: 100010; }
-    #toastContainer { z-index: 100020; }
+    #toastContainer { z-index: 100060; }
 
     /* 🔒 全班或單獨學生凍結（只讀模式）頂部橫幅 */
     #studentBanNoticeOverlay {
@@ -309,6 +309,7 @@
       <p id="deathReviveQuota" class="text-[11px] text-emerald-300 font-mono text-center"></p>
       <div id="deathReviveQuestion" class="bg-slate-950 border border-emerald-400 rounded-2xl p-4 text-sm font-bold text-white text-center break-words">Loading question...</div>
       <div id="deathReviveOptions" class="grid grid-cols-1 gap-2"></div>
+      <p id="deathReviveStatus" class="hidden rounded-xl border border-amber-300 bg-amber-950 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100"></p>
     </div>
     <p class="text-[10px] text-rose-200/90 mt-2 text-center px-6 leading-relaxed">倒下時只計算復活答題，每日 3 次。每日試煉是另一個系統，復活後才可以參加。<br>While fainted, only the revive quiz counts: 3 answers a day. The daily trial is a separate system and opens after you are revived.</p>
     <div class="text-slate-400 text-xs mt-3 max-w-md text-center leading-relaxed px-6">
@@ -326,6 +327,7 @@
       <p id="reviveQuizQuotaText" class="text-[11px] text-emerald-300 font-mono mb-3">復活答題 Revive：今日還可答 3 / 3 次<br>Revive answers left today: 3 / 3</p>
       <div id="reviveQuizQuestion" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm font-bold text-white mb-5 shadow-inner leading-relaxed">Loading question...</div>
       <div id="reviveQuizOptions" class="grid grid-cols-1 gap-2.5"></div>
+      <p id="reviveQuizStatus" class="hidden mt-3 rounded-xl border border-amber-300 bg-amber-950 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100"></p>
       <p class="text-[11px] text-slate-400 mt-4">答對會立刻滿血復活。答錯會立刻換下一題，直到今日 3 次用完。每次答對或答錯都用掉 1 次。用完要等老師，明天重新計算。這 3 次只屬於復活，不會扣每日試煉的 10 次，也不會給金幣。<br>A correct answer revives you to full HP. A wrong answer opens the next question right away until today's 3 tries are used. Each right or wrong answer uses 1 try. After 3 answers today, wait for the teacher. The count resets tomorrow. These 3 answers belong only to revive. They do not spend the daily trial's 10 tries and they do not give coins.</p>
     </div>
   </div>
@@ -525,7 +527,7 @@
     </div>
   </div>
   <!-- Toast Notification Container -->
-  <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100020] flex flex-col items-center gap-2 pointer-events-none w-11/12 max-w-md"></div>
+  <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100060] flex flex-col items-center gap-2 pointer-events-none w-11/12 max-w-md"></div>
 
   <!-- Fullscreen Digivolution Cutscene Overlay -->
   <div id="evoCutsceneOverlay" class="fixed inset-0 z-[120] bg-slate-950 flex flex-col items-center justify-center overflow-hidden hidden pointer-events-none">
@@ -5352,6 +5354,9 @@ const PASSWORD_KDF_ITERS = 40000;
       if (!currentUser || currentUser.teacherTest) return Promise.resolve(false);
       if (lastAuthProof && String(lastAuthProof.id) === String(currentUser.id) && lastAuthProof.proof) {
         return publishAuthSession(lastAuthProof.role || currentUser.role, currentUser.id, lastAuthProof.proof);
+      }
+      if (currentUser.authProof) {
+        return publishAuthSession(currentUser.role, currentUser.id, currentUser.authProof);
       }
       if (!currentUser.authToken) return Promise.resolve(false);
       const role = currentUser.role === 'teacher' ? 'teachers' : (currentUser.role === 'student' ? 'students' : 'superAdmins');
@@ -13936,30 +13941,52 @@ function publishEvoEdges() {
       return norm;
     }
 
+    function paintReviveAnswerStatus(message) {
+      ['reviveQuizStatus', 'deathReviveStatus'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const text = String(message || '');
+        el.textContent = text;
+        el.classList.toggle('hidden', !text);
+      });
+    }
+
     function describeReviveQuizOutcome(student, outcome) {
       const leftNow = Math.max(0, REVIVE_QUIZ_QUOTA - outcome.used);
       const className = outcome.className || student.classId;
       if (outcome.blocked) {
         playSound('faint');
-        showToast('今日答題已用完 / No Answers Left', '今日 3 次答題已經用完，請等老師復活。 / All 3 answers for today are used. Wait for the teacher.', 'damage');
+        const message = '今日 3 次答題已經用完，請等老師復活。 / All 3 answers for today are used. Wait for the teacher.';
+        paintReviveAnswerStatus(message);
+        showToast('今日答題已用完 / No Answers Left', message, 'damage');
         return;
       }
       if (outcome.correct) {
         playSound('heal');
+        const message = leftNow > 0
+          ? `答對了，立刻滿血復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`
+          : '答對了，立刻滿血復活。今日 3 次答題已經用完，下次要等老師。 / Correct. Full HP restored. All 3 answers for today are used. Wait for the teacher next time.';
         addBattleLog(`✨ [REVIVE QUIZ] ${student.name} 答對復活題，立刻滿血復活！今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "heal", className);
-        showToast("復活成功 / Revived", leftNow > 0 ? `答對了，立刻滿血復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.` : "答對了，立刻滿血復活。今日 3 次答題已經用完，下次要等老師。 / Correct. Full HP restored. All 3 answers for today are used. Wait for the teacher next time.", "heal");
+        paintReviveAnswerStatus(message);
+        showToast("復活成功 / Revived", message, "heal");
       } else if (outcome.continued) {
         playSound('faint');
+        const message = `答錯了，已用掉 1 次。下一題已打開。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. 1 try used. The next question is open. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`;
         addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，立刻換下一題。今次答題已經計算，今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. The next question opened. This answer used 1 try. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
-        showToast("下一題 / Next Question", `答錯了，已用掉 1 次。下一題已打開。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. 1 try used. The next question is open. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "damage");
+        paintReviveAnswerStatus(message);
+        showToast("下一題 / Next Question", message, "damage");
       } else if (leftNow > 0) {
         playSound('faint');
+        const message = `答錯了。題庫沒有下一題，請等老師復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. No next question is available. Wait for the teacher. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`;
         addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，題庫沒有下一題。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. No next question is available. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
-        showToast("復活失敗 / Not Revived", `答錯了。題庫沒有下一題，請等老師復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. No next question is available. Wait for the teacher. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "damage");
+        paintReviveAnswerStatus(message);
+        showToast("復活失敗 / Not Revived", message, "damage");
       } else {
         playSound('faint');
+        const message = '答錯了，今日 3 次已經用完，請等老師復活。 / Wrong answer. All 3 answers for today are used. Wait for the teacher.';
         addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，今日 3 次已經用完。 / Wrong answer. All 3 answers for today are used.`, "battle", className);
-        showToast("復活失敗 / Not Revived", `答錯了，今日 3 次已經用完，請等老師復活。 / Wrong answer. All 3 answers for today are used. Wait for the teacher.`, "damage");
+        paintReviveAnswerStatus(message);
+        showToast("復活失敗 / Not Revived", message, "damage");
       }
     }
 
@@ -14080,6 +14107,7 @@ function publishEvoEdges() {
         heldReviveQuiz = null;
         modal.classList.add('hidden');
         clearDeathReviveLive();
+        paintReviveAnswerStatus('');
         const clear = {};
         if (st.reviveQuizPending && st.reviveQuizPending.question) {
           st.reviveQuizPending = null;
@@ -14223,23 +14251,41 @@ function publishEvoEdges() {
       const answerText = resolveReviveAnswer(pending, choice);
       if (!answerText) return;
       const buttons = document.querySelectorAll('#reviveQuizOptions button, #deathReviveOptions button');
-      buttons.forEach(btn => { btn.disabled = true; });
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === answerText) {
+          btn.style.background = '#f59e0b';
+          btn.style.color = '#020617';
+        }
+      });
+      paintReviveAnswerStatus('正在核對這個答案… / Checking this answer…');
       const className = pending.className || st.classId;
       reviveQuizCommitDepth++;
+      let settled = false;
 
-      const finish = (student, outcome, committed) => {
+      const finish = (student, outcome, committed, denied) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(slowTimer);
         reviveQuizCommitDepth = 0;
         if (!committed || !outcome) {
           reviveQuizForceRender = true;
           const still = appData.students[st.id];
           const stillDead = still && ((Number(still.hp) <= 0) || !!still.isFainted);
-          if (stillDead) showToast('復活沒有儲存 / Revive Not Saved', '答案未能寫入，請再答一次。 / The answer was not saved. Please try again.', 'damage');
+          const message = denied
+            ? '答案沒有寫入。請老師貼上新的 Firebase rules，然後再答一次。 / The answer was not saved. Ask the teacher to paste the new Firebase rules, then answer again.'
+            : '答案未能寫入，請再答一次。 / The answer was not saved. Please try again.';
+          if (stillDead) {
+            paintReviveAnswerStatus(message);
+            showToast('復活沒有儲存 / Revive Not Saved', message, 'damage');
+          }
           updateStudentUI();
           return;
         }
         describeReviveQuizOutcome(student, outcome);
         updateStudentUI();
       };
+      const slowTimer = setTimeout(() => finish(st, null, false, false), 12000);
 
       const saveOutcome = (source) => {
         const draft = JSON.parse(JSON.stringify(source));
@@ -14287,33 +14333,43 @@ function publishEvoEdges() {
             continued: stillDown && hasNext && !norm.reviveQuizClosed,
             className: className
           }, true);
-        }).catch(() => {
-          finish(st, null, false);
+        }).catch(err => {
+          const text = String((err && (err.code || err.message)) || err || '');
+          finish(st, null, false, text.toLowerCase().indexOf('permission') >= 0);
         });
       };
 
-      if (!dbRootRef) {
-        saveOutcome(st);
-        return;
-      }
-      dbRootRef.child('students/' + studentSaveKey(st)).once('value').then(snap => {
-        const raw = snap.val() || {};
-        const serverHp = (raw.hp !== undefined && raw.hp !== null) ? Number(raw.hp) : Number(st.hp);
-        const serverDown = !(serverHp > 0) || !!raw.isFainted;
-        if (!serverDown) {
-          rememberReviveQuizStudent(st.id, raw);
-          reviveQuizCommitDepth = 0;
-          updateStudentUI();
+      const readAndSave = () => {
+        if (!dbRootRef) {
+          saveOutcome(st);
           return;
         }
-        const source = JSON.parse(JSON.stringify(st));
-        source.hp = Number.isFinite(serverHp) ? serverHp : 0;
-        source.isFainted = true;
-        source.reviveDailyDay = raw.reviveDailyDay ? String(raw.reviveDailyDay) : '';
-        source.reviveDailyUsed = Math.max(0, Number(raw.reviveDailyUsed) || 0);
-        source.reviveDailyEpoch = Math.max(0, Math.floor(Number(raw.reviveDailyEpoch) || 0));
-        saveOutcome(source);
-      }).catch(() => saveOutcome(st));
+        dbRootRef.child('students/' + studentSaveKey(st)).once('value').then(snap => {
+          const raw = snap.val() || {};
+          const serverHp = (raw.hp !== undefined && raw.hp !== null) ? Number(raw.hp) : Number(st.hp);
+          const serverDown = !(serverHp > 0) || !!raw.isFainted;
+          if (!serverDown) {
+            rememberReviveQuizStudent(st.id, raw);
+            const message = '你已經復活，這次沒有用掉答題次數。 / You are already revived, so this answer was not used.';
+            paintReviveAnswerStatus(message);
+            showToast('已經復活 / Already Revived', message, 'heal');
+            reviveQuizCommitDepth = 0;
+            settled = true;
+            clearTimeout(slowTimer);
+            updateStudentUI();
+            return;
+          }
+          const source = JSON.parse(JSON.stringify(st));
+          source.hp = Number.isFinite(serverHp) ? serverHp : 0;
+          source.isFainted = true;
+          source.reviveDailyDay = raw.reviveDailyDay ? String(raw.reviveDailyDay) : '';
+          source.reviveDailyUsed = Math.max(0, Number(raw.reviveDailyUsed) || 0);
+          source.reviveDailyEpoch = Math.max(0, Math.floor(Number(raw.reviveDailyEpoch) || 0));
+          saveOutcome(source);
+        }).catch(() => saveOutcome(st));
+      };
+
+      Promise.resolve(ensurePlaySession()).catch(() => false).then(readAndSave);
     }
 
     function updateReviveQuizTeacherPanel() {
