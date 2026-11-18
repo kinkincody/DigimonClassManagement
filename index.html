@@ -1740,7 +1740,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.72";
+    const CURRENT_APP_VERSION = "2.7.73";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -8406,7 +8406,7 @@ function applyTerritoryNodeChange(rawNode, action) {
     return result;
   }
   if (action.type === 'fortify') {
-    if (node.controllerFactionId !== action.factionId) {
+    if (!territoryFactionIdsMatch(node.controllerFactionId, action.factionId)) {
       result.ok = false;
       result.reason = 'not-owner';
       return result;
@@ -8416,7 +8416,7 @@ function applyTerritoryNodeChange(rawNode, action) {
     result.node = node;
     return result;
   }
-  if (node.controllerFactionId && node.controllerFactionId === action.factionId) {
+  if (territoryFactionIdsMatch(node.controllerFactionId, action.factionId)) {
     result.ok = false;
     result.reason = 'own-node';
     return result;
@@ -8454,6 +8454,20 @@ function applyTerritoryNodeChange(rawNode, action) {
   return result;
 }
 
+function territoryNodeForSave(node) {
+  const next = {};
+  Object.keys(node || {}).forEach(key => {
+    const value = node[key];
+    if (value === null || value === undefined) return;
+    if (key === 'contributions') {
+      if (value && typeof value === 'object' && Object.keys(value).length) next.contributions = value;
+      return;
+    }
+    next[key] = value;
+  });
+  return next;
+}
+
 function rememberTerritoryNode(className, node) {
   const key = sanitizeClassKey(className);
   if (!appData.territoryNodes) appData.territoryNodes = {};
@@ -8479,9 +8493,7 @@ function commitTerritoryNode(className, nodeId, action) {
       const out = run(cur);
       preview = out;
       if (!out.ok) return;
-      const next = Object.assign({}, out.node);
-      if (!next.contributions || !Object.keys(next.contributions).length) next.contributions = null;
-      return next;
+      return territoryNodeForSave(out.node);
     }, (err, committed, snap) => {
       if (err || !committed || !snap) {
         resolve(preview && !preview.ok ? preview : { ok: false, reason: 'aborted', node: before, captured: false, absorbed: 0, added: 0 });
@@ -8498,7 +8510,7 @@ function commitTerritoryNode(className, nodeId, action) {
 
 function chooseTerritoryPriority(className, factionId) {
   const nodes = TERRITORY_NODE_DEFS.map(def => getTerritoryNode(className, def.id));
-  const owned = nodes.filter(n => n.controllerFactionId === factionId);
+  const owned = nodes.filter(n => territoryFactionIdsMatch(n.controllerFactionId, factionId));
   if (owned.length) {
     owned.sort((a, b) => (b.currentControlPoints - a.currentControlPoints) || (a.fortifyShield - b.fortifyShield));
     return { nodeId: owned[0].id, mode: 'fortify' };
@@ -9128,7 +9140,7 @@ function territoryCardHtml(node, opts) {
   const def = territoryNodeDef(node.id);
   const pct = Math.max(0, Math.min(100, Math.round((node.currentControlPoints / node.maxControlPoints) * 100)));
   const owner = node.controllerFactionId ? escapeHtml(node.controllerFactionName || 'Faction') : '中立 / Neutral';
-  const mine = opts.myFactionId && node.controllerFactionId === opts.myFactionId;
+  const mine = opts.myFactionId && territoryFactionIdsMatch(node.controllerFactionId, opts.myFactionId);
   const ownerClass = mine ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : (node.controllerFactionId ? 'bg-rose-950 text-rose-300 border-rose-500' : 'bg-slate-800 text-slate-300 border-slate-600');
   const lead = node.leadingFactionName ? escapeHtml(node.leadingFactionName) : '—';
   const photos = territoryImageCandidates(def);
@@ -9177,7 +9189,7 @@ function renderStudentTerritory() {
   const noFac = !fac.factionId;
   const cards = TERRITORY_NODE_DEFS.map(def => {
     const node = getTerritoryNode(className, def.id);
-    const own = fac.factionId && node.controllerFactionId === fac.factionId;
+    const own = fac.factionId && territoryFactionIdsMatch(node.controllerFactionId, fac.factionId);
     const actions = `
       <div class="grid grid-cols-2 gap-2">
         <button type="button" onclick="studentTerritoryAction('${def.id}','invade')" class="px-2 py-2 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 ${own || noFac ? 'bg-slate-800 text-slate-500' : 'bg-rose-600 hover:bg-rose-500 text-white'}">進攻 Invade (-1) · ${points}</button>
@@ -9214,17 +9226,33 @@ function studentTerritoryAction(nodeId, mode) {
     return;
   }
   const points = territoryStagePoints(st.currentDigiId);
-  const spend = () => commitTerritoryNode(className, nodeId, {
-    type: mode,
-    factionId: fac.factionId,
-    factionName: fac.factionName || 'Faction',
-    points: points
-  });
+  const quotaRef = () => dbRootRef.child(`students/${studentSaveKey(st)}/attackQuota`);
+  const changeQuota = (delta) => {
+    if (!dbRootRef) {
+      st.attackQuota = Math.max(0, (Number(st.attackQuota) || 0) + delta);
+      return Promise.resolve(true);
+    }
+    const ref = quotaRef();
+    let sawNumber = false;
+    return ref.transaction(q => {
+      if (q == null) return delta < 0 ? 0 : delta;
+      const n = Number(q);
+      if (!Number.isFinite(n)) return;
+      sawNumber = true;
+      const next = n + delta;
+      if (next < 0) return;
+      return next;
+    }, null, false).then(result => {
+      if (!result || result.committed === false) return false;
+      if (delta < 0 && !sawNumber) return false;
+      return true;
+    }, () => false);
+  };
   const after = (res) => {
     if (!res || !res.ok) {
       const reason = res && res.reason === 'own-node'
         ? '這是己方據點，請改按駐守。 / This node is yours. Fortify it.'
-        : (res && res.reason === 'not-owner' ? '只能駐守己方據點。 / You can only fortify a node your faction holds.' : '據點沒有改變。 / The node did not change.');
+        : (res && res.reason === 'not-owner' ? '只能駐守己方據點。 / You can only fortify a node your faction holds.' : '據點沒有保存。 / The node was not saved.');
       showToast('據點 / Node', reason, 'info');
       return;
     }
@@ -9240,21 +9268,20 @@ function studentTerritoryAction(nodeId, mode) {
     if (res.captured) addBattleLog(`🚩 [NODE CAPTURED] 【${fac.factionName}】佔領了【${def.name}】！被動效果已經轉移。`, 'evolution', className);
     updateStudentUI();
   };
-  spend().then(res => {
-    if (!res || !res.ok) {
-      after(res);
+  changeQuota(-1).then(spent => {
+    if (!spent) {
+      showToast('攻擊次數不足 / No Attacks', '需要 1 次攻擊次數。 / You need 1 attack.', 'damage');
       return;
     }
-    if (!dbRootRef) {
-      st.attackQuota = Math.max(0, (st.attackQuota || 0) - 1);
+    return commitTerritoryNode(className, nodeId, {
+      type: mode,
+      factionId: fac.factionId,
+      factionName: fac.factionName || 'Faction',
+      points: points
+    }).then(res => {
+      if (!res || !res.ok) return changeQuota(1).then(() => after(res));
       after(res);
-      return;
-    }
-    dbRootRef.child(`students/${studentSaveKey(st)}/attackQuota`).transaction(q => {
-      const n = Number(q) || 0;
-      if (n < 1) return;
-      return n - 1;
-    }, () => after(res));
+    });
   });
 }
 
@@ -10821,7 +10848,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.72</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.73</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
