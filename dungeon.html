@@ -1689,6 +1689,8 @@
         next.isFainted = true;
         next.killedByName = killerName || 'Digital Matrix';
         next.killedById = 'dungeon';
+        delete next.reviveQuizPending;
+        delete next.reviveQuizClosed;
         return next;
       });
     }
@@ -2407,7 +2409,27 @@
       });
     }
 
+    let classLocked = false;
+    function studentClassIsLocked(student, bannedMap) {
+      if (!student) return false;
+      if (student.isBanned === true || student.isBanned === 'true') return true;
+      const banned = bannedMap || {};
+      if (banned.ALL) return true;
+      return String(student.classId || '').split(',').map(part => part.trim()).filter(Boolean).some(cls => banned[sanitizeClassKey(cls)]);
+    }
+    function leaveDungeonBecauseLocked() {
+      if (classLocked) return;
+      classLocked = true;
+      try {
+        sessionStorage.setItem('DIGIMON_CLASS_LOCK_V1', '1');
+        sessionStorage.removeItem('DIGIMON_DUNGEON_ROOM_V1');
+        sessionStorage.removeItem('DIGIMON_DUNGEON_JOIN_V1');
+      } catch (err) {}
+      location.replace('index.html');
+    }
+
     async function onAppClick(event) {
+      if (classLocked) return;
       const button = event.target.closest('[data-act]');
       if (!button || button.disabled) return;
       const act = button.dataset.act;
@@ -2522,8 +2544,17 @@
         } catch (err) {}
         location.replace('index.html');
       });
+      let bannedClasses = {};
+      db.child('systemSettings/bannedClasses').on('value', snap => {
+        bannedClasses = snap.val() || {};
+        if (meStudent && studentClassIsLocked(meStudent, bannedClasses)) leaveDungeonBecauseLocked();
+      });
       db.child('students/' + String(gate.id).toLowerCase()).on('value', snap => {
         meStudent = snap.val();
+        if (meStudent && studentClassIsLocked(meStudent, bannedClasses)) {
+          leaveDungeonBecauseLocked();
+          return;
+        }
         if (meStudent) {
           meStudent.id = String(gate.id).toLowerCase();
           delete meStudent.password;
