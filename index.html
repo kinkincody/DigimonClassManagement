@@ -929,7 +929,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="studentMainInteractContainer">
         <div id="studentDigiviceCard" class="md:col-span-2 digi-card skin-classic rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500">
           <div id="stShieldBanner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-cyan-500/20 border border-cyan-400 rounded-full text-[11px] text-cyan-300 font-bold flex items-center gap-1.5 backdrop-blur shadow-lg animate-pulse">
-            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active 聖盾防禦中 (Blocks 1 Attack)
+            <i class="fa-solid fa-shield-halved text-cyan-400"></i> Aegis Shield Active 聖盾防禦中 (最多 10 次 / up to 10)
           </div>
 
           <div class="w-full flex flex-wrap justify-between items-center gap-2 z-10 mb-4">
@@ -1742,7 +1742,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.73";
+    const CURRENT_APP_VERSION = "2.7.75";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -2056,6 +2056,61 @@
   systemSettings: { bannedClasses: {} }
 };
 
+    const SHIELD_CHARGE_CAP = 10;
+    const shieldCapPending = new Set();
+    const serverShieldAboveCap = {};
+    let pendingShieldCaps = null;
+
+    function capShieldCharges(value) {
+      const n = Math.floor(Number(value) || 0);
+      if (n <= 0) return 0;
+      return Math.min(SHIELD_CHARGE_CAP, n);
+    }
+
+    function shieldChargeBase(student) {
+      if (!student) return 0;
+      if (student.hasShield) return readShieldCharges(student);
+      return capShieldCharges(student.shieldCharges);
+    }
+
+    function grantShieldCharges(student, add) {
+      const next = Math.min(SHIELD_CHARGE_CAP, shieldChargeBase(student) + Math.max(0, Math.floor(Number(add) || 0)));
+      student.shieldCharges = next;
+      student.hasShield = next > 0;
+      return next;
+    }
+
+    function noteOverCapShields(rawStudents) {
+      pendingShieldCaps = {};
+      Object.keys(serverShieldAboveCap).forEach(key => delete serverShieldAboveCap[key]);
+      Object.keys(rawStudents || {}).forEach(key => {
+        const stored = Math.floor(Number((rawStudents[key] || {}).shieldCharges) || 0);
+        if (stored > SHIELD_CHARGE_CAP) {
+          pendingShieldCaps[key] = stored;
+          serverShieldAboveCap[key] = stored;
+        }
+      });
+      persistOverCapShields();
+    }
+
+    function persistOverCapShields() {
+      if (!dbRootRef || !currentUser || !pendingShieldCaps) return;
+      Object.keys(pendingShieldCaps).forEach(key => {
+        const stored = pendingShieldCaps[key];
+        const mark = key + ':' + stored;
+        if (shieldCapPending.has(mark)) return;
+        shieldCapPending.add(mark);
+        dbRootRef.child('students/' + key + '/shieldCharges').transaction(cur => {
+          if (cur == null) return SHIELD_CHARGE_CAP;
+          const n = Math.floor(Number(cur));
+          if (!Number.isFinite(n) || n <= SHIELD_CHARGE_CAP) return;
+          return SHIELD_CHARGE_CAP;
+        }, null, false).catch(() => {
+          shieldCapPending.delete(mark);
+        });
+      });
+    }
+
     const ITEMS_DB = {
       "item_mega_shield": {
         id: "item_mega_shield",
@@ -2065,13 +2120,11 @@
         badgeBg: "bg-amber-600",
         icon: "🔰",
         weight: 0,
-        description: "極高能防護壁！完全抵擋接下來的 10 次攻擊！\n(Deploys an ultimate energy barrier that blocks up to 10 incoming attacks!)",
+        description: "把聖盾補到最多 10 次。已經有聖盾時，再使用只會補到 10 次，不會超過 10 次，並可抵擋接下來最多 10 次攻擊。\n(Fills the Aegis Shield up to 10 charges. Using another shield tops it up to 10 and never past 10. It blocks the next attacks, up to 10.)",
         effect: (st) => {
-          const base = st.hasShield ? readShieldCharges(st) : Math.max(0, Math.floor(Number(st.shieldCharges) || 0));
-          st.shieldCharges = base + 10;
-          st.hasShield = true;
+          const left = grantShieldCharges(st, 10);
           playSound('shield');
-          return `超能聖盾已啟動！剩餘 ${st.shieldCharges} 次防禦 (Giga Shield Active! ${st.shieldCharges} Blocks)!`;
+          return `超能聖盾已啟動！剩餘 ${left} 次防禦，最多 10 次 (Giga Shield Active! ${left} of 10 Blocks)!`;
         }
       },
       "potion_large": {
@@ -2099,12 +2152,11 @@
         badgeBg: "bg-cyan-800",
         icon: "🛡️",
         weight: 120,
-        description: "抵擋一次傷害！\n(Creates a digital forcefield that immunizes from 1 incoming attack!)",
+        description: "增加 1 次聖盾。聖盾最多 10 次，再使用只會補到 10 次，不會超過。\n(Adds 1 Aegis Shield charge, up to 10. It never goes above 10.)",
         effect: (st) => {
-          st.shieldCharges = Math.max(st.shieldCharges || 0, 1);
-          st.hasShield = true;
+          const left = grantShieldCharges(st, 1);
           playSound('shield');
-          return "聖盾已啟動，抵擋下一次攻擊！(Aegis Shield deployed!)";
+          return `聖盾已啟動，剩餘 ${left} 次防禦，最多 10 次！(Aegis Shield deployed! ${left} of 10 blocks left!)`;
         }
       },
 
@@ -2116,13 +2168,11 @@
         badgeBg: "bg-cyan-800",
         icon: "🛡️",
         weight: 120,
-        description: "Creates a digital forcefield that immunizes from 1 incoming attack!",
+        description: "增加 1 次聖盾。聖盾最多 10 次，再使用只會補到 10 次，不會超過。\n(Adds 1 Aegis Shield charge, up to 10. It never goes above 10.)",
         effect: (st) => {
-          const base = st.hasShield ? readShieldCharges(st) : Math.max(0, Math.floor(Number(st.shieldCharges) || 0));
-          st.shieldCharges = base + 1;
-          st.hasShield = true;
+          const left = grantShieldCharges(st, 1);
           playSound('shield');
-          return `聖盾已啟動，剩餘 ${st.shieldCharges} 次防禦！(Aegis Shield deployed! ${st.shieldCharges} blocks left!)`;
+          return `聖盾已啟動，剩餘 ${left} 次防禦，最多 10 次！(Aegis Shield deployed! ${left} of 10 blocks left!)`;
         }
       },
       "skin_courage": {
@@ -2513,14 +2563,14 @@ const SHOP_CATALOG = [
     name: "單次防禦聖盾 (Aegis Shield)",
     cost: 75, // 原價 25 的兩倍
     icon: "🛡️",
-    desc: "購買後存入背包，使用可抵擋 1 次攻擊 (Blocks 1 incoming attack)"
+    desc: "購買後存入背包，使用增加 1 次防禦。聖盾最多 10 次，不會超過 (Adds 1 block, up to 10. Never more than 10)"
   },
   {
     id: "item_mega_shield",
     name: "十次超能聖盾 (Giga Aegis 10x Shield)",
     cost: 250, // 抵擋 10 次，性價比極高
     icon: "🔰",
-    desc: "購買後存入背包，使用可連續抵擋 10 次攻擊 (Blocks 10 incoming attacks)"
+    desc: "購買後存入背包，使用把聖盾補到 10 次。已經有聖盾時只會補滿到 10，不會超過 (Fills the shield up to 10 charges and never past 10)"
   },
   {
     id: "chip_courage",
@@ -5350,6 +5400,10 @@ const PASSWORD_KDF_ITERS = 40000;
       showToast('動作沒有儲存 / Not Saved', '請貼上新的 Firebase rules，然後重新登入。攻擊、回復、抽卡和每日試煉才會寫進資料庫。 / Paste the new Firebase rules, then sign in again. Attacks, healing, gacha, and the daily trial can then be saved.', 'damage');
     }
 
+    function attackNotSaved() {
+      showToast('攻擊沒有打出 / Attack Not Saved', '這次攻擊沒有寫進資料庫，對方的聖盾和血量都沒有變。請貼上最新的 Firebase rules 後再試一次。 / This attack was not saved, so the shield and HP did not change. Paste the latest Firebase rules, then try again.', 'damage');
+    }
+
     function ensurePlaySession() {
       if (!currentUser || currentUser.teacherTest) return Promise.resolve(false);
       if (lastAuthProof && String(lastAuthProof.id) === String(currentUser.id) && lastAuthProof.proof) {
@@ -6304,7 +6358,7 @@ const PASSWORD_KDF_ITERS = 40000;
     hp: (s.hp !== undefined && s.hp !== null) ? Number(s.hp) : (DIGIMON_DB[currentDigiId]?.maxHp || 100),
     isFainted: !!s.isFainted,
     hasShield: !!s.hasShield,
-    shieldCharges: Math.max(0, Math.floor(Number(s.shieldCharges) || 0)),
+    shieldCharges: capShieldCharges(s.shieldCharges),
     isStarred: !!s.isStarred,
     isBanned: !!s.isBanned,
     skinId: s.skinId || 'skin-classic',
@@ -6611,6 +6665,7 @@ const PASSWORD_KDF_ITERS = 40000;
             appData.students[liveTest.sandboxId] = currentUser.data;
           }
           migrateLegacyBetrayalBlades(appData.students);
+          noteOverCapShields(val);
           saveLocalCache();
           paintOwnSpyMark();
           if (!currentUser) {
@@ -8686,12 +8741,13 @@ function clearDungeonDefeat() {
 function readShieldCharges(student) {
   if (!student || !student.hasShield) return 0;
   const stored = Math.floor(Number(student.shieldCharges) || 0);
-  return stored > 0 ? stored : 1;
+  if (stored <= 0) return 1;
+  return Math.min(SHIELD_CHARGE_CAP, stored);
 }
 
 function spendShieldCharge(student) {
   const before = readShieldCharges(student);
-  if (!student || before <= 0) return { blocked: false, shieldCharges: Math.max(0, Math.floor(Number(student && student.shieldCharges) || 0)), hasShield: false };
+  if (!student || before <= 0) return { blocked: false, shieldCharges: capShieldCharges(student && student.shieldCharges), hasShield: false };
   const left = before - 1;
   student.shieldCharges = left;
   student.hasShield = left > 0;
@@ -10267,7 +10323,21 @@ function rejectFactionRequest(reqKey) {
       return true;
     }
 
+    function keepOwnShieldWithinCap(updates) {
+      if (!updates || !currentUser || currentUser.role !== 'student') return updates;
+      const me = appData.students && appData.students[currentUser.id];
+      const key = me ? studentSaveKey(me) : currentUser.id;
+      if (!(serverShieldAboveCap[key] > SHIELD_CHARGE_CAP)) return updates;
+      const mine = 'students/' + key + '/';
+      const touchesMe = Object.keys(updates).some(path => String(path).indexOf(mine) === 0);
+      if (!touchesMe) return updates;
+      const shieldPath = mine + 'shieldCharges';
+      if (updates[shieldPath] == null || Number(updates[shieldPath]) > SHIELD_CHARGE_CAP) updates[shieldPath] = SHIELD_CHARGE_CAP;
+      return updates;
+    }
+
     async function commitPlayUpdate(updates, expect) {
+      updates = keepOwnShieldWithinCap(updates);
       const keys = updates ? Object.keys(updates) : [];
       if (!keys.length) return true;
       if (currentUser && currentUser.role === 'student' && !currentUser.teacherTest) {
@@ -10853,7 +10923,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.73</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.75</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -11531,6 +11601,7 @@ function getSuperAdminTemplate() {
 
     async function enterDashboard() {
   if (!currentUser) return;
+  persistOverCapShields();
 
   // 🛡️ 防禦核心：嚴密阻擋學生在 F12 Console 隨意捏造 currentUser.role 進入介面
   if (currentUser.role === 'superadmin') {
@@ -12085,7 +12156,7 @@ function logout() {
       const shieldLeft = readShieldCharges(st);
       if (shieldBanner && shieldLeft > 0) {
         shieldBanner.classList.remove('hidden');
-        shieldBanner.innerHTML = `<i class="fa-solid fa-shield-halved text-cyan-400"></i> 聖盾防禦中 / Shield · 剩餘 ${shieldLeft} 次 / ${shieldLeft} left`;
+        shieldBanner.innerHTML = `<i class="fa-solid fa-shield-halved text-cyan-400"></i> 聖盾防禦中 / Shield · 剩餘 ${shieldLeft} / ${SHIELD_CHARGE_CAP} 次 · ${shieldLeft} of ${SHIELD_CHARGE_CAP} left`;
       } else if (shieldBanner) shieldBanner.classList.add('hidden');
 
       digiviceCardElem.className = `md:col-span-2 digi-card ${st.skinId || 'skin-classic'} rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[460px] transition-all duration-500`;
@@ -12630,6 +12701,10 @@ function openMegaRebirthPrompt() {
         showToast("背叛之刃 / Betrayal Blade", `背叛之刃還剩 ${betrayalBladeRemainLabel(st)}，不會再消耗，也不會加時。 / The blade is already active for ${betrayalBladeRemainLabel(st)}, so this one was not used and the time was not extended.`, "info");
         return;
       }
+      if ((itemId === 'item_shield' || itemId === 'item_mega_shield') && readShieldCharges(st) >= SHIELD_CHARGE_CAP) {
+        showToast("聖盾已滿 / Shield Full", "聖盾最多抵擋 10 次，現在已經是 10 次，這次沒有使用道具。 / The shield blocks at most 10 attacks and is already at 10, so this item was not used.", "info");
+        return;
+      }
 
       const draft = JSON.parse(JSON.stringify(st));
       draft.inventory[itemId] = Math.max(0, (Number(draft.inventory[itemId]) || 0) - 1);
@@ -12641,7 +12716,7 @@ function openMegaRebirthPrompt() {
         statPool: draft.statPool,
         hp: draft.hp,
         hasShield: !!draft.hasShield,
-        shieldCharges: Math.max(0, Math.floor(Number(draft.shieldCharges) || 0)),
+        shieldCharges: capShieldCharges(draft.shieldCharges),
         skinId: draft.skinId || null,
         attackQuota: draft.attackQuota,
         courage: draft.courage,
@@ -12905,7 +12980,7 @@ else if (mode === 'pvp') {
       if (territoryBlocksAttack(target, myClasses[0])) {
         if (!isCounterAttack) {
           const blocked = await commitPlayUpdate({ [`students/${studentSaveKey(st)}/attackQuota`]: newQuota });
-          if (!blocked) return;
+          if (!blocked) { attackNotSaved(); return; }
           st.attackQuota = newQuota;
         }
         playSound('shield');
@@ -12918,6 +12993,8 @@ else if (mode === 'pvp') {
 
       // 3. 聖盾抵擋判定
       if (readShieldCharges(target) > 0) {
+        const shieldBefore = target.shieldCharges;
+        const shieldHad = !!target.hasShield;
         const spent = spendShieldCharge(target);
         const leftCharges = spent.shieldCharges;
         const shieldUpdates = {};
@@ -12925,7 +13002,12 @@ else if (mode === 'pvp') {
         shieldUpdates[`students/${studentSaveKey(target)}/shieldCharges`] = leftCharges;
         shieldUpdates[`students/${studentSaveKey(target)}/hasShield`] = spent.hasShield;
         const blocked = await commitPlayUpdate(shieldUpdates);
-        if (!blocked) return;
+        if (!blocked) {
+          target.shieldCharges = shieldBefore;
+          target.hasShield = shieldHad;
+          attackNotSaved();
+          return;
+        }
         if (!isCounterAttack) st.attackQuota = newQuota;
         target.shieldCharges = leftCharges;
         target.hasShield = spent.hasShield;
@@ -19151,7 +19233,7 @@ function startStudentExamTimer() {
         [`students/${studentSaveKey(st)}/attackQuota`]: newQuota,
         [`teachers/${tc.id}/hp`]: nextHp
       });
-      if (!saved) return;
+      if (!saved) { attackNotSaved(); return; }
       st.attackQuota = newQuota;
       st.exp = base.exp + bossExp;
       st.statPool = Math.floor(Number(st.statPool) || 0) + bossExp;
@@ -19389,7 +19471,7 @@ function startStudentExamTimer() {
 
       if (territoryBlocksAttack(target, targetClass)) {
         const blocked = await commitPlayUpdate(updates);
-        if (!blocked) return;
+        if (!blocked) { attackNotSaved(); return; }
         me.attackQuota = newQuota;
         playSound('shield');
         addBattleLog(`🌳 [WORLD TREE] ${target.name} 的世界樹權柄完全格擋了 ${me.name} 的攻擊。`, "battle", targetClass);
@@ -19400,12 +19482,19 @@ function startStudentExamTimer() {
 
       // 3. 護盾抵擋判定 (Shield Block)
       if (readShieldCharges(target) > 0) {
+            const shieldBefore = target.shieldCharges;
+            const shieldHad = !!target.hasShield;
             const spent = spendShieldCharge(target);
             const leftCharges = spent.shieldCharges;
             updates[`students/${targetKey}/shieldCharges`] = leftCharges;
             updates[`students/${targetKey}/hasShield`] = spent.hasShield;
             const blocked = await commitPlayUpdate(updates);
-            if (!blocked) return;
+            if (!blocked) {
+              target.shieldCharges = shieldBefore;
+              target.hasShield = shieldHad;
+              attackNotSaved();
+              return;
+            }
             me.attackQuota = newQuota;
             target.shieldCharges = leftCharges;
             target.hasShield = spent.hasShield;
@@ -19483,7 +19572,7 @@ function startStudentExamTimer() {
         [`students/${meKey}/attackQuota`]: newQuota,
         [`students/${targetKey}/hp`]: nextHp
       });
-      if (!saved) return;
+      if (!saved) { attackNotSaved(); return; }
       me.attackQuota = newQuota;
       me.exp = base.exp + expGained;
       me.statPool = Math.floor(Number(me.statPool) || 0) + expGained;
