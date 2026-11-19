@@ -1130,7 +1130,7 @@
         living.forEach(id => {
           const member = room.members[id];
           const row = takeQuestion(room, resolveMemberBank(room, member, action), used);
-          by[id] = {
+          const card = {
             text: String(row.question || ''),
             correct: String(row.correct != null ? row.correct : '').trim(),
             options: answerChoices(row, room),
@@ -1138,6 +1138,9 @@
             right: false,
             reward: ''
           };
+          const image = String(row.image || '').trim();
+          if (image) card.image = image;
+          by[id] = card;
         });
         room.status = 'riddle';
         room.question = {
@@ -1495,11 +1498,16 @@
     function questionRows(raw) {
       if (!raw || typeof raw !== 'object') return [];
       const list = Array.isArray(raw) ? raw.slice() : Object.keys(raw).sort(optionKeyOrder).map(key => raw[key]);
-      return list.filter(row => row && String(row.question == null ? '' : row.question).trim() && String(row.correct == null ? '' : row.correct).trim()).map(row => ({
-        question: repairQuestionText(String(row.question).trim()),
-        correct: repairQuestionText(String(row.correct).trim()),
-        wrongs: normalizeWrongs(row.wrongs).map(repairQuestionText)
-      }));
+      return list.filter(row => row && String(row.question == null ? '' : row.question).trim() && String(row.correct == null ? '' : row.correct).trim()).map(row => {
+        const item = {
+          question: repairQuestionText(String(row.question).trim()),
+          correct: repairQuestionText(String(row.correct).trim()),
+          wrongs: normalizeWrongs(row.wrongs).map(repairQuestionText)
+        };
+        const image = String(row.image || '').trim();
+        if (image) item.image = image;
+        return item;
+      });
     }
     function lookupBank(banks, className) {
       if (!banks || typeof banks !== 'object') return [];
@@ -1550,7 +1558,12 @@
       Object.keys(shrineBanks).forEach(key => {
         const rows = shrineBanks[key];
         if (!rows || !rows.length) return;
-        out[key] = rows.map(row => ({ question: row.question, correct: row.correct, wrongs: (row.wrongs || []).slice() }));
+        out[key] = rows.map(row => {
+          const item = { question: row.question, correct: row.correct, wrongs: (row.wrongs || []).slice() };
+          const image = String(row.image || '').trim();
+          if (image) item.image = image;
+          return item;
+        });
       });
       return out;
     }
@@ -2283,6 +2296,25 @@
       return '<section id="combatArena" class="relative space-y-3"><div class="panel space-y-2">' + sprite + '<h2 class="text-center font-black">' + esc(foe.name) + '</h2><p class="text-center text-xs font-mono text-cyan-200">屬性 / Attribute · ' + esc(foe.type || 'Free') + '</p>' + turnNote + hpRow('敵方 / Enemy', foe.hp, foe.maxHp, true) + resist + bodies + '</div>' + guide + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' + skills + '</div><div class="flex flex-wrap gap-2">' + items.join('') + '</div>' + partyStrip(room) + '<div class="panel text-[11px] text-cyan-100 space-y-1">' + (room.feed || []).slice(-4).map(line => '<p>' + esc(line) + '</p>').join('') + '</div></section>';
     }
     function optionList(options) { return textList(options); }
+    function questionPictureSrc(path) {
+      let text = String(path || '').trim().replace(/\\/g, '/');
+      if (!text || /^javascript:/i.test(text)) return '';
+      const github = text.match(/^https?:\/\/github\.com\/([^/\s]+)\/([^/\s]+)\/(?:blob|raw)\/([^/\s]+)\/(.+)$/i);
+      if (github) {
+        const file = github[4].replace(/[?#].*$/, '');
+        return 'https://raw.githubusercontent.com/' + github[1] + '/' + github[2] + '/' + github[3] + '/' + file;
+      }
+      if (/^https?:\/\//i.test(text)) return text;
+      text = text.replace(/^\.\//, '');
+      if (text.charAt(0) === '/') text = text.slice(1);
+      if (!text || text.indexOf('..') >= 0) return '';
+      return text;
+    }
+    function questionPictureHtml(path) {
+      const src = questionPictureSrc(path);
+      if (!src) return '';
+      return '<img src="' + esc(src) + '" alt="" style="display:block;width:100%;max-height:16rem;object-fit:contain;margin:0 auto 0.75rem;border-radius:0.75rem;background:#020617;border:1px solid #334155" onerror="this.remove()">';
+    }
     function renderRiddle(room) {
       const pack = room.question || {};
       const mine = pack.by && meStudent ? (pack.by[meStudent.id] || pack.by[String(meStudent.id).toLowerCase()]) : null;
@@ -2306,7 +2338,7 @@
           : '<p class="text-sm text-amber-200">答錯或逾時。你失去這間房的獎勵，數碼獸不會倒下。 / Wrong or too slow. You miss this room’s reward. Your Digimon stays up.</p>';
       } else {
         const options = optionList(mine.options).map((option, index) => '<button type="button" data-act="choice" data-index="' + index + '" class="quiz-choice tap rounded-2xl bg-slate-900 border border-cyan-700 text-left px-3 font-bold">' + esc(repairQuestionText(option)) + '</button>').join('');
-        body = '<h2 class="text-base font-black leading-snug">' + esc(repairQuestionText(mine.text)) + '</h2><div class="hp-bar"><div id="quizTimerFill" class="hp-fill" style="width:' + pct + '%"></div></div><p id="quizTimerLabel" class="text-[11px] text-slate-400">' + Math.ceil(left / 1000) + 's · 答錯不會倒下。 / A wrong answer does not faint you.</p><div id="quizChoices" class="quiz-choices">' + options + '</div>';
+        body = questionPictureHtml(mine.image) + '<h2 class="text-base font-black leading-snug">' + esc(repairQuestionText(mine.text)) + '</h2><div class="hp-bar"><div id="quizTimerFill" class="hp-fill" style="width:' + pct + '%"></div></div><p id="quizTimerLabel" class="text-[11px] text-slate-400">' + Math.ceil(left / 1000) + 's · 答錯不會倒下。 / A wrong answer does not faint you.</p><div id="quizChoices" class="quiz-choices">' + options + '</div>';
       }
       return '<section id="riddleBox" class="sheet-wrap quiz-wrap fixed inset-0 z-30 bg-slate-950/80 flex items-center justify-center"><div class="sheet quiz-sheet panel"><div class="quiz-head"><div class="quiz-mark"><i class="fa-solid fa-question"></i></div><div class="min-w-0"><p class="text-xs font-black text-cyan-300">知識測驗 / Quiz</p><p class="text-[11px] text-slate-300 truncate">' + esc(cast.name || 'Quiz') + '</p></div></div>' + body + '<ul class="space-y-1">' + roster + '</ul></div></section>';
     }

@@ -1742,7 +1742,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.75";
+    const CURRENT_APP_VERSION = "2.7.76";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -7598,8 +7598,12 @@ function raidQuestionList(raw) {
     answer: repairQuestionText(String(q.answer || q.correct || '').trim()),
     options: (Array.isArray(q.options) ? q.options : Object.values(q.options || {})).map(option => repairQuestionText(String(option))),
     type: String(q.type || '').toUpperCase() === 'FILL' ? 'FILL' : 'MCQ',
-    explanation: repairQuestionText(String(q.explanation || ''))
-  }));
+    explanation: repairQuestionText(String(q.explanation || '')),
+    image: String(q.image || '').trim()
+  })).map(q => {
+    if (!q.image) delete q.image;
+    return q;
+  });
 }
 
 function raidAnswerMatches(question, submission) {
@@ -7796,7 +7800,7 @@ function worldRaidViewKey(raid, studentId) {
   const locked = raid.status === 'live' && Number(row.lockUntil) > syncedNow();
   const questions = raidQuestionList(raid.questions);
   const question = questions.length ? questions[Number(row.cursor || 0) % questions.length] : null;
-  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', raid.rewardsApplied ? 1 : 0, worldRaidMomentKey(raid)].join('|');
+  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', question && question.image ? question.image : '', raid.rewardsApplied ? 1 : 0, worldRaidMomentKey(raid)].join('|');
 }
 
 let worldRaidBlackoutMark = '';
@@ -7892,6 +7896,7 @@ function armWorldRaidQuestionBlackout(raid) {
     if (!live) return;
     live.style.color = '#000';
     live.style.background = '#000';
+    live.querySelectorAll('img').forEach(img => { img.style.visibility = 'hidden'; });
   }, 3000);
 }
 
@@ -8118,7 +8123,7 @@ function paintWorldRaidOverlay() {
       if (question && question.type === 'FILL') {
         answerBox = '<form class="flex gap-2" onsubmit="event.preventDefault(); submitWorldRaidFill();"><input id="worldRaidFill" class="flex-1 min-h-12 rounded-xl bg-slate-900 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button></form>';
       }
-      sheet.innerHTML = lower('<p id="worldRaidQuestion" class="min-h-12 rounded-xl px-2 text-base font-black leading-snug">' + escapeHtml(question ? question.question : '') + '</p><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
+      sheet.innerHTML = lower('<div id="worldRaidQuestion" class="min-h-12 rounded-xl px-2 text-base font-black leading-snug">' + questionPictureHtml(question && question.image) + '<p class="leading-snug">' + escapeHtml(question ? question.question : '') + '</p></div><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
       if (question && question.type !== 'FILL') {
         const choices = document.getElementById('worldRaidChoices');
         (question.options || []).forEach(option => {
@@ -8342,8 +8347,10 @@ function handleWorldRaidExcelImport(event) {
           type: fill ? 'FILL' : 'MCQ',
           explanation: repairQuestionText(row[6] === undefined || row[6] === null ? '' : String(row[6]).trim())
         });
+        const image = questionImageCell(row);
+        if (image) questions[questions.length - 1].image = image;
       }
-      if (!questions.length) return alert('題目是空的。請用考卷格式：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解。 / The file has no questions. Use the exam columns: A question, B answer, C-E wrong answers, F type, G explanation.');
+      if (!questions.length) return alert('題目是空的。請用考卷格式：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解。H 欄有圖片路徑才會顯示圖片，空白就只顯示題目。 / The file has no questions. Use the exam columns: A question, B answer, C-E wrong answers, F type, G explanation. Column H is an optional picture path. A blank H shows the question only.');
       worldRaidQuestions = questions;
       const status = document.getElementById('worldRaidBankStatus');
       if (status) status.textContent = '已載入 ' + questions.length + ' 題 / ' + questions.length + ' questions';
@@ -10923,7 +10930,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.75</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.76</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -11128,7 +11135,7 @@ function getTeacherTemplate() {
         </div>
         <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
           <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-violet-200">說明 / How this works</summary>
-          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">每個班各自一份石碑題庫。先在目前班級選一個班，再上傳 Excel 或 CSV。上傳只會換成這個班的題目，其他班維持自己的檔案。這個班的學生進入迷宮知識測驗時，會看到這份題目；同房的其他班學生看到自己班的題目。A 題目、B 正確答案、C D E 錯誤答案。CSV 以 UTF-8 讀取，分數和比較符號會原樣顯示。若之前的題目變成亂碼，請再上傳一次。<br>Each class keeps its own shrine file. Select one class, then upload the Excel or CSV. The upload replaces only that class. Every other class keeps its own file. Students in the selected class see these questions in the dungeon quiz room. A classmate from another class, even in the same room, sees that class's file. Column A is the question, B the correct answer, and C D E the wrong answers. CSV is read as UTF-8, so fractions and comparison signs stay as written. If an earlier upload turned the questions into stray symbols, upload the file again.</p>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">每個班各自一份石碑題庫。先在目前班級選一個班，再上傳 Excel 或 CSV。上傳只會換成這個班的題目，其他班維持自己的檔案。這個班的學生進入迷宮知識測驗時，會看到這份題目；同房的其他班學生看到自己班的題目。A 題目、B 正確答案、C D E 錯誤答案。H 欄如果有圖片路徑，圖片會顯示在題目上面；H 欄空白就只顯示題目。CSV 以 UTF-8 讀取，分數和比較符號會原樣顯示。若之前的題目變成亂碼，請再上傳一次。<br>Each class keeps its own shrine file. Select one class, then upload the Excel or CSV. The upload replaces only that class. Every other class keeps its own file. Students in the selected class see these questions in the dungeon quiz room. A classmate from another class, even in the same room, sees that class's file. Column A is the question, B the correct answer, and C D E the wrong answers. Column H is an optional picture path shown above the question. A blank H shows the question only. CSV is read as UTF-8, so fractions and comparison signs stay as written. If an earlier upload turned the questions into stray symbols, upload the file again.</p>
         </details>
         <div class="pair-grid">
           <button type="button" onclick="grantClassDungeonTickets()" class="pair-btn bg-violet-950 border border-violet-500 text-violet-100 active:scale-95"><span>全班 +1 迷宮券</span><small>Class +1</small></button>
@@ -11188,7 +11195,10 @@ function getTeacherTemplate() {
             <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 text-lg">
               <i class="fa-solid fa-bolt animate-bounce"></i>
             </div>
-            <h3 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider font-pixel">Pop-up Quiz 搶答管理中心</h3>
+            <div>
+              <h3 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider font-pixel">Pop-up Quiz 搶答管理中心</h3>
+              <p class="text-[11px] text-slate-400">Excel：A 題目、B 正確答案、C-E 錯誤答案。H 欄有圖片路徑時，圖片顯示在題目上面；H 欄空白就只顯示題目。<br>Excel: A question, B correct answer, C-E wrong answers. A picture path in column H shows above the question. A blank H shows the question only.</p>
+            </div>
           </div>
           <div class="flex items-center gap-2">
             <label for="excelQuizFileInput" class="cursor-pointer px-3.5 py-1.5 rounded-xl bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1.5 active:scale-95 shadow">
@@ -11273,7 +11283,7 @@ function getTeacherTemplate() {
             </div>
             <div>
               <h3 class="text-sm sm:text-base font-black text-indigo-300 uppercase tracking-wider font-pixel">考卷測驗發布中心 (Exam Management)</h3>
-              <p class="text-[11px] text-slate-400">匯入 Excel：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解。<br>Import Excel: A question, B correct answer, C-E wrong answers, F type, G explanation.</p>
+              <p class="text-[11px] text-slate-400">匯入 Excel：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解、H 圖片路徑（可留空）。<br>Import Excel: A question, B correct answer, C-E wrong answers, F type, G explanation, H picture path (optional). A path in H shows the picture above the question. A blank H shows the question only.</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -11487,7 +11497,7 @@ function getTeacherTemplate() {
     <div id="teacherSubViewRaid" class="space-y-6 hidden">
       <section class="rounded-2xl border border-rose-500/50 bg-slate-950/80 p-4 space-y-3">
         <div class="text-sm font-black uppercase tracking-wider text-rose-200">世界首領戰 / World Raid Event</div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 10 次，首領回復 10% HP，老師獲得 1 次技能。黑暗領域會讓接下來 3 題先顯示 3 秒再把題目變黑，只留下答案。死亡進化會凍結全班 10 秒。回復會讓首領直接回復 20% HP。勝負會顯示全螢幕結算。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 10 wrong answers from the class restore 10% of the boss HP and give the teacher one skill use. Darkness Zone shows the next 3 questions for 3 seconds, then blacks out the question and leaves the answers. Death Evolution freezes the class for 10 seconds. Recover restores 20% HP immediately. Win and loss open a full-screen ending. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation.</p>
+        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 10 次，首領回復 10% HP，老師獲得 1 次技能。黑暗領域會讓接下來 3 題先顯示 3 秒再把題目變黑，只留下答案。死亡進化會凍結全班 10 秒。回復會讓首領直接回復 20% HP。勝負會顯示全螢幕結算。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解、H 圖片路徑（可留空，有路徑就顯示在題目上面）。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 10 wrong answers from the class restore 10% of the boss HP and give the teacher one skill use. Darkness Zone shows the next 3 questions for 3 seconds, then blacks out the question and leaves the answers. Death Evolution freezes the class for 10 seconds. Recover restores 20% HP immediately. Win and loss open a full-screen ending. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation, H picture path. A path in H shows the picture above the question. A blank H shows the question only.</p>
         <div class="flex flex-wrap items-center gap-2">
           <label for="worldRaidExcelInput" class="cursor-pointer min-h-11 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black flex items-center">匯入題目 / Import Excel</label>
           <input id="worldRaidExcelInput" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="handleWorldRaidExcelImport(event)" class="hidden">
@@ -13847,11 +13857,16 @@ function publishEvoEdges() {
         if (aNum && bNum && an !== bn) return an - bn;
         return String(a).localeCompare(String(b));
       }).map(key => raw[key]);
-      return list.filter(q => q && String(q.question == null ? '' : q.question).trim() && String(q.correct == null ? '' : q.correct).trim()).map(q => ({
-        question: repairQuestionText(String(q.question).trim()),
-        correct: repairQuestionText(String(q.correct).trim()),
-        wrongs: normalizeWrongAnswers(q.wrongs).map(repairQuestionText)
-      }));
+      return list.filter(q => q && String(q.question == null ? '' : q.question).trim() && String(q.correct == null ? '' : q.correct).trim()).map(q => {
+        const row = {
+          question: repairQuestionText(String(q.question).trim()),
+          correct: repairQuestionText(String(q.correct).trim()),
+          wrongs: normalizeWrongAnswers(q.wrongs).map(repairQuestionText)
+        };
+        const image = String(q.image || '').trim();
+        if (image) row.image = image;
+        return row;
+      });
     }
 
     function dungeonQuestionBucket(className) {
@@ -15174,6 +15189,8 @@ function publishEvoEdges() {
           correct: String(q.correct).trim(),
           wrongs: normalizeWrongAnswers(q.wrongs)
         };
+        const image = String(q.image || '').trim();
+        if (image) payload['q' + i].image = image;
       });
       if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
       if (!appData.systemSettings.dungeonQuestions) appData.systemSettings.dungeonQuestions = {};
@@ -15316,6 +15333,43 @@ function publishEvoEdges() {
       return text;
     }
 
+    function questionImageCell(row) {
+      if (!row || row[7] === undefined || row[7] === null) return '';
+      return String(row[7]).trim();
+    }
+
+    function questionPictureSrc(path) {
+      let text = String(path || '').trim().replace(/\\/g, '/');
+      if (!text || /^javascript:/i.test(text)) return '';
+      const github = text.match(/^https?:\/\/github\.com\/([^/\s]+)\/([^/\s]+)\/(?:blob|raw)\/([^/\s]+)\/(.+)$/i);
+      if (github) {
+        const file = github[4].replace(/[?#].*$/, '');
+        return 'https://raw.githubusercontent.com/' + github[1] + '/' + github[2] + '/' + github[3] + '/' + file;
+      }
+      if (/^https?:\/\//i.test(text)) return text;
+      text = text.replace(/^\.\//, '');
+      if (text.charAt(0) === '/') text = text.slice(1);
+      if (!text || text.indexOf('..') >= 0) return '';
+      return text;
+    }
+
+    function questionPictureHtml(path) {
+      const src = questionPictureSrc(path);
+      if (!src) return '';
+      return '<img src="' + escapeHtml(src) + '" alt="" class="quiz-question-picture" style="display:block;width:100%;max-height:16rem;object-fit:contain;margin:0 auto 0.75rem;border-radius:0.75rem;background:#020617;border:1px solid #334155" onerror="this.remove()">';
+    }
+
+    function paintQuestionWithPicture(el, path, text) {
+      if (!el) return;
+      const picture = questionPictureHtml(path);
+      const body = repairQuestionText(String(text == null ? '' : text));
+      if (!picture) {
+        el.textContent = body;
+        return;
+      }
+      el.innerHTML = picture + '<div>' + escapeHtml(body) + '</div>';
+    }
+
     function questionSheetRows(sheet) {
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: null });
       return (rows || []).map(row => {
@@ -15351,13 +15405,16 @@ function publishEvoEdges() {
             [2, 3, 4].forEach(col => {
               if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(String(row[col]).trim());
             });
-            questions.push({
+            const rowQuestion = {
               question: repairQuestionText(questionText),
               correct: repairQuestionText(correctOpt),
               wrongs: wrongs.map(repairQuestionText)
-            });
+            };
+            const image = questionImageCell(row);
+            if (image) rowQuestion.image = image;
+            questions.push(rowQuestion);
           }
-          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header.');
+          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。H 欄有圖片路徑才會顯示在題目上面，空白就只顯示題目。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header. Column H is an optional picture path. A blank H shows the question only.');
           saveClassDungeonQuestions(selectedTeacherClass, questions).then(saved => {
             if (!saved) return;
             showToast('石碑題庫已更新 / Shrine Questions Updated', `${selectedTeacherClass} 已換成 ${questions.length} 題。其他班的題庫沒有改動。 / ${selectedTeacherClass} now has ${questions.length} questions. Other classes were not changed.`, 'evolution');
@@ -17384,11 +17441,14 @@ function teacherToggleClassSpy(studentId, event) {
             if (row[4] && String(row[4]).trim()) wrongOpts.push(repairQuestionText(String(row[4]).trim()));
 
             if (questionText && correctOpt) {
-              importedQuizBank.push({
+              const item = {
                 question: questionText,
                 correct: correctOpt,
                 wrongs: wrongOpts
-              });
+              };
+              const image = questionImageCell(row);
+              if (image) item.image = image;
+              importedQuizBank.push(item);
             }
           }
 
@@ -17507,6 +17567,7 @@ function teacherToggleClassSpy(studentId, event) {
       const shuffledTexts = rawOptions.map(o => o.text);
       const correctIndex = rawOptions.findIndex(o => o.isCorrect);
       const targetClass = selectedTeacherClass || 'ALL';
+      const bankHit = importedQuizBank.find(item => item.question === q && item.correct === correct);
 
       const quizData = {
         active: true,
@@ -17520,6 +17581,7 @@ function teacherToggleClassSpy(studentId, event) {
         submissions: {},
         timestamp: liveQuizServerStamp()
       };
+      if (bankHit && bankHit.image) quizData.image = String(bankHit.image).trim();
 
       if (dbRootRef) {
         const teacher = (appData.teachers && appData.teachers[currentUser.id]) || currentUser.data || {};
@@ -17813,7 +17875,7 @@ function teacherToggleClassSpy(studentId, event) {
         const barWrapper = document.getElementById('quizTimerBarWrapper');
         const barFill = document.getElementById('quizTimerBarFill');
 
-        document.getElementById('quizQuestionBox').textContent = repairQuestionText(activeQuizInstance.question);
+        paintQuestionWithPicture(document.getElementById('quizQuestionBox'), activeQuizInstance.image, activeQuizInstance.question);
 
         // 取得限時秒數（0 代表無限制）
         const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? Number(activeQuizInstance.timeLimit) : 30;
@@ -18092,13 +18154,16 @@ function onExamTimePresetChange(val) {
         // 打散選項順序
         options.sort(() => Math.random() - 0.5);
 
-        importedExamQuestions.push({
+        const examItem = {
           question: qText,
           answer: correctAns,
           options: options,
           type: qType,
           explanation: explain
-        });
+        };
+        const image = questionImageCell(row);
+        if (image) examItem.image = image;
+        importedExamQuestions.push(examItem);
       }
 
       const statusEl = document.getElementById('examBankStatus');
@@ -18152,13 +18217,18 @@ function onExamTimePresetChange(val) {
     durationMinutes: durationMins,
     startTime: now,
     endTime: now + durationMs,
-    questions: (importedExamQuestions || []).map(item => ({
-      question: repairQuestionText(item.question),
-      answer: repairQuestionText(item.answer),
-      options: (item.options || []).map(opt => repairQuestionText(opt)),
-      type: item.type,
-      explanation: repairQuestionText(item.explanation || '')
-    })),
+    questions: (importedExamQuestions || []).map(item => {
+      const question = {
+        question: repairQuestionText(item.question),
+        answer: repairQuestionText(item.answer),
+        options: (item.options || []).map(opt => repairQuestionText(opt)),
+        type: item.type,
+        explanation: repairQuestionText(item.explanation || '')
+      };
+      const image = String(item.image || '').trim();
+      if (image) question.image = image;
+      return question;
+    }),
     launchedAt: now,
     teacherId: currentUser.id,
     teacherName: (appData.teachers[currentUser.id] || currentUser.data)?.name || 'Teacher',
@@ -18451,10 +18521,7 @@ function renderStudentExamQuestion() {
 
   // 2. 顯示題目內容（多重相容欄位名稱：question / text / content / q）
   const qText = q.question || q.text || q.content || q.title || `題目 ${currentExamQIndex + 1}`;
-  const contentBox = document.getElementById('examQuestionContent');
-  if (contentBox) {
-    contentBox.textContent = repairQuestionText(qText);
-  }
+  paintQuestionWithPicture(document.getElementById('examQuestionContent'), q.image, qText);
 
   // 3. 處理選擇題 vs 填空題容器
   const optContainer = document.getElementById('examOptionsContainer');
@@ -18662,11 +18729,7 @@ function startStudentExamTimer() {
         typeBadge.textContent = isFill ? "填空題 (Fill-in)" : "選擇題 (MCQ)";
       }
 
-      // 2. 題目內容文字
-      const contentBox = document.getElementById('examQuestionContent');
-      if (contentBox) {
-        contentBox.textContent = q.question || "題目載入異常";
-      }
+      paintQuestionWithPicture(document.getElementById('examQuestionContent'), q.image, q.question || "題目載入異常");
 
       // 3. 容器切換與內容載入
       const optionsContainer = document.getElementById('examOptionsContainer');
