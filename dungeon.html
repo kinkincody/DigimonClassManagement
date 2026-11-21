@@ -145,10 +145,13 @@
     .question-media-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .question-media-tools button { min-height: 40px; padding: 0 10px; border-radius: 10px; background: #0f172a; color: #e2e8f0; border: 1px solid #475569; font-size: 12px; font-weight: 800; }
     .question-media-tools button.is-on { border-color: #fbbf24; color: #fde68a; }
-    .question-media-stage { max-height: min(52vh, 640px); overflow: auto; background: #020617; border: 1px solid #334155; border-radius: 12px; }
+    .question-media-stage { max-height: min(52vh, 640px); overflow: auto; background: #020617; border: 1px solid #334155; border-radius: 12px; touch-action: none; cursor: grab; user-select: none; }
+    .question-media.is-panning .question-media-stage { cursor: grabbing; }
+    .question-media.is-draw .question-media-stage { cursor: crosshair; }
     .question-media-board { position: relative; width: min(100%, 960px); margin: 0 auto; transform-origin: top center; }
     .question-media-img, .question-media-pdf { display: block; width: 100%; height: auto; }
-    .question-media-ink { position: absolute; left: 0; top: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+    .question-media-ink { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+    .question-media.is-draw .question-media-ink { pointer-events: auto; touch-action: none; cursor: crosshair; }
     @media (max-width: 640px) {
       .sheet-wrap { align-items: flex-end; padding: 0; }
       .sheet { border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-height: 88dvh; }
@@ -2338,7 +2341,7 @@
       const kind = questionMediaKind(path);
       if (!src || !kind) return '';
       const pages = kind === 'pdf' ? '<button type="button" data-media-act="prev">上一頁</button><span data-media-page>1</span><button type="button" data-media-act="next">下一頁</button>' : '';
-      return '<div class="question-media" data-media-src="' + esc(src) + '" data-media-kind="' + kind + '"><div class="question-media-tools"><button type="button" data-media-act="out">縮小 / Zoom out</button><button type="button" data-media-act="in">放大 / Zoom in</button><button type="button" data-media-act="pen" class="is-on">筆 / Pen</button><button type="button" data-media-act="highlight">螢光 / Highlight</button><button type="button" data-media-act="clear">清除 / Clear</button>' + pages + '</div><div class="question-media-stage"><div class="question-media-board">' + (kind === 'image' ? '<img class="question-media-img" alt="" src="' + esc(src) + '">' : '<canvas class="question-media-pdf"></canvas>') + '<canvas class="question-media-ink"></canvas></div></div></div>';
+      return '<div class="question-media" data-media-src="' + esc(src) + '" data-media-kind="' + kind + '"><div class="question-media-tools"><button type="button" data-media-act="out">縮小 / Zoom out</button><button type="button" data-media-act="in">放大 / Zoom in</button><button type="button" data-media-act="slide" class="is-on">滑動 / Slide</button><button type="button" data-media-act="pen">筆 / Pen</button><button type="button" data-media-act="highlight">螢光 / Highlight</button><button type="button" data-media-act="clear">清除 / Clear</button>' + pages + '</div><div class="question-media-stage"><div class="question-media-board">' + (kind === 'image' ? '<img class="question-media-img" alt="" src="' + esc(src) + '">' : '<canvas class="question-media-pdf"></canvas>') + '<canvas class="question-media-ink"></canvas></div></div></div>';
     }
     function questionPictureHtml(path) { return questionMediaHtml(path); }
     function installQuestionMediaTools() {
@@ -2353,47 +2356,198 @@
         if (!root) return;
         const act = button.getAttribute('data-media-act');
         if (act === 'in' || act === 'out') zoomQuestionMedia(root, act === 'in' ? 0.25 : -0.25);
-        else if (act === 'pen' || act === 'highlight') {
-          root.dataset.tool = act;
-          root.querySelectorAll('[data-media-act="pen"], [data-media-act="highlight"]').forEach(el => el.classList.toggle('is-on', el === button));
-        } else if (act === 'clear') clearQuestionMediaInk(root);
+        else if (act === 'slide' || act === 'pen' || act === 'highlight') setQuestionMediaTool(root, act);
+        else if (act === 'clear') clearQuestionMediaInk(root);
         else if (act === 'prev' || act === 'next') turnQuestionMediaPage(root, act === 'next' ? 1 : -1);
       });
       document.addEventListener('pointerdown', event => {
-        const ink = event.target.closest && event.target.closest('.question-media-ink');
-        if (!ink) return;
+        const stage = event.target.closest && event.target.closest('.question-media-stage');
+        if (!stage || event.button > 0) return;
+        const root = stage.closest('.question-media');
+        if (!root) return;
         event.preventDefault();
-        const root = ink.closest('.question-media');
-        const tool = root && root.dataset.tool || 'pen';
-        const ctx = ink.getContext('2d');
-        const point = questionInkPoint(ink, event);
-        ctx.strokeStyle = tool === 'highlight' ? 'rgba(250, 204, 21, 0.45)' : '#fb7185';
-        ctx.lineWidth = tool === 'highlight' ? 28 : 3;
+        try { stage.setPointerCapture(event.pointerId); } catch (err) {}
+        beginQuestionMediaGesture(root, event);
+      }, { passive: false });
+      document.addEventListener('pointermove', event => {
+        const root = questionMediaGestureRoot(event.pointerId);
+        if (!root) return;
+        event.preventDefault();
+        moveQuestionMediaGesture(root, event);
+      }, { passive: false });
+      document.addEventListener('pointerup', event => endQuestionMediaGesture(event.pointerId));
+      document.addEventListener('pointercancel', event => endQuestionMediaGesture(event.pointerId));
+      document.addEventListener('wheel', event => {
+        const stage = event.target.closest && event.target.closest('.question-media-stage');
+        if (!stage) return;
+        const root = stage.closest('.question-media');
+        if (!root) return;
+        event.preventDefault();
+        let dy = event.deltaY;
+        if (event.deltaMode === 1) dy *= 16;
+        if (event.deltaMode === 2) dy *= stage.clientHeight;
+        const step = Math.max(-0.4, Math.min(0.4, -dy / 400));
+        if (step) zoomQuestionMedia(root, step, event.clientX, event.clientY);
+      }, { passive: false });
+    }
+    function questionMediaHands() {
+      if (!window.__questionMediaHands) window.__questionMediaHands = new Map();
+      return window.__questionMediaHands;
+    }
+    function questionMediaGestureRoot(pointerId) {
+      return questionMediaHands().get(pointerId) || null;
+    }
+    function setQuestionMediaTool(root, tool) {
+      root.dataset.tool = tool;
+      root.classList.toggle('is-draw', tool === 'pen' || tool === 'highlight');
+      root.querySelectorAll('[data-media-act="slide"], [data-media-act="pen"], [data-media-act="highlight"]').forEach(el => {
+        el.classList.toggle('is-on', el.getAttribute('data-media-act') === tool);
+      });
+    }
+    function beginQuestionMediaGesture(root, event) {
+      const hands = questionMediaHands();
+      hands.set(event.pointerId, root);
+      const points = questionMediaPoints(root);
+      points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (points.size >= 2) {
+        const pair = Array.from(points.values());
+        root._pinch = {
+          dist: Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y) || 1,
+          scale: Number(root.dataset.scale) || 1,
+          midX: (pair[0].x + pair[1].x) / 2,
+          midY: (pair[0].y + pair[1].y) / 2
+        };
+        root._draw = null;
+        root._pan = null;
+        root.classList.remove('is-panning');
+        return;
+      }
+      const tool = root.dataset.tool || 'slide';
+      if (tool === 'pen' || tool === 'highlight') {
+        const layers = questionMediaLayers(root);
+        if (!layers) return;
+        const target = tool === 'highlight' ? layers.mark : layers.pen;
+        const ctx = target.getContext('2d');
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        ctx.strokeStyle = tool === 'highlight' ? '#ffe628' : '#fb7185';
+        ctx.lineWidth = tool === 'highlight' ? 24 : 3;
+        root._draw = { ctx: ctx, ink: layers.ink, last: questionInkPoint(layers.ink, event) };
+        return;
+      }
+      const stage = root.querySelector('.question-media-stage');
+      root._pan = { x: event.clientX, y: event.clientY, left: stage ? stage.scrollLeft : 0, top: stage ? stage.scrollTop : 0 };
+      root.classList.add('is-panning');
+    }
+    function questionMediaPoints(root) {
+      if (!root._points) root._points = new Map();
+      return root._points;
+    }
+    function moveQuestionMediaGesture(root, event) {
+      const points = questionMediaPoints(root);
+      if (!points.has(event.pointerId)) return;
+      points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      const stage = root.querySelector('.question-media-stage');
+      if (points.size >= 2 && root._pinch && stage) {
+        const pair = Array.from(points.values());
+        const dist = Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y) || 1;
+        const midX = (pair[0].x + pair[1].x) / 2;
+        const midY = (pair[0].y + pair[1].y) / 2;
+        applyQuestionMediaScale(root, root._pinch.scale * (dist / root._pinch.dist), midX, midY);
+        stage.scrollLeft -= midX - root._pinch.midX;
+        stage.scrollTop -= midY - root._pinch.midY;
+        root._pinch.midX = midX;
+        root._pinch.midY = midY;
+        return;
+      }
+      if (root._draw) {
+        const point = questionInkPoint(root._draw.ink, event);
+        const ctx = root._draw.ctx;
         ctx.beginPath();
-        ctx.moveTo(point.x, point.y);
-        ink.setPointerCapture(event.pointerId);
-        const move = ev => { const next = questionInkPoint(ink, ev); ctx.lineTo(next.x, next.y); ctx.stroke(); };
-        const end = () => { ink.removeEventListener('pointermove', move); ink.removeEventListener('pointerup', end); ink.removeEventListener('pointercancel', end); };
-        ink.addEventListener('pointermove', move);
-        ink.addEventListener('pointerup', end);
-        ink.addEventListener('pointercancel', end);
-      });
+        ctx.moveTo(root._draw.last.x, root._draw.last.y);
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+        root._draw.last = point;
+        compositeQuestionMediaInk(root);
+        return;
+      }
+      if (root._pan && stage) {
+        stage.scrollLeft = root._pan.left - (event.clientX - root._pan.x);
+        stage.scrollTop = root._pan.top - (event.clientY - root._pan.y);
+      }
+    }
+    function endQuestionMediaGesture(pointerId) {
+      const root = questionMediaGestureRoot(pointerId);
+      questionMediaHands().delete(pointerId);
+      if (!root) return;
+      questionMediaPoints(root).delete(pointerId);
+      if (questionMediaPoints(root).size < 2) root._pinch = null;
+      if (questionMediaPoints(root).size === 0) {
+        root._draw = null;
+        root._pan = null;
+        root.classList.remove('is-panning');
+      }
     }
     function questionInkPoint(canvas, event) {
       const rect = canvas.getBoundingClientRect();
       return { x: (event.clientX - rect.left) * (canvas.width / (rect.width || 1)), y: (event.clientY - rect.top) * (canvas.height / (rect.height || 1)) };
     }
-    function zoomQuestionMedia(root, delta) {
-      const scale = Math.min(3, Math.max(0.6, (Number(root.dataset.scale) || 1) + delta));
-      root.dataset.scale = String(scale);
+    function zoomQuestionMedia(root, delta, clientX, clientY) {
+      const prev = Number(root.dataset.scale) || 1;
+      applyQuestionMediaScale(root, prev + delta, clientX, clientY);
+    }
+    function applyQuestionMediaScale(root, scale, clientX, clientY) {
+      const prev = Number(root.dataset.scale) || 1;
+      const next = Math.min(4, Math.max(0.6, Math.round(scale * 100) / 100));
+      const stage = root.querySelector('.question-media-stage');
       const board = root.querySelector('.question-media-board');
-      if (board) board.style.width = Math.round(scale * 100) + '%';
+      if (!stage || !board || next === prev) return;
+      const rect = stage.getBoundingClientRect();
+      const focusX = clientX == null ? rect.left + stage.clientWidth / 2 : clientX;
+      const focusY = clientY == null ? rect.top + stage.clientHeight / 2 : clientY;
+      const localX = focusX - rect.left + stage.scrollLeft;
+      const localY = focusY - rect.top + stage.scrollTop;
+      const ratio = next / prev;
+      root.dataset.scale = String(next);
+      board.style.width = (Math.round(next * 1000) / 10) + '%';
+      board.getBoundingClientRect();
+      stage.scrollLeft = localX * ratio - (focusX - rect.left);
+      stage.scrollTop = localY * ratio - (focusY - rect.top);
+    }
+    function questionMediaLayers(root) {
+      const ink = root.querySelector('.question-media-ink');
+      if (!ink) return null;
+      if (!root._penLayer) {
+        root._penLayer = document.createElement('canvas');
+        root._markLayer = document.createElement('canvas');
+      }
+      [root._penLayer, root._markLayer].forEach(layer => {
+        if (layer.width !== ink.width || layer.height !== ink.height) {
+          layer.width = ink.width;
+          layer.height = ink.height;
+        }
+      });
+      return { ink: ink, pen: root._penLayer, mark: root._markLayer };
+    }
+    function compositeQuestionMediaInk(root) {
+      const layers = questionMediaLayers(root);
+      if (!layers) return;
+      const ctx = layers.ink.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.clearRect(0, 0, layers.ink.width, layers.ink.height);
+      ctx.globalAlpha = 0.38;
+      ctx.drawImage(layers.mark, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(layers.pen, 0, 0);
     }
     function clearQuestionMediaInk(root) {
-      const ink = root.querySelector('.question-media-ink');
-      if (ink) ink.getContext('2d').clearRect(0, 0, ink.width, ink.height);
+      const layers = questionMediaLayers(root);
+      if (!layers) return;
+      layers.pen.getContext('2d').clearRect(0, 0, layers.pen.width, layers.pen.height);
+      layers.mark.getContext('2d').clearRect(0, 0, layers.mark.width, layers.mark.height);
+      compositeQuestionMediaInk(root);
     }
     function fitQuestionInk(root, width, height) {
       const ink = root.querySelector('.question-media-ink');
@@ -2412,7 +2566,7 @@
         if (root.dataset.ready === '1') return;
         root.dataset.ready = '1';
         root.dataset.scale = '1';
-        root.dataset.tool = 'pen';
+        setQuestionMediaTool(root, 'slide');
         if (root.dataset.mediaKind === 'pdf') renderQuestionPdf(root, 1);
         else {
           const img = root.querySelector('.question-media-img');
