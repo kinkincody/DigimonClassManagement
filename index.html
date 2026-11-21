@@ -22,6 +22,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <!-- SheetJS (xlsx) for Excel Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <!-- html2canvas for Tamer ID Card Export -->
@@ -38,6 +39,17 @@
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
     
     .font-pixel { font-family: 'Press Start 2P', monospace; }
+    .quiz-answer-copy { white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-align: left; line-height: 1.4; min-width: 0; }
+    .question-media { margin: 0 auto 0.75rem; text-align: left; }
+    .question-media-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .question-media-tools button { min-height: 40px; padding: 0 10px; border-radius: 10px; background: #0f172a; color: #e2e8f0; border: 1px solid #475569; font-size: 12px; font-weight: 800; }
+    .question-media-tools button.is-on { border-color: #fbbf24; color: #fde68a; }
+    .question-media-stage { max-height: min(62vh, 720px); overflow: auto; background: #020617; border: 1px solid #334155; border-radius: 12px; }
+    .question-media-board { position: relative; width: min(100%, 960px); margin: 0 auto; transform-origin: top center; }
+    .question-media-img, .question-media-pdf { display: block; width: 100%; height: auto; }
+    .question-media-ink { position: absolute; left: 0; top: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+    #modalQuizOverlay, #modalExamStudent { padding: 0; }
+    #modalQuizOverlay > div, #modalExamStudent > div { width: 100%; max-width: none; height: 100dvh; max-height: 100dvh; border-radius: 0; overflow-y: auto; }
     .territory-fill { transition: width 0.7s ease; }
     .territory-photo { height: 9.5rem; background: radial-gradient(circle at 30% 20%, #1e3a5f, #020617 72%); }
     .territory-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -434,7 +446,7 @@
         Loading question...
       </div>
 
-      <div id="quizOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+      <div id="quizOptionsGrid" class="grid grid-cols-1 gap-2.5"></div>
       
       <!-- 學生答題後或超時之即時反饋 -->
       <div id="quizFeedbackBox" class="mt-4 hidden p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
@@ -478,7 +490,7 @@
           </div>
 
           <!-- 選擇題選項容器 -->
-          <div id="examOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+          <div id="examOptionsContainer" class="grid grid-cols-1 gap-3 mb-4"></div>
 
           <!-- 填空題輸入框容器 -->
           <div id="examFillInputContainer" class="hidden space-y-2 mb-4">
@@ -1742,7 +1754,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.76";
+    const CURRENT_APP_VERSION = "2.7.77";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -5100,12 +5112,16 @@ function normalizeRevivePending(raw) {
     const flagged = options.find(opt => opt.correct);
     if (flagged) correctAnswer = repairQuestionText(flagged.text);
   }
-  return {
+  const next = {
     className: raw.className ? String(raw.className) : '',
     question: repairQuestionText(String(raw.question)),
     correctAnswer: correctAnswer,
     options: options.map(opt => ({ text: repairQuestionText(opt.text), correct: !!opt.correct }))
   };
+  const image = String(raw.image || '').trim();
+  if (image) next.image = image;
+  if (String(raw.type || '').toUpperCase() === 'FILL') next.type = 'FILL';
+  return next;
 }
 
 const PASSWORD_KDF_ITERS = 40000;
@@ -7609,7 +7625,7 @@ function raidQuestionList(raw) {
 function raidAnswerMatches(question, submission) {
   const expected = repairQuestionText(String(question && question.answer || '')).trim();
   const given = repairQuestionText(String(submission == null ? '' : submission)).trim();
-  if (question && question.type === 'FILL') return expected.toLowerCase() === given.toLowerCase();
+  if (question && question.type === 'FILL') return fillAnswersMatch(expected, given);
   return expected === given;
 }
 
@@ -7896,7 +7912,7 @@ function armWorldRaidQuestionBlackout(raid) {
     if (!live) return;
     live.style.color = '#000';
     live.style.background = '#000';
-    live.querySelectorAll('img').forEach(img => { img.style.visibility = 'hidden'; });
+    live.querySelectorAll('.question-media, img, canvas').forEach(node => { node.style.visibility = 'hidden'; });
   }, 3000);
 }
 
@@ -8123,13 +8139,14 @@ function paintWorldRaidOverlay() {
       if (question && question.type === 'FILL') {
         answerBox = '<form class="flex gap-2" onsubmit="event.preventDefault(); submitWorldRaidFill();"><input id="worldRaidFill" class="flex-1 min-h-12 rounded-xl bg-slate-900 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button></form>';
       }
-      sheet.innerHTML = lower('<div id="worldRaidQuestion" class="min-h-12 rounded-xl px-2 text-base font-black leading-snug">' + questionPictureHtml(question && question.image) + '<p class="leading-snug">' + escapeHtml(question ? question.question : '') + '</p></div><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
+      sheet.innerHTML = lower('<div id="worldRaidQuestion" class="min-h-12 rounded-xl px-2 text-base font-black leading-snug">' + questionMediaHtml(question && question.image) + '<p class="quiz-answer-copy leading-snug">' + escapeHtml(question ? question.question : '') + '</p></div><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
+      mountQuestionMedia(sheet);
       if (question && question.type !== 'FILL') {
         const choices = document.getElementById('worldRaidChoices');
         (question.options || []).forEach(option => {
           const button = document.createElement('button');
           button.type = 'button';
-          button.className = 'min-h-12 rounded-xl border border-cyan-600 bg-slate-900 px-3 text-left font-bold';
+          button.className = 'min-h-12 h-auto rounded-xl border border-cyan-600 bg-slate-900 px-3 text-left font-bold whitespace-normal quiz-answer-copy';
           button.textContent = option;
           button.onclick = () => submitWorldRaidAnswer(option);
           choices.appendChild(button);
@@ -8336,8 +8353,7 @@ function handleWorldRaidExcelImport(event) {
         const answer = repairQuestionText(row[1] === undefined || row[1] === null ? '' : String(row[1]).trim());
         if (!question || !answer) continue;
         const wrongs = [row[2], row[3], row[4]].map(cell => cell === undefined || cell === null ? '' : repairQuestionText(String(cell).trim())).filter(Boolean);
-        const rawType = String(row[5] || '').trim().toLowerCase();
-        const fill = /fill|fill-in|fill_in|fillin|填空|填寫|填充/.test(rawType);
+        const fill = questionTypeCell(row) === 'FILL';
         const options = [answer].concat(wrongs);
         options.sort(() => Math.random() - 0.5);
         questions.push({
@@ -8350,7 +8366,7 @@ function handleWorldRaidExcelImport(event) {
         const image = questionImageCell(row);
         if (image) questions[questions.length - 1].image = image;
       }
-      if (!questions.length) return alert('題目是空的。請用考卷格式：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解。H 欄有圖片路徑才會顯示圖片，空白就只顯示題目。 / The file has no questions. Use the exam columns: A question, B answer, C-E wrong answers, F type, G explanation. Column H is an optional picture path. A blank H shows the question only.');
+      if (!questions.length) return alert('題目是空的。請用考卷格式：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解。H 欄有圖片或 PDF 路徑才會顯示，空白就只顯示題目。 / The file has no questions. Use the exam columns: A question, B answer, C-E wrong answers, F type, G explanation. Column H is an optional picture or PDF path. A blank H shows the question only.');
       worldRaidQuestions = questions;
       const status = document.getElementById('worldRaidBankStatus');
       if (status) status.textContent = '已載入 ' + questions.length + ' 題 / ' + questions.length + ' questions';
@@ -10930,7 +10946,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.76</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.77</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -11100,7 +11116,7 @@ function getTeacherTemplate() {
         </div>
         <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
           <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-emerald-200">說明 / How this works</summary>
-          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">這個班的學生被擊敗時，會跳出一題。答對立刻滿血復活。答錯會立刻換下一題，直到今日 3 次用完。每次答對或答錯都用掉 1 次。用完要等老師復活，明天重新計算。這 3 次和題庫跟每日試煉的 10 次金幣題分開，不會共用。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的復活題庫。<br>When a student in this class is defeated, one question pops up. A correct answer revives them to full HP. A wrong answer opens another question immediately until today's 3 tries are used. Each right or wrong answer uses 1 try. After 3 answers, wait for the teacher. The count resets tomorrow. These 3 tries and this question bank are separate from the daily trial's 10 coin questions. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's revive questions.</p>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">這個班的學生被擊敗時，會跳出一題。答對立刻滿血復活。答錯會立刻換下一題，直到今日 3 次用完。每次答對或答錯都用掉 1 次。用完要等老師復活，明天重新計算。這 3 次和題庫跟每日試煉的 10 次金幣題分開，不會共用。Excel：A 題目、B 正確答案、C D E 錯誤答案、F 題型（fill 代表填空）、H 圖片或 PDF 路徑。再上傳會取代這個班的復活題庫。<br>When a student in this class is defeated, one question pops up. A correct answer revives them to full HP. A wrong answer opens another question immediately until today's 3 tries are used. Each right or wrong answer uses 1 try. After 3 answers, wait for the teacher. The count resets tomorrow. These 3 tries and this question bank are separate from the daily trial's 10 coin questions. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's revive questions.</p>
         </details>
         <div class="flex flex-wrap items-center gap-2">
           <button id="btnToggleReviveQuiz" type="button" onclick="toggleClassReviveQuiz()" class="px-3 py-1.5 rounded bg-slate-800 border border-emerald-600 text-emerald-300 text-xs font-bold cursor-pointer active:scale-95">開啟這個班的復活答題 / Turn On</button>
@@ -11118,7 +11134,7 @@ function getTeacherTemplate() {
         </div>
         <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
           <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-amber-200">說明 / How this works</summary>
-          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">學生還活著時，每天可以答 10 題。答對一題得 20 金幣。答錯不能再答同一題，並用掉 1 次。題目彈出後就不能免費離開，離開也會用掉 1 次。答完一題可以停止，剩下的次數留到今天稍後再答。香港時間午夜 00:00 重新有 10 次。倒下的學生不能參加每日試煉，倒下只使用復活答題的 3 次。這 10 次和題庫跟復活答題分開，不會共用，也不會扣攻擊次數。Excel：A 題目、B 正確答案、C D E 錯誤答案。再上傳會取代這個班的試煉題庫。<br>While a student is still alive, they can answer 10 questions a day. A correct answer gives 20 coins. A wrong answer cannot be tried again and uses 1 try. Once a question is open, leaving it also uses 1 try. After each answer they can stop and continue later today. The 10 tries return at 00:00 Hong Kong time. A fainted student cannot take the daily trial. A defeat uses only the revive quiz's 3 answers. These 10 tries and this question bank stay separate from the revive quiz, and they do not spend attack quota. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's trial questions.</p>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">學生還活著時，每天可以答 10 題。答對一題得 20 金幣。答錯不能再答同一題，並用掉 1 次。題目彈出後就不能免費離開，離開也會用掉 1 次。答完一題可以停止，剩下的次數留到今天稍後再答。香港時間午夜 00:00 重新有 10 次。倒下的學生不能參加每日試煉，倒下只使用復活答題的 3 次。這 10 次和題庫跟復活答題分開，不會共用，也不會扣攻擊次數。Excel：A 題目、B 正確答案、C D E 錯誤答案、F 題型（fill 代表填空）、H 圖片或 PDF 路徑。再上傳會取代這個班的試煉題庫。<br>While a student is still alive, they can answer 10 questions a day. A correct answer gives 20 coins. A wrong answer cannot be tried again and uses 1 try. Once a question is open, leaving it also uses 1 try. After each answer they can stop and continue later today. The 10 tries return at 00:00 Hong Kong time. A fainted student cannot take the daily trial. A defeat uses only the revive quiz's 3 answers. These 10 tries and this question bank stay separate from the revive quiz, and they do not spend attack quota. Excel: A question, B correct answer, C D E wrong answers. A new upload replaces this class's trial questions.</p>
         </details>
         <div class="flex flex-wrap items-center gap-2">
           <label for="dailyTrialExcelInput" class="cursor-pointer px-3 py-1.5 rounded bg-amber-950 border border-amber-500 text-amber-200 text-xs font-bold hover:bg-amber-900 transition flex items-center gap-1.5 active:scale-95">
@@ -11135,7 +11151,7 @@ function getTeacherTemplate() {
         </div>
         <details class="rounded-lg bg-slate-950/70 border border-slate-800 px-3">
           <summary class="min-h-11 flex items-center cursor-pointer text-[11px] font-bold text-violet-200">說明 / How this works</summary>
-          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">每個班各自一份石碑題庫。先在目前班級選一個班，再上傳 Excel 或 CSV。上傳只會換成這個班的題目，其他班維持自己的檔案。這個班的學生進入迷宮知識測驗時，會看到這份題目；同房的其他班學生看到自己班的題目。A 題目、B 正確答案、C D E 錯誤答案。H 欄如果有圖片路徑，圖片會顯示在題目上面；H 欄空白就只顯示題目。CSV 以 UTF-8 讀取，分數和比較符號會原樣顯示。若之前的題目變成亂碼，請再上傳一次。<br>Each class keeps its own shrine file. Select one class, then upload the Excel or CSV. The upload replaces only that class. Every other class keeps its own file. Students in the selected class see these questions in the dungeon quiz room. A classmate from another class, even in the same room, sees that class's file. Column A is the question, B the correct answer, and C D E the wrong answers. Column H is an optional picture path shown above the question. A blank H shows the question only. CSV is read as UTF-8, so fractions and comparison signs stay as written. If an earlier upload turned the questions into stray symbols, upload the file again.</p>
+          <p class="text-[11px] text-slate-400 pb-3 leading-relaxed">每個班各自一份石碑題庫。先在目前班級選一個班，再上傳 Excel 或 CSV。上傳只會換成這個班的題目，其他班維持自己的檔案。這個班的學生進入迷宮知識測驗時，會看到這份題目；同房的其他班學生看到自己班的題目。A 題目、B 正確答案、C D E 錯誤答案。F 欄填 fill 就是填空題。H 欄如果有圖片或 PDF 路徑，檔案會顯示在題目上面，可以放大縮小，也可以用筆和螢光筆暫時標記；H 欄空白就只顯示題目。填空會忽略多餘空格和逗號。CSV 以 UTF-8 讀取，分數和比較符號會原樣顯示。若之前的題目變成亂碼，請再上傳一次。<br>Each class keeps its own shrine file. Select one class, then upload the Excel or CSV. The upload replaces only that class. Every other class keeps its own file. Students in the selected class see these questions in the dungeon quiz room. A classmate from another class, even in the same room, sees that class's file. Column A is the question, B the correct answer, and C D E the wrong answers. Column F with fill means a fill-in question. Column H is an optional picture or PDF path shown above the question, with zoom and a temporary pen or highlight. A blank H shows the question only. Fill-in answers ignore extra spaces and commas. CSV is read as UTF-8, so fractions and comparison signs stay as written. If an earlier upload turned the questions into stray symbols, upload the file again.</p>
         </details>
         <div class="pair-grid">
           <button type="button" onclick="grantClassDungeonTickets()" class="pair-btn bg-violet-950 border border-violet-500 text-violet-100 active:scale-95"><span>全班 +1 迷宮券</span><small>Class +1</small></button>
@@ -11197,7 +11213,7 @@ function getTeacherTemplate() {
             </div>
             <div>
               <h3 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider font-pixel">Pop-up Quiz 搶答管理中心</h3>
-              <p class="text-[11px] text-slate-400">Excel：A 題目、B 正確答案、C-E 錯誤答案。H 欄有圖片路徑時，圖片顯示在題目上面；H 欄空白就只顯示題目。<br>Excel: A question, B correct answer, C-E wrong answers. A picture path in column H shows above the question. A blank H shows the question only.</p>
+              <p class="text-[11px] text-slate-400">Excel：A 題目、B 正確答案、C-E 錯誤答案、F 題型（fill 代表填空）、H 圖片或 PDF 路徑。有路徑就顯示在題目上面，可以放大縮小，也可以用筆和螢光筆暫時標記。H 欄空白就只顯示題目。填空會忽略多餘空格和逗號。<br>Excel: A question, B correct answer, C-E wrong answers, F type (fill means fill-in), H picture or PDF path. A path shows above the question, with zoom and a temporary pen or highlight. A blank H shows the question only. Fill-in answers ignore extra spaces and commas.</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -11283,7 +11299,7 @@ function getTeacherTemplate() {
             </div>
             <div>
               <h3 class="text-sm sm:text-base font-black text-indigo-300 uppercase tracking-wider font-pixel">考卷測驗發布中心 (Exam Management)</h3>
-              <p class="text-[11px] text-slate-400">匯入 Excel：A 題目、B 正確答案、C-E 錯誤答案、F 題型、G 題解、H 圖片路徑（可留空）。<br>Import Excel: A question, B correct answer, C-E wrong answers, F type, G explanation, H picture path (optional). A path in H shows the picture above the question. A blank H shows the question only.</p>
+              <p class="text-[11px] text-slate-400">匯入 Excel：A 題目、B 正確答案、C-E 錯誤答案、F 題型（fill 代表填空）、G 題解、H 圖片或 PDF 路徑（可留空）。有路徑可以放大縮小，也可以用筆和螢光筆暫時標記。填空會忽略多餘空格和逗號。<br>Import Excel: A question, B correct answer, C-E wrong answers, F type (fill means fill-in), G explanation, H picture or PDF path. A path can be zoomed and marked with a temporary pen or highlight. Fill-in answers ignore extra spaces and commas. A blank H shows the question only.</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -11497,7 +11513,7 @@ function getTeacherTemplate() {
     <div id="teacherSubViewRaid" class="space-y-6 hidden">
       <section class="rounded-2xl border border-rose-500/50 bg-slate-950/80 p-4 space-y-3">
         <div class="text-sm font-black uppercase tracking-wider text-rose-200">世界首領戰 / World Raid Event</div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 10 次，首領回復 10% HP，老師獲得 1 次技能。黑暗領域會讓接下來 3 題先顯示 3 秒再把題目變黑，只留下答案。死亡進化會凍結全班 10 秒。回復會讓首領直接回復 20% HP。勝負會顯示全螢幕結算。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解、H 圖片路徑（可留空，有路徑就顯示在題目上面）。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 10 wrong answers from the class restore 10% of the boss HP and give the teacher one skill use. Darkness Zone shows the next 3 questions for 3 seconds, then blacks out the question and leaves the answers. Death Evolution freezes the class for 10 seconds. Recover restores 20% HP immediately. Win and loss open a full-screen ending. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation, H picture path. A path in H shows the picture above the question. A blank H shows the question only.</p>
+        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 10 次，首領回復 10% HP，老師獲得 1 次技能。黑暗領域會讓接下來 3 題先顯示 3 秒再把題目變黑，只留下答案。死亡進化會凍結全班 10 秒。回復會讓首領直接回復 20% HP。勝負會顯示全螢幕結算。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解、H 圖片或 PDF 路徑（可留空，有路徑就顯示在題目上面，可以放大縮小和暫時標記）。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 10 wrong answers from the class restore 10% of the boss HP and give the teacher one skill use. Darkness Zone shows the next 3 questions for 3 seconds, then blacks out the question and leaves the answers. Death Evolution freezes the class for 10 seconds. Recover restores 20% HP immediately. Win and loss open a full-screen ending. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation, H picture path. A path in H shows the picture above the question. A blank H shows the question only.</p>
         <div class="flex flex-wrap items-center gap-2">
           <label for="worldRaidExcelInput" class="cursor-pointer min-h-11 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black flex items-center">匯入題目 / Import Excel</label>
           <input id="worldRaidExcelInput" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="handleWorldRaidExcelImport(event)" class="hidden">
@@ -13865,6 +13881,7 @@ function publishEvoEdges() {
         };
         const image = String(q.image || '').trim();
         if (image) row.image = image;
+        if (String(q.type || '').toUpperCase() === 'FILL') row.type = 'FILL';
         return row;
       });
     }
@@ -13906,14 +13923,50 @@ function publishEvoEdges() {
       const raw = reviveBucketValue(bank, className);
       if (!raw) return [];
       const rows = Array.isArray(raw) ? raw : Object.keys(raw).sort().map(k => raw[k]);
-      return rows.filter(q => q && q.question && q.correct).map(q => ({
-        question: repairQuestionText(String(q.question).trim()),
-        correct: repairQuestionText(String(q.correct).trim()),
-        wrongs: normalizeWrongAnswers(q.wrongs).map(text => repairQuestionText(text))
-      }));
+      return rows.filter(q => q && q.question && q.correct).map(q => {
+        const row = {
+          question: repairQuestionText(String(q.question).trim()),
+          correct: repairQuestionText(String(q.correct).trim()),
+          wrongs: normalizeWrongAnswers(q.wrongs).map(text => repairQuestionText(text))
+        };
+        const image = String(q.image || '').trim();
+        if (image) row.image = image;
+        if (String(q.type || '').toUpperCase() === 'FILL') row.type = 'FILL';
+        return row;
+      });
+    }
+
+    function paintChoiceOrFill(optionsEl, pending, onPick) {
+      if (!optionsEl) return;
+      optionsEl.innerHTML = '';
+      if (String(pending && pending.type || '').toUpperCase() === 'FILL') {
+        const form = document.createElement('form');
+        form.className = 'flex gap-2';
+        const input = document.createElement('input');
+        input.className = 'flex-1 min-h-12 rounded-xl bg-slate-950 border border-amber-400 px-3 text-white';
+        input.autocomplete = 'off';
+        const button = document.createElement('button');
+        button.type = 'submit';
+        button.className = 'min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black';
+        button.textContent = '送出 / Submit';
+        form.onsubmit = event => { event.preventDefault(); onPick(input.value); };
+        form.appendChild(input);
+        form.appendChild(button);
+        optionsEl.appendChild(form);
+        return;
+      }
+      (pending && pending.options || []).forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'w-full min-h-[48px] h-auto px-3 py-3 rounded-xl bg-slate-950 border border-emerald-500/50 text-emerald-100 text-sm font-bold quiz-answer-copy hover:bg-emerald-950 cursor-pointer active:scale-95';
+        btn.textContent = typeof opt === 'string' ? opt : opt.text;
+        btn.onclick = () => onPick(btn.textContent);
+        optionsEl.appendChild(btn);
+      });
     }
 
     function shuffleReviveOptions(question) {
+      if (String(question && question.type || '').toUpperCase() === 'FILL') return [];
       const options = [{ text: String(question.correct), correct: true }];
       normalizeWrongAnswers(question.wrongs).forEach(w => options.push({ text: w, correct: false }));
       for (let i = options.length - 1; i > 0; i--) {
@@ -13962,6 +14015,7 @@ function publishEvoEdges() {
     function reviveChoiceIsCorrect(pending, answerText) {
       const text = String(answerText || '').trim();
       const correctText = pendingCorrectText(pending);
+      if (String(pending && pending.type || '').toUpperCase() === 'FILL') return fillAnswersMatch(correctText, text);
       return !!(text && correctText && text === correctText);
     }
 
@@ -13969,6 +14023,7 @@ function publishEvoEdges() {
       const text = String(answerText || '').trim();
       if (!text || !open) return false;
       const stored = open.correctAnswer != null ? String(open.correctAnswer).trim() : '';
+      if (String(open.type || '').toUpperCase() === 'FILL') return fillAnswersMatch(stored, text);
       if (stored) return text === stored;
       const options = reviveOptionList(open.options);
       const flagged = options.find(opt => opt.correct);
@@ -13989,12 +14044,15 @@ function publishEvoEdges() {
       if (!pool.length) pool = bank.slice();
       const picked = pool[Math.floor(Math.random() * pool.length)];
       if (!picked || !picked.question || !picked.correct) return null;
-      return {
+      const next = {
         className: className,
         question: String(picked.question),
         correctAnswer: String(picked.correct).trim(),
         options: shuffleReviveOptions(picked)
       };
+      if (picked.image) next.image = picked.image;
+      if (picked.type === 'FILL') next.type = 'FILL';
+      return next;
     }
 
     function applyReviveQuizResult(cur, answerText) {
@@ -14251,11 +14309,13 @@ function publishEvoEdges() {
       }
 
       let pending = normalizeRevivePending(st.reviveQuizPending);
-      const fromServer = !!(pending && pending.question && pending.options && pending.options.length);
+      const fillPending = String(pending && pending.type || '').toUpperCase() === 'FILL';
+      const fromServer = !!(pending && pending.question && (fillPending || (pending.options && pending.options.length)));
       if (!fromServer && heldReviveQuiz && heldReviveQuiz.studentId === String(st.id) && heldReviveQuiz.pending && heldReviveQuiz.pending.question) {
         pending = heldReviveQuiz.pending;
       }
-      if (!pending || !pending.question || !pending.options || !pending.options.length) {
+      const fillReady = String(pending && pending.type || '').toUpperCase() === 'FILL' && pending.question;
+      if (!pending || !pending.question || (!fillReady && (!pending.options || !pending.options.length))) {
         const questions = classReviveQuestions(className);
         const picked = questions[Math.floor(Math.random() * questions.length)];
         if (!picked || !picked.question || !picked.correct) {
@@ -14270,6 +14330,8 @@ function publishEvoEdges() {
           correctAnswer: String(picked.correct).trim(),
           options: shuffleReviveOptions(picked)
         };
+        if (picked.image) pending.image = picked.image;
+        if (picked.type === 'FILL') pending.type = 'FILL';
       }
       pending = normalizeRevivePending(pending) || pending;
       heldReviveQuiz = { studentId: String(st.id), pending: pending };
@@ -14284,24 +14346,16 @@ function publishEvoEdges() {
       }
       const questionEl = document.getElementById('reviveQuizQuestion');
       const optionsEl = document.getElementById('reviveQuizOptions');
-      const sameQuestion = !reviveQuizForceRender && questionEl && optionsEl && !modal.classList.contains('hidden') && questionEl.textContent === pending.question && optionsEl.querySelectorAll('button').length === pending.options.length && Array.from(optionsEl.querySelectorAll('button')).every((btn, index) => !btn.disabled && btn.textContent === pending.options[index].text);
+      const stamp = [pending.question, pending.image || '', pending.type || 'MCQ', (pending.options || []).map(opt => opt.text).join('\n')].join('|');
+      const sameQuestion = !reviveQuizForceRender && questionEl && questionEl.dataset.qstamp === stamp && !modal.classList.contains('hidden');
       reviveQuizForceRender = false;
       if (hint) hint.textContent = '復活答題視窗已打開。答對會立刻滿血復活。答錯會立刻換下一題，直到今日次數用完。每次都用掉 1 次。 / The revive question is open. A correct answer restores full HP. A wrong answer opens the next question until today\'s tries are used. Each answer uses 1 try.';
       const quotaEl = document.getElementById('reviveQuizQuotaText');
       if (quotaEl) quotaEl.textContent = `復活答題 Revive：今日還可答 ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA} 次 / Revive answers left today: ${reviveQuizLeft(st)} / ${REVIVE_QUIZ_QUOTA}`;
       if (!sameQuestion) {
-        if (questionEl) questionEl.textContent = pending.question;
-        if (optionsEl) {
-          optionsEl.innerHTML = '';
-          pending.options.forEach((opt) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'w-full min-h-[48px] px-3 py-3 rounded-xl bg-slate-950 border border-emerald-500/50 text-emerald-100 text-sm font-bold leading-snug text-left break-words hover:bg-emerald-950 cursor-pointer active:scale-95';
-            btn.textContent = opt.text;
-            btn.onclick = () => submitReviveQuizAnswer(opt.text);
-            optionsEl.appendChild(btn);
-          });
-        }
+        if (questionEl) questionEl.dataset.qstamp = stamp;
+        paintQuestionWithPicture(questionEl, pending.image, pending.question);
+        paintChoiceOrFill(optionsEl, pending, submitReviveQuizAnswer);
         renderDeathReviveLive(pending, reviveQuizLeft(st));
       }
       modal.classList.remove('hidden');
@@ -14321,18 +14375,8 @@ function publishEvoEdges() {
       const optionsEl = document.getElementById('deathReviveOptions');
       if (!box || !pending || !pending.question) return;
       if (quotaEl) quotaEl.textContent = `復活答題 Revive：今日還可答 ${left} / ${REVIVE_QUIZ_QUOTA} 次 / Revive answers left today: ${left} / ${REVIVE_QUIZ_QUOTA}`;
-      if (questionEl) questionEl.textContent = pending.question;
-      if (optionsEl) {
-        optionsEl.innerHTML = '';
-        (pending.options || []).forEach((opt) => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'w-full min-h-[48px] px-3 py-3 rounded-xl bg-slate-950 border border-emerald-400 text-emerald-100 text-sm font-bold leading-snug text-left break-words cursor-pointer active:scale-95';
-          btn.textContent = opt.text;
-          btn.onclick = () => submitReviveQuizAnswer(opt.text);
-          optionsEl.appendChild(btn);
-        });
-      }
+      paintQuestionWithPicture(questionEl, pending.image, pending.question);
+      paintChoiceOrFill(optionsEl, pending, submitReviveQuizAnswer);
       box.classList.remove('hidden');
       const start = document.getElementById('btnDeathReviveQuiz');
       if (start) start.classList.add('hidden');
@@ -14527,18 +14571,10 @@ function publishEvoEdges() {
           const jsonRows = questionSheetRows(firstSheet);
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
-            const row = jsonRows[i];
-            if (!row || row[0] === undefined || row[0] === null || row[1] === undefined || row[1] === null) continue;
-            const questionText = repairQuestionText(String(row[0]).trim());
-            const correctOpt = repairQuestionText(String(row[1]).trim());
-            if (!questionText || !correctOpt) continue;
-            const wrongs = [];
-            [2, 3, 4].forEach(col => {
-              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(repairQuestionText(String(row[col]).trim()));
-            });
-            questions.push({ question: questionText, correct: correctOpt, wrongs: wrongs });
+            const item = sheetQuestion(jsonRows[i]);
+            if (item) questions.push(item);
           }
-          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header.');
+          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案。F 欄填 fill 就是填空題。H 欄可以放圖片或 PDF 路徑，空白就只顯示題目。 / No questions found. Use column A for the question, B for the correct answer, and C D E for wrong answers. Put fill in column F for a fill-in question. Column H can hold a picture or PDF path. A blank H shows the question only.');
           const key = reviveSettingKey(selectedTeacherClass);
           const payload = {};
           questions.forEach((q, i) => { payload['q' + i] = q; });
@@ -14591,13 +14627,17 @@ function publishEvoEdges() {
         if (flagged) correctAnswer = flagged.text;
       }
       const question = repairQuestionText(String(raw.question));
-      return {
+      const next = {
         className: raw.className ? String(raw.className) : '',
         questionKey: raw.questionKey ? String(raw.questionKey) : trialQuestionKey(question),
         question: question,
         correctAnswer: repairQuestionText(correctAnswer),
         options: options.map(opt => ({ text: repairQuestionText(opt.text), correct: !!opt.correct }))
       };
+      const image = String(raw.image || '').trim();
+      if (image) next.image = image;
+      if (String(raw.type || '').toUpperCase() === 'FILL') next.type = 'FILL';
+      return next;
     }
 
     function trialState(student) {
@@ -14627,12 +14667,16 @@ function publishEvoEdges() {
       const rows = Array.isArray(raw) ? raw : Object.keys(raw).sort().map(k => raw[k]);
       return rows.filter(q => q && q.question && q.correct).map(q => {
         const question = repairQuestionText(String(q.question).trim());
-        return {
+        const row = {
           question: question,
           correct: repairQuestionText(String(q.correct).trim()),
           wrongs: normalizeWrongAnswers(q.wrongs).map(text => repairQuestionText(text)),
           questionKey: trialQuestionKey(question)
         };
+        const image = String(q.image || '').trim();
+        if (image) row.image = image;
+        if (String(q.type || '').toUpperCase() === 'FILL') row.type = 'FILL';
+        return row;
       });
     }
 
@@ -14715,20 +14759,12 @@ function publishEvoEdges() {
       if (revive) revive.classList.add('hidden');
       const left = dailyTrialLeft(student);
       if (quotaEl) quotaEl.innerHTML = `每日試煉 Trial：今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題<br>Trial questions left today: ${left} / ${DAILY_TRIAL_QUOTA}`;
-      if (questionEl) questionEl.textContent = repairQuestionText(open.question);
+      paintQuestionWithPicture(questionEl, open.image, repairQuestionText(open.question));
       if (result) result.classList.add('hidden');
       if (giveUp) giveUp.classList.remove('hidden');
       if (optionsEl) {
         optionsEl.classList.remove('hidden');
-        optionsEl.innerHTML = '';
-        (open.options || []).forEach(opt => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'w-full min-h-[48px] px-3 py-3 rounded-xl bg-slate-950 border border-amber-500/50 text-amber-100 text-sm font-bold leading-snug text-left break-words hover:bg-amber-950 cursor-pointer active:scale-95';
-          btn.textContent = repairQuestionText(opt.text);
-          btn.onclick = () => submitDailyTrialAnswer(repairQuestionText(opt.text));
-          optionsEl.appendChild(btn);
-        });
+        paintChoiceOrFill(optionsEl, open, text => submitDailyTrialAnswer(repairQuestionText(text)));
       }
       modal.classList.remove('hidden');
     }
@@ -15066,6 +15102,8 @@ function publishEvoEdges() {
         correctAnswer: String(picked.correct).trim(),
         options: shuffleReviveOptions(picked)
       };
+      if (picked.image) open.image = picked.image;
+      if (picked.type === 'FILL') open.type = 'FILL';
       const snapshot = JSON.parse(JSON.stringify(open));
       if (!dbRootRef) {
         student.dailyTrialDay = state.day;
@@ -15142,18 +15180,10 @@ function publishEvoEdges() {
           const jsonRows = questionSheetRows(firstSheet);
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
-            const row = jsonRows[i];
-            if (!row || row[0] === undefined || row[0] === null || row[1] === undefined || row[1] === null) continue;
-            const questionText = repairQuestionText(String(row[0]).trim());
-            const correctOpt = repairQuestionText(String(row[1]).trim());
-            if (!questionText || !correctOpt) continue;
-            const wrongs = [];
-            [2, 3, 4].forEach(col => {
-              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(repairQuestionText(String(row[col]).trim()));
-            });
-            questions.push({ question: questionText, correct: correctOpt, wrongs: wrongs });
+            const item = sheetQuestion(jsonRows[i]);
+            if (item) questions.push(item);
           }
-          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header.');
+          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案。F 欄填 fill 就是填空題。H 欄可以放圖片或 PDF 路徑，空白就只顯示題目。 / No questions found. Use column A for the question, B for the correct answer, and C D E for wrong answers. Put fill in column F for a fill-in question. Column H can hold a picture or PDF path. A blank H shows the question only.');
           const key = reviveSettingKey(selectedTeacherClass);
           const payload = {};
           questions.forEach((q, i) => { payload['q' + i] = q; });
@@ -15191,6 +15221,7 @@ function publishEvoEdges() {
         };
         const image = String(q.image || '').trim();
         if (image) payload['q' + i].image = image;
+        if (String(q.type || '').toUpperCase() === 'FILL') payload['q' + i].type = 'FILL';
       });
       if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
       if (!appData.systemSettings.dungeonQuestions) appData.systemSettings.dungeonQuestions = {};
@@ -15353,21 +15384,213 @@ function publishEvoEdges() {
       return text;
     }
 
-    function questionPictureHtml(path) {
+    function questionMediaKind(path) {
       const src = questionPictureSrc(path);
       if (!src) return '';
-      return '<img src="' + escapeHtml(src) + '" alt="" class="quiz-question-picture" style="display:block;width:100%;max-height:16rem;object-fit:contain;margin:0 auto 0.75rem;border-radius:0.75rem;background:#020617;border:1px solid #334155" onerror="this.remove()">';
+      return /\.pdf(?:$|[?#])/i.test(src) ? 'pdf' : 'image';
+    }
+
+    function questionTypeCell(row) {
+      const raw = String(row && row[5] != null ? row[5] : '').trim().toLowerCase();
+      return /fill|blank|填空|填寫|填充/.test(raw) ? 'FILL' : 'MCQ';
+    }
+
+    function fillAnswerKey(value) {
+      return repairQuestionText(String(value == null ? '' : value)).replace(/[，,]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    function fillAnswersMatch(expected, given) {
+      const answer = fillAnswerKey(expected);
+      return !!answer && answer === fillAnswerKey(given);
+    }
+
+    function sheetQuestion(row) {
+      if (!row || row[0] == null || row[1] == null) return null;
+      const question = repairQuestionText(String(row[0]).trim());
+      const correct = repairQuestionText(String(row[1]).trim());
+      if (!question || !correct) return null;
+      const item = {
+        question: question,
+        correct: correct,
+        wrongs: [2, 3, 4].map(index => row[index] == null ? '' : repairQuestionText(String(row[index]).trim())).filter(Boolean),
+        type: questionTypeCell(row)
+      };
+      const image = questionImageCell(row);
+      if (image) item.image = image;
+      return item;
+    }
+
+    function questionMediaHtml(path) {
+      const src = questionPictureSrc(path);
+      const kind = questionMediaKind(path);
+      if (!src || !kind) return '';
+      const pages = kind === 'pdf'
+        ? '<button type="button" data-media-act="prev">上一頁</button><span data-media-page>1</span><button type="button" data-media-act="next">下一頁</button>'
+        : '';
+      return '<div class="question-media" data-media-src="' + escapeHtml(src) + '" data-media-kind="' + kind + '">'
+        + '<div class="question-media-tools">'
+        + '<button type="button" data-media-act="out">縮小 / Zoom out</button>'
+        + '<button type="button" data-media-act="in">放大 / Zoom in</button>'
+        + '<button type="button" data-media-act="pen" class="is-on">筆 / Pen</button>'
+        + '<button type="button" data-media-act="highlight">螢光 / Highlight</button>'
+        + '<button type="button" data-media-act="clear">清除 / Clear</button>'
+        + pages
+        + '</div>'
+        + '<div class="question-media-stage"><div class="question-media-board">'
+        + (kind === 'image'
+          ? '<img class="question-media-img" alt="" src="' + escapeHtml(src) + '">'
+          : '<canvas class="question-media-pdf"></canvas>')
+        + '<canvas class="question-media-ink"></canvas>'
+        + '</div></div></div>';
+    }
+
+    function questionPictureHtml(path) {
+      return questionMediaHtml(path);
     }
 
     function paintQuestionWithPicture(el, path, text) {
       if (!el) return;
-      const picture = questionPictureHtml(path);
       const body = repairQuestionText(String(text == null ? '' : text));
+      const stamp = questionPictureSrc(path) + '|' + body;
+      if (el.dataset.mediastamp === stamp) return;
+      el.dataset.mediastamp = stamp;
+      const picture = questionMediaHtml(path);
       if (!picture) {
         el.textContent = body;
         return;
       }
-      el.innerHTML = picture + '<div>' + escapeHtml(body) + '</div>';
+      el.innerHTML = picture + '<div class="quiz-question-text">' + escapeHtml(body) + '</div>';
+      mountQuestionMedia(el);
+    }
+
+    function installQuestionMediaTools() {
+      if (window.__questionMediaTools) return;
+      window.__questionMediaTools = true;
+      document.addEventListener('click', event => {
+        const button = event.target.closest('[data-media-act]');
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const root = button.closest('.question-media');
+        if (!root) return;
+        const act = button.getAttribute('data-media-act');
+        if (act === 'in' || act === 'out') zoomQuestionMedia(root, act === 'in' ? 0.25 : -0.25);
+        else if (act === 'pen' || act === 'highlight') {
+          root.dataset.tool = act;
+          root.querySelectorAll('[data-media-act="pen"], [data-media-act="highlight"]').forEach(el => el.classList.toggle('is-on', el === button));
+        } else if (act === 'clear') clearQuestionMediaInk(root);
+        else if (act === 'prev' || act === 'next') turnQuestionMediaPage(root, act === 'next' ? 1 : -1);
+      });
+      document.addEventListener('pointerdown', event => {
+        const ink = event.target.closest && event.target.closest('.question-media-ink');
+        if (!ink) return;
+        event.preventDefault();
+        const root = ink.closest('.question-media');
+        const tool = root && root.dataset.tool || 'pen';
+        const ctx = ink.getContext('2d');
+        const point = questionInkPoint(ink, event);
+        ctx.strokeStyle = tool === 'highlight' ? 'rgba(250, 204, 21, 0.45)' : '#fb7185';
+        ctx.lineWidth = tool === 'highlight' ? 28 : 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y);
+        ink.setPointerCapture(event.pointerId);
+        const move = ev => {
+          const next = questionInkPoint(ink, ev);
+          ctx.lineTo(next.x, next.y);
+          ctx.stroke();
+        };
+        const end = () => {
+          ink.removeEventListener('pointermove', move);
+          ink.removeEventListener('pointerup', end);
+          ink.removeEventListener('pointercancel', end);
+        };
+        ink.addEventListener('pointermove', move);
+        ink.addEventListener('pointerup', end);
+        ink.addEventListener('pointercancel', end);
+      });
+    }
+
+    function questionInkPoint(canvas, event) {
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width || 1;
+      const height = rect.height || 1;
+      return {
+        x: (event.clientX - rect.left) * (canvas.width / width),
+        y: (event.clientY - rect.top) * (canvas.height / height)
+      };
+    }
+
+    function zoomQuestionMedia(root, delta) {
+      const scale = Math.min(3, Math.max(0.6, (Number(root.dataset.scale) || 1) + delta));
+      root.dataset.scale = String(scale);
+      const board = root.querySelector('.question-media-board');
+      if (board) board.style.width = Math.round(scale * 100) + '%';
+    }
+
+    function clearQuestionMediaInk(root) {
+      const ink = root.querySelector('.question-media-ink');
+      if (!ink) return;
+      ink.getContext('2d').clearRect(0, 0, ink.width, ink.height);
+    }
+
+    function fitQuestionInk(root, width, height) {
+      const ink = root.querySelector('.question-media-ink');
+      if (!ink) return;
+      ink.width = Math.max(1, Math.round(width));
+      ink.height = Math.max(1, Math.round(height));
+    }
+
+    function turnQuestionMediaPage(root, step) {
+      const total = Number(root.dataset.pages) || 1;
+      const page = Math.min(total, Math.max(1, (Number(root.dataset.page) || 1) + step));
+      renderQuestionPdf(root, page);
+    }
+
+    function mountQuestionMedia(scope) {
+      installQuestionMediaTools();
+      const rootNode = scope && scope.querySelectorAll ? scope : document;
+      rootNode.querySelectorAll('.question-media').forEach(root => {
+        if (root.dataset.ready === '1') return;
+        root.dataset.ready = '1';
+        root.dataset.scale = '1';
+        root.dataset.tool = 'pen';
+        if (root.dataset.mediaKind === 'pdf') renderQuestionPdf(root, 1);
+        else {
+          const img = root.querySelector('.question-media-img');
+          const fit = () => fitQuestionInk(root, img.naturalWidth || img.clientWidth || 640, img.naturalHeight || img.clientHeight || 360);
+          if (img && img.complete) fit();
+          else if (img) img.addEventListener('load', fit, { once: true });
+        }
+      });
+    }
+
+    function renderQuestionPdf(root, pageNo) {
+      const canvas = root.querySelector('.question-media-pdf');
+      if (!canvas || !window.pdfjsLib) return;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const loading = root._pdf || pdfjsLib.getDocument(root.dataset.mediaSrc).promise.then(pdf => { root._pdf = pdf; return pdf; });
+      root._pdf = loading;
+      Promise.resolve(loading).then(pdf => {
+        const page = Math.min(pdf.numPages, Math.max(1, pageNo));
+        root.dataset.page = String(page);
+        root.dataset.pages = String(pdf.numPages);
+        const label = root.querySelector('[data-media-page]');
+        if (label) label.textContent = page + ' / ' + pdf.numPages;
+        return pdf.getPage(page).then(pdfPage => {
+          const viewport = pdfPage.getViewport({ scale: 1.4 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          fitQuestionInk(root, viewport.width, viewport.height);
+          return pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+        });
+      }).catch(() => {
+        const stage = root.querySelector('.question-media-stage');
+        if (stage && !stage.querySelector('.question-media-fallback')) {
+          stage.insertAdjacentHTML('beforeend', '<a class="question-media-fallback block p-3 text-sm font-bold text-amber-200" target="_blank" rel="noopener" href="' + escapeHtml(root.dataset.mediaSrc) + '">開啟 PDF / Open PDF</a>');
+        }
+      });
     }
 
     function questionSheetRows(sheet) {
@@ -15396,25 +15619,10 @@ function publishEvoEdges() {
           const jsonRows = questionSheetRows(firstSheet);
           const questions = [];
           for (let i = 1; i < jsonRows.length; i++) {
-            const row = jsonRows[i];
-            if (!row || row[0] === undefined || row[0] === null || row[1] === undefined || row[1] === null) continue;
-            const questionText = String(row[0]).trim();
-            const correctOpt = String(row[1]).trim();
-            if (!questionText || !correctOpt) continue;
-            const wrongs = [];
-            [2, 3, 4].forEach(col => {
-              if (row[col] !== undefined && row[col] !== null && String(row[col]).trim()) wrongs.push(String(row[col]).trim());
-            });
-            const rowQuestion = {
-              question: repairQuestionText(questionText),
-              correct: repairQuestionText(correctOpt),
-              wrongs: wrongs.map(repairQuestionText)
-            };
-            const image = questionImageCell(row);
-            if (image) rowQuestion.image = image;
-            questions.push(rowQuestion);
+            const item = sheetQuestion(jsonRows[i]);
+            if (item) questions.push(item);
           }
-          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。H 欄有圖片路徑才會顯示在題目上面，空白就只顯示題目。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header. Column H is an optional picture path. A blank H shows the question only.');
+          if (!questions.length) return alert('沒有讀到題目。請用 A 欄題目、B 欄正確答案、C D E 欄錯誤答案，第一列是標題。H 欄有圖片或 PDF 路徑才會顯示在題目上面，空白就只顯示題目。F 欄填 fill 就是填空題。 / No questions found. Use column A for the question, B for the correct answer, C D E for wrong answers, and keep the first row as the header. Column H is an optional picture or PDF path. Put fill in column F for a fill-in question. A blank H shows the question only.');
           saveClassDungeonQuestions(selectedTeacherClass, questions).then(saved => {
             if (!saved) return;
             showToast('石碑題庫已更新 / Shrine Questions Updated', `${selectedTeacherClass} 已換成 ${questions.length} 題。其他班的題庫沒有改動。 / ${selectedTeacherClass} now has ${questions.length} questions. Other classes were not changed.`, 'evolution');
@@ -17444,7 +17652,8 @@ function teacherToggleClassSpy(studentId, event) {
               const item = {
                 question: questionText,
                 correct: correctOpt,
-                wrongs: wrongOpts
+                wrongs: wrongOpts,
+                type: questionTypeCell(row)
               };
               const image = questionImageCell(row);
               if (image) item.image = image;
@@ -17555,7 +17764,9 @@ function teacherToggleClassSpy(studentId, event) {
       if (w2) rawOptions.push({ text: w2, isCorrect: false });
       if (w3) rawOptions.push({ text: w3, isCorrect: false });
 
-      if (rawOptions.length < 2) {
+      const bankHit = importedQuizBank.find(item => item.question === q && item.correct === correct);
+      const fillQuiz = !!(bankHit && bankHit.type === 'FILL');
+      if (!fillQuiz && rawOptions.length < 2) {
         return alert("請至少提供一個錯誤選項！ / Please provide at least one wrong distractor option!");
       }
 
@@ -17567,20 +17778,23 @@ function teacherToggleClassSpy(studentId, event) {
       const shuffledTexts = rawOptions.map(o => o.text);
       const correctIndex = rawOptions.findIndex(o => o.isCorrect);
       const targetClass = selectedTeacherClass || 'ALL';
-      const bankHit = importedQuizBank.find(item => item.question === q && item.correct === correct);
 
       const quizData = {
         active: true,
         quizId: 'q' + syncedNow().toString(36) + Math.random().toString(36).slice(2, 8),
         question: q,
-        options: shuffledTexts,
-        correctIndex: correctIndex,
+        options: fillQuiz ? [] : shuffledTexts,
+        correctIndex: fillQuiz ? -1 : correctIndex,
         classTag: targetClass,
         timeLimit: timeLimitSec,
         winners: {},
         submissions: {},
         timestamp: liveQuizServerStamp()
       };
+      if (fillQuiz) {
+        quizData.type = 'FILL';
+        quizData.answer = correct;
+      }
       if (bankHit && bankHit.image) quizData.image = String(bankHit.image).trim();
 
       if (dbRootRef) {
@@ -17932,20 +18146,29 @@ function teacherToggleClassSpy(studentId, event) {
             quizStudentCountdownTimer = setInterval(updateCountdownUI, 250);
           }
 
-          // 渲染 4 個作答選項按鈕
-          (activeQuizInstance.options || []).forEach((optText, optIdx) => {
-            const btn = document.createElement('button');
-            btn.className = "p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-slate-700 hover:border-amber-400 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 text-left flex items-center gap-2.5 cursor-pointer";
-            btn.innerHTML = `
-              <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-pixel text-[10px] text-amber-300 shrink-0">
-                ${String.fromCharCode(65 + optIdx)}
-              </span>
-              <span class="truncate"></span>
-            `;
-            btn.querySelector('.truncate').textContent = repairQuestionText(optText);
-            btn.onclick = () => submitQuizAnswer(optIdx, false);
-            grid.appendChild(btn);
-          });
+          if (String(activeQuizInstance.type || '').toUpperCase() === 'FILL') {
+            grid.className = 'grid grid-cols-1 gap-2.5';
+            const form = document.createElement('form');
+            form.className = 'flex gap-2';
+            form.innerHTML = '<input id="quizFillInput" class="flex-1 min-h-12 rounded-xl bg-slate-950 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-4 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button>';
+            form.onsubmit = event => { event.preventDefault(); submitQuizFill(); };
+            grid.appendChild(form);
+          } else {
+            grid.className = 'grid grid-cols-1 gap-2.5';
+            (activeQuizInstance.options || []).forEach((optText, optIdx) => {
+              const btn = document.createElement('button');
+              btn.className = "p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-slate-700 hover:border-amber-400 text-white font-bold text-sm shadow-md transition active:scale-95 text-left flex items-start gap-2.5 cursor-pointer h-auto";
+              btn.innerHTML = `
+                <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-pixel text-[10px] text-amber-300 shrink-0">
+                  ${String.fromCharCode(65 + optIdx)}
+                </span>
+                <span class="quiz-answer-copy flex-1"></span>
+              `;
+              btn.querySelector('.quiz-answer-copy').textContent = repairQuestionText(optText);
+              btn.onclick = () => submitQuizAnswer(optIdx, false);
+              grid.appendChild(btn);
+            });
+          }
 
         } else {
           // 學生已經作答過或已判定逾時，展示作答結果反饋
@@ -17985,7 +18208,12 @@ function teacherToggleClassSpy(studentId, event) {
     }
 
     // 學生提交作答處理
-    function submitQuizAnswer(chosenIndex, isTimeout = false) {
+    function submitQuizFill() {
+      const input = document.getElementById('quizFillInput');
+      submitQuizAnswer(null, false, input ? input.value : '');
+    }
+
+    function submitQuizAnswer(chosenIndex, isTimeout = false, fillText) {
       if (!currentUser || currentUser.role !== 'student') return;
       if (studentClassLockActive()) return;
       if (!activeQuizInstance || !activeQuizInstance.active) return;
@@ -18004,10 +18232,11 @@ function teacherToggleClassSpy(studentId, event) {
         quizStudentCountdownTimer = null;
       }
 
-      const isCorrect = !isTimeout && (chosenIndex === activeQuizInstance.correctIndex);
-      const chosenText = (!isTimeout && activeQuizInstance.options && activeQuizInstance.options[chosenIndex])
-        ? activeQuizInstance.options[chosenIndex]
-        : (isTimeout ? '⏰ 逾時未答 / Time is up' : '未作答');
+      const fillQuiz = String(activeQuizInstance.type || '').toUpperCase() === 'FILL';
+      const isCorrect = !isTimeout && (fillQuiz ? fillAnswersMatch(activeQuizInstance.answer, fillText) : chosenIndex === activeQuizInstance.correctIndex);
+      const chosenText = isTimeout
+        ? '⏰ 逾時未答 / Time is up'
+        : (fillQuiz ? String(fillText || '') : ((activeQuizInstance.options && activeQuizInstance.options[chosenIndex]) || '未作答'));
 
       const submitTime = syncedNow();
       const timeString = serverClockText(true);
@@ -18147,9 +18376,7 @@ function onExamTimePresetChange(val) {
         const opt4 = row[4] !== undefined ? repairQuestionText(String(row[4]).trim()) : "";
                 const explain = row[6] !== undefined ? repairQuestionText(String(row[6]).trim()) : "";
         // 讀取題型 (Column F) - 智慧辨識 fill, fill-in, fillin, 填空, 填寫 等字眼
-            const rawTypeStr = String(row[5] || '').trim().toLowerCase();
-            const isFillType = /fill|fill-in|fill_in|fillin|填空|填寫|填充/.test(rawTypeStr);
-            const qType = isFillType ? 'FILL' : 'MCQ';
+            const qType = questionTypeCell(row);
         const options = [correctAns, opt2, opt3, opt4].filter(o => o !== "");
         // 打散選項順序
         options.sort(() => Math.random() - 0.5);
@@ -18157,7 +18384,7 @@ function onExamTimePresetChange(val) {
         const examItem = {
           question: qText,
           answer: correctAns,
-          options: options,
+          options: qType === 'FILL' ? [] : options,
           type: qType,
           explanation: explain
         };
@@ -18565,13 +18792,13 @@ function renderStudentExamQuestion() {
         const isSelected = String(currentSavedAns).trim() === opt;
         const btn = document.createElement('button');
         btn.type = "button";
-        btn.className = `p-3 rounded-2xl text-xs sm:text-sm font-bold border-2 transition text-left flex items-center justify-between cursor-pointer active:scale-95 ${
+        btn.className = `p-3 rounded-2xl text-sm font-bold border-2 transition text-left flex items-start justify-between gap-2 cursor-pointer active:scale-95 h-auto ${
           isSelected 
             ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg shadow-indigo-500/20' 
             : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50'
         }`;
         btn.innerHTML = `
-          <span>${String.fromCharCode(65 + idx)}. ${opt}</span>
+          <span class="quiz-answer-copy flex-1">${String.fromCharCode(65 + idx)}. ${escapeHtml(opt)}</span>
           ${isSelected ? '<i class="fa-solid fa-circle-check text-indigo-400 text-sm"></i>' : '<i class="fa-regular fa-circle text-slate-600 text-sm"></i>'}
         `;
         btn.onclick = () => selectExamMCQOption(opt);
@@ -18759,7 +18986,7 @@ function startStudentExamTimer() {
           const btn = document.createElement('button');
           const isSelected = (savedAnswer === optText);
 
-          btn.className = `w-full text-left p-3.5 rounded-xl border-2 transition font-bold text-xs flex items-center justify-between cursor-pointer active:scale-95 ${
+          btn.className = `w-full h-auto text-left p-3.5 rounded-xl border-2 transition font-bold text-sm flex items-start justify-between cursor-pointer active:scale-95 ${
             isSelected 
               ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-lg' 
               : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-indigo-500/50'
@@ -18770,7 +18997,7 @@ function startStudentExamTimer() {
               <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-indigo-500 text-white' : 'bg-slate-900 text-slate-400'} flex items-center justify-center font-mono text-[11px] font-black">
                 ${String.fromCharCode(65 + optIdx)}
               </span>
-              <span>${optText}</span>
+              <span class="quiz-answer-copy flex-1">${escapeHtml(String(optText))}</span>
             </div>
             ${isSelected ? '<i class="fa-solid fa-check text-indigo-400"></i>' : ''}
           `;
@@ -18843,9 +19070,10 @@ function startStudentExamTimer() {
     else if (q.correct !== undefined && q.correct !== null) correctAns = repairQuestionText(String(q.correct).trim());
 
     // 核心判定修復：學生未作答（空白）或題庫無正解時，嚴格判定為錯誤
+    const fillQuestion = String(q.type || '').toUpperCase() === 'FILL' || String(q.type || '').indexOf('填空') >= 0;
     let isCorrect = false;
     if (stuAns !== "" && correctAns !== "") {
-      isCorrect = (stuAns.toLowerCase() === correctAns.toLowerCase());
+      isCorrect = fillQuestion ? fillAnswersMatch(correctAns, stuAns) : (stuAns.toLowerCase() === correctAns.toLowerCase());
     }
 
     if (isCorrect) correctCount++;

@@ -27,6 +27,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     html, body { max-width: 100%; overflow-x: hidden; }
     body {
@@ -137,8 +138,17 @@
     }
     .quiz-choice {
       min-height: 48px; width: 100%; flex: 0 0 auto; position: relative; z-index: 1;
-      white-space: normal; overflow-wrap: anywhere;
+      white-space: normal; overflow-wrap: anywhere; height: auto;
     }
+    .quiz-sheet { width: min(960px, 100%); }
+    .question-media { margin: 0 auto 0.75rem; text-align: left; }
+    .question-media-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .question-media-tools button { min-height: 40px; padding: 0 10px; border-radius: 10px; background: #0f172a; color: #e2e8f0; border: 1px solid #475569; font-size: 12px; font-weight: 800; }
+    .question-media-tools button.is-on { border-color: #fbbf24; color: #fde68a; }
+    .question-media-stage { max-height: min(52vh, 640px); overflow: auto; background: #020617; border: 1px solid #334155; border-radius: 12px; }
+    .question-media-board { position: relative; width: min(100%, 960px); margin: 0 auto; transform-origin: top center; }
+    .question-media-img, .question-media-pdf { display: block; width: 100%; height: auto; }
+    .question-media-ink { position: absolute; left: 0; top: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
     @media (max-width: 640px) {
       .sheet-wrap { align-items: flex-end; padding: 0; }
       .sheet { border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-height: 88dvh; }
@@ -1140,6 +1150,7 @@
           };
           const image = String(row.image || '').trim();
           if (image) card.image = image;
+          if (String(row.type || '').toUpperCase() === 'FILL') card.type = 'FILL';
           by[id] = card;
         });
         room.status = 'riddle';
@@ -1234,7 +1245,8 @@
       if (!entry || !member || entry.answered || member.hp <= 0 || member.fainted) return null;
       const pickedRaw = String(action.choice == null ? '' : action.choice).trim();
       const picked = pickedRaw === '__timeout__' ? pickedRaw : repairQuestionText(pickedRaw);
-      const correct = picked !== '__timeout__' && picked === repairQuestionText(String(entry.correct || '').trim());
+      const expected = repairQuestionText(String(entry.correct || '').trim());
+      const correct = picked !== '__timeout__' && (String(entry.type || '').toUpperCase() === 'FILL' ? fillAnswersMatch(expected, picked) : picked === expected);
       entry.answered = true;
       entry.right = !!correct;
       if (correct) {
@@ -1506,6 +1518,7 @@
         };
         const image = String(row.image || '').trim();
         if (image) item.image = image;
+        if (String(row.type || '').toUpperCase() === 'FILL') item.type = 'FILL';
         return item;
       });
     }
@@ -1562,6 +1575,7 @@
           const item = { question: row.question, correct: row.correct, wrongs: (row.wrongs || []).slice() };
           const image = String(row.image || '').trim();
           if (image) item.image = image;
+          if (String(row.type || '').toUpperCase() === 'FILL') item.type = 'FILL';
           return item;
         });
       });
@@ -2310,10 +2324,127 @@
       if (!text || text.indexOf('..') >= 0) return '';
       return text;
     }
-    function questionPictureHtml(path) {
+    function fillAnswersMatch(expected, given) {
+      const key = value => repairQuestionText(String(value == null ? '' : value)).replace(/[，,]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      const answer = key(expected);
+      return !!answer && answer === key(given);
+    }
+    function questionMediaKind(path) {
       const src = questionPictureSrc(path);
-      if (!src) return '';
-      return '<img src="' + esc(src) + '" alt="" style="display:block;width:100%;max-height:16rem;object-fit:contain;margin:0 auto 0.75rem;border-radius:0.75rem;background:#020617;border:1px solid #334155" onerror="this.remove()">';
+      return src && /\.pdf(?:$|[?#])/i.test(src) ? 'pdf' : (src ? 'image' : '');
+    }
+    function questionMediaHtml(path) {
+      const src = questionPictureSrc(path);
+      const kind = questionMediaKind(path);
+      if (!src || !kind) return '';
+      const pages = kind === 'pdf' ? '<button type="button" data-media-act="prev">上一頁</button><span data-media-page>1</span><button type="button" data-media-act="next">下一頁</button>' : '';
+      return '<div class="question-media" data-media-src="' + esc(src) + '" data-media-kind="' + kind + '"><div class="question-media-tools"><button type="button" data-media-act="out">縮小 / Zoom out</button><button type="button" data-media-act="in">放大 / Zoom in</button><button type="button" data-media-act="pen" class="is-on">筆 / Pen</button><button type="button" data-media-act="highlight">螢光 / Highlight</button><button type="button" data-media-act="clear">清除 / Clear</button>' + pages + '</div><div class="question-media-stage"><div class="question-media-board">' + (kind === 'image' ? '<img class="question-media-img" alt="" src="' + esc(src) + '">' : '<canvas class="question-media-pdf"></canvas>') + '<canvas class="question-media-ink"></canvas></div></div></div>';
+    }
+    function questionPictureHtml(path) { return questionMediaHtml(path); }
+    function installQuestionMediaTools() {
+      if (window.__questionMediaTools) return;
+      window.__questionMediaTools = true;
+      document.addEventListener('click', event => {
+        const button = event.target.closest('[data-media-act]');
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const root = button.closest('.question-media');
+        if (!root) return;
+        const act = button.getAttribute('data-media-act');
+        if (act === 'in' || act === 'out') zoomQuestionMedia(root, act === 'in' ? 0.25 : -0.25);
+        else if (act === 'pen' || act === 'highlight') {
+          root.dataset.tool = act;
+          root.querySelectorAll('[data-media-act="pen"], [data-media-act="highlight"]').forEach(el => el.classList.toggle('is-on', el === button));
+        } else if (act === 'clear') clearQuestionMediaInk(root);
+        else if (act === 'prev' || act === 'next') turnQuestionMediaPage(root, act === 'next' ? 1 : -1);
+      });
+      document.addEventListener('pointerdown', event => {
+        const ink = event.target.closest && event.target.closest('.question-media-ink');
+        if (!ink) return;
+        event.preventDefault();
+        const root = ink.closest('.question-media');
+        const tool = root && root.dataset.tool || 'pen';
+        const ctx = ink.getContext('2d');
+        const point = questionInkPoint(ink, event);
+        ctx.strokeStyle = tool === 'highlight' ? 'rgba(250, 204, 21, 0.45)' : '#fb7185';
+        ctx.lineWidth = tool === 'highlight' ? 28 : 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y);
+        ink.setPointerCapture(event.pointerId);
+        const move = ev => { const next = questionInkPoint(ink, ev); ctx.lineTo(next.x, next.y); ctx.stroke(); };
+        const end = () => { ink.removeEventListener('pointermove', move); ink.removeEventListener('pointerup', end); ink.removeEventListener('pointercancel', end); };
+        ink.addEventListener('pointermove', move);
+        ink.addEventListener('pointerup', end);
+        ink.addEventListener('pointercancel', end);
+      });
+    }
+    function questionInkPoint(canvas, event) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: (event.clientX - rect.left) * (canvas.width / (rect.width || 1)), y: (event.clientY - rect.top) * (canvas.height / (rect.height || 1)) };
+    }
+    function zoomQuestionMedia(root, delta) {
+      const scale = Math.min(3, Math.max(0.6, (Number(root.dataset.scale) || 1) + delta));
+      root.dataset.scale = String(scale);
+      const board = root.querySelector('.question-media-board');
+      if (board) board.style.width = Math.round(scale * 100) + '%';
+    }
+    function clearQuestionMediaInk(root) {
+      const ink = root.querySelector('.question-media-ink');
+      if (ink) ink.getContext('2d').clearRect(0, 0, ink.width, ink.height);
+    }
+    function fitQuestionInk(root, width, height) {
+      const ink = root.querySelector('.question-media-ink');
+      if (!ink) return;
+      ink.width = Math.max(1, Math.round(width));
+      ink.height = Math.max(1, Math.round(height));
+    }
+    function turnQuestionMediaPage(root, step) {
+      const total = Number(root.dataset.pages) || 1;
+      renderQuestionPdf(root, Math.min(total, Math.max(1, (Number(root.dataset.page) || 1) + step)));
+    }
+    function mountQuestionMedia(scope) {
+      installQuestionMediaTools();
+      const rootNode = scope && scope.querySelectorAll ? scope : document;
+      rootNode.querySelectorAll('.question-media').forEach(root => {
+        if (root.dataset.ready === '1') return;
+        root.dataset.ready = '1';
+        root.dataset.scale = '1';
+        root.dataset.tool = 'pen';
+        if (root.dataset.mediaKind === 'pdf') renderQuestionPdf(root, 1);
+        else {
+          const img = root.querySelector('.question-media-img');
+          const fit = () => fitQuestionInk(root, img.naturalWidth || img.clientWidth || 640, img.naturalHeight || img.clientHeight || 360);
+          if (img && img.complete) fit();
+          else if (img) img.addEventListener('load', fit, { once: true });
+        }
+      });
+    }
+    function renderQuestionPdf(root, pageNo) {
+      const canvas = root.querySelector('.question-media-pdf');
+      if (!canvas || !window.pdfjsLib) return;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const loading = root._pdf || pdfjsLib.getDocument(root.dataset.mediaSrc).promise.then(pdf => { root._pdf = pdf; return pdf; });
+      root._pdf = loading;
+      Promise.resolve(loading).then(pdf => {
+        const page = Math.min(pdf.numPages, Math.max(1, pageNo));
+        root.dataset.page = String(page);
+        root.dataset.pages = String(pdf.numPages);
+        const label = root.querySelector('[data-media-page]');
+        if (label) label.textContent = page + ' / ' + pdf.numPages;
+        return pdf.getPage(page).then(pdfPage => {
+          const viewport = pdfPage.getViewport({ scale: 1.4 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          fitQuestionInk(root, viewport.width, viewport.height);
+          return pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+        });
+      }).catch(() => {
+        const stage = root.querySelector('.question-media-stage');
+        if (stage && !stage.querySelector('.question-media-fallback')) stage.insertAdjacentHTML('beforeend', '<a class="question-media-fallback block p-3 text-sm font-bold text-amber-200" target="_blank" rel="noopener" href="' + esc(root.dataset.mediaSrc) + '">開啟 PDF / Open PDF</a>');
+      });
     }
     function renderRiddle(room) {
       const pack = room.question || {};
@@ -2337,8 +2468,11 @@
           ? '<p class="text-sm text-emerald-200">答對了。你的獎勵：' + esc(mine.reward || '') + '。每人的題目和獎勵是分開的。 / Correct. Your reward: ' + esc(mine.reward || '') + '. Questions and rewards are separate.</p>'
           : '<p class="text-sm text-amber-200">答錯或逾時。你失去這間房的獎勵，數碼獸不會倒下。 / Wrong or too slow. You miss this room’s reward. Your Digimon stays up.</p>';
       } else {
-        const options = optionList(mine.options).map((option, index) => '<button type="button" data-act="choice" data-index="' + index + '" class="quiz-choice tap rounded-2xl bg-slate-900 border border-cyan-700 text-left px-3 font-bold">' + esc(repairQuestionText(option)) + '</button>').join('');
-        body = questionPictureHtml(mine.image) + '<h2 class="text-base font-black leading-snug">' + esc(repairQuestionText(mine.text)) + '</h2><div class="hp-bar"><div id="quizTimerFill" class="hp-fill" style="width:' + pct + '%"></div></div><p id="quizTimerLabel" class="text-[11px] text-slate-400">' + Math.ceil(left / 1000) + 's · 答錯不會倒下。 / A wrong answer does not faint you.</p><div id="quizChoices" class="quiz-choices">' + options + '</div>';
+        const fill = String(mine.type || '').toUpperCase() === 'FILL';
+        const options = fill
+          ? '<form class="flex gap-2" onsubmit="event.preventDefault()"><input id="dungeonFill" class="flex-1 min-h-12 rounded-2xl bg-slate-950 border border-cyan-400 px-3 text-white" autocomplete="off"><button type="button" data-act="fill" class="min-h-12 px-3 rounded-2xl bg-cyan-500 text-slate-950 font-black">送出 / Submit</button></form>'
+          : optionList(mine.options).map((option, index) => '<button type="button" data-act="choice" data-index="' + index + '" class="quiz-choice tap rounded-2xl bg-slate-900 border border-cyan-700 text-left px-3 font-bold">' + esc(repairQuestionText(option)) + '</button>').join('');
+        body = questionMediaHtml(mine.image) + '<h2 class="text-base font-black leading-snug">' + esc(repairQuestionText(mine.text)) + '</h2><div class="hp-bar"><div id="quizTimerFill" class="hp-fill" style="width:' + pct + '%"></div></div><p id="quizTimerLabel" class="text-[11px] text-slate-400">' + Math.ceil(left / 1000) + 's · 答錯不會倒下。 / A wrong answer does not faint you.</p><div id="quizChoices" class="quiz-choices">' + options + '</div>';
       }
       return '<section id="riddleBox" class="sheet-wrap quiz-wrap fixed inset-0 z-30 bg-slate-950/80 flex items-center justify-center"><div class="sheet quiz-sheet panel"><div class="quiz-head"><div class="quiz-mark"><i class="fa-solid fa-question"></i></div><div class="min-w-0"><p class="text-xs font-black text-cyan-300">知識測驗 / Quiz</p><p class="text-[11px] text-slate-300 truncate">' + esc(cast.name || 'Quiz') + '</p></div></div>' + body + '<ul class="space-y-1">' + roster + '</ul></div></section>';
     }
@@ -2413,6 +2547,7 @@
       const typing = document.activeElement && document.activeElement.id === 'joinCode';
       const draft = typing ? document.activeElement.value : joinDraft;
       app.innerHTML = html;
+      mountQuestionMedia(app);
       const input = document.getElementById('joinCode');
       if (input) {
         input.value = draft;
@@ -2494,6 +2629,10 @@
         await whenQuestionsReady();
         await commit({ type: 'choose', nodeId: nodeId, memberId: gate.id, now: offsetReady ? syncedNow() : 0, bank: questionBank(), banks: banksPayload() });
         return;
+      }
+      if (act === 'fill') {
+        const input = document.getElementById('dungeonFill');
+        return commit({ type: 'answer', memberId: gate.id, choice: input ? input.value : '' });
       }
       if (act === 'choice') {
         const member = myMember(currentRoom);
@@ -2664,7 +2803,10 @@
             meStudent.isFainted = false;
             meStudent.dungeonTickets = 1;
           }
-          onRoomSnapshot(room);
+          if (room && room.code && db) {
+            db.child('systemSettings/labyrinthRooms/' + room.code).set(room);
+            listenRoom(room.code);
+          } else onRoomSnapshot(room);
         }
       };
     }
