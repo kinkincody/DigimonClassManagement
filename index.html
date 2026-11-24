@@ -1757,7 +1757,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.78";
+    const CURRENT_APP_VERSION = "2.7.79";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -6401,6 +6401,7 @@ const PASSWORD_KDF_ITERS = 40000;
     reviveQuizPending: normalizeRevivePending(s.reviveQuizPending),
     reviveQuizClosed: !!s.reviveQuizClosed,
     territoryDailyDay: s.territoryDailyDay ? String(s.territoryDailyDay) : '',
+    territoryDailyEpoch: Math.max(0, Math.floor(Number(s.territoryDailyEpoch) || 0)),
     classSpy: (s.classSpy && typeof s.classSpy === 'object') ? s.classSpy : null,
     dailyTrialDay: s.dailyTrialDay ? String(s.dailyTrialDay) : '',
     dailyTrialUsed: Math.max(0, Number(s.dailyTrialUsed) || 0),
@@ -6604,6 +6605,11 @@ const PASSWORD_KDF_ITERS = 40000;
           dbRootRef = window.__DIGI_TEST_DB;
           wrapTestDb(dbRootRef);
           isFirebaseConnected = true;
+          if (window.__DIGI_TEST_NODES && typeof window.__DIGI_TEST_NODES === 'object') {
+            appData.territoryNodes = window.__DIGI_TEST_NODES;
+          }
+          territoryNodesReady = true;
+          firebaseServerTimeOffsetReady = true;
           resumeStudentGate();
         } else {
         if (!firebase.apps.length) {
@@ -7516,6 +7522,16 @@ function territoryHoldClass(student, nodeId) {
     if (!fac || !fac.factionId) return false;
     return territoryFactionIdsMatch(getTerritoryNode(c, nodeId).controllerFactionId, fac.factionId);
   }) || classes[0] || '';
+}
+
+function territoryControlledClass(student, nodeId) {
+  if (!student) return '';
+  const classes = parseStudentClasses(student.classId);
+  return classes.find(c => {
+    const fac = getStudentFactionInClass(student, c);
+    if (!fac || !fac.factionId) return false;
+    return territoryFactionIdsMatch(getTerritoryNode(c, nodeId).controllerFactionId, fac.factionId);
+  }) || '';
 }
 
 function territoryDamageMultiplier(student, className) {
@@ -8675,52 +8691,73 @@ function queueTerritoryDailyPaint() {
 function issueTerritoryDailyRewards() {
   if (!firebaseServerTimeOffsetReady || !currentUser || !territoryNodesReady || !appData.students || territoryDailyRunning) return;
   const today = hongKongDateKey();
+  const todayEpoch = hongKongDayIndex();
   const roster = territoryRewardRoster();
   territoryDailyRunning = true;
   try {
     roster.forEach(st => {
       if (!st || !st.id || territoryDailyInFlight[st.id]) return;
-      if (String(st.territoryDailyDay || '') === today) return;
-      const holdFile = studentHoldsTerritoryNode(st, null, 'file_island');
-      const holdCore = studentHoldsTerritoryNode(st, null, 'core');
-      const fileClass = holdFile ? territoryHoldClass(st, 'file_island') : '';
-      const coreClass = holdCore ? territoryHoldClass(st, 'core') : '';
+      if (String(st.territoryDailyDay || '') === today || Number(st.territoryDailyEpoch) === todayEpoch) return;
       territoryDailyInFlight[st.id] = true;
-      let changed = false;
+      let grantedFile = false;
+      let grantedCore = false;
       const applyClaim = (cur) => {
-        changed = false;
-        if (!cur) return;
-        if (String(cur.territoryDailyDay || '') === today) return;
+        grantedFile = false;
+        grantedCore = false;
+        if (!cur) return cur;
+        const day = hongKongDateKey();
+        const epoch = hongKongDayIndex();
+        if (String(cur.territoryDailyDay || '') === day || Number(cur.territoryDailyEpoch) === epoch) return;
         const next = Object.assign({}, cur);
-        next.territoryDailyDay = today;
-        next.territoryDailyEpoch = hongKongDayIndex();
-        if (holdFile) next.attackQuota = (Number(cur.attackQuota) || 0) + FILE_ISLAND_DAILY_ATTACKS;
-        if (holdCore) next.coins = (Number(cur.coins) || 0) + WORLD_CORE_DAILY_COINS;
-        changed = true;
+        const fileClass = territoryControlledClass(cur, 'file_island');
+        const coreClass = territoryControlledClass(cur, 'core');
+        next.territoryDailyDay = day;
+        next.territoryDailyEpoch = epoch;
+        if (fileClass) {
+          next.attackQuota = (Number(cur.attackQuota) || 0) + FILE_ISLAND_DAILY_ATTACKS;
+          next.territoryFileClass = sanitizeClassKey(fileClass);
+          grantedFile = true;
+        } else {
+          delete next.territoryFileClass;
+        }
+        if (coreClass) {
+          next.coins = (Number(cur.coins) || 0) + WORLD_CORE_DAILY_COINS;
+          next.territoryCoreClass = sanitizeClassKey(coreClass);
+          grantedCore = true;
+        } else {
+          delete next.territoryCoreClass;
+        }
         return next;
       };
       const finish = (committed, snapVal) => {
         delete territoryDailyInFlight[st.id];
-        if (!committed || !changed) return;
+        if (!committed) return;
         const saved = snapVal || {};
+        const savedDay = String(saved.territoryDailyDay || '');
+        const savedEpoch = Number(saved.territoryDailyEpoch);
+        if (savedDay !== hongKongDateKey() && savedEpoch !== hongKongDayIndex()) return;
         const local = appData.students[st.id];
-        if (local) {
-          local.territoryDailyDay = String(saved.territoryDailyDay || today);
-          if (saved.attackQuota != null) local.attackQuota = Number(saved.attackQuota);
-          if (saved.coins != null) local.coins = Number(saved.coins);
+        const already = local && (String(local.territoryDailyDay || '') === savedDay || Number(local.territoryDailyEpoch) === savedEpoch);
+        if (local && !already) {
+          local.territoryDailyDay = savedDay;
+          local.territoryDailyEpoch = savedEpoch;
+          if (grantedFile && saved.attackQuota != null) local.attackQuota = Number(saved.attackQuota);
+          if (grantedCore && saved.coins != null) local.coins = Number(saved.coins);
         }
-        if (holdFile) {
+        if (grantedFile || grantedCore) queueTerritoryDailyPaint();
+        const fileClass = territoryControlledClass(saved, 'file_island') || st.classId;
+        const coreClass = territoryControlledClass(saved, 'core') || st.classId;
+        if (grantedFile) {
           addBattleLog(`🌅 [FILE ISLAND] ${st.name} 收到檔案島午夜獎勵 +${FILE_ISLAND_DAILY_ATTACKS} 攻擊次數。 / File Island midnight reward: +${FILE_ISLAND_DAILY_ATTACKS} attacks.`, 'heal', fileClass || coreClass || st.classId, true);
         }
-        if (holdCore) {
+        if (grantedCore) {
           addBattleLog(`🌅 [WORLD CORE] ${st.name} 收到數碼世界核心午夜獎勵 +${WORLD_CORE_DAILY_COINS} 金幣。 / Digital World Core midnight reward: +${WORLD_CORE_DAILY_COINS} coins.`, 'heal', coreClass || fileClass || st.classId, true);
         }
-        if (currentUser && currentUser.id === st.id && (holdFile || holdCore)) {
-          if (holdFile) showToast('數碼源泉 / Digital Spring', `每日攻擊 +${FILE_ISLAND_DAILY_ATTACKS}。 / +${FILE_ISLAND_DAILY_ATTACKS} attacks for today.`, 'info');
-          if (holdCore) showToast('世界樹權柄 / World Tree', `每日金幣 +${WORLD_CORE_DAILY_COINS}。 / +${WORLD_CORE_DAILY_COINS} coins for today.`, 'heal');
+        if (currentUser && currentUser.id === st.id && (grantedFile || grantedCore)) {
+          if (grantedFile) showToast('數碼源泉 / Digital Spring', `每日攻擊 +${FILE_ISLAND_DAILY_ATTACKS}。 / +${FILE_ISLAND_DAILY_ATTACKS} attacks for today.`, 'info');
+          if (grantedCore) showToast('世界樹權柄 / World Tree', `每日金幣 +${WORLD_CORE_DAILY_COINS}。 / +${WORLD_CORE_DAILY_COINS} coins for today.`, 'heal');
           playSound('heal');
         }
-        if (holdFile || holdCore) queueTerritoryDailyPaint();
       };
       if (!dbRootRef) {
         const next = applyClaim(Object.assign({}, st));
@@ -8731,9 +8768,10 @@ function issueTerritoryDailyRewards() {
         finish(true, next);
         return;
       }
-      dbRootRef.child('students/' + st.id).transaction(cur => applyClaim(cur), (err, committed, snap) => {
+      // applyLocally false: a rejected midnight grant must not flash +200 before the server accepts it.
+      dbRootRef.child('students/' + (st.firebaseKey || st.id)).transaction(cur => applyClaim(cur), (err, committed, snap) => {
         finish(!!committed && !err, snap && snap.val ? snap.val() : null);
-      });
+      }, false);
     });
   } finally {
     territoryDailyRunning = false;
@@ -10949,7 +10987,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.78</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.79</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -12103,7 +12141,6 @@ function logout() {
       renderStudentBossBar();
       renderBountyUI();
       updateStudentFactionUI(); // 👈 加入此行：保證每次刷新學生畫面時必定更新陣營狀態
-      claimTerritoryDailyRewards();
       const coinCountEl = document.getElementById('stCoinsCount');
       if (coinCountEl) coinCountEl.textContent = st.coins || 0;
       const dungeonBadge = document.getElementById('studentDungeonTicketBadge');
