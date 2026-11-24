@@ -1757,7 +1757,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.79";
+    const CURRENT_APP_VERSION = "2.7.80";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -10987,7 +10987,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.79</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.80</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -17935,6 +17935,67 @@ function teacherToggleClassSpy(studentId, event) {
       return limitMs - (syncedNow() - start);
     }
 
+    function databaseNodeRestUrl(path) {
+      const raw = String((typeof FIREBASE_CONFIG === 'object' && FIREBASE_CONFIG.databaseURL) || '').trim();
+      const parsed = new URL(raw);
+      const ns = parsed.searchParams.get('ns');
+      parsed.search = '';
+      parsed.pathname = '/' + String(path || '').replace(/^\/+/, '') + '.json';
+      if (ns) parsed.searchParams.set('ns', ns);
+      return parsed;
+    }
+
+    async function readServerNode(path) {
+      if (typeof fetch !== 'function' || typeof firebase === 'undefined' || !firebase.auth || !firebase.auth().currentUser || !firebase.auth().currentUser.getIdToken) {
+        throw new Error('server read unavailable');
+      }
+      const token = await firebase.auth().currentUser.getIdToken();
+      const url = databaseNodeRestUrl(path);
+      url.searchParams.set('auth', token);
+      const response = await fetch(url.toString());
+      if (!response.ok) throw new Error('server read failed');
+      return response.json();
+    }
+
+    // set() can be acknowledged while this client's cached once() still returns the previous quiz or exam.
+    // Confirm the saved id from the cache, the next listener event, or a direct server read.
+    function confirmSavedNode(path, accept, failMessage) {
+      const ref = dbRootRef.child(path);
+      const matches = (value) => {
+        try { return !!accept(value); } catch (err) { return false; }
+      };
+      return ref.once('value').then(snap => {
+        const cached = snap.val();
+        if (matches(cached)) return cached;
+        return new Promise((resolve, reject) => {
+          let settled = false;
+          const finish = (err, value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            try { ref.off('value', onValue); } catch (ignore) {}
+            if (err) reject(err);
+            else resolve(value);
+          };
+          const timer = setTimeout(() => finish(new Error(failMessage)), 2500);
+          const onValue = (next) => {
+            const live = next.val();
+            if (matches(live)) finish(null, live);
+          };
+          ref.on('value', onValue, (err) => finish(err || new Error(failMessage)));
+          const pull = (attempt) => {
+            readServerNode(path).then(server => {
+              if (matches(server)) finish(null, server);
+              else if (attempt < 2 && !settled) setTimeout(() => pull(attempt + 1), 300);
+            }).catch(() => {
+              if (attempt < 2 && !settled) setTimeout(() => pull(attempt + 1), 300);
+            });
+          };
+          pull(0);
+        });
+      });
+    }
+
     async function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
 
@@ -17995,9 +18056,8 @@ function teacherToggleClassSpy(studentId, event) {
         try { await publishLoginSession('teachers', currentUser.id, currentUser.authToken, teacher); } catch (err) {}
         try {
           await dbRootRef.child('activeQuiz').set(quizData);
-          const saved = await dbRootRef.child('activeQuiz').once('value');
-          const live = saved.val();
-          if (!live || !live.active || String(live.quizId) !== String(quizData.quizId)) throw new Error('the quiz was not saved');
+          const live = await confirmSavedNode('activeQuiz', (value) => value && value.active && String(value.quizId) === String(quizData.quizId), 'the quiz was not saved');
+          activeQuizInstance = live;
           const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒 (${timeLimitSec}s)` : '無限時間 (No Limit)';
           addBattleLog(`⚡ [LIVE QUIZ] 老師發布搶答 (${limitMsg}): "${q}"! 1st: +2 次攻擊, 2nd: +1 次攻擊, 3rd: +30 EXP, 其餘答對: +10 EXP!`, "evolution", targetClass);
           showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！ / Speed Quiz Launched!`, "evolution");
@@ -18433,11 +18493,13 @@ function teacherToggleClassSpy(studentId, event) {
 
       const submitTime = syncedNow();
       const timeString = serverClockText(true);
+      const answerQuizId = String((activeQuizInstance && activeQuizInstance.quizId) || '');
 
       // 使用 Firebase Transaction 決定搶答名次與核發獎勵
       if (dbRootRef) {
         dbRootRef.child('activeQuiz').transaction((cur) => {
           if (!cur || !cur.active) return;
+          if (answerQuizId && String(cur.quizId || '') !== answerQuizId) return;
           if (!cur.submissions) cur.submissions = {};
           if (cur.submissions[currentUser.id]) return cur;
           if (isTimeout && quizRemainingMs(cur) > 0) return;
@@ -18661,9 +18723,8 @@ function onExamTimePresetChange(val) {
     try { await publishLoginSession('teachers', currentUser.id, currentUser.authToken, teacher); } catch (err) {}
     try {
       await dbRootRef.child('activeExam').set(newExamPayload);
-      const saved = await dbRootRef.child('activeExam').once('value');
-      const live = saved.val();
-      if (!live || !live.isOpen || String(live.examId) !== String(examId)) throw new Error('the exam was not saved');
+      const liveExam = await confirmSavedNode('activeExam', (value) => value && value.isOpen && String(value.examId) === String(examId), 'the exam was not saved');
+      activeExamInstance = liveExam;
       playSound('evolve');
       addBattleLog(`📝 [EXAM LAUNCHED] 老師發布了考卷【${title}】(限時: ${durationMins} 分鐘，班級: ${targetClass})！`, "evolution", targetClass);
       showToast("考卷發布成功", `【${title}】已開考！時長：${durationMins} 分鐘`, "heal");
