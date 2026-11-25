@@ -1761,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.83";
+    const CURRENT_APP_VERSION = "2.7.86";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -6862,17 +6862,25 @@ const PASSWORD_KDF_ITERS = 40000;
           refreshCurrentView();
         });
         // 🔄 即時監聽伺服器強制更新信號（支援手機 App / PWA 背景喚醒）
-        const pageLaunchLocalMs = +new Date();
+        // The first snapshot is the broadcast already saved. An older page takes that
+        // newer version once. A later timestamp is a teacher press while this page is open.
+        let forceReloadSeenStamp = null;
         dbRootRef.child('systemSettings/forceReloadSignal').on('value', (snap) => {
           const signal = snap.val();
           if (!signal || !signal.timestamp) return;
-          // Only a broadcast that happens while this page is already open.
-          // An older saved version must not lock the login screen forever.
-          const openedAt = pageLaunchLocalMs + (firebaseServerTimeOffsetReady ? firebaseServerTimeOffset : 0);
-          if (Number(signal.timestamp) <= openedAt) return;
+          const stamp = Number(signal.timestamp);
           const isTeacherOrAdmin = currentUser && (currentUser.role === 'teacher' || currentUser.role === 'superadmin');
+          const serverVersion = signal.version || '';
+          const pageIsOlder = !!(serverVersion && compareVersions(CURRENT_APP_VERSION, serverVersion) < 0);
+          if (forceReloadSeenStamp == null) {
+            forceReloadSeenStamp = stamp;
+            if (pageIsOlder) triggerForceUpdateScreen(serverVersion, stamp);
+            return;
+          }
+          if (!stamp || stamp === forceReloadSeenStamp) return;
+          forceReloadSeenStamp = stamp;
           if (isTeacherOrAdmin) return;
-          triggerForceUpdateScreen(signal.version || CURRENT_APP_VERSION, signal.timestamp);
+          triggerForceUpdateScreen(serverVersion || CURRENT_APP_VERSION, stamp);
         });
         let forceLogoutReady = false;
         let seenForceLogoutStamp = null;
@@ -7904,25 +7912,36 @@ function worldRaidPlaceCard(raid, place, prize) {
   return '<article class="rounded-3xl border-2 ' + tone + ' p-4"><p class="text-sm font-black text-amber-200">第 ' + place + ' 名 / ' + place + '</p><p class="mt-1 break-words text-3xl font-black text-white">' + escapeHtml(ranked ? ranked.name : '—') + '</p><p class="mt-2 text-sm leading-relaxed text-slate-200">' + prize + '</p></article>';
 }
 
+function worldRaidOutcomeText(status) {
+  if (status === 'won') return '勝利。這次不發金幣、扭蛋券或迷宮券。排名只作顯示。 / Victory. No coins or tickets are given. The ranking is for display only.';
+  if (status === 'lost') return '失敗。這次不扣 HP，也不扣攻擊次數。 / Defeat. No HP or attacks are taken.';
+  return '全班畫面。學生正在各自的裝置答題，右邊排名會即時更新。 / Class screen. Students answer on their own devices. The ranking on the right updates live.';
+}
+
 function worldRaidEndingHtml(raid) {
   const back = currentUser && currentUser.role === 'teacher'
     ? '<button type="button" onclick="setTeacherWorldRaidScreen(false)" class="mt-4 min-h-12 rounded-xl border border-amber-300 bg-slate-800 px-4 text-sm font-black text-amber-100">回到老師介面 / Switch to teacher view</button>'
     : '';
+  const goal = Math.max(1, Number(raid && raid.goal) || 1);
+  const placeLine = (place) => {
+    const places = worldRaidPlacements(raid);
+    const id = Object.keys(places).find(key => places[key] === place);
+    const ranked = worldRaidRanking(raid).find(item => String(item.id).toLowerCase() === String(id || '').toLowerCase());
+    return worldRaidPlaceCard(raid, place, '傷害 Damage ' + (ranked ? worldRaidDamagePercent(ranked.damage, goal) : '0%'));
+  };
   if (raid.status === 'won') {
     return '<div class="flex min-h-full flex-col items-center bg-slate-950 px-4 py-6 text-center">'
       + '<img src="./images/Apocalymon_Win.png" alt="Apocalymon" class="max-h-[42vh] w-full object-contain object-top" onerror="this.remove()">'
       + '<h2 class="mt-3 text-4xl font-black text-amber-200">勝利 / Victory</h2>'
-      + '<p class="mt-2 text-xl font-black text-white">全班每人 300 金幣<br>Every student gains 300 coins</p>'
+      + '<p class="mt-2 text-xl font-black text-white">這次不發獎勵<br>No reward is given</p>'
       + '<div class="mt-4 grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-3">'
-      + worldRaidPlaceCard(raid, 1, '再 +1 扭蛋券、+1 迷宮券、+500 金幣<br>+1 gacha, +1 dungeon, +500 coins')
-      + worldRaidPlaceCard(raid, 2, '再 +1 扭蛋券、+500 金幣<br>+1 gacha, +500 coins')
-      + worldRaidPlaceCard(raid, 3, '再 +500 金幣<br>+500 coins')
+      + placeLine(1) + placeLine(2) + placeLine(3)
       + '</div>' + back + '</div>';
   }
   return '<div class="flex min-h-full flex-col items-center justify-center bg-slate-950 px-4 py-6 text-center">'
     + '<img src="./images/Apocalymon_Lose.png" alt="Apocalymon" class="max-h-[50vh] w-full object-contain object-top" onerror="this.remove()">'
     + '<h2 class="mt-3 text-4xl font-black text-rose-200">失敗 / Defeat</h2>'
-    + '<p class="mt-3 text-xl font-black text-white">每位參加者 -300 HP、-3 攻擊次數<br>Each participant loses 300 HP and 3 attacks</p>'
+    + '<p class="mt-3 text-xl font-black text-white">這次不扣 HP，也不扣攻擊次數<br>No HP or attacks are taken</p>'
     + back + '</div>';
 }
 
@@ -8187,11 +8206,7 @@ function paintWorldRaidOverlay() {
   const lower = (body) => stage + '<div class="min-h-0 overflow-y-auto space-y-3 p-4"><p class="text-xs text-amber-200">剩餘時間 / Time left <span id="worldRaidTimer" class="font-mono font-black">' + formatRaidClock(raid) + '</span></p>' + body + '</div>';
   const teacherSwitch = '<button id="btnWorldRaidTeacherBack" type="button" onclick="setTeacherWorldRaidScreen(false)" class="min-h-12 w-full rounded-xl border border-amber-300 bg-slate-800 text-sm font-black text-amber-100">回到老師介面 / Switch to teacher view</button>';
   if (teacherView) {
-    const banner = raid.status === 'won'
-      ? '勝利。全班每人 +300 金幣。傷害第 1 名再 +1 扭蛋券、+1 迷宮券、+500 金幣。第 2 名再 +1 扭蛋券、+500 金幣。第 3 名再 +500 金幣。 / Victory. Every student gains 300 coins. 1st damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. 2nd gets 1 gacha ticket and 500 coins. 3rd gets 500 coins.'
-      : (raid.status === 'lost'
-        ? '失敗。每位參加者 -300 HP、-3 攻擊次數。 / Defeat. Each participant loses 300 HP and 3 attacks.'
-        : '全班畫面。學生正在各自的裝置答題，右邊排名會即時更新。 / Class screen. Students answer on their own devices. The ranking on the right updates live.');
+    const banner = worldRaidOutcomeText(raid.status);
     const progress = '<p class="text-xs text-slate-300">答對 Correct ' + (Number(raid.correctTotal) || 0) + ' / ' + (Number(raid.goal) || 0) + '</p>';
     const hint = worldRaidSpotlightId ? '' : '<p class="text-[11px] text-slate-400">點右邊的名字，可以把那位學生的名字和分數放大顯示。 / Tap a name on the right to enlarge and highlight that student and their score.</p>';
     sheet.innerHTML = lower(worldRaidSpotlightHtml(raid) + '<p class="text-sm font-black text-amber-100">' + banner + '</p>' + progress + hint + (raid.status === 'live' ? worldRaidSkillControls() : '') + teacherSwitch);
@@ -8201,9 +8216,7 @@ function paintWorldRaidOverlay() {
     return;
   }
   if (raid.status === 'won' || raid.status === 'lost') {
-    const banner = raid.status === 'won'
-      ? '勝利。全班每人 +300 金幣。傷害第 1 名再 +1 扭蛋券、+1 迷宮券、+500 金幣。第 2 名再 +1 扭蛋券、+500 金幣。第 3 名再 +500 金幣。 / Victory. Every student gains 300 coins. 1st damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. 2nd gets 1 gacha ticket and 500 coins. 3rd gets 500 coins.'
-      : '失敗。每位參加者 -300 HP、-3 攻擊次數。 / Defeat. Each participant loses 300 HP and 3 attacks.';
+    const banner = worldRaidOutcomeText(raid.status);
     sheet.innerHTML = lower('<p class="text-sm font-black text-amber-100">' + banner + '</p><p class="text-[11px] text-slate-400">排名在右邊，老師結束事件前會一直留著，而且作答時就會即時更新。 / The ranking stays on the right, updates during the fight, and remains until the teacher ends the event.</p>');
   } else {
     const student = appData.students[currentUser.id] || { id: currentUser.id, name: currentUser.name };
@@ -8326,59 +8339,11 @@ function ensureWorldRaidQuestion(raid, student) {
   });
 }
 
-function applyWorldRaidStudentChange(studentId, mutator) {
-  if (!dbRootRef || !studentId) return;
-  const ref = dbRootRef.child('students/' + studentId);
-  let watched = (appData.students && appData.students[studentId]) || null;
-  const listener = ref.on('value', snap => {
-    const value = snap.val();
-    if (value) watched = value;
-  });
-  ref.transaction(cur => {
-    const base = cur || watched;
-    if (!base || typeof base !== 'object') return;
-    const next = Object.assign({}, base);
-    mutator(next);
-    return next;
-  }, () => {
-    try { ref.off('value', listener); } catch (ignore) {}
-  }, false);
-}
-
 function applyWorldRaidPayout(raid) {
   const won = raid.status === 'won';
-  const places = won ? worldRaidPlacements(raid) : {};
-  worldRaidParticipants(raid).forEach(student => {
-    const place = places[student.id] || 0;
-    applyWorldRaidStudentChange(student.id, next => {
-      next.raidRewardKey = String(raid.classKey || dungeonQuestionKey(raid.classId) || '');
-      next.raidRewardId = Number(raid.startedAt) || 0;
-      if (won) {
-        next.coins = Math.max(0, (Number(next.coins) || 0) + 300);
-        if (place === 1) {
-          next.coins += 500;
-          next.gachaTickets = Math.max(0, (Number(next.gachaTickets) || 0) + 1);
-          next.dungeonTickets = Math.max(0, (Number(next.dungeonTickets) || 0) + 1);
-        } else if (place === 2) {
-          next.coins += 500;
-          next.gachaTickets = Math.max(0, (Number(next.gachaTickets) || 0) + 1);
-        } else if (place === 3) {
-          next.coins += 500;
-        }
-      } else {
-        next.hp = Math.max(0, (Number(next.hp) || 0) - 300);
-        if (next.hp <= 0) {
-          next.isFainted = true;
-          delete next.reviveQuizPending;
-          delete next.reviveQuizClosed;
-        }
-        next.attackQuota = Math.max(0, (Number(next.attackQuota) || 0) - 3);
-      }
-    });
-  });
   addBattleLog(won
-    ? '👹 [WORLD RAID] ' + raid.classId + ' defeated Apocalymon. Each student gained 300 coins. Top damage earned the extra prizes.'
-    : '👹 [WORLD RAID] ' + raid.classId + ' lost to Apocalymon. Each student lost 300 HP and 3 attacks.',
+    ? '👹 [WORLD RAID] ' + raid.classId + ' defeated Apocalymon. No coins or tickets were given.'
+    : '👹 [WORLD RAID] ' + raid.classId + ' lost to Apocalymon. No HP or attacks were taken.',
     won ? 'heal' : 'battle', raid.classId);
 }
 
@@ -11100,7 +11065,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.83</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v${CURRENT_APP_VERSION}</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -11399,9 +11364,9 @@ function getTeacherTemplate() {
               <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">Class: All</span>
               <label class="flex items-center gap-1.5 text-[11px] text-amber-200 font-mono">
                 <span>秒數</span>
-                <input id="teacherQuizTimeLimitInput" type="number" min="0" max="600" step="1" inputmode="numeric" value="30" class="w-20 bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
-                <span>0＝不限時</span>
+                <input id="teacherQuizTimeLimitInput" type="number" min="0" max="600" step="1" inputmode="numeric" value="30" oninput="syncTeacherQuizFreeTime()" class="w-20 bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
               </label>
+              <button type="button" id="teacherQuizFreeTime" onclick="setTeacherQuizFreeTime()" class="min-h-9 px-2.5 rounded-lg border border-amber-500/60 bg-slate-900 text-[11px] font-black text-amber-200">不限時 / Free time</button>
             </div>
             <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer">即刻發布搶答</button>
           </div>
@@ -11665,7 +11630,7 @@ function getTeacherTemplate() {
     <div id="teacherSubViewRaid" class="space-y-6 hidden">
       <section class="rounded-2xl border border-rose-500/50 bg-slate-950/80 p-4 space-y-3">
         <div class="text-sm font-black uppercase tracking-wider text-rose-200">世界首領戰 / World Raid Event</div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 10 次，首領回復 10% HP，老師獲得 1 次技能。黑暗領域會讓接下來 3 題先顯示 3 秒再把題目變黑，只留下答案。死亡進化會凍結全班 10 秒。回復會讓首領直接回復 20% HP。勝負會顯示全螢幕結算。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利時全班每人 300 金幣。傷害第 1 名再得 1 張扭蛋券、1 張迷宮券和 500 金幣；第 2 名再得 1 張扭蛋券和 500 金幣；第 3 名再得 500 金幣。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解、H 圖片或 PDF 路徑（可留空，有路徑就顯示在題目上面，電腦用滾輪、平板和手機用雙指放大縮小，放大後可以滑動，螢光筆是透明的）。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 10 wrong answers from the class restore 10% of the boss HP and give the teacher one skill use. Darkness Zone shows the next 3 questions for 3 seconds, then blacks out the question and leaves the answers. Death Evolution freezes the class for 10 seconds. Recover restores 20% HP immediately. Win and loss open a full-screen ending. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win pays every student 300 coins. The highest damage also gets 1 gacha ticket, 1 dungeon ticket, and 500 coins. Second gets 1 gacha ticket and 500 coins. Third gets 500 coins. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation, H picture path. A path in H shows the picture above the question. A blank H shows the question only.</p>
+        <p class="text-[11px] text-slate-400 leading-relaxed">老師發起後，Apocalymon 會成為這個班的世界首領。全班一起答題，每答對一題首領 HP 就減 1。學生畫面右邊會即時顯示排名、首領剩餘 HP 百分比，以及每人造成的傷害百分比。發起後老師也會看到同一畫面，可以切回老師介面，再按顯示全班畫面。答錯的人 30 秒不能作答。全班合共每答錯 10 次，首領回復 10% HP，老師獲得 1 次技能。黑暗領域會讓接下來 3 題先顯示 3 秒再把題目變黑，只留下答案。死亡進化會凍結全班 10 秒。回復會讓首領直接回復 20% HP。勝負會顯示全螢幕結算。老師可以點排名裡的一個名字，把那位學生的名字和分數放大顯示。勝利或失敗都不會改變金幣、扭蛋券、迷宮券、HP 或攻擊次數。Excel 欄位跟考卷一樣：A 題目、B 正確答案、C-E 錯誤答案、F 題型（選擇題留空或填 MC，填空填 fill）、G 題解、H 圖片或 PDF 路徑（可留空，有路徑就顯示在題目上面，電腦用滾輪、平板和手機用雙指放大縮小，放大後可以滑動，螢光筆是透明的）。<br>After the teacher starts it, Apocalymon is this class's world boss. The class answers together. Each correct answer removes 1 HP. The right side of every student screen shows the live ranking, the boss HP percentage, and each student's damage percentage. A wrong answer locks that student for 30 seconds. Every 10 wrong answers from the class restore 10% of the boss HP and give the teacher one skill use. Darkness Zone shows the next 3 questions for 3 seconds, then blacks out the question and leaves the answers. Death Evolution freezes the class for 10 seconds. Recover restores 20% HP immediately. Win and loss open a full-screen ending. The teacher can tap a ranking name to enlarge and highlight that student and their score. A win or a loss does not change coins, tickets, HP, or attacks. The Excel columns match the exam file: A question, B correct answer, C-E wrong answers, F type (blank or MC, or fill), G explanation, H picture path. A path in H shows the picture above the question. A blank H shows the question only.</p>
         <div class="flex flex-wrap items-center gap-2">
           <label for="worldRaidExcelInput" class="cursor-pointer min-h-11 px-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-100 text-xs font-black flex items-center">匯入題目 / Import Excel</label>
           <input id="worldRaidExcelInput" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="handleWorldRaidExcelImport(event)" class="hidden">
@@ -18127,6 +18092,26 @@ function teacherToggleClassSpy(studentId, event) {
       return !!(firebaseServerTimeOffsetReady && Number.isFinite(start) && start > 0);
     }
 
+    function syncTeacherQuizFreeTime() {
+      const input = document.getElementById('teacherQuizTimeLimitInput');
+      const button = document.getElementById('teacherQuizFreeTime');
+      if (!button) return;
+      const free = String(input && input.value != null ? input.value : '').trim() === '0';
+      button.dataset.on = free ? '1' : '0';
+      button.classList.toggle('bg-amber-400', free);
+      button.classList.toggle('text-slate-950', free);
+      button.classList.toggle('bg-slate-900', !free);
+      button.classList.toggle('text-amber-200', !free);
+    }
+
+    function setTeacherQuizFreeTime() {
+      const input = document.getElementById('teacherQuizTimeLimitInput');
+      const button = document.getElementById('teacherQuizFreeTime');
+      const turningOn = !(button && button.dataset.on === '1');
+      if (input) input.value = turningOn ? '0' : '30';
+      syncTeacherQuizFreeTime();
+    }
+
     function readQuizTimeLimitSeconds(raw) {
       const text = String(raw == null ? '' : raw).trim();
       if (!/^\d+$/.test(text)) return null;
@@ -18215,7 +18200,7 @@ function teacherToggleClassSpy(studentId, event) {
       const timeLimitInput = document.getElementById('teacherQuizTimeLimitInput');
       const timeLimitSec = readQuizTimeLimitSeconds(timeLimitInput ? timeLimitInput.value : '');
       if (timeLimitSec == null) {
-        return alert('請填寫秒數，0 到 600。0 代表不限時。 / Type the seconds from 0 to 600. 0 means no limit.');
+        return alert('請填寫秒數，0 到 600，或按不限時。 / Type the seconds from 0 to 600, or press Free time.');
       }
 
       if (!q || !correct) {
@@ -18544,7 +18529,7 @@ function teacherToggleClassSpy(studentId, event) {
           timerBadge.classList.remove('hidden');
           timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-bold flex items-center gap-1.5";
         }
-        if (timerSecText) timerSecText.innerHTML = '<i class="fa-solid fa-infinity"></i> 無限時間';
+        if (timerSecText) timerSecText.innerHTML = '<i class="fa-solid fa-infinity"></i> 不限時 / Free time';
         return;
       }
       if (barWrapper) barWrapper.classList.remove('hidden');
@@ -18848,6 +18833,7 @@ function teacherToggleClassSpy(studentId, event) {
           playSound('attack');
           showToast("回答錯誤", "下次再接再厲！", "damage");
         }
+        updateStudentUI();
         renderQuizModalForStudent();
       }, false);
     }
@@ -19127,7 +19113,7 @@ function onStudentExamStateSync() {
   if (mySubmission) {
     studentHasSubmittedCurrentExam = true;
     if (!modal.classList.contains('hidden') && (currentExamSessionId === activeExamInstance.examId || currentExamSessionId === activeExamInstance.sessionId)) {
-      renderStudentExamResultUI(mySubmission);
+      renderStudentExamResultView(mySubmission);
     }
     return;
   }
@@ -19644,6 +19630,7 @@ function startStudentExamTimer() {
       playSound('evolve');
       addBattleLog(`🎓 [EXAM SUBMIT] ${submissionData.studentName} 完成並繳交考卷，成績: ${correctCount}/${totalQ} (${scorePct}%)，獲得 +${expReward} EXP 及 +${coinReward} 金幣！`, "evolution", st ? st.classId : 'ALL');
       if (scorePct >= 80) grantTerritoryNodePoints(st, examClass, 50, 'EXAM');
+      updateStudentUI();
       renderStudentExamResultView(submissionData);
     }).catch(err => {
       isExamSubmitting = false;
