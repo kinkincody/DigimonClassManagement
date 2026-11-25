@@ -215,6 +215,10 @@
     }
     #deathScreenOverlay { z-index: 99999; }
     #modalWorldRaid { z-index: 100018; }
+    #modalWorldRaid #worldRaidSheet { grid-template-rows: minmax(9rem, 34%) minmax(0, 1fr); }
+    #modalWorldRaid #worldRaidChoices button,
+    #modalWorldRaid #worldRaidFill { touch-action: manipulation; }
+    #worldRaidSheet .question-media-stage { max-height: min(30vh, 240px); }
     @keyframes worldRaidFadeOut { from { opacity: 1; } to { opacity: 0; } }
     .world-raid-fade { animation: worldRaidFadeOut 3s linear forwards; }
     #modalReviveQuiz { z-index: 100040; }
@@ -1757,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.80";
+    const CURRENT_APP_VERSION = "2.7.83";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4870,6 +4874,8 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
       });
     }
     let quizSeenAnchor = null;
+    let quizOptionStamp = '';
+    let quizAnswerInFlight = false;
     // 老師端答案隱藏/顯示控制旗標（true = 遮蔽答案以防課堂抄襲，false = 顯示）
     let isQuizAnswerHiddenByTeacher = true;
 
@@ -6683,6 +6689,7 @@ const PASSWORD_KDF_ITERS = 40000;
             }
           });
           applyPendingFactionWrites(cleanStudents);
+          keepHeldStudentWrite(cleanStudents);
           appData.students = cleanStudents;
           absorbPasswordSnapshot('students', val);
           const liveTest = readTeacherTest();
@@ -7053,6 +7060,7 @@ function sanitizeClassKey(cls) {
         examStudentCountdownTimer = null;
       }
       if (typeof isQuizTimeoutSubmitting !== 'undefined') isQuizTimeoutSubmitting = false;
+      if (typeof quizAnswerInFlight !== 'undefined') quizAnswerInFlight = false;
       ['modalQuizOverlay', 'modalExamStudent', 'modalDailyTrial', 'modalReviveQuiz', 'modalWorldRaid', 'modalCounterAttack', 'modalPvpTargetPicker', 'modalShop', 'modalItemBag', 'modalGacha', 'modalEvoTree', 'modalLeaderboard', 'modalFactionWar', 'modalFactionBuffGuide', 'modalDigiDex', 'modalStudentPassword', 'evoCutsceneOverlay'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -7655,22 +7663,68 @@ function raidScoreKey(scores, studentId) {
   return found || String(studentId || '');
 }
 
-function reduceWorldRaidAnswer(raid, student, submission, now) {
+function worldRaidRandomIndex(length, avoid) {
+  const count = Number(length) || 0;
+  if (count <= 1) return 0;
+  const skip = Number.isInteger(avoid) && avoid >= 0 && avoid < count ? avoid : -1;
+  let index = Math.floor(Math.random() * (skip < 0 ? count : count - 1));
+  if (skip >= 0 && index >= skip) index += 1;
+  return index;
+}
+
+function worldRaidQuestionIndex(row, length) {
+  const index = Number(row && row.questionIndex);
+  if (!Number.isInteger(index) || index < 0 || index >= length) return -1;
+  return index;
+}
+
+function worldRaidStorageKey(raid) {
+  if (!raid) return '';
+  const raids = appData.worldRaids || {};
+  const marked = String(raid.classKey || '');
+  if (marked && raids[marked]) return marked;
+  const started = Number(raid.startedAt) || 0;
+  const found = Object.keys(raids).find(key => {
+    const item = raids[key];
+    return item === raid || (item && started && Number(item.startedAt) === started && item.classId === raid.classId);
+  });
+  return found || marked || dungeonQuestionKey(raid.classId);
+}
+
+function rememberWorldRaid(classKey, snap) {
+  const saved = snap && typeof snap.val === 'function' ? snap.val() : null;
+  if (!classKey || !saved) return null;
+  if (!appData.worldRaids) appData.worldRaids = {};
+  appData.worldRaids[classKey] = saved;
+  return saved;
+}
+
+function blankWorldRaidScore(name, key) {
+  return { name: name || key, correct: 0, wrong: 0, answered: 0, damage: 0, lockUntil: 0, cursor: 0, joined: true };
+}
+
+function reduceWorldRaidAnswer(raid, student, submission, now, nextIndex) {
   if (!raid || raid.status !== 'live' || !student) return null;
   const next = JSON.parse(JSON.stringify(raid));
   const questions = raidQuestionList(next.questions);
   if (!questions.length) return null;
-  next.questions = questions;
   if (!next.scores || typeof next.scores !== 'object' || Array.isArray(next.scores)) next.scores = {};
   const key = raidScoreKey(next.scores, student.id);
-  const row = Object.assign({ name: student.name || key, correct: 0, wrong: 0, answered: 0, damage: 0, lockUntil: 0, cursor: 0, joined: true }, next.scores[key] || {});
+  const row = Object.assign(blankWorldRaidScore(student.name, key), next.scores[key] || {});
   if (Number(row.lockUntil) > now) return null;
-  const question = questions[Number(row.cursor || 0) % questions.length];
+  const index = worldRaidQuestionIndex(row, questions.length);
+  if (index < 0) return null;
+  const question = questions[index];
   const right = raidAnswerMatches(question, submission);
   row.answered = (Number(row.answered) || 0) + 1;
   row.cursor = (Number(row.cursor) || 0) + 1;
   row.joined = true;
   row.name = student.name || row.name || key;
+  let upcoming = Number(nextIndex);
+  if (!Number.isInteger(upcoming) || upcoming < 0 || upcoming >= questions.length || (questions.length > 1 && upcoming === index)) {
+    upcoming = worldRaidRandomIndex(questions.length, index);
+  }
+  row.questionIndex = upcoming;
   if (right) {
     row.correct = (Number(row.correct) || 0) + 1;
     row.damage = (Number(row.damage) || 0) + 1;
@@ -7834,8 +7888,9 @@ function worldRaidViewKey(raid, studentId) {
   const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, studentId)]) || {};
   const locked = raid.status === 'live' && Number(row.lockUntil) > syncedNow();
   const questions = raidQuestionList(raid.questions);
-  const question = questions.length ? questions[Number(row.cursor || 0) % questions.length] : null;
-  return [raid.status, raid.classKey, row.cursor || 0, locked ? 'L' : 'O', question ? question.question : '', question && question.image ? question.image : '', raid.rewardsApplied ? 1 : 0, worldRaidMomentKey(raid)].join('|');
+  const index = worldRaidQuestionIndex(row, questions.length);
+  const question = index >= 0 ? questions[index] : null;
+  return [raid.status, raid.classKey, index, locked ? 'L' : 'O', question ? question.question : '', question && question.image ? question.image : '', raid.rewardsApplied ? 1 : 0, worldRaidMomentKey(raid)].join('|');
 }
 
 let worldRaidBlackoutMark = '';
@@ -8093,6 +8148,10 @@ function paintWorldRaidNumbers() {
     }
   }
   paintWorldRaidSide(raid);
+  if (currentUser && currentUser.role === 'student' && raid.status === 'live') {
+    const student = appData.students && appData.students[currentUser.id];
+    if (student) ensureWorldRaidQuestion(raid, student);
+  }
 }
 
 function paintWorldRaidOverlay() {
@@ -8153,23 +8212,29 @@ function paintWorldRaidOverlay() {
       sheet.innerHTML = lower('<p class="text-center text-sm font-black text-rose-200">答錯了。30 秒內不能作答。題目先收起，剩下首領 HP。右邊的排名仍會更新。 / Wrong answer. You cannot answer for 30 seconds. The question is hidden and the boss HP stays. The ranking on the right keeps updating.</p><p class="text-center font-mono text-2xl text-amber-200"><span id="worldRaidLockLeft">' + Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)) + '</span>s</p>');
     } else {
       const questions = raidQuestionList(raid.questions);
-      const question = questions[Number(row.cursor || 0) % questions.length];
-      let answerBox = '';
-      if (question && question.type === 'FILL') {
-        answerBox = '<form class="flex gap-2" onsubmit="event.preventDefault(); submitWorldRaidFill();"><input id="worldRaidFill" class="flex-1 min-h-12 rounded-xl bg-slate-900 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button></form>';
-      }
-      sheet.innerHTML = lower('<div id="worldRaidQuestion" class="min-h-12 rounded-xl px-2 text-base font-black leading-snug">' + questionMediaHtml(question && question.image) + '<p class="quiz-answer-copy leading-snug">' + escapeHtml(question ? question.question : '') + '</p></div><div id="worldRaidChoices" class="grid grid-cols-1 gap-2"></div>' + answerBox);
-      mountQuestionMedia(sheet);
-      if (question && question.type !== 'FILL') {
-        const choices = document.getElementById('worldRaidChoices');
-        (question.options || []).forEach(option => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'min-h-12 h-auto rounded-xl border border-cyan-600 bg-slate-900 px-3 text-left font-bold whitespace-normal quiz-answer-copy';
-          button.textContent = option;
-          button.onclick = () => submitWorldRaidAnswer(option);
-          choices.appendChild(button);
-        });
+      const index = worldRaidQuestionIndex(row, questions.length);
+      const question = index >= 0 ? questions[index] : null;
+      if (!question) {
+        sheet.innerHTML = lower('<p class="text-center text-sm font-black text-amber-100">正在從題庫抽出題目… / Drawing a question from the bank…</p>');
+        ensureWorldRaidQuestion(raid, student);
+      } else {
+        const fill = question.type === 'FILL' || !(question.options || []).length;
+        const answerBox = fill
+          ? '<form class="flex gap-2" onsubmit="event.preventDefault(); submitWorldRaidFill();"><input id="worldRaidFill" class="flex-1 min-h-12 rounded-xl bg-slate-900 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-3 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button></form>'
+          : '';
+        sheet.innerHTML = lower('<div id="worldRaidQuestion" class="min-h-12 rounded-xl px-2 text-base font-black leading-snug">' + questionMediaHtml(question.image) + '<p class="quiz-answer-copy leading-snug">' + escapeHtml(question.question) + '</p></div><div id="worldRaidChoices" class="relative z-10 grid grid-cols-1 gap-2"></div>' + answerBox);
+        mountQuestionMedia(sheet);
+        if (!fill) {
+          const choices = document.getElementById('worldRaidChoices');
+          (question.options || []).forEach(option => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'min-h-12 h-auto rounded-xl border border-cyan-600 bg-slate-900 px-3 text-left font-bold whitespace-normal quiz-answer-copy touch-manipulation';
+            button.textContent = option;
+            button.onclick = () => submitWorldRaidAnswer(option);
+            if (choices) choices.appendChild(button);
+          });
+        }
       }
     }
   }
@@ -8211,23 +8276,54 @@ function raidTransaction(classKey, mutator, done) {
     return;
   }
   const ref = dbRootRef.child('systemSettings/worldRaids/' + classKey);
-  let watched = (appData.worldRaids && appData.worldRaids[classKey]) || null;
-  const listener = ref.on('value', snap => {
-    const value = snap.val();
-    if (value) watched = value;
-  });
   ref.transaction(cur => {
-    const base = cur || watched;
-    if (!base || typeof base !== 'object') return;
+    if (cur == null) return cur;
+    if (typeof cur !== 'object') return;
     let draft;
-    try { draft = JSON.parse(JSON.stringify(base)); } catch (err) { return; }
+    try { draft = JSON.parse(JSON.stringify(cur)); } catch (err) { return; }
     const result = mutator(draft);
     if (!result || typeof result !== 'object') return;
     return result;
   }, (err, committed, snap) => {
-    try { ref.off('value', listener); } catch (ignore) {}
     if (done) done(err, committed, snap);
   }, false);
+}
+
+let worldRaidDrawToken = '';
+
+function ensureWorldRaidQuestion(raid, student) {
+  const questions = raidQuestionList(raid && raid.questions);
+  if (!questions.length || !student || !student.id || worldRaidBusy) return;
+  const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, student.id)]) || {};
+  if (worldRaidQuestionIndex(row, questions.length) >= 0) return;
+  if (Number(row.lockUntil) > syncedNow()) return;
+  const storageKey = worldRaidStorageKey(raid);
+  if (!storageKey) return;
+  const token = storageKey + ':' + student.id + ':' + questions.length;
+  if (worldRaidDrawToken === token) return;
+  worldRaidDrawToken = token;
+  const pick = worldRaidRandomIndex(questions.length, -1);
+  raidTransaction(storageKey, cur => {
+    if (!cur || cur.status !== 'live') return null;
+    const list = raidQuestionList(cur.questions);
+    if (!list.length) return null;
+    const next = JSON.parse(JSON.stringify(cur));
+    if (!next.scores || typeof next.scores !== 'object' || Array.isArray(next.scores)) next.scores = {};
+    const key = raidScoreKey(next.scores, student.id);
+    const existing = Object.assign(blankWorldRaidScore(student.name, key), next.scores[key] || {});
+    if (worldRaidQuestionIndex(existing, list.length) >= 0) return null;
+    existing.questionIndex = pick >= 0 && pick < list.length ? pick : 0;
+    existing.name = student.name || existing.name || key;
+    existing.joined = true;
+    next.scores[key] = existing;
+    return next;
+  }, (err, committed, snap) => {
+    if (worldRaidDrawToken === token) worldRaidDrawToken = '';
+    if (!committed) return;
+    rememberWorldRaid(storageKey, snap);
+    worldRaidPaintKey = '';
+    paintWorldRaidOverlay();
+  });
 }
 
 function applyWorldRaidStudentChange(studentId, mutator) {
@@ -8336,12 +8432,29 @@ function submitWorldRaidAnswer(text) {
   const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, student.id)]) || {};
   if (Number(row.lockUntil) > syncedNow()) return;
   if (raid.skillPopup && raid.skillPopup.img && syncedNow() < (Number(raid.skillPopup.at) || 0) + (Number(raid.skillPopup.ms) || 0)) return;
+  const questions = raidQuestionList(raid.questions);
+  const index = worldRaidQuestionIndex(row, questions.length);
+  if (index < 0) {
+    ensureWorldRaidQuestion(raid, student);
+    return;
+  }
   worldRaidBusy = true;
   const now = syncedNow();
-  raidTransaction(raid.classKey, cur => reduceWorldRaidAnswer(cur, student, text, now), (err, committed, snap) => {
+  const nextIndex = worldRaidRandomIndex(questions.length, index);
+  const storageKey = worldRaidStorageKey(raid);
+  raidTransaction(storageKey, cur => reduceWorldRaidAnswer(cur, student, text, now, nextIndex), (err, committed, snap) => {
     worldRaidBusy = false;
     worldRaidPaintKey = '';
-    if (committed && snap && snap.val() && snap.val().status === 'won') claimWorldRaidRewards(snap.val());
+    const saved = committed ? rememberWorldRaid(storageKey, snap) : null;
+    if (saved && saved.status === 'won') claimWorldRaidRewards(saved);
+    const mine = saved && saved.scores ? saved.scores[raidScoreKey(saved.scores, student.id)] : null;
+    if (mine && Number(mine.lockUntil) > now) {
+      if (typeof showToast === 'function') showToast('答錯了 / Wrong', '30 秒後會換下一題。 / The next question opens in 30 seconds.', 'damage');
+    } else if (saved) {
+      if (typeof showToast === 'function') showToast('答對了 / Correct', '已從題庫抽出下一題。 / The next question was drawn from the bank.', 'heal');
+    } else if (typeof showToast === 'function') {
+      showToast('答案沒有送出 / Not received', '請再按一次答案。 / Tap the answer again.', 'damage');
+    }
     paintWorldRaidOverlay();
   });
 }
@@ -10987,7 +11100,7 @@ function getTeacherTemplate() {
           </div>
           <div class="pair-grid min-w-0">
             <button onclick="teacherBroadcastLatestVersion()" class="pair-btn bg-cyan-950 border border-cyan-500 text-cyan-300 active:scale-95" title="強制全班學生瀏覽器重新整理至最新版本 / Force every student browser to reload">
-              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.80</span></span><small>Update</small>
+              <span><i class="fa-solid fa-cloud-arrow-up"></i> 強制更新 <span class="app-version-badge font-mono">v2.7.83</span></span><small>Update</small>
             </button>
             <button id="btnToggleStealthMode" onclick="toggleTeacherStealthMode()" class="pair-btn bg-slate-800 border border-slate-600 text-slate-300 active:scale-95">
               <span><i class="fa-solid fa-user-ninja"></i> 隱藏模式</span><small id="lblStealthMode">關閉 / Off</small>
@@ -11284,13 +11397,11 @@ function getTeacherTemplate() {
           <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
             <div class="flex items-center gap-3">
               <span id="teacherQuizTargetClassBadge" class="text-xs px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-600 text-amber-300 font-mono font-bold">Class: All</span>
-              <select id="teacherQuizTimeLimitSelect" class="bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
-  <option value="15">15 秒 (15s)</option>
-  <option value="30" selected>30 秒 (30s)</option>
-  <option value="60">60 秒 (60s)</option>
-  <option value="90">90 秒 (90s)</option>
-  <option value="0">無限時間 (No Limit)</option>
-</select>
+              <label class="flex items-center gap-1.5 text-[11px] text-amber-200 font-mono">
+                <span>秒數</span>
+                <input id="teacherQuizTimeLimitInput" type="number" min="0" max="600" step="1" inputmode="numeric" value="30" class="w-20 bg-slate-900 border border-amber-500/60 rounded-lg px-2.5 py-1 text-xs text-amber-200 font-mono outline-none">
+                <span>0＝不限時</span>
+              </label>
             </div>
             <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer">即刻發布搶答</button>
           </div>
@@ -13829,6 +13940,62 @@ else if (mode === 'pvp') {
     let reviveQuizCommitDepth = 0;
     let heldReviveQuiz = null;
     let reviveQuizForceRender = false;
+    let studentWriteGuard = null;
+
+    function holdStudentWrite(student, expect) {
+      if (!student || !student.id) return;
+      studentWriteGuard = {
+        id: String(student.id),
+        student: student,
+        expect: expect || {},
+        until: syncedNow() + 8000
+      };
+    }
+
+    function studentWriteLanded(row, expect) {
+      if (!row || !expect) return false;
+      if (expect.revived && ((Number(row.hp) <= 0) || row.isFainted)) return false;
+      if (expect.reviveUsed != null) {
+        if (expect.reviveDay && String(row.reviveDailyDay || '') !== expect.reviveDay) return false;
+        if ((Number(row.reviveDailyUsed) || 0) < expect.reviveUsed) return false;
+      }
+      if (expect.reviveQuestion) {
+        const pending = row.reviveQuizPending;
+        if (!pending || String(pending.question || '') !== expect.reviveQuestion) return false;
+      }
+      if (expect.reviveClosed && row.reviveQuizPending && row.reviveQuizPending.question && !row.reviveQuizClosed) return false;
+      if (expect.trialUsed != null) {
+        if (expect.trialDay && String(row.dailyTrialDay || '') !== expect.trialDay) return false;
+        if ((Number(row.dailyTrialUsed) || 0) < expect.trialUsed) return false;
+      }
+      if (expect.trialQuestion) {
+        const open = row.dailyTrialOpen;
+        if (!open || String(open.question || '') !== expect.trialQuestion) return false;
+      }
+      if (expect.trialReset) {
+        if (expect.trialDay && String(row.dailyTrialDay || '') !== expect.trialDay) return false;
+        if ((Number(row.dailyTrialUsed) || 0) !== 0) return false;
+        if (row.dailyTrialOpen && row.dailyTrialOpen.question) return false;
+      }
+      if (expect.trialClosed && row.dailyTrialOpen && row.dailyTrialOpen.question && (!expect.trialDay || String(row.dailyTrialDay || '') === expect.trialDay)) return false;
+      return true;
+    }
+
+    function keepHeldStudentWrite(cleanStudents) {
+      const hold = studentWriteGuard;
+      if (!hold || !cleanStudents) return;
+      if (syncedNow() > hold.until) {
+        studentWriteGuard = null;
+        return;
+      }
+      const incoming = cleanStudents[hold.id];
+      if (!incoming) return;
+      if (studentWriteLanded(incoming, hold.expect)) {
+        studentWriteGuard = null;
+        return;
+      }
+      cleanStudents[hold.id] = hold.student;
+    }
 
     function autoReviveItemCount(student) {
       const inv = student && student.inventory;
@@ -14442,11 +14609,12 @@ function publishEvoEdges() {
       paintReviveAnswerStatus('正在核對這個答案… / Checking this answer…');
       const className = pending.className || st.classId;
       reviveQuizCommitDepth++;
-      let settled = false;
+      let revivePhase = '';
 
       const finish = (student, outcome, committed, denied) => {
-        if (settled) return;
-        settled = true;
+        if (revivePhase === 'saved') return;
+        if (revivePhase && !committed) return;
+        revivePhase = committed && outcome ? 'saved' : 'failed';
         clearTimeout(slowTimer);
         reviveQuizCommitDepth = 0;
         if (!committed || !outcome) {
@@ -14499,21 +14667,18 @@ function publishEvoEdges() {
           updates[base + 'killedByName'] = null;
           updates[base + 'killedById'] = null;
         }
-        dbRootRef.update(updates).then(() => dbRootRef.child('students/' + studentSaveKey(st)).once('value')).then(snap => {
-          const norm = rememberReviveQuizStudent(st.id, snap.val()) || st;
+        dbRootRef.update(updates).then(() => {
+          const norm = rememberReviveQuizStudent(st.id, draft) || st;
           if (norm.reviveQuizPending && norm.reviveQuizPending.question) heldReviveQuiz = { studentId: String(st.id), pending: normalizeRevivePending(norm.reviveQuizPending) };
           else heldReviveQuiz = null;
-          const stillDown = !!(norm.isFainted || Number(norm.hp) <= 0);
-          const hasNext = !!(norm.reviveQuizPending && norm.reviveQuizPending.question);
-          if (outcome.correct && stillDown) throw new Error('revive was not saved');
-          if (!outcome.blocked && !outcome.correct && Number(norm.reviveDailyUsed) < Number(draft.reviveDailyUsed)) throw new Error('revive answer was not saved');
-          finish(norm, {
-            correct: !stillDown,
-            used: reviveDailyUsed(norm),
-            blocked: stillDown && !hasNext && !!norm.reviveQuizClosed && reviveDailyUsed(norm) >= REVIVE_QUIZ_QUOTA,
-            continued: stillDown && hasNext && !norm.reviveQuizClosed,
-            className: className
-          }, true);
+          holdStudentWrite(norm, {
+            revived: !!outcome.correct,
+            reviveUsed: outcome.blocked ? null : outcome.used,
+            reviveDay: outcome.blocked ? '' : String(draft.reviveDailyDay || ''),
+            reviveQuestion: outcome.continued && norm.reviveQuizPending ? String(norm.reviveQuizPending.question) : '',
+            reviveClosed: !outcome.correct && !outcome.continued
+          });
+          finish(norm, outcome, true);
         }).catch(err => {
           const text = String((err && (err.code || err.message)) || err || '');
           finish(st, null, false, text.toLowerCase().indexOf('permission') >= 0);
@@ -14525,8 +14690,8 @@ function publishEvoEdges() {
           saveOutcome(st);
           return;
         }
-        dbRootRef.child('students/' + studentSaveKey(st)).once('value').then(snap => {
-          const raw = snap.val() || {};
+        readFreshNode('students/' + studentSaveKey(st)).then(rawValue => {
+          const raw = rawValue || {};
           const serverHp = (raw.hp !== undefined && raw.hp !== null) ? Number(raw.hp) : Number(st.hp);
           const serverDown = !(serverHp > 0) || !!raw.isFainted;
           if (!serverDown) {
@@ -14535,7 +14700,7 @@ function publishEvoEdges() {
             paintReviveAnswerStatus(message);
             showToast('已經復活 / Already Revived', message, 'heal');
             reviveQuizCommitDepth = 0;
-            settled = true;
+            revivePhase = 'saved';
             clearTimeout(slowTimer);
             updateStudentUI();
             return;
@@ -14959,8 +15124,14 @@ function publishEvoEdges() {
       const giveUp = document.getElementById('btnDailyTrialGiveUp');
       if (giveUp) giveUp.disabled = true;
       dailyTrialCommitDepth++;
+      let trialPhase = '';
+      let slowTimer = null;
 
       const finish = (student, outcome, committed) => {
+        if (trialPhase === 'saved') return;
+        if (trialPhase === 'failed' && !committed) return;
+        trialPhase = committed && outcome ? 'saved' : 'failed';
+        clearTimeout(slowTimer);
         dailyTrialCommitDepth = 0;
         if (giveUp) giveUp.disabled = false;
         if (!committed || !outcome) {
@@ -14993,13 +15164,21 @@ function publishEvoEdges() {
       }
 
       const base = 'students/' + studentSaveKey(st) + '/';
-      dbRootRef.child('students/' + studentSaveKey(st)).once('value').then(snap => {
-        const cur = snap.val();
+      slowTimer = setTimeout(() => finish(appData.students[st.id] || st, null, false), 12000);
+      readFreshNode('students/' + studentSaveKey(st)).then(cur => {
         if (!cur) throw new Error('missing student');
-        const beforeCoins = Number(cur.coins) || 0;
-        const beforeUsed = Math.max(0, Number(cur.dailyTrialUsed) || 0);
         const outcome = applyDailyTrialResult(cur, mode, answerText);
-        if (!outcome) throw new Error('not open');
+        if (!outcome) {
+          const norm = rememberDailyTrialStudent(st.id, cur) || st;
+          hideDailyTrialModal();
+          showToast('這題已經結束 / This question is closed', '請再按每日試煉。 / Press the daily trial again.', 'info');
+          trialPhase = 'saved';
+          clearTimeout(slowTimer);
+          dailyTrialCommitDepth = 0;
+          if (giveUp) giveUp.disabled = false;
+          updateStudentUI();
+          return;
+        }
         const updates = {};
         updates[base + 'dailyTrialDay'] = cur.dailyTrialDay;
         updates[base + 'dailyTrialEpoch'] = cur.dailyTrialEpoch != null ? cur.dailyTrialEpoch : hongKongDayIndex();
@@ -15009,12 +15188,16 @@ function publishEvoEdges() {
         else Object.keys(cur.dailyTrialSeen).forEach(key => {
           if (cur.dailyTrialSeen[key]) updates[base + 'dailyTrialSeen/' + key] = true;
         });
-        const coinsNow = Number(cur.coins) || 0;
-        if (coinsNow !== beforeCoins) updates[base + 'coins'] = coinsNow;
-        return dbRootRef.update(updates).then(() => dbRootRef.child('students/' + studentSaveKey(st)).once('value')).then(saved => {
-          const norm = rememberDailyTrialStudent(st.id, saved.val()) || st;
-          if (outcome.correct && (Number(norm.coins) || 0) < beforeCoins + DAILY_TRIAL_COINS) throw new Error('coins were not saved');
-          if (!outcome.expired && !outcome.blocked && (Number(norm.dailyTrialUsed) || 0) < beforeUsed + 1 && String(norm.dailyTrialDay || '') === String(cur.dailyTrialDay || '')) throw new Error('try was not saved');
+        if (outcome.correct) updates[base + 'coins'] = Number(cur.coins) || 0;
+        return dbRootRef.update(updates).then(() => {
+          const norm = rememberDailyTrialStudent(st.id, cur) || st;
+          holdStudentWrite(norm, outcome.expired
+            ? { trialReset: true, trialDay: String(cur.dailyTrialDay || '') }
+            : {
+              trialUsed: outcome.blocked ? null : outcome.used,
+              trialDay: String(cur.dailyTrialDay || ''),
+              trialClosed: true
+            });
           finish(norm, outcome, true);
         });
       }).catch(() => {
@@ -15154,8 +15337,7 @@ function publishEvoEdges() {
       }
       dailyTrialCommitDepth++;
       try {
-        const snap = await dbRootRef.child('students/' + studentSaveKey(student)).once('value');
-        const cur = snap.val();
+        const cur = await readFreshNode('students/' + studentSaveKey(student));
         if (!cur) throw new Error('missing student');
         const today = hongKongDateKey();
         const same = String(cur.dailyTrialDay || '') === today;
@@ -15186,11 +15368,16 @@ function publishEvoEdges() {
         updates[base + 'dailyTrialOpen'] = snapshot;
         if (!same) updates[base + 'dailyTrialSeen'] = null;
         await dbRootRef.update(updates);
-        const saved = await dbRootRef.child('students/' + studentSaveKey(student)).once('value');
-        const norm = rememberDailyTrialStudent(student.id, saved.val());
-        const opened = norm && trialState(norm).open;
-        if (!opened || String(opened.question) !== String(snapshot.question)) throw new Error('question was not saved');
-        renderDailyTrialQuestion(norm, opened);
+        const merged = Object.assign({}, cur, {
+          dailyTrialDay: today,
+          dailyTrialEpoch: hongKongDayIndex(),
+          dailyTrialUsed: used,
+          dailyTrialOpen: snapshot
+        });
+        if (!same) merged.dailyTrialSeen = null;
+        const norm = rememberDailyTrialStudent(student.id, merged) || student;
+        holdStudentWrite(norm, { trialQuestion: snapshot.question, trialDay: today });
+        renderDailyTrialQuestion(norm, snapshot);
         updateStudentUI();
       } catch (err) {
         notePlayWriteError(err);
@@ -17935,6 +18122,19 @@ function teacherToggleClassSpy(studentId, event) {
       return limitMs - (syncedNow() - start);
     }
 
+    function quizClockReady(quiz) {
+      const start = Number(quiz && quiz.timestamp);
+      return !!(firebaseServerTimeOffsetReady && Number.isFinite(start) && start > 0);
+    }
+
+    function readQuizTimeLimitSeconds(raw) {
+      const text = String(raw == null ? '' : raw).trim();
+      if (!/^\d+$/.test(text)) return null;
+      const sec = Number(text);
+      if (!Number.isInteger(sec) || sec < 0 || sec > 600) return null;
+      return sec;
+    }
+
     function databaseNodeRestUrl(path) {
       const raw = String((typeof FIREBASE_CONFIG === 'object' && FIREBASE_CONFIG.databaseURL) || '').trim();
       const parsed = new URL(raw);
@@ -17955,6 +18155,13 @@ function teacherToggleClassSpy(studentId, event) {
       const response = await fetch(url.toString());
       if (!response.ok) throw new Error('server read failed');
       return response.json();
+    }
+
+    function readFreshNode(path) {
+      return readServerNode(path).catch(() => {
+        if (!dbRootRef) return null;
+        return dbRootRef.child(path).once('value').then(snap => snap.val());
+      });
     }
 
     // set() can be acknowledged while this client's cached once() still returns the previous quiz or exam.
@@ -18005,9 +18212,11 @@ function teacherToggleClassSpy(studentId, event) {
       const w2 = repairQuestionText(document.getElementById('teacherQuizOpt3').value.trim());
       const w3 = repairQuestionText(document.getElementById('teacherQuizOpt4').value.trim());
       
-      const timeLimitSelect = document.getElementById('teacherQuizTimeLimitSelect');
-      // 解析選定時間（0 代表無限時間）
-      const timeLimitSec = timeLimitSelect ? parseInt(timeLimitSelect.value) : 30;
+      const timeLimitInput = document.getElementById('teacherQuizTimeLimitInput');
+      const timeLimitSec = readQuizTimeLimitSeconds(timeLimitInput ? timeLimitInput.value : '');
+      if (timeLimitSec == null) {
+        return alert('請填寫秒數，0 到 600。0 代表不限時。 / Type the seconds from 0 to 600. 0 means no limit.');
+      }
 
       if (!q || !correct) {
         return alert("請至少填寫問題與正確答案 (選項 1)！ / Please provide a question and correct answer!");
@@ -18177,35 +18386,47 @@ function teacherToggleClassSpy(studentId, event) {
         if (countdownBadge) countdownBadge.classList.add('hidden');
       }
 
-      statusBadge.textContent = isActive ? "● LIVE ACTIVE" : "CLOSED";
-      statusBadge.className = isActive 
-        ? "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold animate-pulse" 
-        : "text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-bold";
+      const teacherTimeUp = isActive && Number(timeLimitSec) > 0 && quizClockReady(activeQuizInstance) && quizRemainingMs(activeQuizInstance) <= 0;
+      if (teacherTimeUp) {
+        statusBadge.textContent = "TIME OVER (時間到)";
+        statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-bold";
+      } else {
+        statusBadge.textContent = isActive ? "● LIVE ACTIVE" : "CLOSED";
+        statusBadge.className = isActive
+          ? "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-bold animate-pulse"
+          : "text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-bold";
+      }
 
       if (qSnippet) {
         qSnippet.textContent = `目前問題: ${repairQuestionText(activeQuizInstance.question || '')}`;
       }
 
       const winners = activeQuizInstance.winners || {};
-      if (winners.rank1) {
-        w1Name.innerHTML = `<span class="text-amber-300 font-black">${winners.rank1.studentName}</span> (#1)`;
-        w1Time.textContent = winners.rank1.timeString || '';
-      } else {
-        w1Name.textContent = "等待答對者..."; w1Time.textContent = "--:--:--";
+      if (w1Name && w1Time) {
+        if (winners.rank1) {
+          w1Name.innerHTML = `<span class="text-amber-300 font-black">${winners.rank1.studentName}</span> (#1)`;
+          w1Time.textContent = winners.rank1.timeString || '';
+        } else {
+          w1Name.textContent = "等待答對者..."; w1Time.textContent = "--:--:--";
+        }
       }
 
-      if (winners.rank2) {
-        w2Name.innerHTML = `<span class="text-slate-200 font-black">${winners.rank2.studentName}</span> (#2)`;
-        w2Time.textContent = winners.rank2.timeString || '';
-      } else {
-        w2Name.textContent = "等待答對者..."; w2Time.textContent = "--:--:--";
+      if (w2Name && w2Time) {
+        if (winners.rank2) {
+          w2Name.innerHTML = `<span class="text-slate-200 font-black">${winners.rank2.studentName}</span> (#2)`;
+          w2Time.textContent = winners.rank2.timeString || '';
+        } else {
+          w2Name.textContent = "等待答對者..."; w2Time.textContent = "--:--:--";
+        }
       }
 
-      if (winners.rank3) {
-        w3Name.innerHTML = `<span class="text-amber-500 font-black">${winners.rank3.studentName}</span> (#3)`;
-        w3Time.textContent = winners.rank3.timeString || '';
-      } else {
-        w3Name.textContent = "等待答對者..."; w3Time.textContent = "--:--:--";
+      if (w3Name && w3Time) {
+        if (winners.rank3) {
+          w3Name.innerHTML = `<span class="text-amber-500 font-black">${winners.rank3.studentName}</span> (#3)`;
+          w3Time.textContent = winners.rank3.timeString || '';
+        } else {
+          w3Name.textContent = "等待答對者..."; w3Time.textContent = "--:--:--";
+        }
       }
 
       const submissions = activeQuizInstance.submissions || {};
@@ -18303,149 +18524,175 @@ function teacherToggleClassSpy(studentId, event) {
       if (badgeTimeout) badgeTimeout.textContent = `⏰ ${timeoutCount} 逾時`;
     }
 
-    // === 🛠️ 修復版：支援無限時間與搶答防秒逾時機制 ===
-    function renderQuizModalForStudent() {
-      const modal = document.getElementById('modalQuizOverlay');
-      if (!modal) return;
-
-      // 每次進入前，徹底清理既有學生倒數計時器
+    function stopQuizStudentCountdown() {
       if (quizStudentCountdownTimer) {
         clearInterval(quizStudentCountdownTimer);
         quizStudentCountdownTimer = null;
       }
+    }
+
+    function paintStudentQuizTimer(quiz) {
+      const timeLimitSec = quiz && quiz.timeLimit !== undefined ? Number(quiz.timeLimit) : 30;
+      const isUnlimited = !(timeLimitSec > 0);
+      const timerBadge = document.getElementById('quizTimerStudentBadge');
+      const timerSecText = document.getElementById('quizTimeRemainingSec');
+      const barWrapper = document.getElementById('quizTimerBarWrapper');
+      const barFill = document.getElementById('quizTimerBarFill');
+      if (isUnlimited) {
+        if (barWrapper) barWrapper.classList.add('hidden');
+        if (timerBadge) {
+          timerBadge.classList.remove('hidden');
+          timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-bold flex items-center gap-1.5";
+        }
+        if (timerSecText) timerSecText.innerHTML = '<i class="fa-solid fa-infinity"></i> 無限時間';
+        return;
+      }
+      if (barWrapper) barWrapper.classList.remove('hidden');
+      if (timerBadge) {
+        timerBadge.classList.remove('hidden');
+        timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-bold flex items-center gap-1.5 animate-pulse";
+      }
+      const remainingMs = quizRemainingMs(quiz);
+      const shown = Math.min(timeLimitSec, Math.max(0, Math.ceil(remainingMs / 1000)));
+      if (timerSecText) timerSecText.textContent = `${shown}s`;
+      if (barFill) {
+        const pct = Math.max(0, Math.min(100, (remainingMs / (timeLimitSec * 1000)) * 100));
+        barFill.style.width = `${pct}%`;
+      }
+    }
+
+    function ensureStudentQuizCountdown(quiz) {
+      const key = quizSessionKey(quiz);
+      const limitMs = quizLimitMs(quiz);
+      if (!Number.isFinite(limitMs)) {
+        stopQuizStudentCountdown();
+        return;
+      }
+      if (quizStudentCountdownTimer && quizSeenAnchor && quizSeenAnchor.timerKey === key) return;
+      stopQuizStudentCountdown();
+      if (quizSeenAnchor) quizSeenAnchor.timerKey = key;
+      const tick = () => {
+        if (!activeQuizInstance || !activeQuizInstance.active || quizSessionKey(activeQuizInstance) !== key) return;
+        if (!currentUser || currentUser.role !== 'student') return;
+        const mine = activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id];
+        paintStudentQuizTimer(activeQuizInstance);
+        if (mine || quizAnswerInFlight || isQuizTimeoutSubmitting) return;
+        if (!quizClockReady(activeQuizInstance)) return;
+        if (quizRemainingMs(activeQuizInstance) > -400) return;
+        isQuizTimeoutSubmitting = true;
+        setTimeout(() => submitQuizAnswer(null, true), 0);
+      };
+      tick();
+      quizStudentCountdownTimer = setInterval(tick, 250);
+    }
+
+    function paintQuizAnswerControls(grid, quiz) {
+      const stamp = quizSessionKey(quiz) + '|' + String(quiz.type || '') + '|' + (quiz.options || []).join('\u0001');
+      if (quizOptionStamp === stamp && grid.childElementCount > 0) return;
+      quizOptionStamp = stamp;
+      grid.innerHTML = '';
+      if (String(quiz.type || '').toUpperCase() === 'FILL') {
+        grid.className = 'grid grid-cols-1 gap-2.5';
+        const form = document.createElement('form');
+        form.className = 'flex gap-2';
+        form.innerHTML = '<input id="quizFillInput" class="flex-1 min-h-12 rounded-xl bg-slate-950 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-4 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button>';
+        form.onsubmit = event => { event.preventDefault(); submitQuizFill(); };
+        grid.appendChild(form);
+        return;
+      }
+      grid.className = 'grid grid-cols-1 gap-2.5';
+      (quiz.options || []).forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        btn.className = "p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-slate-700 hover:border-amber-400 text-white font-bold text-sm shadow-md transition active:scale-95 text-left flex items-start gap-2.5 cursor-pointer h-auto";
+        btn.innerHTML = `
+          <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-pixel text-[10px] text-amber-300 shrink-0">
+            ${String.fromCharCode(65 + optIdx)}
+          </span>
+          <span class="quiz-answer-copy flex-1"></span>
+        `;
+        const copy = btn.querySelector('.quiz-answer-copy');
+        if (copy) copy.textContent = repairQuestionText(optText);
+        btn.onclick = () => submitQuizAnswer(optIdx, false);
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderQuizModalForStudent() {
+      const modal = document.getElementById('modalQuizOverlay');
+      if (!modal) return;
 
       if (!activeQuizInstance || !activeQuizInstance.active) {
+        stopQuizStudentCountdown();
         modal.classList.add('hidden');
         isQuizTimeoutSubmitting = false;
+        quizAnswerInFlight = false;
+        quizOptionStamp = '';
+        quizSeenAnchor = null;
         return;
       }
 
-      if (currentUser && currentUser.role === 'student') {
-        const st = appData.students[currentUser.id];
-        if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
-          modal.classList.add('hidden');
-          return;
-        }
+      if (!currentUser || currentUser.role !== 'student') {
+        modal.classList.add('hidden');
+        return;
+      }
 
-        if (activeQuizInstance.classTag !== 'ALL' && !studentIsInClass(st, activeQuizInstance.classTag)) {
-          modal.classList.add('hidden');
-          return;
-        }
+      const st = appData.students[currentUser.id];
+      if (!st || st.hp <= 0 || st.isFainted || isStudentBanned(st)) {
+        modal.classList.add('hidden');
+        return;
+      }
 
-        const mySub = activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id];
-        const grid = document.getElementById('quizOptionsGrid');
-        const feedbackBox = document.getElementById('quizFeedbackBox');
-        const feedbackText = document.getElementById('quizFeedbackText');
-        const podiumBox = document.getElementById('quizPodiumSnippet');
+      if (activeQuizInstance.classTag !== 'ALL' && !studentIsInClass(st, activeQuizInstance.classTag)) {
+        modal.classList.add('hidden');
+        return;
+      }
+
+      const grid = document.getElementById('quizOptionsGrid');
+      const feedbackBox = document.getElementById('quizFeedbackBox');
+      const feedbackText = document.getElementById('quizFeedbackText');
+      const podiumBox = document.getElementById('quizPodiumSnippet');
+      if (!grid || !feedbackBox || !feedbackText) return;
+
+      paintQuestionWithPicture(document.getElementById('quizQuestionBox'), activeQuizInstance.image, activeQuizInstance.question);
+
+      const sessionKey = quizSessionKey(activeQuizInstance);
+      if (!quizSeenAnchor || quizSeenAnchor.key !== sessionKey) {
+        quizSeenAnchor = { key: sessionKey, timerKey: '' };
+        isQuizTimeoutSubmitting = false;
+        quizAnswerInFlight = false;
+        quizOptionStamp = '';
+      }
+
+      const mySub = activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id];
+      if (!mySub) {
+        feedbackBox.classList.add('hidden');
+        paintQuizAnswerControls(grid, activeQuizInstance);
+        paintStudentQuizTimer(activeQuizInstance);
+        ensureStudentQuizCountdown(activeQuizInstance);
+      } else {
+        stopQuizStudentCountdown();
+        quizOptionStamp = '';
         const timerBadge = document.getElementById('quizTimerStudentBadge');
-        const timerSecText = document.getElementById('quizTimeRemainingSec');
         const barWrapper = document.getElementById('quizTimerBarWrapper');
-        const barFill = document.getElementById('quizTimerBarFill');
+        if (timerBadge) timerBadge.classList.add('hidden');
+        if (barWrapper) barWrapper.classList.add('hidden');
+        grid.innerHTML = '';
+        feedbackBox.classList.remove('hidden');
 
-        paintQuestionWithPicture(document.getElementById('quizQuestionBox'), activeQuizInstance.image, activeQuizInstance.question);
-
-        // 取得限時秒數（0 代表無限制）
-        const timeLimitSec = activeQuizInstance.timeLimit !== undefined ? Number(activeQuizInstance.timeLimit) : 30;
-        const isUnlimited = (timeLimitSec <= 0);
-
-        if (!mySub) {
-          // 學生尚未提交作答。換題才重置逾時旗標，避免同一題在時限內被重複判定逾時。
-          if (!quizSeenAnchor || quizSeenAnchor.key !== quizSessionKey(activeQuizInstance)) {
-            isQuizTimeoutSubmitting = false;
-          }
-          feedbackBox.classList.add('hidden');
-          grid.innerHTML = '';
-
-          // 倒數與進度條介面顯示控制
-          if (isUnlimited) {
-            // 無限時間：隱藏進度條，倒數徽章顯示為無限標誌
-            if (barWrapper) barWrapper.classList.add('hidden');
-            if (timerBadge) {
-              timerBadge.classList.remove('hidden');
-              timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-bold flex items-center gap-1.5";
-            }
-            if (timerSecText) timerSecText.innerHTML = '<i class="fa-solid fa-infinity"></i> 無限時間';
-          } else {
-            // 有限時間：啟用進度條與倒數計時
-            if (barWrapper) barWrapper.classList.remove('hidden');
-            if (timerBadge) {
-              timerBadge.classList.remove('hidden');
-              timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500 text-rose-300 font-bold flex items-center gap-1.5 animate-pulse";
-            }
-
-            const updateCountdownUI = () => {
-              const remainingMs = quizRemainingMs(activeQuizInstance);
-              const shown = Math.min(timeLimitSec, Math.max(0, Math.ceil(remainingMs / 1000)));
-
-              if (timerSecText) timerSecText.textContent = `${shown}s`;
-
-              if (barFill) {
-                const pct = Math.max(0, Math.min(100, (remainingMs / (timeLimitSec * 1000)) * 100));
-                barFill.style.width = `${pct}%`;
-              }
-
-              // 用伺服器時間判斷。學生電腦快了，也不能在時限還沒到時被當成逾時。
-              if (remainingMs <= 0) {
-                clearInterval(quizStudentCountdownTimer);
-                quizStudentCountdownTimer = null;
-                if (!isQuizTimeoutSubmitting) {
-                  isQuizTimeoutSubmitting = true;
-                  submitQuizAnswer(null, true);
-                }
-              }
-            };
-
-            updateCountdownUI();
-            quizStudentCountdownTimer = setInterval(updateCountdownUI, 250);
-          }
-
-          if (String(activeQuizInstance.type || '').toUpperCase() === 'FILL') {
-            grid.className = 'grid grid-cols-1 gap-2.5';
-            const form = document.createElement('form');
-            form.className = 'flex gap-2';
-            form.innerHTML = '<input id="quizFillInput" class="flex-1 min-h-12 rounded-xl bg-slate-950 border border-amber-400 px-3 text-white" autocomplete="off"><button type="submit" class="min-h-12 px-4 rounded-xl bg-amber-400 text-slate-950 font-black">送出 / Submit</button>';
-            form.onsubmit = event => { event.preventDefault(); submitQuizFill(); };
-            grid.appendChild(form);
-          } else {
-            grid.className = 'grid grid-cols-1 gap-2.5';
-            (activeQuizInstance.options || []).forEach((optText, optIdx) => {
-              const btn = document.createElement('button');
-              btn.className = "p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 border-2 border-slate-700 hover:border-amber-400 text-white font-bold text-sm shadow-md transition active:scale-95 text-left flex items-start gap-2.5 cursor-pointer h-auto";
-              btn.innerHTML = `
-                <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-pixel text-[10px] text-amber-300 shrink-0">
-                  ${String.fromCharCode(65 + optIdx)}
-                </span>
-                <span class="quiz-answer-copy flex-1"></span>
-              `;
-              btn.querySelector('.quiz-answer-copy').textContent = repairQuestionText(optText);
-              btn.onclick = () => submitQuizAnswer(optIdx, false);
-              grid.appendChild(btn);
-            });
-          }
-
+        if (mySub.isTimeout) {
+          feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-clock mr-1"></i>回答時間已過！(判定逾時未答) / Time is up.</span>`;
+        } else if (mySub.isCorrect) {
+          let rankText = "";
+          if (mySub.rank === 1) rankText = "🥇 第一名神速答對！獎勵：+2 次攻擊！";
+          else if (mySub.rank === 2) rankText = "🥈 第二名答對！獎勵：+1 次攻擊！";
+          else if (mySub.rank === 3) rankText = "🥉 第三名答對！獎勵：+30 EXP！";
+          else rankText = "✨ 答對！獎勵：+10 EXP！";
+          feedbackText.innerHTML = `<span class="text-emerald-400 font-black"><i class="fa-solid fa-circle-check mr-1"></i>回答正確！${rankText}</span>`;
         } else {
-          // 學生已經作答過或已判定逾時，展示作答結果反饋
-          if (timerBadge) timerBadge.classList.add('hidden');
-          if (barWrapper) barWrapper.classList.add('hidden');
-          grid.innerHTML = '';
+          feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-circle-xmark mr-1"></i>回答錯誤！下次加油！</span>`;
+        }
 
-          feedbackBox.classList.remove('hidden');
-
-          if (mySub.isTimeout) {
-            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-clock mr-1"></i>回答時間已過！(判定逾時未答) / Time is up.</span>`;
-          } else if (mySub.isCorrect) {
-            let rankText = "";
-            if (mySub.rank === 1) rankText = "🥇 第一名神速答對！獎勵：+2 次攻擊！";
-            else if (mySub.rank === 2) rankText = "🥈 第二名答對！獎勵：+1 次攻擊！";
-            else if (mySub.rank === 3) rankText = "🥉 第三名答對！獎勵：+30 EXP！";
-            else rankText = "✨ 答對！獎勵：+10 EXP！";
-
-            feedbackText.innerHTML = `<span class="text-emerald-400 font-black"><i class="fa-solid fa-circle-check mr-1"></i>回答正確！${rankText}</span>`;
-          } else {
-            feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-circle-xmark mr-1"></i>回答錯誤！下次加油！</span>`;
-          }
-
-          // 即時榮譽榜 (前三名)
+        if (podiumBox) {
           const winners = activeQuizInstance.winners || {};
           let podiumHtml = `<div class="font-bold text-amber-300 border-b border-slate-800 pb-1 mb-1 font-pixel text-[10px]">即時神速榜單：</div>`;
           podiumHtml += `<div>🥇 1st: ${winners.rank1 ? winners.rank1.studentName : '等待中...'}</div>`;
@@ -18453,14 +18700,11 @@ function teacherToggleClassSpy(studentId, event) {
           podiumHtml += `<div>🥉 3rd: ${winners.rank3 ? winners.rank3.studentName : '等待中...'}</div>`;
           podiumBox.innerHTML = podiumHtml;
         }
-
-        modal.classList.remove('hidden');
-      } else {
-        modal.classList.add('hidden');
       }
+
+      modal.classList.remove('hidden');
     }
 
-    // 學生提交作答處理
     function submitQuizFill() {
       const input = document.getElementById('quizFillInput');
       submitQuizAnswer(null, false, input ? input.value : '');
@@ -18468,119 +18712,144 @@ function teacherToggleClassSpy(studentId, event) {
 
     function submitQuizAnswer(chosenIndex, isTimeout = false, fillText) {
       if (!currentUser || currentUser.role !== 'student') return;
-      if (studentClassLockActive()) return;
-      if (!activeQuizInstance || !activeQuizInstance.active) return;
-
-      const st = appData.students[currentUser.id];
-      if (!st) return;
-
-      if (isTimeout && quizRemainingMs(activeQuizInstance) > 0) {
+      if (studentClassLockActive() || !activeQuizInstance || !activeQuizInstance.active) {
         isQuizTimeoutSubmitting = false;
-        renderQuizModalForStudent();
+        quizAnswerInFlight = false;
         return;
       }
 
-      if (quizStudentCountdownTimer) {
-        clearInterval(quizStudentCountdownTimer);
-        quizStudentCountdownTimer = null;
+      const st = appData.students[currentUser.id];
+      if (!st) {
+        isQuizTimeoutSubmitting = false;
+        quizAnswerInFlight = false;
+        return;
       }
 
+      if (isTimeout) {
+        if (!isQuizTimeoutSubmitting || quizAnswerInFlight) return;
+        if (quizRemainingMs(activeQuizInstance) > 0) {
+          isQuizTimeoutSubmitting = false;
+          return;
+        }
+      } else if (quizAnswerInFlight) {
+        return;
+      } else if (isQuizTimeoutSubmitting) {
+        isQuizTimeoutSubmitting = false;
+      }
+
+      if (activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id]) return;
+
+      quizAnswerInFlight = true;
       const fillQuiz = String(activeQuizInstance.type || '').toUpperCase() === 'FILL';
       const isCorrect = !isTimeout && (fillQuiz ? fillAnswersMatch(activeQuizInstance.answer, fillText) : chosenIndex === activeQuizInstance.correctIndex);
       const chosenText = isTimeout
         ? '⏰ 逾時未答 / Time is up'
         : (fillQuiz ? String(fillText || '') : ((activeQuizInstance.options && activeQuizInstance.options[chosenIndex]) || '未作答'));
-
       const submitTime = syncedNow();
       const timeString = serverClockText(true);
       const answerQuizId = String((activeQuizInstance && activeQuizInstance.quizId) || '');
+      const studentId = currentUser.id;
 
-      // 使用 Firebase Transaction 決定搶答名次與核發獎勵
-      if (dbRootRef) {
-        dbRootRef.child('activeQuiz').transaction((cur) => {
-          if (!cur || !cur.active) return;
-          if (answerQuizId && String(cur.quizId || '') !== answerQuizId) return;
-          if (!cur.submissions) cur.submissions = {};
-          if (cur.submissions[currentUser.id]) return cur;
-          if (isTimeout && quizRemainingMs(cur) > 0) return;
-
-          if (!cur.winners) cur.winners = {};
-
-          let awardedRank = null;
-          if (isCorrect) {
-            if (!cur.winners.rank1) {
-              awardedRank = 1;
-              cur.winners.rank1 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
-            } else if (!cur.winners.rank2) {
-              awardedRank = 2;
-              cur.winners.rank2 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
-            } else if (!cur.winners.rank3) {
-              awardedRank = 3;
-              cur.winners.rank3 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
-            }
-          }
-
-          cur.submissions[currentUser.id] = {
-            studentId: st.id,
-            studentName: st.name,
-            answerText: chosenText,
-            isCorrect: isCorrect,
-            isTimeout: isTimeout,
-            rank: awardedRank,
-            timestamp: submitTime,
-            timeString: timeString
-          };
-
-          return cur;
-        }, (err, committed, snap) => {
-          if (!committed || !snap || !snap.exists()) {
-            isQuizTimeoutSubmitting = false;
-            if (!activeQuizInstance || quizRemainingMs(activeQuizInstance) > 0) renderQuizModalForStudent();
-            return;
-          }
-          if (committed && snap.exists()) {
-            const finalQuiz = snap.val();
-            const myFinalSub = finalQuiz.submissions && finalQuiz.submissions[currentUser.id];
-
-            if (myFinalSub && myFinalSub.isCorrect) {
-              playSound('evolve');
-              if (typeof confetti === 'function') {
-                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-              }
-
-              // 依排名核發獎勵
-              const quizClass = (finalQuiz && finalQuiz.classTag) || (activeQuizInstance && activeQuizInstance.classTag);
-              const quizExp = (base) => Math.round(base * territoryExpMultiplier(st, territoryContextClass(st, quizClass)));
-              if (myFinalSub.rank === 1) {
-                grantAttackQuota(st.id, 2);
-                grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
-                showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數，陣營據點 +50！", "evolution");
-              } else if (myFinalSub.rank === 2) {
-                grantAttackQuota(st.id, 1);
-                grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
-                showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數，陣營據點 +50！", "evolution");
-              } else if (myFinalSub.rank === 3) {
-                const expGain = quizExp(30);
-                rewardStudent(st.id, expGain);
-                grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
-                showToast("搶答季軍！", `第 3 名答對！榮獲 +${expGain} EXP，陣營據點 +50！`, "evolution");
-              } else {
-                const expGain = quizExp(10);
-                rewardStudent(st.id, expGain);
-                showToast("回答正確！", `成功答對題目，獎勵 +${expGain} EXP！`, "heal");
-              }
-            } else if (isTimeout) {
-              playSound('faint');
-              showToast("逾時 / Time's Up", "回答時間已結束！ / Time is up.", "damage");
-            } else {
-              playSound('attack');
-              showToast("回答錯誤", "下次再接再厲！", "damage");
-            }
-
-            renderQuizModalForStudent();
-          }
-        });
+      if (!dbRootRef) {
+        quizAnswerInFlight = false;
+        isQuizTimeoutSubmitting = false;
+        return;
       }
+
+      dbRootRef.child('activeQuiz').transaction((cur) => {
+        if (cur === null) return cur;
+        if (!cur.active) return;
+        if (answerQuizId && String(cur.quizId || '') !== answerQuizId) return;
+        if (!cur.submissions) cur.submissions = {};
+        if (cur.submissions[studentId]) return cur;
+
+        const limitMs = quizLimitMs(cur);
+        const start = Number(cur.timestamp);
+        const clockReady = Number.isFinite(start) && start > 0 && Number.isFinite(limitMs);
+        let timedOut = !!isTimeout;
+        if (!timedOut && clockReady && submitTime > start + limitMs + 1500) timedOut = true;
+        if (timedOut && clockReady && submitTime < start + limitMs) return;
+
+        if (!cur.winners) cur.winners = {};
+        const acceptedCorrect = !timedOut && isCorrect;
+        let awardedRank = null;
+        if (acceptedCorrect) {
+          if (!cur.winners.rank1) {
+            awardedRank = 1;
+            cur.winners.rank1 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+          } else if (!cur.winners.rank2) {
+            awardedRank = 2;
+            cur.winners.rank2 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+          } else if (!cur.winners.rank3) {
+            awardedRank = 3;
+            cur.winners.rank3 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+          }
+        }
+
+        cur.submissions[studentId] = {
+          studentId: st.id,
+          studentName: st.name,
+          answerText: timedOut ? '⏰ 逾時未答 / Time is up' : chosenText,
+          isCorrect: acceptedCorrect,
+          isTimeout: timedOut,
+          rank: awardedRank,
+          timestamp: submitTime,
+          timeString: timeString
+        };
+        return cur;
+      }, (err, committed, snap) => {
+        const finalQuiz = snap && snap.exists() ? snap.val() : null;
+        const myFinalSub = finalQuiz && finalQuiz.submissions && finalQuiz.submissions[studentId];
+        if (!committed || !myFinalSub) {
+          quizAnswerInFlight = false;
+          isQuizTimeoutSubmitting = false;
+          if (!isTimeout && activeQuizInstance && String(activeQuizInstance.quizId || '') === answerQuizId && !(activeQuizInstance.submissions && activeQuizInstance.submissions[studentId])) {
+            showToast('答案沒有送出 / Not received', '請再按一次答案。 / Tap the answer again.', 'damage');
+          }
+          renderQuizModalForStudent();
+          return;
+        }
+
+        if (!activeQuizInstance || String(activeQuizInstance.quizId || '') === String(finalQuiz.quizId || '')) {
+          activeQuizInstance = finalQuiz;
+        }
+        quizAnswerInFlight = false;
+        isQuizTimeoutSubmitting = false;
+
+        if (myFinalSub.isCorrect) {
+          playSound('evolve');
+          if (typeof confetti === 'function') {
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+          }
+          const quizClass = (finalQuiz && finalQuiz.classTag) || (activeQuizInstance && activeQuizInstance.classTag);
+          const quizExp = (base) => Math.round(base * territoryExpMultiplier(st, territoryContextClass(st, quizClass)));
+          if (myFinalSub.rank === 1) {
+            grantAttackQuota(st.id, 2);
+            grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+            showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數，陣營據點 +50！", "evolution");
+          } else if (myFinalSub.rank === 2) {
+            grantAttackQuota(st.id, 1);
+            grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+            showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數，陣營據點 +50！", "evolution");
+          } else if (myFinalSub.rank === 3) {
+            const expGain = quizExp(30);
+            rewardStudent(st.id, expGain);
+            grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+            showToast("搶答季軍！", `第 3 名答對！榮獲 +${expGain} EXP，陣營據點 +50！`, "evolution");
+          } else {
+            const expGain = quizExp(10);
+            rewardStudent(st.id, expGain);
+            showToast("回答正確！", `成功答對題目，獎勵 +${expGain} EXP！`, "heal");
+          }
+        } else if (myFinalSub.isTimeout) {
+          playSound('faint');
+          showToast("逾時 / Time's Up", "回答時間已結束！ / Time is up.", "damage");
+        } else {
+          playSound('attack');
+          showToast("回答錯誤", "下次再接再厲！", "damage");
+        }
+        renderQuizModalForStudent();
+      }, false);
     }
 
 // ========================================================
