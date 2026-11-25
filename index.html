@@ -328,7 +328,7 @@
       <p id="deathReviveQuota" class="text-[11px] text-emerald-300 font-mono text-center"></p>
       <div id="deathReviveQuestion" class="bg-slate-950 border border-emerald-400 rounded-2xl p-4 text-sm font-bold text-white text-center break-words">Loading question...</div>
       <div id="deathReviveOptions" class="grid grid-cols-1 gap-2"></div>
-      <p id="deathReviveStatus" class="hidden rounded-xl border border-amber-300 bg-amber-950 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100"></p>
+      <div id="deathReviveStatus" class="hidden rounded-xl border border-amber-300 bg-amber-950 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100"></div>
     </div>
     <p class="text-[10px] text-rose-200/90 mt-2 text-center px-6 leading-relaxed">倒下時只計算復活答題，每日 3 次。每日試煉是另一個系統，復活後才可以參加。<br>While fainted, only the revive quiz counts: 3 answers a day. The daily trial is a separate system and opens after you are revived.</p>
     <div class="text-slate-400 text-xs mt-3 max-w-md text-center leading-relaxed px-6">
@@ -346,7 +346,7 @@
       <p id="reviveQuizQuotaText" class="text-[11px] text-emerald-300 font-mono mb-3">復活答題 Revive：今日還可答 3 / 3 次<br>Revive answers left today: 3 / 3</p>
       <div id="reviveQuizQuestion" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm font-bold text-white mb-5 shadow-inner leading-relaxed">Loading question...</div>
       <div id="reviveQuizOptions" class="grid grid-cols-1 gap-2.5"></div>
-      <p id="reviveQuizStatus" class="hidden mt-3 rounded-xl border border-amber-300 bg-amber-950 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100"></p>
+      <div id="reviveQuizStatus" class="hidden mt-3 rounded-xl border border-amber-300 bg-amber-950 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100"></div>
       <p class="text-[11px] text-slate-400 mt-4">答對會立刻滿血復活。答錯會立刻換下一題，直到今日 3 次用完。每次答對或答錯都用掉 1 次。用完要等老師，明天重新計算。這 3 次只屬於復活，不會扣每日試煉的 10 次，也不會給金幣。<br>A correct answer revives you to full HP. A wrong answer opens the next question right away until today's 3 tries are used. Each right or wrong answer uses 1 try. After 3 answers today, wait for the teacher. The count resets tomorrow. These 3 answers belong only to revive. They do not spend the daily trial's 10 tries and they do not give coins.</p>
     </div>
   </div>
@@ -364,7 +364,7 @@
       <div id="dailyTrialQuestion" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm font-bold text-white mb-4 shadow-inner leading-relaxed break-words">Loading question...</div>
       <div id="dailyTrialOptions" class="grid grid-cols-1 gap-2.5"></div>
       <div id="dailyTrialResult" class="hidden mt-3 space-y-3">
-        <p id="dailyTrialResultText" class="text-sm font-bold text-amber-100 leading-relaxed"></p>
+        <div id="dailyTrialResultText" class="text-sm font-bold text-amber-100 leading-relaxed text-left"></div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button id="btnDailyTrialContinue" type="button" onclick="continueDailyTrial()" class="min-h-[48px] py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer active:scale-95">繼續下一題 / Continue</button>
           <button type="button" onclick="stopDailyTrial()" class="min-h-[48px] py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer active:scale-95">稍後再答 / Stop for now</button>
@@ -1761,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.86";
+    const CURRENT_APP_VERSION = "2.7.87";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -5130,6 +5130,7 @@ function normalizeRevivePending(raw) {
   const image = String(raw.image || '').trim();
   if (image) next.image = image;
   if (String(raw.type || '').toUpperCase() === 'FILL') next.type = 'FILL';
+  copyQuestionExplanation(next, raw);
   return next;
 }
 
@@ -7742,6 +7743,7 @@ function reduceWorldRaidAnswer(raid, student, submission, now, nextIndex) {
   } else {
     row.wrong = (Number(row.wrong) || 0) + 1;
     row.lockUntil = now + 30000;
+    row.missIndex = index;
     next.wrongTotal = (Number(next.wrongTotal) || 0) + 1;
     if (next.wrongTotal % 10 === 0) {
       const goal = Math.max(1, Number(next.goal) || 1);
@@ -7898,7 +7900,7 @@ function worldRaidViewKey(raid, studentId) {
   const questions = raidQuestionList(raid.questions);
   const index = worldRaidQuestionIndex(row, questions.length);
   const question = index >= 0 ? questions[index] : null;
-  return [raid.status, raid.classKey, index, locked ? 'L' : 'O', question ? question.question : '', question && question.image ? question.image : '', raid.rewardsApplied ? 1 : 0, worldRaidMomentKey(raid)].join('|');
+  return [raid.status, raid.classKey, index, locked ? 'L' : 'O', locked ? Number(row.missIndex) : '', question ? question.question : '', question && question.image ? question.image : '', raid.rewardsApplied ? 1 : 0, worldRaidMomentKey(raid)].join('|');
 }
 
 let worldRaidBlackoutMark = '';
@@ -8221,10 +8223,12 @@ function paintWorldRaidOverlay() {
   } else {
     const student = appData.students[currentUser.id] || { id: currentUser.id, name: currentUser.name };
     const row = (raid.scores && raid.scores[raidScoreKey(raid.scores, student.id)]) || {};
+    const questions = raidQuestionList(raid.questions);
     if (Number(row.lockUntil) > syncedNow()) {
-      sheet.innerHTML = lower('<p class="text-center text-sm font-black text-rose-200">答錯了。30 秒內不能作答。題目先收起，剩下首領 HP。右邊的排名仍會更新。 / Wrong answer. You cannot answer for 30 seconds. The question is hidden and the boss HP stays. The ranking on the right keeps updating.</p><p class="text-center font-mono text-2xl text-amber-200"><span id="worldRaidLockLeft">' + Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)) + '</span>s</p>');
+      const missed = questions[Number(row.missIndex)];
+      const reveal = missed ? quizRevealHtml(missed.answer, missed.explanation) : '';
+      sheet.innerHTML = lower('<p class="text-center text-sm font-black text-rose-200">答錯了。30 秒內不能作答。題目先收起，剩下首領 HP。右邊的排名仍會更新。 / Wrong answer. You cannot answer for 30 seconds. The question is hidden and the boss HP stays. The ranking on the right keeps updating.</p><p class="text-center font-mono text-2xl text-amber-200"><span id="worldRaidLockLeft">' + Math.max(0, Math.ceil((Number(row.lockUntil) - syncedNow()) / 1000)) + '</span>s</p>' + reveal);
     } else {
-      const questions = raidQuestionList(raid.questions);
       const index = worldRaidQuestionIndex(row, questions.length);
       const question = index >= 0 ? questions[index] : null;
       if (!question) {
@@ -9649,6 +9653,21 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, function(m) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
   });
+}
+
+function quizRevealHtml(answer, explanation) {
+  const ans = repairQuestionText(String(answer == null ? '' : answer)).trim();
+  const why = repairQuestionText(String(explanation == null ? '' : explanation)).trim();
+  return '<div class="mt-2 rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 text-left text-xs leading-relaxed">'
+    + '<div class="text-emerald-300">正確答案 / Correct answer: <span class="font-black break-words">' + escapeHtml(ans || '沒有設定 / Not set') + '</span></div>'
+    + '<div class="mt-1 text-slate-200">題解 / Explanation: <span class="break-words">' + escapeHtml(why || '沒有題解 / No explanation') + '</span></div>'
+    + '</div>';
+}
+
+function copyQuestionExplanation(target, source) {
+  const text = repairQuestionText(String(source && source.explanation || '')).trim();
+  if (text) target.explanation = text;
+  return target;
 }
 
 // 老師針對指定陣營全員發動猛烈攻擊
@@ -14054,6 +14073,7 @@ function publishEvoEdges() {
         const image = String(q.image || '').trim();
         if (image) row.image = image;
         if (String(q.type || '').toUpperCase() === 'FILL') row.type = 'FILL';
+        copyQuestionExplanation(row, q);
         return row;
       });
     }
@@ -14104,6 +14124,7 @@ function publishEvoEdges() {
         const image = String(q.image || '').trim();
         if (image) row.image = image;
         if (String(q.type || '').toUpperCase() === 'FILL') row.type = 'FILL';
+        copyQuestionExplanation(row, q);
         return row;
       });
     }
@@ -14224,6 +14245,7 @@ function publishEvoEdges() {
       };
       if (picked.image) next.image = picked.image;
       if (picked.type === 'FILL') next.type = 'FILL';
+      copyQuestionExplanation(next, picked);
       return next;
     }
 
@@ -14244,6 +14266,10 @@ function publishEvoEdges() {
       cur.reviveDailyUsed = used;
       const next = (!correct && used < REVIVE_QUIZ_QUOTA) ? pickNextReviveQuestion(cur, pending.question) : null;
       delete cur.reviveQuizPending;
+      const missed = {
+        answer: pendingCorrectText(pending),
+        explanation: pending.explanation || ''
+      };
       if (correct) {
         cur.hp = Math.min(4000, Math.max(1, fullHpOfStudent(cur)));
         cur.isFainted = false;
@@ -14255,10 +14281,10 @@ function publishEvoEdges() {
       if (next) {
         delete cur.reviveQuizClosed;
         cur.reviveQuizPending = next;
-        return { correct: false, used: used, blocked: false, continued: true, className: next.className || pending.className || '' };
+        return { correct: false, used: used, blocked: false, continued: true, className: next.className || pending.className || '', answer: missed.answer, explanation: missed.explanation };
       }
       cur.reviveQuizClosed = true;
-      return { correct: false, used: used, blocked: false, continued: false, className: pending.className || '' };
+      return { correct: false, used: used, blocked: false, continued: false, className: pending.className || '', answer: missed.answer, explanation: missed.explanation };
     }
 
     function rememberReviveQuizStudent(studentId, value) {
@@ -14268,13 +14294,15 @@ function publishEvoEdges() {
       return norm;
     }
 
-    function paintReviveAnswerStatus(message) {
+    let reviveMissReveal = '';
+
+    function paintReviveAnswerStatus(message, revealHtml) {
       ['reviveQuizStatus', 'deathReviveStatus'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         const text = String(message || '');
-        el.textContent = text;
-        el.classList.toggle('hidden', !text);
+        el.innerHTML = escapeHtml(text) + (revealHtml || '');
+        el.classList.toggle('hidden', !text && !revealHtml);
       });
     }
 
@@ -14289,6 +14317,7 @@ function publishEvoEdges() {
         return;
       }
       if (outcome.correct) {
+        reviveMissReveal = '';
         playSound('heal');
         const message = leftNow > 0
           ? `答對了，立刻滿血復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`
@@ -14296,24 +14325,27 @@ function publishEvoEdges() {
         addBattleLog(`✨ [REVIVE QUIZ] ${student.name} 答對復活題，立刻滿血復活！今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Correct. Full HP restored. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "heal", className);
         paintReviveAnswerStatus(message);
         showToast("復活成功 / Revived", message, "heal");
-      } else if (outcome.continued) {
-        playSound('faint');
-        const message = `答錯了，已用掉 1 次。下一題已打開。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. 1 try used. The next question is open. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`;
-        addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，立刻換下一題。今次答題已經計算，今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. The next question opened. This answer used 1 try. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
-        paintReviveAnswerStatus(message);
-        showToast("下一題 / Next Question", message, "damage");
-      } else if (leftNow > 0) {
-        playSound('faint');
-        const message = `答錯了。題庫沒有下一題，請等老師復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. No next question is available. Wait for the teacher. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`;
-        addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，題庫沒有下一題。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. No next question is available. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
-        paintReviveAnswerStatus(message);
-        showToast("復活失敗 / Not Revived", message, "damage");
       } else {
-        playSound('faint');
-        const message = '答錯了，今日 3 次已經用完，請等老師復活。 / Wrong answer. All 3 answers for today are used. Wait for the teacher.';
-        addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，今日 3 次已經用完。 / Wrong answer. All 3 answers for today are used.`, "battle", className);
-        paintReviveAnswerStatus(message);
-        showToast("復活失敗 / Not Revived", message, "damage");
+        reviveMissReveal = quizRevealHtml(outcome.answer, outcome.explanation);
+        if (outcome.continued) {
+          playSound('faint');
+          const message = `答錯了，已用掉 1 次。下一題已打開。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. 1 try used. The next question is open. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`;
+          addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，立刻換下一題。今次答題已經計算，今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. The next question opened. This answer used 1 try. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
+          paintReviveAnswerStatus(message, reviveMissReveal);
+          showToast("下一題 / Next Question", message, "damage");
+        } else if (leftNow > 0) {
+          playSound('faint');
+          const message = `答錯了。題庫沒有下一題，請等老師復活。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong. No next question is available. Wait for the teacher. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`;
+          addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，題庫沒有下一題。今日還可答題 ${leftNow} / ${REVIVE_QUIZ_QUOTA} 次。 / Wrong answer. No next question is available. Answers left today: ${leftNow} / ${REVIVE_QUIZ_QUOTA}.`, "battle", className);
+          paintReviveAnswerStatus(message, reviveMissReveal);
+          showToast("復活失敗 / Not Revived", message, "damage");
+        } else {
+          playSound('faint');
+          const message = '答錯了，今日 3 次已經用完，請等老師復活。 / Wrong answer. All 3 answers for today are used. Wait for the teacher.';
+          addBattleLog(`✖ [REVIVE QUIZ] ${student.name} 答錯復活題，今日 3 次已經用完。 / Wrong answer. All 3 answers for today are used.`, "battle", className);
+          paintReviveAnswerStatus(message, reviveMissReveal);
+          showToast("復活失敗 / Not Revived", message, "damage");
+        }
       }
     }
 
@@ -14456,9 +14488,10 @@ function publishEvoEdges() {
           modal.classList.add('hidden');
           clearDeathReviveLive();
           if (hint) {
-            hint.textContent = leftClosed > 0
+            const closedText = leftClosed > 0
               ? `這次沒有下一題可以打開。今日還可答題 ${leftClosed} / ${REVIVE_QUIZ_QUOTA} 次。請等老師復活。 / No next question can be opened. Answers left today: ${leftClosed} / ${REVIVE_QUIZ_QUOTA}. Wait for the teacher.`
               : `今日 3 次答題已經用完。請等老師復活，明天才可以再答。 / All 3 answers for today are used. Wait for the teacher. You can answer again tomorrow.`;
+            hint.innerHTML = escapeHtml(closedText) + (reviveMissReveal || '');
           }
           return;
         }
@@ -14473,9 +14506,12 @@ function publishEvoEdges() {
         clearDeathReviveLive();
         if (hint) {
           const anyOn = parseStudentClasses(st.classId).some(c => classReviveQuizEnabled(c));
-          if (anyOn && left <= 0) hint.textContent = '今日 3 次答題已經用完。請等老師復活，明天才可以再答。 / You already used all 3 answers today. Wait for the teacher. You can answer again tomorrow.';
-          else if (anyOn && !className) hint.textContent = '這個班的復活答題已開啟，但老師還沒有上傳題目。 / Revive quiz is on for this class, but the teacher has not uploaded questions yet.';
-          else hint.textContent = '倒下時只使用復活答題的 3 次。老師還沒有開啟這個班的復活答題。每日試煉要等復活之後。 / While fainted, only the 3 revive answers are used. The teacher has not turned the revive quiz on for this class. The daily trial waits until you are revived.';
+          const closedText = (anyOn && left <= 0)
+            ? '今日 3 次答題已經用完。請等老師復活，明天才可以再答。 / You already used all 3 answers today. Wait for the teacher. You can answer again tomorrow.'
+            : (anyOn && !className)
+              ? '這個班的復活答題已開啟，但老師還沒有上傳題目。 / Revive quiz is on for this class, but the teacher has not uploaded questions yet.'
+              : '倒下時只使用復活答題的 3 次。老師還沒有開啟這個班的復活答題。每日試煉要等復活之後。 / While fainted, only the 3 revive answers are used. The teacher has not turned the revive quiz on for this class. The daily trial waits until you are revived.';
+          hint.innerHTML = escapeHtml(closedText) + (left <= 0 ? (reviveMissReveal || '') : '');
         }
         return;
       }
@@ -14504,6 +14540,7 @@ function publishEvoEdges() {
         };
         if (picked.image) pending.image = picked.image;
         if (picked.type === 'FILL') pending.type = 'FILL';
+        copyQuestionExplanation(pending, picked);
       }
       pending = normalizeRevivePending(pending) || pending;
       heldReviveQuiz = { studentId: String(st.id), pending: pending };
@@ -14807,6 +14844,7 @@ function publishEvoEdges() {
       const image = String(raw.image || '').trim();
       if (image) next.image = image;
       if (String(raw.type || '').toUpperCase() === 'FILL') next.type = 'FILL';
+      copyQuestionExplanation(next, raw);
       return next;
     }
 
@@ -14846,6 +14884,7 @@ function publishEvoEdges() {
         const image = String(q.image || '').trim();
         if (image) row.image = image;
         if (String(q.type || '').toUpperCase() === 'FILL') row.type = 'FILL';
+        copyQuestionExplanation(row, q);
         return row;
       });
     }
@@ -14956,9 +14995,13 @@ function publishEvoEdges() {
       if (giveUp) giveUp.classList.add('hidden');
       if (result) result.classList.remove('hidden');
       if (resultText) {
-        if (outcome.abandoned) resultText.textContent = `放棄了這題，用掉 1 次，沒有金幣。今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題。 / Given up. 1 try used, no coins. ${left} / ${DAILY_TRIAL_QUOTA} left today.`;
-        else if (outcome.correct) resultText.textContent = `答對了，獲得 20 金幣。今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題。 / Correct. +20 coins. ${left} / ${DAILY_TRIAL_QUOTA} left today.`;
-        else resultText.textContent = `答錯了，沒有金幣，這題今天不能再答。今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題。 / Wrong. No coins, and this question cannot be tried again today. ${left} / ${DAILY_TRIAL_QUOTA} left today.`;
+        const summary = outcome.abandoned
+          ? `放棄了這題，用掉 1 次，沒有金幣。今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題。 / Given up. 1 try used, no coins. ${left} / ${DAILY_TRIAL_QUOTA} left today.`
+          : outcome.correct
+            ? `答對了，獲得 20 金幣。今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題。 / Correct. +20 coins. ${left} / ${DAILY_TRIAL_QUOTA} left today.`
+            : `答錯了，沒有金幣，這題今天不能再答。今日還可答 ${left} / ${DAILY_TRIAL_QUOTA} 題。 / Wrong. No coins, and this question cannot be tried again today. ${left} / ${DAILY_TRIAL_QUOTA} left today.`;
+        const reveal = (!outcome.correct && !outcome.abandoned) ? quizRevealHtml(outcome.answer, outcome.explanation) : '';
+        resultText.innerHTML = '<p>' + escapeHtml(summary) + '</p>' + reveal;
       }
       const more = left > 0 && unseenDailyTrialCount(student, outcome.className) > 0;
       if (cont) cont.classList.toggle('hidden', !more);
@@ -15033,7 +15076,9 @@ function publishEvoEdges() {
         abandoned: mode === 'abandon',
         used: used + 1,
         className: open.className || '',
-        gained: correct ? DAILY_TRIAL_COINS : 0
+        gained: correct ? DAILY_TRIAL_COINS : 0,
+        answer: open.correctAnswer || '',
+        explanation: open.explanation || ''
       };
     }
 
@@ -15292,6 +15337,7 @@ function publishEvoEdges() {
       };
       if (picked.image) open.image = picked.image;
       if (picked.type === 'FILL') open.type = 'FILL';
+      copyQuestionExplanation(open, picked);
       const snapshot = JSON.parse(JSON.stringify(open));
       if (!dbRootRef) {
         student.dailyTrialDay = state.day;
@@ -15414,6 +15460,8 @@ function publishEvoEdges() {
         const image = String(q.image || '').trim();
         if (image) payload['q' + i].image = image;
         if (String(q.type || '').toUpperCase() === 'FILL') payload['q' + i].type = 'FILL';
+        const explanation = repairQuestionText(String(q.explanation || '')).trim();
+        if (explanation) payload['q' + i].explanation = explanation;
       });
       if (!appData.systemSettings) appData.systemSettings = { bannedClasses: {} };
       if (!appData.systemSettings.dungeonQuestions) appData.systemSettings.dungeonQuestions = {};
@@ -15609,6 +15657,8 @@ function publishEvoEdges() {
       };
       const image = questionImageCell(row);
       if (image) item.image = image;
+      const explanation = repairQuestionText(row[6] == null ? '' : String(row[6]).trim());
+      if (explanation) item.explanation = explanation;
       return item;
     }
 
@@ -18002,6 +18052,8 @@ function teacherToggleClassSpy(studentId, event) {
               };
               const image = questionImageCell(row);
               if (image) item.image = image;
+              const explanation = repairQuestionText(row[6] == null ? '' : String(row[6]).trim());
+              if (explanation) item.explanation = explanation;
               importedQuizBank.push(item);
             }
           }
@@ -18244,6 +18296,7 @@ function teacherToggleClassSpy(studentId, event) {
         quizData.answer = correct;
       }
       if (bankHit && bankHit.image) quizData.image = String(bankHit.image).trim();
+      if (bankHit && bankHit.explanation) quizData.explanation = String(bankHit.explanation).trim();
 
       if (dbRootRef) {
         const teacher = (appData.teachers && appData.teachers[currentUser.id]) || currentUser.data || {};
@@ -18675,6 +18728,12 @@ function teacherToggleClassSpy(studentId, event) {
           feedbackText.innerHTML = `<span class="text-emerald-400 font-black"><i class="fa-solid fa-circle-check mr-1"></i>回答正確！${rankText}</span>`;
         } else {
           feedbackText.innerHTML = `<span class="text-rose-400 font-black"><i class="fa-solid fa-circle-xmark mr-1"></i>回答錯誤！下次加油！</span>`;
+        }
+        if (!mySub.isCorrect) {
+          const correctText = String(activeQuizInstance.type || '').toUpperCase() === 'FILL'
+            ? (activeQuizInstance.answer || '')
+            : ((activeQuizInstance.options && activeQuizInstance.options[activeQuizInstance.correctIndex]) || '');
+          feedbackText.insertAdjacentHTML('beforeend', quizRevealHtml(correctText, activeQuizInstance.explanation));
         }
 
         if (podiumBox) {
@@ -19371,9 +19430,8 @@ function renderStudentExamResultView(sub) {
           ${item.isCorrect ? '✔ 正確 (CORRECT)' : '✘ 錯誤 (INCORRECT)'}
         </span>
       </div>
-      <div class="text-slate-300">你的答案: <span class="font-bold ${item.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">${item.userAns || '(未作答)'}</span></div>
-      ${!item.isCorrect ? `<div class="text-emerald-400">正確答案: <span class="font-bold">${item.correctAns}</span></div>` : ''}
-      ${item.explanation ? `<div class="text-slate-400 text-[11px] pt-1 border-t border-slate-800"><i class="fa-solid fa-circle-info mr-1"></i>題解: ${item.explanation}</div>` : ''}
+      <div class="text-slate-300">你的答案: <span class="font-bold ${item.isCorrect ? 'text-emerald-300' : 'text-rose-300'}">${escapeHtml(item.userAns || '(未作答)')}</span></div>
+      ${quizRevealHtml(item.correctAns, item.explanation)}
     `;
     explanationsList.appendChild(card);
   });

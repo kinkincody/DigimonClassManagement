@@ -386,6 +386,9 @@
     function esc(value) {
       return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     }
+    function answerRevealHtml(answer, explanation) {
+      return '<div class="mt-2 rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 text-left text-xs leading-relaxed"><div class="text-emerald-300">正確答案 / Correct answer: <span class="font-black break-words">' + esc(answer || '沒有設定 / Not set') + '</span></div><div class="mt-1 text-slate-200">題解 / Explanation: <span class="break-words">' + esc(explanation || '沒有題解 / No explanation') + '</span></div></div>';
+    }
     function digiSources(name, img) {
       const raw = String(img || '');
       const file = raw.split('/').pop() || '';
@@ -713,7 +716,7 @@
       const byId = {};
       (lines || []).forEach(line => {
         if (!line || !line.id) return;
-        byId[String(line.id).toLowerCase()] = String(line.text || '');
+        byId[String(line.id).toLowerCase()] = line;
       });
       room.report = {
         seq: ((room.report && room.report.seq) || 0) + 1,
@@ -721,10 +724,13 @@
         title: String(title || '房間結果 / Room result'),
         lines: squadOrder(room).map(id => {
           const member = room.members[id];
+          const line = byId[String(id).toLowerCase()] || {};
           return {
             id: id,
             name: member ? (member.name || id) : id,
-            text: byId[String(id).toLowerCase()] || '沒有獲得獎勵。 / Nothing from this room.'
+            text: String(line.text || '沒有獲得獎勵。 / Nothing from this room.'),
+            answer: String(line.answer || ''),
+            explanation: String(line.explanation || '')
           };
         })
       };
@@ -1153,6 +1159,8 @@
           };
           const image = String(row.image || '').trim();
           if (image) card.image = image;
+          const explanation = repairQuestionText(String(row.explanation || '')).trim();
+          if (explanation) card.explanation = explanation;
           if (String(row.type || '').toUpperCase() === 'FILL') card.type = 'FILL';
           by[id] = card;
         });
@@ -1271,7 +1279,13 @@
         const entry = room.question && room.question.by && room.question.by[id];
         if (!member || member.hp <= 0 || member.fainted) return { id: id, text: '倒下，沒有獎勵。 / Down. Nothing from this room.' };
         if (entry && entry.right && entry.reward) return { id: id, text: entry.reward };
-        return { id: id, text: '沒有獲得獎勵。 / Nothing from this room.' };
+        const missed = entry && entry.answered && !entry.right;
+        return {
+          id: id,
+          text: '沒有獲得獎勵。 / Nothing from this room.',
+          answer: missed ? String(entry.correct || '') : '',
+          explanation: missed ? String(entry.explanation || '') : ''
+        };
       });
     }
     function closeRiddle(room, action) {
@@ -1521,6 +1535,8 @@
         };
         const image = String(row.image || '').trim();
         if (image) item.image = image;
+        const explanation = repairQuestionText(String(row.explanation || '')).trim();
+        if (explanation) item.explanation = explanation;
         if (String(row.type || '').toUpperCase() === 'FILL') item.type = 'FILL';
         return item;
       });
@@ -1578,6 +1594,8 @@
           const item = { question: row.question, correct: row.correct, wrongs: (row.wrongs || []).slice() };
           const image = String(row.image || '').trim();
           if (image) item.image = image;
+          const explanation = repairQuestionText(String(row.explanation || '')).trim();
+          if (explanation) item.explanation = explanation;
           if (String(row.type || '').toUpperCase() === 'FILL') item.type = 'FILL';
           return item;
         });
@@ -2249,7 +2267,8 @@
       if (!report || !(report.seq > seenReport)) return '';
       const mine = (report.lines || []).find(line => meStudent && sameId(line.id, meStudent.id));
       const rows = (report.lines || []).map(line => '<li class="text-sm"><span class="font-black">' + esc(line.name) + '</span> · ' + esc(line.text) + '</li>').join('');
-      return '<section id="roomReport" class="sheet-wrap fixed inset-0 z-40 bg-slate-950/80 flex items-center justify-center p-3"><div class="sheet panel space-y-3"><p class="text-[11px] font-black text-cyan-300">第 ' + (report.floor || 1) + ' 層結果 / Floor ' + (report.floor || 1) + ' result</p><h2 class="text-lg font-black">' + esc(report.title || '') + '</h2><p id="roomReportMine" class="text-sm text-amber-100">' + esc(mine ? mine.text : '沒有獲得獎勵。 / Nothing from this room.') + '</p><ul class="space-y-1">' + rows + '</ul><button type="button" id="btnAckReport" data-act="ack-report" data-seq="' + Number(report.seq) + '" class="tap w-full rounded-2xl bg-cyan-600 font-black">知道了 / OK</button></div></section>';
+      const reveal = mine && mine.answer ? answerRevealHtml(mine.answer, mine.explanation) : '';
+      return '<section id="roomReport" class="sheet-wrap fixed inset-0 z-40 bg-slate-950/80 flex items-center justify-center p-3"><div class="sheet panel space-y-3"><p class="text-[11px] font-black text-cyan-300">第 ' + (report.floor || 1) + ' 層結果 / Floor ' + (report.floor || 1) + ' result</p><h2 class="text-lg font-black">' + esc(report.title || '') + '</h2><div id="roomReportMine" class="text-sm text-amber-100"><p>' + esc(mine ? mine.text : '沒有獲得獎勵。 / Nothing from this room.') + '</p>' + reveal + '</div><ul class="space-y-1">' + rows + '</ul><button type="button" id="btnAckReport" data-act="ack-report" data-seq="' + Number(report.seq) + '" class="tap w-full rounded-2xl bg-cyan-600 font-black">知道了 / OK</button></div></section>';
     }
     function roomPicture(src) {
       return roomArtTag(src || ROOM_ART.map, 'mx-auto');
@@ -2620,7 +2639,7 @@
       } else if (mine.answered) {
         body = mine.right
           ? '<p class="text-sm text-emerald-200">答對了。你的獎勵：' + esc(mine.reward || '') + '。每人的題目和獎勵是分開的。 / Correct. Your reward: ' + esc(mine.reward || '') + '. Questions and rewards are separate.</p>'
-          : '<p class="text-sm text-amber-200">答錯或逾時。你失去這間房的獎勵，數碼獸不會倒下。 / Wrong or too slow. You miss this room’s reward. Your Digimon stays up.</p>';
+          : '<p class="text-sm text-amber-200">答錯或逾時。你失去這間房的獎勵，數碼獸不會倒下。 / Wrong or too slow. You miss this room’s reward. Your Digimon stays up.</p>' + answerRevealHtml(mine.correct, mine.explanation);
       } else {
         const fill = String(mine.type || '').toUpperCase() === 'FILL';
         const options = fill
