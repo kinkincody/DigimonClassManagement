@@ -1761,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.91";
+    const CURRENT_APP_VERSION = "2.7.92";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4830,6 +4830,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     let quizAutoRuns = {};
     let quizAutoTimer = null;
     let quizAutoBusy = {};
+    let quizAutoWake = {};
     let quizAutoClosingKeys = {};
     let quizAutoRetryAtByClass = {};
     let quizAutoEndedNotices = {};
@@ -6946,6 +6947,7 @@ const PASSWORD_KDF_ITERS = 40000;
           if (currentUser && currentUser.role === 'teacher') {
             renderTeacherQuizLiveDashboard();
             closeEndedAutoQuizzes();
+            tickQuizAutoRun();
           }
         });
         dbRootRef.child('systemSettings/quizAutoRuns').on('value', (snap) => {
@@ -11516,11 +11518,15 @@ function getTeacherTemplate() {
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 class="text-xs font-black text-cyan-300 uppercase tracking-wider">自動連續搶答 / Auto popup quiz</h4>
-              <p class="text-[11px] text-slate-400">每個班可以各自開自動搶答，也可以同時為另一班發一題普通搶答。答錯或時間到之後，下一題會打開，學生可以繼續作答。<br>Each class can run its own auto quiz, and another class can have a normal popup at the same time. After a wrong answer or a timeout, the next question opens and students can answer it.</p>
+              <p class="text-[11px] text-slate-400">先選班別再開始。每一班可以同時各有一題自動搶答或普通搶答。答對、答錯或時間到之後，這一班的下一題會打開。<br>Choose a class, then start. Each class can have its own auto quiz or normal popup at the same time. After a correct answer, a wrong answer, or a timeout, that class moves on to the next question.</p>
             </div>
-            <div id="quizAutoStatus" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 space-y-1">未開始 / Idle</div>
           </div>
+          <div id="quizAutoStatus" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 space-y-1">未開始 / Idle</div>
           <div class="flex flex-wrap items-center gap-2">
+            <label class="flex items-center gap-1.5 text-[11px] text-cyan-200 font-bold">
+              <span>班別 / Class</span>
+              <select id="quizLaneClass" onchange="paintQuizAutoStatus()" class="min-h-10 max-w-[10rem] bg-slate-900 border border-cyan-500/50 rounded-lg px-2 text-xs text-cyan-100 outline-none"></select>
+            </label>
             <button type="button" onclick="teacherStartQuizAuto(30)" class="quiz-auto-start min-h-10 px-3 rounded-xl bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer active:scale-95">30 分鐘 / 30 min</button>
             <button type="button" onclick="teacherStartQuizAuto(60)" class="quiz-auto-start min-h-10 px-3 rounded-xl bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer active:scale-95">1 小時 / 1 hour</button>
             <label class="flex items-center gap-1.5 text-[11px] text-cyan-200 font-mono">
@@ -13970,9 +13976,10 @@ else if (mode === 'pvp') {
       updateDailyTrialTeacherPanel();
       if (typeof updateDungeonTeacherPanel === 'function') updateDungeonTeacherPanel();
 
+      populateQuizLaneClasses();
       const quizClassBadge = document.getElementById('teacherQuizTargetClassBadge');
       if (quizClassBadge) {
-        quizClassBadge.textContent = `Class: ${selectedTeacherClass === 'ALL' ? 'All Classes' : selectedTeacherClass}`;
+        quizClassBadge.textContent = `Class: ${quizLaneClass() === 'ALL' ? 'All Classes' : quizLaneClass()}`;
       }
     }
 
@@ -13993,9 +14000,11 @@ else if (mode === 'pvp') {
       updateDailyTrialTeacherPanel();
       if (typeof updateDungeonTeacherPanel === 'function') updateDungeonTeacherPanel();
 
+      const lane = document.getElementById('quizLaneClass');
+      if (lane && val && val !== 'ALL' && Array.from(lane.options).some(option => option.value === val)) lane.value = val;
       const quizClassBadge = document.getElementById('teacherQuizTargetClassBadge');
       if (quizClassBadge) {
-        quizClassBadge.textContent = `Class: ${selectedTeacherClass === 'ALL' ? 'All Classes' : selectedTeacherClass}`;
+        quizClassBadge.textContent = `Class: ${quizLaneClass() === 'ALL' ? 'All Classes' : quizLaneClass()}`;
       }
       if (activeTeacherSubTab === 'quiz') {
         renderTeacherQuizLiveDashboard();
@@ -18561,49 +18570,128 @@ function teacherToggleClassSpy(studentId, event) {
       return quizData;
     }
 
+    function quizLaneClass() {
+      const sel = document.getElementById('quizLaneClass');
+      const picked = sel && sel.value ? String(sel.value) : '';
+      if (picked && picked !== 'ALL') return picked;
+      if (selectedTeacherClass && selectedTeacherClass !== 'ALL') return selectedTeacherClass;
+      return picked || selectedTeacherClass || 'ALL';
+    }
+
+    function populateQuizLaneClasses() {
+      const sel = document.getElementById('quizLaneClass');
+      if (!sel) return;
+      const previous = sel.value;
+      const names = new Set();
+      Object.keys(appData.classes || {}).forEach(id => names.add(id));
+      Object.values(appData.classRegistry || {}).forEach(entry => {
+        const id = entry && typeof entry === 'object' ? entry.id : entry;
+        if (id) names.add(String(id));
+      });
+      Object.values(appData.students || {}).forEach(student => {
+        parseStudentClasses(student && (student.classId || student.classes)).forEach(name => names.add(name));
+      });
+      const sorted = Array.from(names).filter(Boolean).sort();
+      sel.innerHTML = '';
+      sorted.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        sel.appendChild(option);
+      });
+      const preferred = previous || (selectedTeacherClass !== 'ALL' ? selectedTeacherClass : '');
+      if (preferred && sorted.indexOf(preferred) >= 0) sel.value = preferred;
+      else if (sorted.length) sel.value = sorted[0];
+    }
+
+    function quizAdvanceAt(quiz, gapMs) {
+      const stamp = Number(quiz && quiz.advanceAt);
+      if (Number.isFinite(stamp) && stamp > 0) return stamp;
+      if (!quiz || !quiz.autoRunId) return 0;
+      const start = Number(quiz && quiz.timestamp);
+      const limit = quizLimitMs(quiz);
+      const gap = Number(gapMs) > 0 ? Number(gapMs) : 8000;
+      if (Number.isFinite(start) && start > 0 && Number.isFinite(limit)) return start + limit + gap;
+      return 0;
+    }
+
+    function quizNextInMs(quiz) {
+      const at = quizAdvanceAt(quiz, 8000);
+      if (!at) return null;
+      return at - syncedNow();
+    }
+
     function paintQuizAutoStatus() {
       const status = document.getElementById('quizAutoStatus');
       const stop = document.getElementById('quizAutoStopButton');
       const launch = document.getElementById('teacherLaunchQuizButton');
-      const selected = selectedTeacherClass || 'ALL';
-      const selectedRunning = selected !== 'ALL' && classAutoIsRunning(selected);
+      const lane = quizLaneClass();
+      const laneRunning = lane !== 'ALL' && classAutoIsRunning(lane);
       document.querySelectorAll('.quiz-auto-start').forEach(button => {
-        button.disabled = selectedRunning;
-        button.classList.toggle('opacity-40', selectedRunning);
-        button.classList.toggle('cursor-not-allowed', selectedRunning);
+        button.disabled = false;
+        button.classList.remove('opacity-40', 'cursor-not-allowed');
       });
       if (launch) {
-        launch.disabled = selectedRunning;
-        launch.classList.toggle('opacity-40', selectedRunning);
+        launch.disabled = false;
+        launch.classList.remove('opacity-40');
       }
-      if (stop) stop.classList.toggle('hidden', !selectedRunning);
+      if (stop) stop.classList.toggle('hidden', !laneRunning);
+      const badge = document.getElementById('teacherQuizTargetClassBadge');
+      if (badge) badge.textContent = 'Class: ' + (lane === 'ALL' ? 'All Classes' : lane);
       if (!status) return;
       const runs = Object.keys(quizAutoRuns || {}).map(key => quizAutoRuns[key]).filter(run => run && run.active === true);
-      if (!runs.length) {
-        status.textContent = '未開始 / Idle';
-        return;
-      }
-      status.innerHTML = runs.map(run => {
+      const autoIds = {};
+      const lines = runs.map(run => {
+        autoIds[String(run.id)] = true;
         const left = Number(run.endsAt) - syncedNow();
         let detail = '';
         const quiz = composeClassQuiz(run.classTag);
-        const gap = Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000;
-        if (quiz && quiz.active && String(quiz.autoRunId || '') === String(run.id) && quizClockReady(quiz)) {
-          const remain = quizRemainingMs(quiz);
-          if (remain > 0) detail = ' · 本題 ' + Math.ceil(remain / 1000) + ' 秒';
-          else detail = ' · 下一題 ' + Math.max(0, Math.ceil((gap + remain) / 1000)) + ' 秒';
+        if (quiz && quiz.active && String(quiz.autoRunId || '') === String(run.id)) {
+          const nextMs = quizNextInMs(quiz);
+          if (nextMs != null && nextMs > (Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000)) detail = ' · 本題 ' + Math.ceil((nextMs - (Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000)) / 1000) + ' 秒';
+          else if (nextMs != null) detail = ' · 下一題 ' + Math.max(0, Math.ceil(nextMs / 1000)) + ' 秒';
         }
         const encoded = encodeURIComponent(String(run.classTag || ''));
         return '<div class="flex items-center justify-between gap-2">'
-          + '<span>進行中 / Live · ' + escapeHtml(run.classTag || '') + ' · 剩餘 ' + quizAutoClock(left) + detail + '</span>'
+          + '<span>自動 / Auto · ' + escapeHtml(run.classTag || '') + ' · 剩餘 ' + quizAutoClock(left) + detail + '</span>'
           + '<button type="button" class="min-h-8 px-2 rounded-lg bg-rose-600 text-white text-[10px] font-black" onclick="teacherStopQuizAuto(decodeURIComponent(\'' + encoded + '\'))">停止 / Stop</button>'
           + '</div>';
-      }).join('');
+      });
+      Object.keys(classQuizNodes || {}).forEach(key => {
+        const live = classQuizNodes[key] && classQuizNodes[key].live;
+        if (!live || live.active !== true || (live.autoRunId && autoIds[String(live.autoRunId)])) return;
+        const encoded = encodeURIComponent(String(live.classTag || key));
+        const label = live.classTag || key;
+        lines.push('<div class="flex items-center justify-between gap-2">'
+          + '<span>普通 / Popup · ' + escapeHtml(label) + ' · ' + escapeHtml(String(live.question || '').slice(0, 28)) + '</span>'
+          + '<button type="button" class="min-h-8 px-2 rounded-lg bg-rose-600 text-white text-[10px] font-black" onclick="teacherCloseLiveQuiz(decodeURIComponent(\'' + encoded + '\'))">結束 / Close</button>'
+          + '</div>');
+      });
+      if (!lines.length) {
+        status.textContent = '未開始 / Idle';
+        return;
+      }
+      status.innerHTML = lines.join('');
+    }
+
+    function wakeQuizAuto(classKey, delayMs) {
+      const wait = Math.max(250, Math.min(Number(delayMs) || 1000, 180000));
+      if (quizAutoWake[classKey]) clearTimeout(quizAutoWake[classKey]);
+      quizAutoWake[classKey] = setTimeout(() => {
+        quizAutoWake[classKey] = null;
+        tickQuizAutoRun();
+      }, wait);
     }
 
     function ensureQuizAutoClock() {
       if (quizAutoTimer) return;
       quizAutoTimer = setInterval(tickQuizAutoRun, 1000);
+      if (!ensureQuizAutoClock.watching) {
+        ensureQuizAutoClock.watching = true;
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') tickQuizAutoRun();
+        });
+      }
       retireLegacySingleQuiz();
     }
 
@@ -18677,13 +18765,16 @@ function teacherToggleClassSpy(studentId, event) {
         if (liveId === 'publishing') {
           if (Number(run.turnClaimedAt) > now - 8000) return;
         } else if (liveId) {
-          const quiz = composeClassQuiz(run.classTag);
+          const quiz = composeClassQuiz(run.classTag || classKey);
           const mine = !!(quiz && String(quiz.autoRunId || '') === String(run.id) && String(quiz.quizId || '') === liveId);
           if (mine && quiz.active) {
-            if (!quizClockReady(quiz)) return;
-            const gap = Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000;
-            if (quizRemainingMs(quiz) > -gap) return;
-          } else if (quiz && quiz.active && String(quiz.autoRunId || '') !== String(run.id)) {
+            const due = quizAdvanceAt(quiz, run.gapMs);
+            if (due && now < due) {
+              wakeQuizAuto(classKey, due - now);
+              return;
+            }
+            if (!due && quizRemainingMs(quiz) > -(Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000)) return;
+          } else if (quiz && quiz.active && String(quiz.autoRunId || '') && String(quiz.autoRunId) !== String(run.id)) {
             return;
           }
         }
@@ -18820,7 +18911,10 @@ function teacherToggleClassSpy(studentId, event) {
       if (!quizData) throw new Error('the next question is missing an answer');
       delete quizData.submissions;
       delete quizData.winners;
+      const gapMs = Number(ready.gapMs) > 0 ? Number(ready.gapMs) : 8000;
+      quizData.advanceAt = syncedNow() + Number(quizData.timeLimit) * 1000 + gapMs;
       await publishClassLiveQuiz(quizData);
+      wakeQuizAuto(classKey, Number(quizData.timeLimit) * 1000 + gapMs);
       await runRef.update({ liveQuizId: quizData.quizId, claimToken: '', turnClaimedBy: '', turnClaimedAt: 0, pendingIndex: null, pendingQuestion: null, bank: null });
       addBattleLog('⚡ [AUTO QUIZ] 自動搶答 (' + ready.classTag + ', 限時 ' + quizData.timeLimit + ' 秒): "' + quizData.question + '"', 'evolution', ready.classTag);
       renderTeacherQuizLiveDashboard();
@@ -18837,8 +18931,8 @@ function teacherToggleClassSpy(studentId, event) {
       if (!/^\d+$/.test(text)) return alert('請選擇 1 到 180 分鐘。 / Choose 1 to 180 minutes.');
       const mins = Number(text);
       if (!Number.isInteger(mins) || mins < 1 || mins > 180) return alert('請選擇 1 到 180 分鐘。 / Choose 1 to 180 minutes.');
-      const classTag = selectedTeacherClass || 'ALL';
-      if (classTag === 'ALL') return alert('請先在上方選擇一個班別。 / Choose one class first.');
+      const classTag = quizLaneClass();
+      if (classTag === 'ALL') return alert('請先選擇一個班別。 / Choose one class first.');
       const timeInput = document.getElementById('teacherQuizTimeLimitInput');
       const seconds = readQuizTimeLimitSeconds(timeInput ? timeInput.value : '');
       if (seconds == null || seconds <= 0) return alert('自動搶答需要每題秒數，1 到 600。 / Auto quiz needs 1 to 600 seconds for each question.');
@@ -18914,7 +19008,7 @@ function teacherToggleClassSpy(studentId, event) {
 
     async function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
-      const launchClass = selectedTeacherClass || 'ALL';
+      const launchClass = quizLaneClass();
       if (launchClass !== 'ALL' && classAutoIsRunning(launchClass)) {
         return alert(launchClass + ' 的自動搶答進行中，請先停止這一班。 / Stop the auto quiz for ' + launchClass + ' before launching one question for it.');
       }
@@ -18953,7 +19047,7 @@ function teacherToggleClassSpy(studentId, event) {
 
       const shuffledTexts = rawOptions.map(o => o.text);
       const correctIndex = rawOptions.findIndex(o => o.isCorrect);
-      const targetClass = selectedTeacherClass || 'ALL';
+      const targetClass = launchClass;
 
       const quizData = {
         active: true,
@@ -18989,9 +19083,9 @@ function teacherToggleClassSpy(studentId, event) {
       }
     }
 
-    async function teacherCloseLiveQuiz() {
+    async function teacherCloseLiveQuiz(classTag) {
       if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
-      const closeClass = selectedTeacherClass || 'ALL';
+      const closeClass = classTag ? String(classTag) : quizLaneClass();
       const autoLive = closeClass !== 'ALL' && classAutoIsRunning(closeClass);
       if (!confirm(autoLive
         ? '這會停止 ' + closeClass + ' 的自動搶答，並結束目前題目。 / This stops the auto quiz for ' + closeClass + ' and closes its current question.'
@@ -19269,6 +19363,17 @@ function teacherToggleClassSpy(studentId, event) {
       const timerSecText = document.getElementById('quizTimeRemainingSec');
       const barWrapper = document.getElementById('quizTimerBarWrapper');
       const barFill = document.getElementById('quizTimerBarFill');
+      const mine = currentUser && quiz.submissions && quiz.submissions[currentUser.id];
+      const nextMs = mine && quiz.autoRunId ? quizNextInMs(quiz) : null;
+      if (nextMs != null) {
+        if (barWrapper) barWrapper.classList.add('hidden');
+        if (timerBadge) {
+          timerBadge.classList.remove('hidden');
+          timerBadge.className = "font-mono text-xs px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-bold flex items-center gap-1.5";
+        }
+        if (timerSecText) timerSecText.textContent = '下一題 ' + Math.max(0, Math.ceil(nextMs / 1000)) + 's';
+        return;
+      }
       if (isUnlimited) {
         if (barWrapper) barWrapper.classList.add('hidden');
         if (timerBadge) {
@@ -19412,13 +19517,18 @@ function teacherToggleClassSpy(studentId, event) {
         paintStudentQuizTimer(activeQuizInstance);
         ensureStudentQuizCountdown(activeQuizInstance);
       } else {
-        stopQuizStudentCountdown();
         quizOptionStamp = '';
-        const timerBadge = document.getElementById('quizTimerStudentBadge');
-        const barWrapper = document.getElementById('quizTimerBarWrapper');
-        if (timerBadge) timerBadge.classList.add('hidden');
-        if (barWrapper) barWrapper.classList.add('hidden');
         grid.innerHTML = '';
+        if (activeQuizInstance.autoRunId) {
+          paintStudentQuizTimer(activeQuizInstance);
+          ensureStudentQuizCountdown(activeQuizInstance);
+        } else {
+          stopQuizStudentCountdown();
+          const timerBadge = document.getElementById('quizTimerStudentBadge');
+          const barWrapper = document.getElementById('quizTimerBarWrapper');
+          if (timerBadge) timerBadge.classList.add('hidden');
+          if (barWrapper) barWrapper.classList.add('hidden');
+        }
         feedbackBox.classList.remove('hidden');
 
         if (mySub.isTimeout) {
@@ -19547,21 +19657,26 @@ function teacherToggleClassSpy(studentId, event) {
           let awardedRank = null;
           let podiumValue = null;
           if (acceptedCorrect) {
-            const claim = await dbRootRef.child('classQuizzes/' + classKey + '/podium/' + answerQuizId).transaction(cur => {
-              const podium = cur && typeof cur === 'object' ? cur : {};
-              if (podium.rank1 && podium.rank1.studentId === studentId) return podium;
-              if (podium.rank2 && podium.rank2.studentId === studentId) return podium;
-              if (podium.rank3 && podium.rank3.studentId === studentId) return podium;
-              const seat = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
-              if (!podium.rank1) podium.rank1 = seat;
-              else if (!podium.rank2) podium.rank2 = seat;
-              else if (!podium.rank3) podium.rank3 = seat;
-              return podium;
-            });
-            podiumValue = claim && claim.committed && claim.snapshot ? claim.snapshot.val() : null;
-            if (podiumValue && podiumValue.rank1 && podiumValue.rank1.studentId === studentId) awardedRank = 1;
-            else if (podiumValue && podiumValue.rank2 && podiumValue.rank2.studentId === studentId) awardedRank = 2;
-            else if (podiumValue && podiumValue.rank3 && podiumValue.rank3.studentId === studentId) awardedRank = 3;
+            try {
+              const claim = await Promise.race([
+                dbRootRef.child('classQuizzes/' + classKey + '/podium/' + answerQuizId).transaction(cur => {
+                  const podium = cur && typeof cur === 'object' ? cur : {};
+                  if (podium.rank1 && podium.rank1.studentId === studentId) return podium;
+                  if (podium.rank2 && podium.rank2.studentId === studentId) return podium;
+                  if (podium.rank3 && podium.rank3.studentId === studentId) return podium;
+                  const seat = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+                  if (!podium.rank1) podium.rank1 = seat;
+                  else if (!podium.rank2) podium.rank2 = seat;
+                  else if (!podium.rank3) podium.rank3 = seat;
+                  return podium;
+                }),
+                new Promise(resolve => setTimeout(() => resolve(null), 2000))
+              ]);
+              podiumValue = claim && claim.committed && claim.snapshot ? claim.snapshot.val() : null;
+              if (podiumValue && podiumValue.rank1 && podiumValue.rank1.studentId === studentId) awardedRank = 1;
+              else if (podiumValue && podiumValue.rank2 && podiumValue.rank2.studentId === studentId) awardedRank = 2;
+              else if (podiumValue && podiumValue.rank3 && podiumValue.rank3.studentId === studentId) awardedRank = 3;
+            } catch (err) {}
           }
           const submission = {
             studentId: st.id,
