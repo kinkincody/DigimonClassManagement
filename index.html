@@ -1761,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.90";
+    const CURRENT_APP_VERSION = "2.7.91";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4826,14 +4826,15 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     // 搶答動態倒數計時器變數
     let quizStudentCountdownTimer = null;
     let quizTeacherCountdownTimer = null;
-    let quizAutoRun = null;
+    let classQuizNodes = {};
+    let quizAutoRuns = {};
     let quizAutoTimer = null;
-    let quizAutoTickBusy = false;
-    let quizAutoClosing = false;
-    let quizAutoRetryAt = 0;
-    let quizAutoEndedNotice = '';
-    let quizAutoBank = [];
-    let quizAutoBankRunId = '';
+    let quizAutoBusy = {};
+    let quizAutoClosingKeys = {};
+    let quizAutoRetryAtByClass = {};
+    let quizAutoEndedNotices = {};
+    let quizAutoBanks = {};
+    let legacyQuizRetired = false;
     let firebaseServerTimeOffset = 0;
     let firebaseServerTimeOffsetReady = false;
     const pendingFactionWrites = {};
@@ -4884,6 +4885,7 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     let quizSeenAnchor = null;
     let quizOptionStamp = '';
     let quizAnswerInFlight = false;
+    let quizAnswerFlight = '';
     // 老師端答案隱藏/顯示控制旗標（true = 遮蔽答案以防課堂抄襲，false = 顯示）
     let isQuizAnswerHiddenByTeacher = true;
 
@@ -6671,7 +6673,7 @@ const PASSWORD_KDF_ITERS = 40000;
         firebase.database().ref('.info/serverTimeOffset').on('value', (snap) => {
           if (!snap.exists()) return;
           noteFirebaseServerTimeOffset(snap.val());
-          if (activeQuizInstance && activeQuizInstance.active) {
+          if ((activeQuizInstance && activeQuizInstance.active) || Object.keys(classQuizNodes || {}).length) {
             renderQuizModalForStudent();
             if (currentUser && currentUser.role === 'teacher') renderTeacherQuizLiveDashboard();
           }
@@ -6938,25 +6940,29 @@ const PASSWORD_KDF_ITERS = 40000;
           applySuperAdminIndex(snap.val() || {});
         });
 
-        dbRootRef.child('activeQuiz').on('value', (snap) => {
-          activeQuizInstance = snap.val();
-          renderQuizModalForStudent();
+        dbRootRef.child('classQuizzes').on('value', (snap) => {
+          classQuizNodes = snap.val() || {};
+          if (currentUser && currentUser.role === 'student') renderQuizModalForStudent();
           if (currentUser && currentUser.role === 'teacher') {
             renderTeacherQuizLiveDashboard();
-            closeEndedAutoQuiz();
+            closeEndedAutoQuizzes();
           }
         });
-        dbRootRef.child('systemSettings/quizAutoRun').on('value', (snap) => {
-          const previous = quizAutoRun;
-          quizAutoRun = snap.val();
+        dbRootRef.child('systemSettings/quizAutoRuns').on('value', (snap) => {
+          const previous = quizAutoRuns;
+          quizAutoRuns = snap.val() || {};
           paintQuizAutoStatus();
           if (!currentUser || currentUser.role !== 'teacher') return;
           ensureQuizAutoClock();
-          if (quizAutoRun && quizAutoRun.active === true) tickQuizAutoRun();
-          else if (previous && previous.active === true && quizAutoRun && String(quizAutoRun.id || '') === String(previous.id || '')) {
-            closeEndedAutoQuiz();
-            noteQuizAutoEnded(quizAutoRun);
-          }
+          tickQuizAutoRun();
+          Object.keys(previous || {}).forEach(classKey => {
+            const prev = previous[classKey];
+            const next = quizAutoRuns[classKey];
+            if (prev && prev.active === true && next && next.active !== true && String(next.id || '') === String(prev.id || '')) {
+              closeEndedAutoQuiz(classKey);
+              noteQuizAutoEnded(next);
+            }
+          });
         });
        // 考卷系統即時同步監聽
         dbRootRef.child('activeExam').on('value', (snap) => {
@@ -11510,9 +11516,9 @@ function getTeacherTemplate() {
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 class="text-xs font-black text-cyan-300 uppercase tracking-wider">自動連續搶答 / Auto popup quiz</h4>
-              <p class="text-[11px] text-slate-400">先選一個班別，並匯入題庫。按下 30 分鐘或 1 小時後，這個班會按上方的每題秒數連續彈出搶答。時間到就自動結束。每題做完後停留 8 秒，再出下一題。<br>Choose one class and import the bank. For 30 minutes or 1 hour, that class keeps getting popup quizzes. Each question uses the seconds above, waits 8 seconds, then the next one appears. The quiz ends when the time range ends.</p>
+              <p class="text-[11px] text-slate-400">每個班可以各自開自動搶答，也可以同時為另一班發一題普通搶答。答錯或時間到之後，下一題會打開，學生可以繼續作答。<br>Each class can run its own auto quiz, and another class can have a normal popup at the same time. After a wrong answer or a timeout, the next question opens and students can answer it.</p>
             </div>
-            <span id="quizAutoStatus" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300">未開始 / Idle</span>
+            <div id="quizAutoStatus" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 space-y-1">未開始 / Idle</div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" onclick="teacherStartQuizAuto(30)" class="quiz-auto-start min-h-10 px-3 rounded-xl bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer active:scale-95">30 分鐘 / 30 min</button>
@@ -18434,33 +18440,72 @@ function teacherToggleClassSpy(studentId, event) {
     }
 
     function rememberAutoQuizBank(runId, bank) {
-      quizAutoBank = bank || [];
-      quizAutoBankRunId = String(runId || '');
+      const id = String(runId || '');
+      if (!id) return;
+      quizAutoBanks[id] = bank || [];
       try {
-        localStorage.setItem('quizAutoBank:' + quizAutoBankRunId, JSON.stringify(quizAutoBank));
+        localStorage.setItem('quizAutoBank:' + id, JSON.stringify(quizAutoBanks[id]));
       } catch (err) {}
     }
 
     function localAutoQuizBank(run) {
       if (!run || !run.id) return [];
-      if (quizAutoBankRunId === String(run.id) && quizAutoBank.length) return quizAutoBank;
+      const id = String(run.id);
+      if (quizAutoBanks[id] && quizAutoBanks[id].length) return quizAutoBanks[id];
       try {
-        const saved = JSON.parse(localStorage.getItem('quizAutoBank:' + run.id) || 'null');
+        const saved = JSON.parse(localStorage.getItem('quizAutoBank:' + id) || 'null');
         if (Array.isArray(saved) && saved.length) {
-          quizAutoBank = saved;
-          quizAutoBankRunId = String(run.id);
-          return quizAutoBank;
+          quizAutoBanks[id] = saved;
+          return quizAutoBanks[id];
         }
       } catch (err) {}
       return [];
     }
 
     function forgetAutoQuizBank(runId) {
-      if (runId && quizAutoBankRunId === String(runId)) {
-        quizAutoBank = [];
-        quizAutoBankRunId = '';
-      }
-      try { if (runId) localStorage.removeItem('quizAutoBank:' + runId); } catch (err) {}
+      const id = String(runId || '');
+      if (id) delete quizAutoBanks[id];
+      try { if (id) localStorage.removeItem('quizAutoBank:' + id); } catch (err) {}
+    }
+
+    function classQuizKey(classTag) {
+      return sanitizeClassKey(classTag || 'ALL');
+    }
+
+    function composeClassQuiz(classTag) {
+      const key = classQuizKey(classTag);
+      const node = classQuizNodes[key];
+      const live = node && node.live;
+      if (!live || !live.quizId) return null;
+      const quizId = String(live.quizId);
+      const submissions = (node.submissions && node.submissions[quizId]) || {};
+      const winners = (node.podium && node.podium[quizId]) || {};
+      return Object.assign({}, live, { submissions: submissions, winners: winners });
+    }
+
+    function pickStudentClassQuiz() {
+      if (!currentUser) return null;
+      const st = appData.students && appData.students[currentUser.id];
+      const classes = parseStudentClasses(st && (st.classId || st.classes));
+      let best = null;
+      classes.forEach(cls => {
+        const quiz = composeClassQuiz(cls);
+        if (!quiz || quiz.active !== true) return;
+        const stamp = Number(quiz.timestamp) || 0;
+        if (!best || stamp >= (Number(best.timestamp) || 0)) best = quiz;
+      });
+      if (best) return best;
+      const everyone = composeClassQuiz('ALL');
+      return everyone && everyone.active === true ? everyone : null;
+    }
+
+    function autoRunForClass(classTag) {
+      return quizAutoRuns[classQuizKey(classTag)] || null;
+    }
+
+    function classAutoIsRunning(classTag) {
+      const run = autoRunForClass(classTag);
+      return !!(run && run.active === true && syncedNow() + 3000 < Number(run.endsAt));
     }
 
     function takeNextAutoQuestion(run) {
@@ -18520,102 +18565,143 @@ function teacherToggleClassSpy(studentId, event) {
       const status = document.getElementById('quizAutoStatus');
       const stop = document.getElementById('quizAutoStopButton');
       const launch = document.getElementById('teacherLaunchQuizButton');
-      const running = !!(quizAutoRun && quizAutoRun.active === true);
+      const selected = selectedTeacherClass || 'ALL';
+      const selectedRunning = selected !== 'ALL' && classAutoIsRunning(selected);
       document.querySelectorAll('.quiz-auto-start').forEach(button => {
-        button.disabled = running;
-        button.classList.toggle('opacity-40', running);
-        button.classList.toggle('cursor-not-allowed', running);
+        button.disabled = selectedRunning;
+        button.classList.toggle('opacity-40', selectedRunning);
+        button.classList.toggle('cursor-not-allowed', selectedRunning);
       });
       if (launch) {
-        launch.disabled = running;
-        launch.classList.toggle('opacity-40', running);
+        launch.disabled = selectedRunning;
+        launch.classList.toggle('opacity-40', selectedRunning);
       }
-      if (stop) stop.classList.toggle('hidden', !running);
+      if (stop) stop.classList.toggle('hidden', !selectedRunning);
       if (!status) return;
-      if (!quizAutoRun) {
+      const runs = Object.keys(quizAutoRuns || {}).map(key => quizAutoRuns[key]).filter(run => run && run.active === true);
+      if (!runs.length) {
         status.textContent = '未開始 / Idle';
         return;
       }
-      if (!running) {
-        const reason = String(quizAutoRun.endedReason || '');
-        status.textContent = reason === 'time'
-          ? '時間到，已結束 / Time is up'
-          : (reason === 'stop' ? '已停止 / Stopped' : '已結束 / Ended');
-        return;
-      }
-      const left = Number(quizAutoRun.endsAt) - syncedNow();
-      let detail = '';
-      const quiz = activeQuizInstance;
-      const gap = Number(quizAutoRun.gapMs) > 0 ? Number(quizAutoRun.gapMs) : 8000;
-      if (quiz && quiz.active && String(quiz.autoRunId || '') === String(quizAutoRun.id) && quizClockReady(quiz)) {
-        const remain = quizRemainingMs(quiz);
-        if (remain > 0) detail = ' · 本題 ' + Math.ceil(remain / 1000) + ' 秒';
-        else detail = ' · 下一題 ' + Math.max(0, Math.ceil((gap + remain) / 1000)) + ' 秒';
-      }
-      status.textContent = '進行中 / Live · ' + quizAutoRun.classTag + ' · 剩餘 ' + quizAutoClock(left) + detail;
+      status.innerHTML = runs.map(run => {
+        const left = Number(run.endsAt) - syncedNow();
+        let detail = '';
+        const quiz = composeClassQuiz(run.classTag);
+        const gap = Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000;
+        if (quiz && quiz.active && String(quiz.autoRunId || '') === String(run.id) && quizClockReady(quiz)) {
+          const remain = quizRemainingMs(quiz);
+          if (remain > 0) detail = ' · 本題 ' + Math.ceil(remain / 1000) + ' 秒';
+          else detail = ' · 下一題 ' + Math.max(0, Math.ceil((gap + remain) / 1000)) + ' 秒';
+        }
+        const encoded = encodeURIComponent(String(run.classTag || ''));
+        return '<div class="flex items-center justify-between gap-2">'
+          + '<span>進行中 / Live · ' + escapeHtml(run.classTag || '') + ' · 剩餘 ' + quizAutoClock(left) + detail + '</span>'
+          + '<button type="button" class="min-h-8 px-2 rounded-lg bg-rose-600 text-white text-[10px] font-black" onclick="teacherStopQuizAuto(decodeURIComponent(\'' + encoded + '\'))">停止 / Stop</button>'
+          + '</div>';
+      }).join('');
     }
 
     function ensureQuizAutoClock() {
       if (quizAutoTimer) return;
       quizAutoTimer = setInterval(tickQuizAutoRun, 1000);
+      retireLegacySingleQuiz();
     }
 
     function noteQuizAutoEnded(run) {
-      if (!run || !run.id || quizAutoEndedNotice === String(run.id)) return;
-      quizAutoEndedNotice = String(run.id);
+      if (!run || !run.id || quizAutoEndedNotices[String(run.id)]) return;
+      quizAutoEndedNotices[String(run.id)] = true;
       paintQuizAutoStatus();
       const reason = String(run.endedReason || '');
-      if (reason === 'time') showToast('Auto quiz ended', '時間到，搶答已結束。 / The time range ended.', 'info');
-      else if (reason === 'stop') showToast('Auto quiz stopped', '自動搶答已停止。 / Auto quiz stopped.', 'info');
+      const label = run.classTag ? run.classTag + ' ' : '';
+      if (reason === 'time') showToast('Auto quiz ended', label + '時間到，搶答已結束。 / The time range ended.', 'info');
+      else if (reason === 'stop') showToast('Auto quiz stopped', label + '自動搶答已停止。 / Auto quiz stopped.', 'info');
     }
 
-    function closeEndedAutoQuiz() {
-      const run = quizAutoRun;
-      if (!dbRootRef || !run || run.active === true || !run.id || quizAutoClosing) return;
-      const quiz = activeQuizInstance;
+    function closeEndedAutoQuiz(classKey) {
+      const run = quizAutoRuns[classKey];
+      if (!dbRootRef || !run || run.active === true || !run.id || quizAutoClosingKeys[classKey]) return;
+      const quiz = composeClassQuiz(run.classTag);
       if (!quiz || quiz.active !== true || String(quiz.autoRunId || '') !== String(run.id)) return;
-      quizAutoClosing = true;
-      dbRootRef.child('activeQuiz/active').set(false).finally(() => { quizAutoClosing = false; });
+      quizAutoClosingKeys[classKey] = true;
+      dbRootRef.child('classQuizzes/' + classKey + '/live/active').set(false).finally(() => { quizAutoClosingKeys[classKey] = false; });
+    }
+
+    function closeEndedAutoQuizzes() {
+      Object.keys(quizAutoRuns || {}).forEach(classKey => {
+        const run = quizAutoRuns[classKey];
+        if (run && run.active !== true) closeEndedAutoQuiz(classKey);
+      });
+    }
+
+    async function publishClassLiveQuiz(quizData) {
+      await ensurePlaySession();
+      const key = classQuizKey(quizData.classTag);
+      const live = Object.assign({}, quizData);
+      delete live.submissions;
+      delete live.winners;
+      await dbRootRef.child('classQuizzes/' + key + '/live').set(live);
+      const saved = await confirmSavedNode('classQuizzes/' + key + '/live', value => value && value.active && String(value.quizId) === String(live.quizId), 'the quiz was not saved');
+      if (!classQuizNodes[key]) classQuizNodes[key] = {};
+      classQuizNodes[key].live = saved;
+      return saved;
+    }
+
+    async function retireLegacySingleQuiz() {
+      if (legacyQuizRetired || !dbRootRef || !currentUser || currentUser.role !== 'teacher') return;
+      legacyQuizRetired = true;
+      try {
+        await ensurePlaySession();
+        const runSnap = await dbRootRef.child('systemSettings/quizAutoRun').once('value');
+        const run = runSnap.val();
+        if (run && run.active === true) await dbRootRef.child('systemSettings/quizAutoRun/active').set(false);
+        const quizSnap = await dbRootRef.child('activeQuiz/active').once('value');
+        if (quizSnap.val() === true) await dbRootRef.child('activeQuiz/active').set(false);
+      } catch (err) {}
     }
 
     function tickQuizAutoRun() {
       paintQuizAutoStatus();
-      if (quizAutoTickBusy || !currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
-      if (syncedNow() < quizAutoRetryAt) return;
-      const run = quizAutoRun;
-      if (!run || run.active !== true || !run.id) return;
-      const now = syncedNow();
-      if (now + 3000 >= Number(run.endsAt)) {
-        quizAutoTickBusy = true;
-        finishQuizAutoRun('time', run.id).finally(() => { quizAutoTickBusy = false; });
-        return;
-      }
-      if (!localAutoQuizBank(run).length) return;
-      const liveId = String(run.liveQuizId || '');
-      if (liveId === 'publishing') {
-        if (Number(run.turnClaimedAt) > now - 8000) return;
-      } else if (liveId) {
-        const quiz = activeQuizInstance;
-        const mine = !!(quiz && String(quiz.autoRunId || '') === String(run.id) && String(quiz.quizId || '') === liveId);
-        if (!mine) return;
-        if (quiz.active) {
-          if (!quizClockReady(quiz)) return;
-          const gap = Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000;
-          if (quizRemainingMs(quiz) > -gap) return;
+      if (!currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
+      Object.keys(quizAutoRuns || {}).forEach(classKey => {
+        const run = quizAutoRuns[classKey];
+        if (!run || run.active !== true || !run.id || quizAutoBusy[classKey]) return;
+        if (syncedNow() < (quizAutoRetryAtByClass[classKey] || 0)) return;
+        const now = syncedNow();
+        if (now + 3000 >= Number(run.endsAt)) {
+          quizAutoBusy[classKey] = true;
+          finishQuizAutoRun('time', run.id, classKey).finally(() => { quizAutoBusy[classKey] = false; });
+          return;
         }
-      }
-      const finishedId = liveId === 'publishing' ? '' : liveId;
-      quizAutoTickBusy = true;
-      publishClaimedAutoQuiz(finishedId).catch(err => {
-        quizAutoRetryAt = syncedNow() + 5000;
-        showToast('Auto quiz', '下一題沒有發布。 / The next question was not published. ' + (err && err.message ? err.message : ''), 'damage');
-      }).finally(() => { quizAutoTickBusy = false; });
+        if (!localAutoQuizBank(run).length) return;
+        const liveId = String(run.liveQuizId || '');
+        if (liveId === 'publishing') {
+          if (Number(run.turnClaimedAt) > now - 8000) return;
+        } else if (liveId) {
+          const quiz = composeClassQuiz(run.classTag);
+          const mine = !!(quiz && String(quiz.autoRunId || '') === String(run.id) && String(quiz.quizId || '') === liveId);
+          if (mine && quiz.active) {
+            if (!quizClockReady(quiz)) return;
+            const gap = Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000;
+            if (quizRemainingMs(quiz) > -gap) return;
+          } else if (quiz && quiz.active && String(quiz.autoRunId || '') !== String(run.id)) {
+            return;
+          }
+        }
+        const finishedId = liveId === 'publishing' ? '' : liveId;
+        quizAutoBusy[classKey] = true;
+        publishClaimedAutoQuiz(classKey, finishedId).catch(err => {
+          quizAutoRetryAtByClass[classKey] = syncedNow() + 5000;
+          showToast('Auto quiz', (run.classTag || '') + ' 下一題沒有發布。 / The next question was not published. ' + (err && err.message ? err.message : ''), 'damage');
+        }).finally(() => { quizAutoBusy[classKey] = false; });
+      });
     }
 
-    async function finishQuizAutoRun(reason, runId) {
+    async function finishQuizAutoRun(reason, runId, classKey) {
       if (!dbRootRef || !runId) return;
+      const key = classKey || Object.keys(quizAutoRuns || {}).find(item => quizAutoRuns[item] && String(quizAutoRuns[item].id || '') === String(runId));
+      if (!key) return;
       await ensurePlaySession();
-      const result = await dbRootRef.child('systemSettings/quizAutoRun').transaction(run => {
+      const result = await dbRootRef.child('systemSettings/quizAutoRuns/' + key).transaction(run => {
         if (!run || run.active !== true || String(run.id || '') !== String(runId)) return;
         run.active = false;
         run.endedReason = reason || 'stop';
@@ -18629,26 +18715,26 @@ function teacherToggleClassSpy(studentId, event) {
         return run;
       });
       if (!result.committed) {
-        closeEndedAutoQuiz();
+        closeEndedAutoQuiz(key);
         paintQuizAutoStatus();
         return;
       }
       const ended = result.snapshot.val();
-      if (ended) quizAutoRun = ended;
+      if (ended) quizAutoRuns[key] = ended;
       const endedReason = String((ended && ended.endedReason) || reason || 'stop');
       addBattleLog('⚡ [AUTO QUIZ] ' + (endedReason === 'time' ? '時間到，自動搶答結束' : '老師停止自動搶答') + ' (' + ((ended && ended.classTag) || '') + ')。', 'normal', ended && ended.classTag);
       noteQuizAutoEnded(ended || { id: runId, endedReason: endedReason });
       forgetAutoQuizBank(runId);
-      closeEndedAutoQuiz();
+      closeEndedAutoQuiz(key);
     }
 
-    async function publishClaimedAutoQuiz(finishedQuizId) {
-      if (!dbRootRef || !currentUser || currentUser.role !== 'teacher') return;
+    async function publishClaimedAutoQuiz(classKey, finishedQuizId) {
+      if (!dbRootRef || !currentUser || currentUser.role !== 'teacher' || !classKey) return;
       await ensurePlaySession();
       const teacherId = String(currentUser.id);
       const now = syncedNow();
       const claimToken = teacherId + ':' + now + ':' + Math.random().toString(36).slice(2, 8);
-      const runRef = dbRootRef.child('systemSettings/quizAutoRun');
+      const runRef = dbRootRef.child('systemSettings/quizAutoRuns/' + classKey);
       const claimed = await runRef.transaction(run => {
         if (!run || run.active !== true) return;
         if (String(run.claimToken || '') === claimToken && String(run.liveQuizId || '') === 'publishing' && run.pendingIndex != null) return run;
@@ -18689,13 +18775,13 @@ function teacherToggleClassSpy(studentId, event) {
       });
       if (!claimed.committed) return;
       const run = claimed.snapshot.val();
-      if (run) quizAutoRun = run;
+      if (run) quizAutoRuns[classKey] = run;
       if (!run || run.active !== true) {
         if (run) {
           addBattleLog('⚡ [AUTO QUIZ] ' + (run.endedReason === 'time' ? '時間到，自動搶答結束' : '自動搶答結束') + ' (' + (run.classTag || '') + ')。', 'normal', run.classTag);
           noteQuizAutoEnded(run);
           forgetAutoQuizBank(run.id);
-          closeEndedAutoQuiz();
+          closeEndedAutoQuiz(classKey);
         }
         return;
       }
@@ -18723,19 +18809,19 @@ function teacherToggleClassSpy(studentId, event) {
       const ready = held.snapshot.val();
       if (!ready || ready.active !== true) {
         if (ready) {
-          quizAutoRun = ready;
+          quizAutoRuns[classKey] = ready;
           noteQuizAutoEnded(ready);
           forgetAutoQuizBank(ready.id);
-          closeEndedAutoQuiz();
+          closeEndedAutoQuiz(classKey);
         }
         return;
       }
       const quizData = buildLiveQuizFromBankItem(claimedItem, ready.classTag, Number(ready.questionSeconds), ready.id);
       if (!quizData) throw new Error('the next question is missing an answer');
-      await dbRootRef.child('activeQuiz').set(quizData);
+      delete quizData.submissions;
+      delete quizData.winners;
+      await publishClassLiveQuiz(quizData);
       await runRef.update({ liveQuizId: quizData.quizId, claimToken: '', turnClaimedBy: '', turnClaimedAt: 0, pendingIndex: null, pendingQuestion: null, bank: null });
-      const live = await confirmSavedNode('activeQuiz', value => value && value.active && String(value.quizId) === String(quizData.quizId), 'the quiz was not saved');
-      activeQuizInstance = live;
       addBattleLog('⚡ [AUTO QUIZ] 自動搶答 (' + ready.classTag + ', 限時 ' + quizData.timeLimit + ' 秒): "' + quizData.question + '"', 'evolution', ready.classTag);
       renderTeacherQuizLiveDashboard();
     }
@@ -18758,8 +18844,8 @@ function teacherToggleClassSpy(studentId, event) {
       if (seconds == null || seconds <= 0) return alert('自動搶答需要每題秒數，1 到 600。 / Auto quiz needs 1 to 600 seconds for each question.');
       const bank = (importedQuizBank || []).map(quizAutoStoredItem).filter(Boolean);
       if (!bank.length) return alert('請先匯入 Excel 題庫。 / Import the Excel question bank first.');
-      if (quizAutoRun && quizAutoRun.active === true && syncedNow() + 3000 < Number(quizAutoRun.endsAt)) {
-        return alert('自動搶答已經在進行。 / An auto quiz is already running.');
+      if (classAutoIsRunning(classTag)) {
+        return alert(classTag + ' 的自動搶答已經在進行。 / An auto quiz for ' + classTag + ' is already running.');
       }
       const label = mins === 60 ? '1 小時 / 1 hour' : (mins + ' 分鐘 / ' + mins + ' min');
       if (!confirm('為 ' + classTag + ' 開始自動搶答 ' + label + '？每題 ' + seconds + ' 秒，時間到會結束。 / Start auto quiz for ' + classTag + ' (' + label + ')? Each question is ' + seconds + 's and it ends when the time is up.')) return;
@@ -18783,48 +18869,54 @@ function teacherToggleClassSpy(studentId, event) {
         turnClaimedAt: 0,
         endedReason: ''
       };
-      quizAutoTickBusy = true;
+      const classKey = classQuizKey(classTag);
+      quizAutoBusy[classKey] = true;
       try {
         await ensurePlaySession();
-        const placed = await dbRootRef.child('systemSettings/quizAutoRun').transaction(current => {
+        const placed = await dbRootRef.child('systemSettings/quizAutoRuns/' + classKey).transaction(current => {
           if (current && current.active === true && syncedNow() + 3000 < Number(current.endsAt)) return;
           return run;
         });
-        if (!placed.committed) return alert('自動搶答已經在進行。 / An auto quiz is already running.');
-        quizAutoRun = placed.snapshot.val() || run;
-        rememberAutoQuizBank(quizAutoRun.id, bank);
-        quizAutoEndedNotice = '';
+        if (!placed.committed) return alert(classTag + ' 的自動搶答已經在進行。 / An auto quiz for ' + classTag + ' is already running.');
+        quizAutoRuns[classKey] = placed.snapshot.val() || run;
+        rememberAutoQuizBank(quizAutoRuns[classKey].id, bank);
+        delete quizAutoEndedNotices[quizAutoRuns[classKey].id];
         paintQuizAutoStatus();
         ensureQuizAutoClock();
         addBattleLog('⚡ [AUTO QUIZ] 自動搶答開始 (' + classTag + ', ' + mins + ' 分鐘, 每題 ' + seconds + ' 秒)。', 'evolution', classTag);
         showToast('Auto quiz started', classTag + ' 自動搶答已開始，' + label + '。 / Auto quiz started.', 'evolution');
-        await publishClaimedAutoQuiz('');
+        await publishClaimedAutoQuiz(classKey, '');
       } catch (err) {
         alert('自動搶答沒有開始：' + (err && err.message ? err.message : err));
       } finally {
-        quizAutoTickBusy = false;
+        quizAutoBusy[classKey] = false;
       }
     }
 
-    async function teacherStopQuizAuto() {
+    async function teacherStopQuizAuto(classTag) {
       if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
-      if (!quizAutoRun || quizAutoRun.active !== true) return;
-      if (!confirm('停止自動搶答並結束目前題目？ / Stop the auto quiz and close the current question?')) return;
-      quizAutoTickBusy = true;
+      const tag = classTag ? String(classTag) : (selectedTeacherClass || '');
+      if (!tag || tag === 'ALL') return alert('請先選擇要停止的班別。 / Choose the class to stop.');
+      const classKey = classQuizKey(tag);
+      const run = quizAutoRuns[classKey];
+      if (!run || run.active !== true) return;
+      if (!confirm('停止 ' + tag + ' 的自動搶答並結束目前題目？ / Stop the auto quiz for ' + tag + ' and close its current question?')) return;
+      quizAutoBusy[classKey] = true;
       try {
-        await finishQuizAutoRun('stop', quizAutoRun.id);
+        await finishQuizAutoRun('stop', run.id, classKey);
         renderTeacherQuizLiveDashboard();
       } catch (err) {
         alert('停止失敗: ' + (err && err.message ? err.message : err));
       } finally {
-        quizAutoTickBusy = false;
+        quizAutoBusy[classKey] = false;
       }
     }
 
     async function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
-      if (quizAutoRun && quizAutoRun.active === true) {
-        return alert('自動搶答進行中，請先停止。 / Stop the auto quiz before launching one question.');
+      const launchClass = selectedTeacherClass || 'ALL';
+      if (launchClass !== 'ALL' && classAutoIsRunning(launchClass)) {
+        return alert(launchClass + ' 的自動搶答進行中，請先停止這一班。 / Stop the auto quiz for ' + launchClass + ' before launching one question for it.');
       }
 
       const q = repairQuestionText(document.getElementById('teacherQuizQuestionInput').value.trim());
@@ -18886,9 +18978,7 @@ function teacherToggleClassSpy(studentId, event) {
         const teacher = (appData.teachers && appData.teachers[currentUser.id]) || currentUser.data || {};
         try { await publishLoginSession('teachers', currentUser.id, currentUser.authToken, teacher); } catch (err) {}
         try {
-          await dbRootRef.child('activeQuiz').set(quizData);
-          const live = await confirmSavedNode('activeQuiz', (value) => value && value.active && String(value.quizId) === String(quizData.quizId), 'the quiz was not saved');
-          activeQuizInstance = live;
+          await publishClassLiveQuiz(quizData);
           const limitMsg = timeLimitSec > 0 ? `限時 ${timeLimitSec} 秒 (${timeLimitSec}s)` : '無限時間 (No Limit)';
           addBattleLog(`⚡ [LIVE QUIZ] 老師發布搶答 (${limitMsg}): "${q}"! 1st: +2 次攻擊, 2nd: +1 次攻擊, 3rd: +30 EXP, 其餘答對: +10 EXP!`, "evolution", targetClass);
           showToast("Quiz Launched", `搶答題目已發布 (${limitMsg})！ / Speed Quiz Launched!`, "evolution");
@@ -18901,22 +18991,26 @@ function teacherToggleClassSpy(studentId, event) {
 
     async function teacherCloseLiveQuiz() {
       if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
-      const autoLive = !!(quizAutoRun && quizAutoRun.active === true);
+      const closeClass = selectedTeacherClass || 'ALL';
+      const autoLive = closeClass !== 'ALL' && classAutoIsRunning(closeClass);
       if (!confirm(autoLive
-        ? '這會停止自動搶答，並結束目前題目。 / This stops the auto quiz and closes the current question.'
-        : 'Are you sure you want to CLOSE the active Speed Quiz challenge?')) return;
+        ? '這會停止 ' + closeClass + ' 的自動搶答，並結束目前題目。 / This stops the auto quiz for ' + closeClass + ' and closes its current question.'
+        : '結束 ' + (closeClass === 'ALL' ? '全班' : closeClass) + ' 目前的搶答？ / Close the speed quiz for ' + (closeClass === 'ALL' ? 'all classes' : closeClass) + '?')) return;
       if (!dbRootRef) return;
       try {
         await ensurePlaySession();
         if (autoLive) {
-          quizAutoTickBusy = true;
-          try { await finishQuizAutoRun('stop', quizAutoRun.id); }
-          finally { quizAutoTickBusy = false; }
+          const classKey = classQuizKey(closeClass);
+          const run = quizAutoRuns[classKey];
+          quizAutoBusy[classKey] = true;
+          try { if (run) await finishQuizAutoRun('stop', run.id, classKey); }
+          finally { quizAutoBusy[classKey] = false; }
           if (typeof renderTeacherQuizLiveDashboard === 'function') renderTeacherQuizLiveDashboard();
           return;
         }
-        await dbRootRef.child('activeQuiz/active').set(false);
-        const saved = await dbRootRef.child('activeQuiz/active').once('value');
+        const classKey = classQuizKey(closeClass);
+        await dbRootRef.child('classQuizzes/' + classKey + '/live/active').set(false);
+        const saved = await dbRootRef.child('classQuizzes/' + classKey + '/live/active').once('value');
         if (saved.val() !== false) throw new Error('the quiz was not closed');
         showToast("Quiz Ended", "Speed quiz challenge closed.", "info");
         addBattleLog(`⚡ [QUIZ CLOSED] Live speed quiz has been closed by Teacher.`, "normal", selectedTeacherClass);
@@ -18931,7 +19025,10 @@ function teacherToggleClassSpy(studentId, event) {
     }
 
     function renderTeacherQuizLiveDashboard() {
-      if (currentUser && currentUser.role === 'teacher') ensureQuizAutoClock();
+      if (currentUser && currentUser.role === 'teacher') {
+        ensureQuizAutoClock();
+        activeQuizInstance = composeClassQuiz(selectedTeacherClass || 'ALL');
+      }
       paintQuizAutoStatus();
       const statusBadge = document.getElementById('quizStatusIndicator');
       const qSnippet = document.getElementById('quizActiveQuestionSnippet');
@@ -19258,6 +19355,7 @@ function teacherToggleClassSpy(studentId, event) {
     function renderQuizModalForStudent() {
       const modal = document.getElementById('modalQuizOverlay');
       if (!modal) return;
+      if (currentUser && currentUser.role === 'student') activeQuizInstance = pickStudentClassQuiz();
 
       if (!activeQuizInstance || !activeQuizInstance.active) {
         stopQuizStudentCountdown();
@@ -19403,115 +19501,135 @@ function teacherToggleClassSpy(studentId, event) {
       const submitTime = syncedNow();
       const timeString = serverClockText(true);
       const answerQuizId = String((activeQuizInstance && activeQuizInstance.quizId) || '');
+      const answerClass = activeQuizInstance.classTag || 'ALL';
       const studentId = currentUser.id;
+      const flightToken = answerQuizId + ':' + submitTime;
+      quizAnswerFlight = flightToken;
 
-      if (!dbRootRef) {
+      if (!dbRootRef || !answerQuizId) {
         quizAnswerInFlight = false;
         isQuizTimeoutSubmitting = false;
         return;
       }
 
-      dbRootRef.child('activeQuiz').transaction((cur) => {
-        if (cur === null) return cur;
-        if (!cur.active) return;
-        if (answerQuizId && String(cur.quizId || '') !== answerQuizId) return;
-        if (!cur.submissions) cur.submissions = {};
-        if (cur.submissions[studentId]) return cur;
-
-        const limitMs = quizLimitMs(cur);
-        const start = Number(cur.timestamp);
-        const clockReady = Number.isFinite(start) && start > 0 && Number.isFinite(limitMs);
-        let timedOut = !!isTimeout;
-        if (!timedOut && clockReady && submitTime > start + limitMs + 1500) timedOut = true;
-        if (timedOut && clockReady && submitTime < start + limitMs) return;
-
-        if (!cur.winners) cur.winners = {};
-        const acceptedCorrect = !timedOut && isCorrect;
-        let awardedRank = null;
-        if (acceptedCorrect) {
-          if (!cur.winners.rank1) {
-            awardedRank = 1;
-            cur.winners.rank1 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
-          } else if (!cur.winners.rank2) {
-            awardedRank = 2;
-            cur.winners.rank2 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
-          } else if (!cur.winners.rank3) {
-            awardedRank = 3;
-            cur.winners.rank3 = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
-          }
-        }
-
-        cur.submissions[studentId] = {
-          studentId: st.id,
-          studentName: st.name,
-          answerText: timedOut ? '⏰ 逾時未答 / Time is up' : chosenText,
-          isCorrect: acceptedCorrect,
-          isTimeout: timedOut,
-          rank: awardedRank,
-          timestamp: submitTime,
-          timeString: timeString
-        };
-        return cur;
-      }, (err, committed, snap) => {
-        const finalQuiz = snap && snap.exists() ? snap.val() : null;
-        const myFinalSub = finalQuiz && finalQuiz.submissions && finalQuiz.submissions[studentId];
-        const screenId = String((activeQuizInstance && activeQuizInstance.quizId) || '');
-        const stillThisQuiz = !answerQuizId || !screenId || screenId === answerQuizId;
-        if (!committed || !myFinalSub) {
-          if (!stillThisQuiz) return;
+      const classKey = classQuizKey(answerClass);
+      const releaseFlight = () => {
+        if (quizAnswerFlight === flightToken) {
           quizAnswerInFlight = false;
           isQuizTimeoutSubmitting = false;
-          if (!isTimeout && activeQuizInstance && String(activeQuizInstance.quizId || '') === answerQuizId && !(activeQuizInstance.submissions && activeQuizInstance.submissions[studentId])) {
+        }
+      };
+      const rememberAnswer = (submission, podium) => {
+        if (!classQuizNodes[classKey]) classQuizNodes[classKey] = {};
+        const node = classQuizNodes[classKey];
+        if (!node.submissions) node.submissions = {};
+        if (!node.submissions[answerQuizId]) node.submissions[answerQuizId] = {};
+        node.submissions[answerQuizId][studentId] = submission;
+        if (podium) {
+          if (!node.podium) node.podium = {};
+          node.podium[answerQuizId] = podium;
+        }
+      };
+
+      (async () => {
+        try {
+          await ensurePlaySession();
+          const limitMs = quizLimitMs(activeQuizInstance);
+          const start = Number(activeQuizInstance.timestamp);
+          const clockReady = Number.isFinite(start) && start > 0 && Number.isFinite(limitMs);
+          let timedOut = !!isTimeout;
+          if (!timedOut && clockReady && submitTime > start + limitMs + 1500) timedOut = true;
+          if (timedOut && clockReady && submitTime < start + limitMs) {
+            releaseFlight();
+            return;
+          }
+          const acceptedCorrect = !timedOut && isCorrect;
+          let awardedRank = null;
+          let podiumValue = null;
+          if (acceptedCorrect) {
+            const claim = await dbRootRef.child('classQuizzes/' + classKey + '/podium/' + answerQuizId).transaction(cur => {
+              const podium = cur && typeof cur === 'object' ? cur : {};
+              if (podium.rank1 && podium.rank1.studentId === studentId) return podium;
+              if (podium.rank2 && podium.rank2.studentId === studentId) return podium;
+              if (podium.rank3 && podium.rank3.studentId === studentId) return podium;
+              const seat = { studentId: st.id, studentName: st.name, timestamp: submitTime, timeString: timeString };
+              if (!podium.rank1) podium.rank1 = seat;
+              else if (!podium.rank2) podium.rank2 = seat;
+              else if (!podium.rank3) podium.rank3 = seat;
+              return podium;
+            });
+            podiumValue = claim && claim.committed && claim.snapshot ? claim.snapshot.val() : null;
+            if (podiumValue && podiumValue.rank1 && podiumValue.rank1.studentId === studentId) awardedRank = 1;
+            else if (podiumValue && podiumValue.rank2 && podiumValue.rank2.studentId === studentId) awardedRank = 2;
+            else if (podiumValue && podiumValue.rank3 && podiumValue.rank3.studentId === studentId) awardedRank = 3;
+          }
+          const submission = {
+            studentId: st.id,
+            studentName: st.name,
+            answerText: timedOut ? '⏰ 逾時未答 / Time is up' : chosenText,
+            isCorrect: acceptedCorrect,
+            isTimeout: timedOut,
+            rank: awardedRank,
+            timestamp: submitTime,
+            timeString: timeString
+          };
+          const saved = await dbRootRef.child('classQuizzes/' + classKey + '/submissions/' + answerQuizId + '/' + studentId).transaction(cur => {
+            if (cur && cur.timestamp && Number(cur.timestamp) !== submitTime) return cur;
+            return submission;
+          });
+          if (!saved || !saved.committed) throw new Error('the answer was not saved');
+          const finalSub = saved.snapshot && saved.snapshot.val() ? saved.snapshot.val() : submission;
+          rememberAnswer(finalSub, podiumValue);
+          releaseFlight();
+          if (Number(finalSub.timestamp) !== submitTime) {
+            renderQuizModalForStudent();
+            return;
+          }
+          if (finalSub.isCorrect) {
+            playSound('evolve');
+            if (typeof confetti === 'function') {
+              confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+            }
+            const quizClass = answerClass;
+            const quizExp = (base) => Math.round(base * territoryExpMultiplier(st, territoryContextClass(st, quizClass)));
+            if (finalSub.rank === 1) {
+              grantAttackQuota(st.id, 2);
+              grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+              showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數，陣營據點 +50！", "evolution");
+            } else if (finalSub.rank === 2) {
+              grantAttackQuota(st.id, 1);
+              grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+              showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數，陣營據點 +50！", "evolution");
+            } else if (finalSub.rank === 3) {
+              const expGain = quizExp(30);
+              rewardStudent(st.id, expGain);
+              grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
+              showToast("搶答季軍！", `第 3 名答對！榮獲 +${expGain} EXP，陣營據點 +50！`, "evolution");
+            } else {
+              const expGain = quizExp(10);
+              rewardStudent(st.id, expGain);
+              showToast("回答正確！", `成功答對題目，獎勵 +${expGain} EXP！`, "heal");
+            }
+          } else if (finalSub.isTimeout) {
+            playSound('faint');
+            showToast("逾時 / Time's Up", "回答時間已結束！ / Time is up.", "damage");
+          } else {
+            playSound('attack');
+            showToast("回答錯誤", "下次再接再厲！", "damage");
+          }
+          updateStudentUI();
+          renderQuizModalForStudent();
+        } catch (err) {
+          releaseFlight();
+          const live = classQuizNodes[classKey] && classQuizNodes[classKey].live;
+          const still = live && String(live.quizId || '') === answerQuizId;
+          const savedSub = classQuizNodes[classKey] && classQuizNodes[classKey].submissions && classQuizNodes[classKey].submissions[answerQuizId] && classQuizNodes[classKey].submissions[answerQuizId][studentId];
+          if (!isTimeout && still && !savedSub) {
             showToast('答案沒有送出 / Not received', '請再按一次答案。 / Tap the answer again.', 'damage');
           }
           renderQuizModalForStudent();
-          return;
         }
-
-        if (stillThisQuiz && (!activeQuizInstance || String(activeQuizInstance.quizId || '') === String(finalQuiz.quizId || ''))) {
-          activeQuizInstance = finalQuiz;
-        }
-        if (stillThisQuiz) {
-          quizAnswerInFlight = false;
-          isQuizTimeoutSubmitting = false;
-        }
-
-        if (myFinalSub.isCorrect) {
-          playSound('evolve');
-          if (typeof confetti === 'function') {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-          }
-          const quizClass = (finalQuiz && finalQuiz.classTag) || (activeQuizInstance && activeQuizInstance.classTag);
-          const quizExp = (base) => Math.round(base * territoryExpMultiplier(st, territoryContextClass(st, quizClass)));
-          if (myFinalSub.rank === 1) {
-            grantAttackQuota(st.id, 2);
-            grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
-            showToast("搶答冠軍！", "神速第 1 名答對！榮獲 +2 次攻擊次數，陣營據點 +50！", "evolution");
-          } else if (myFinalSub.rank === 2) {
-            grantAttackQuota(st.id, 1);
-            grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
-            showToast("搶答亞軍！", "神速第 2 名答對！榮獲 +1 次攻擊次數，陣營據點 +50！", "evolution");
-          } else if (myFinalSub.rank === 3) {
-            const expGain = quizExp(30);
-            rewardStudent(st.id, expGain);
-            grantTerritoryNodePoints(st, quizClass, 50, 'QUIZ');
-            showToast("搶答季軍！", `第 3 名答對！榮獲 +${expGain} EXP，陣營據點 +50！`, "evolution");
-          } else {
-            const expGain = quizExp(10);
-            rewardStudent(st.id, expGain);
-            showToast("回答正確！", `成功答對題目，獎勵 +${expGain} EXP！`, "heal");
-          }
-        } else if (myFinalSub.isTimeout) {
-          playSound('faint');
-          showToast("逾時 / Time's Up", "回答時間已結束！ / Time is up.", "damage");
-        } else {
-          playSound('attack');
-          showToast("回答錯誤", "下次再接再厲！", "damage");
-        }
-        updateStudentUI();
-        if (!stillThisQuiz) return;
-        renderQuizModalForStudent();
-      }, false);
+      })();
     }
 
 // ========================================================
@@ -20487,111 +20605,7 @@ function startStudentExamTimer() {
 }
 
     function submitStudentQuizAnswer(chosenIdx) {
-      if (!activeQuizInstance || !activeQuizInstance.active || !currentUser || currentUser.role !== 'student') return;
-      if (!dbRootRef) return;
-
-      if (quizStudentCountdownTimer) {
-        clearInterval(quizStudentCountdownTimer);
-        quizStudentCountdownTimer = null;
-      }
-
-      const chosenText = activeQuizInstance.options[chosenIdx] || '';
-      const isCorrect = (chosenIdx === activeQuizInstance.correctIndex);
-      const st = appData.students[currentUser.id] || { name: currentUser.id };
-      const now = syncedNow();
-
-      dbRootRef.child('activeQuiz').transaction((quiz) => {
-        if (!quiz || !quiz.active) return quiz;
-        if (!quiz.submissions) quiz.submissions = {};
-        if (quiz.submissions[currentUser.id]) return quiz;
-
-        if (!quiz.winners) quiz.winners = {};
-
-        let assignedRank = null;
-        if (isCorrect) {
-          if (!quiz.winners.rank1) {
-            assignedRank = 1;
-            quiz.winners.rank1 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: serverClockText(true) };
-          } else if (!quiz.winners.rank2) {
-            assignedRank = 2;
-            quiz.winners.rank2 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: serverClockText(true) };
-          } else if (!quiz.winners.rank3) {
-            assignedRank = 3;
-            quiz.winners.rank3 = { studentId: currentUser.id, studentName: st.name, timestamp: now, timeString: serverClockText(true) };
-          }
-        }
-
-        quiz.submissions[currentUser.id] = {
-          answerIdx: chosenIdx,
-          answerText: chosenText,
-          isCorrect: isCorrect,
-          isTimeout: false,
-          timestamp: now,
-          rank: assignedRank
-        };
-
-        return quiz;
-      }, (err, committed, snap) => {
-        if (committed && snap.exists()) {
-          const finalQuiz = snap.val();
-          const myResult = finalQuiz.submissions && finalQuiz.submissions[currentUser.id];
-
-          if (!myResult) return;
-
-          if (myResult.isCorrect) {
-            playSound('evolve');
-            if (typeof confetti === 'function') {
-              confetti({ particleCount: 160, spread: 80, origin: { y: 0.5 } });
-            }
-
-            if (myResult.rank === 1) {
-              dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
-                if (!currentSt) return currentSt;
-                currentSt.attackQuota = (currentSt.attackQuota || 0) + 2;
-                currentSt.quizRewardId = String(finalQuiz.quizId || '');
-                return currentSt;
-              });
-              addBattleLog(`⚡🥇 [QUIZ 1ST] ${st.name} 搶得第 1 名！自動增加 +2 次攻擊次數！`, "evolution", st.classId);
-              showToast("1st Place Victor!", `搶得第 1 名！獲得 +2 次攻擊次數！`, "evolution");
-            } else if (myResult.rank === 2) {
-              dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
-                if (!currentSt) return currentSt;
-                currentSt.attackQuota = (currentSt.attackQuota || 0) + 1;
-                currentSt.quizRewardId = String(finalQuiz.quizId || '');
-                return currentSt;
-              });
-              addBattleLog(`⚡🥈 [QUIZ 2ND] ${st.name} 搶得第 2 名！自動增加 +1 次攻擊次數！`, "evolution", st.classId);
-              showToast("2nd Place Victor!", `搶得第 2 名！獲得 +1 次攻擊次數！`, "evolution");
-            } else if (myResult.rank === 3) {
-              dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
-                if (!currentSt) return currentSt;
-                currentSt.exp = (currentSt.exp || 0) + 30;
-                currentSt.statPool = (currentSt.statPool || 0) + 30;
-                currentSt.quizRewardId = String(finalQuiz.quizId || '');
-                return currentSt;
-              });
-              addBattleLog(`⚡🥉 [QUIZ 3RD] ${st.name} 獲得第 3 名！自動獲得 +30 EXP！`, "evolution", st.classId);
-              showToast("3rd Place Victor!", `獲得第 3 名！獲得 +30 EXP！`, "evolution");
-            } else {
-              dbRootRef.child(`students/${currentUser.id}`).transaction(currentSt => {
-                if (!currentSt) return currentSt;
-                currentSt.exp = (currentSt.exp || 0) + 10;
-                currentSt.statPool = (currentSt.statPool || 0) + 10;
-                currentSt.quizRewardId = String(finalQuiz.quizId || '');
-                return currentSt;
-              });
-              addBattleLog(`⚡✅ [QUIZ CORRECT] ${st.name} 答案正確！自動獲得 +10 EXP！`, "heal", st.classId);
-              showToast("Correct Answer!", `答案正確！獲得 +10 EXP！`, "heal");
-            }
-          } else {
-            playSound('faint');
-            showToast("Incorrect!", "答案不正確！沒有獲得獎勵。", "damage");
-            addBattleLog(`⚡❌ [QUIZ INCORRECT] ${st.name} 答案錯誤，無獲得獎勵。`, "battle", st.classId);
-          }
-
-          renderQuizModalForStudent();
-        }
-      });
+      submitQuizAnswer(chosenIdx, false);
     }
 
     // 學生施放技能暫存索引
