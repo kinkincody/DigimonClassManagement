@@ -1761,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.87";
+    const CURRENT_APP_VERSION = "2.7.89";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4826,6 +4826,14 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     // 搶答動態倒數計時器變數
     let quizStudentCountdownTimer = null;
     let quizTeacherCountdownTimer = null;
+    let quizAutoRun = null;
+    let quizAutoTimer = null;
+    let quizAutoTickBusy = false;
+    let quizAutoClosing = false;
+    let quizAutoRetryAt = 0;
+    let quizAutoEndedNotice = '';
+    let quizAutoBank = [];
+    let quizAutoBankRunId = '';
     let firebaseServerTimeOffset = 0;
     let firebaseServerTimeOffsetReady = false;
     const pendingFactionWrites = {};
@@ -6348,6 +6356,10 @@ const PASSWORD_KDF_ITERS = 40000;
       vaultMigrationQueue.length = 0;
     }
 
+    function flagIsTrue(value) {
+      return value === true || value === 1 || value === 'true' || value === '1';
+    }
+
     function normalizeStudent(s, keyId) {
   if (!s || typeof s !== 'object') return null;
   const id = String(s.id || s.username || keyId || '').toLowerCase();
@@ -6382,7 +6394,7 @@ const PASSWORD_KDF_ITERS = 40000;
     exp: Number(s.exp) || 0,
     statPool: Number(s.statPool) || 0,
     hp: (s.hp !== undefined && s.hp !== null) ? Number(s.hp) : (DIGIMON_DB[currentDigiId]?.maxHp || 100),
-    isFainted: !!s.isFainted,
+    isFainted: flagIsTrue(s.isFainted),
     hasShield: !!s.hasShield,
     shieldCharges: capShieldCharges(s.shieldCharges),
     isStarred: !!s.isStarred,
@@ -6673,7 +6685,7 @@ const PASSWORD_KDF_ITERS = 40000;
           const cleanStudents = {};
           Object.keys(val).forEach(k => {
             const raw = val[k] || {};
-            const serverDown = (Number(raw.hp) <= 0) || !!raw.isFainted;
+            const serverDown = (Number(raw.hp) <= 0) || flagIsTrue(raw.isFainted);
             const norm = normalizeStudent(raw, k);
             if (norm) {
               holdDungeonDefeat(norm, serverDown);
@@ -6930,6 +6942,19 @@ const PASSWORD_KDF_ITERS = 40000;
           renderQuizModalForStudent();
           if (currentUser && currentUser.role === 'teacher') {
             renderTeacherQuizLiveDashboard();
+            closeEndedAutoQuiz();
+          }
+        });
+        dbRootRef.child('systemSettings/quizAutoRun').on('value', (snap) => {
+          const previous = quizAutoRun;
+          quizAutoRun = snap.val();
+          paintQuizAutoStatus();
+          if (!currentUser || currentUser.role !== 'teacher') return;
+          ensureQuizAutoClock();
+          if (quizAutoRun && quizAutoRun.active === true) tickQuizAutoRun();
+          else if (previous && previous.active === true && quizAutoRun && String(quizAutoRun.id || '') === String(previous.id || '')) {
+            closeEndedAutoQuiz();
+            noteQuizAutoEnded(quizAutoRun);
           }
         });
        // 考卷系統即時同步監聽
@@ -10478,10 +10503,92 @@ function rejectFactionRequest(reqKey) {
 
     async function releaseStaleFaint(student) {
       if (!student || !(Number(student.hp) > 0) || !student.isFainted) return true;
-      const saved = await commitPlayUpdate({ ['students/' + studentSaveKey(student) + '/isFainted']: false });
+      const key = studentSaveKey(student);
+      const raw = await readAttackerRecord(key);
+      const serverHp = raw && raw.hp;
+      const hpOk = typeof serverHp === 'number' && Number.isFinite(serverHp) && serverHp > 0 && serverHp <= 4000;
+      if (!hpOk) {
+        const n = Math.max(1, Math.min(4000, Math.floor(Number(student.hp) || Number(serverHp) || 1)));
+        const hpSaved = await commitPlayUpdate({ ['students/' + key + '/hp']: n });
+        if (!hpSaved) return false;
+        student.hp = n;
+      }
+      const saved = await commitPlayUpdate({ ['students/' + key + '/isFainted']: false });
       if (!saved) return false;
       student.isFainted = false;
       return true;
+    }
+
+    async function readAttackerRecord(key) {
+      if (!dbRootRef || !key) return null;
+      try {
+        const snap = await dbRootRef.child('students/' + key).once('value');
+        return snap && snap.val ? snap.val() : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function legalizeAttackerRecord(updates, key, raw) {
+      if (!updates || !key || !raw || typeof raw !== 'object') return updates;
+      const prefix = 'students/' + key + '/';
+      const setIfAbsent = (field, value) => {
+        const path = prefix + field;
+        if (updates[path] == null) updates[path] = value;
+      };
+      const whole = (value) => typeof value === 'number' && Number.isFinite(value);
+      if (raw.coins != null && !whole(raw.coins)) setIfAbsent('coins', Math.max(0, Math.floor(Number(raw.coins) || 0)));
+      if (raw.hp != null && (!whole(raw.hp) || raw.hp < 0 || raw.hp > 4000)) {
+        const n = Number(raw.hp);
+        setIfAbsent('hp', Math.max(0, Math.min(4000, Math.floor(Number.isFinite(n) ? n : 0))));
+      }
+      if (raw.gachaTickets != null && !whole(raw.gachaTickets)) {
+        setIfAbsent('gachaTickets', Math.max(0, Math.min(500, Math.floor(Number(raw.gachaTickets) || 0))));
+      }
+      if (raw.shieldCharges != null && (!whole(raw.shieldCharges) || raw.shieldCharges < 0)) {
+        setIfAbsent('shieldCharges', Math.max(0, Math.min(10, Math.floor(Number(raw.shieldCharges) || 0))));
+      }
+      return updates;
+    }
+
+    function clampOutgoingPlayNumbers(updates, expect) {
+      if (!updates) return;
+      Object.keys(updates).forEach(path => {
+        const cap = /^teachers\/[^/]+\/hp$/.test(path) ? 20000 : (/^students\/[^/]+\/hp$/.test(path) ? 4000 : 0);
+        if (!cap) return;
+        const n = Number(updates[path]);
+        if (!Number.isFinite(n) || n <= cap) return;
+        updates[path] = cap;
+        if (expect && Object.prototype.hasOwnProperty.call(expect, path)) expect[path] = cap;
+      });
+    }
+
+    async function playValueLanded(path, expected) {
+      const want = Number(expected);
+      const matches = (value) => Number(value) === want;
+      try {
+        const snap = await dbRootRef.child(path).once('value');
+        if (matches(snap && snap.val ? snap.val() : null)) return true;
+      } catch (err) {}
+      try {
+        if (matches(await readServerNode(path))) return true;
+      } catch (err) {}
+      return await new Promise(resolve => {
+        const ref = dbRootRef.child(path);
+        let done = false;
+        const finish = (ok) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          try { ref.off('value', onValue); } catch (ignore) {}
+          resolve(ok);
+        };
+        const timer = setTimeout(() => finish(false), 1200);
+        const onValue = (snap) => {
+          if (matches(snap && snap.val ? snap.val() : null)) finish(true);
+        };
+        ref.on('value', onValue, () => finish(false));
+      });
     }
 
     function keepOwnShieldWithinCap(updates) {
@@ -10499,6 +10606,16 @@ function rejectFactionRequest(reqKey) {
 
     async function commitPlayUpdate(updates, expect) {
       updates = keepOwnShieldWithinCap(updates);
+      if (currentUser && currentUser.role === 'student') {
+        const me = appData.students && appData.students[currentUser.id];
+        const key = me ? studentSaveKey(me) : currentUser.id;
+        const mine = 'students/' + key + '/';
+        if (key && updates && Object.keys(updates).some(path => String(path).indexOf(mine) === 0)) {
+          const raw = await readAttackerRecord(key);
+          if (!(raw && flagIsTrue(raw.isFainted))) legalizeAttackerRecord(updates, key, raw);
+        }
+      }
+      clampOutgoingPlayNumbers(updates, expect);
       const keys = updates ? Object.keys(updates) : [];
       if (!keys.length) return true;
       if (currentUser && currentUser.role === 'student' && !currentUser.teacherTest) {
@@ -10510,9 +10627,7 @@ function rejectFactionRequest(reqKey) {
         const checks = expect || {};
         const paths = Object.keys(checks);
         for (let i = 0; i < paths.length; i++) {
-          const snap = await dbRootRef.child(paths[i]).once('value');
-          const got = snap && snap.val ? snap.val() : undefined;
-          if (Number(got) !== Number(checks[paths[i]])) {
+          if (!(await playValueLanded(paths[i], checks[paths[i]]))) {
             notePlayWriteError({ code: 'PERMISSION_DENIED', message: 'PERMISSION_DENIED' });
             return false;
           }
@@ -11387,7 +11502,26 @@ function getTeacherTemplate() {
               </label>
               <button type="button" id="teacherQuizFreeTime" onclick="setTeacherQuizFreeTime()" class="min-h-9 px-2.5 rounded-lg border border-amber-500/60 bg-slate-900 text-[11px] font-black text-amber-200">不限時 / Free time</button>
             </div>
-            <button onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer">即刻發布搶答</button>
+            <button type="button" id="teacherLaunchQuizButton" onclick="teacherLaunchQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg transition active:scale-95 cursor-pointer">即刻發布搶答</button>
+          </div>
+        </div>
+        <div id="quizAutoPanel" class="bg-slate-950/80 border border-cyan-500/40 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 class="text-xs font-black text-cyan-300 uppercase tracking-wider">自動連續搶答 / Auto popup quiz</h4>
+              <p class="text-[11px] text-slate-400">先選一個班別，並匯入題庫。按下 30 分鐘或 1 小時後，這個班會按上方的每題秒數連續彈出搶答。時間到就自動結束。每題做完後停留 8 秒，再出下一題。<br>Choose one class and import the bank. For 30 minutes or 1 hour, that class keeps getting popup quizzes. Each question uses the seconds above, waits 8 seconds, then the next one appears. The quiz ends when the time range ends.</p>
+            </div>
+            <span id="quizAutoStatus" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300">未開始 / Idle</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="teacherStartQuizAuto(30)" class="quiz-auto-start min-h-10 px-3 rounded-xl bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer active:scale-95">30 分鐘 / 30 min</button>
+            <button type="button" onclick="teacherStartQuizAuto(60)" class="quiz-auto-start min-h-10 px-3 rounded-xl bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer active:scale-95">1 小時 / 1 hour</button>
+            <label class="flex items-center gap-1.5 text-[11px] text-cyan-200 font-mono">
+              <span>自訂分鐘</span>
+              <input id="quizAutoCustomMinutes" type="number" min="1" max="180" step="1" value="15" class="w-16 bg-slate-900 border border-cyan-500/50 rounded-lg px-2 py-1 text-xs text-cyan-100 outline-none">
+            </label>
+            <button type="button" onclick="teacherStartQuizAutoCustom()" class="quiz-auto-start min-h-10 px-3 rounded-xl border border-cyan-400 text-cyan-200 text-xs font-black cursor-pointer active:scale-95">開始自訂 / Start custom</button>
+            <button type="button" id="quizAutoStopButton" onclick="teacherStopQuizAuto()" class="hidden min-h-10 px-3 rounded-xl bg-rose-600 text-white text-xs font-black cursor-pointer active:scale-95">停止自動搶答 / Stop</button>
           </div>
         </div>
       </div>
@@ -11833,6 +11967,8 @@ function getSuperAdminTemplate() {
     renderTeacherGrid();
     updateClassChatUnreadBadge();
     paintTeacherTestSetup();
+    ensureQuizAutoClock();
+    tickQuizAutoRun();
 
   } else {
     // 學生端：銷毀所有管理員與教師的 DOM 內容
@@ -11881,6 +12017,10 @@ function getSuperAdminTemplate() {
 function logout() {
   clearAuthSession();
   currentUser = null;
+  if (quizAutoTimer) {
+    clearInterval(quizAutoTimer);
+    quizAutoTimer = null;
+  }
   adminBookKeyCache = null;
   passwordBookKeys = null;
   ['students', 'teachers', 'superAdmins'].forEach(category => {
@@ -12247,7 +12387,9 @@ function logout() {
       if (!st.unlockedDex) st.unlockedDex = {};
       st.unlockedDex[digi.id] = true;
 
-      const isDead = (st.hp <= 0) || !!st.isFainted;
+      const hpAlive = Number(st.hp) > 0;
+      const isDead = !hpAlive;
+      if (hpAlive && st.isFainted) releaseStaleFaint(st);
       const banned = isStudentBanned(st);
 
       const deathOverlay = document.getElementById('deathScreenOverlay');
@@ -13066,7 +13208,7 @@ else if (mode === 'pvp') {
         showToast("無法行動", "你的數碼暴龍已經倒下，無法攻擊或反擊！", "damage");
         return;
       }
-      if (!(await releaseStaleFaint(st))) return;
+      if (!(await releaseStaleFaint(st))) { attackNotSaved(); return; }
 
       const pvpBlock = studentPvpBlock(st, target, undefined, !!isCounterAttack);
       if (!pvpBlock.ok) {
@@ -18240,8 +18382,449 @@ function teacherToggleClassSpy(studentId, event) {
       });
     }
 
+    function quizAutoList(value) {
+      if (!value) return [];
+      if (Array.isArray(value)) return value;
+      return Object.keys(value).sort((a, b) => Number(a) - Number(b)).map(key => value[key]);
+    }
+
+    function quizAutoWrongs(item) {
+      return quizAutoList(item && item.wrongs).map(text => repairQuestionText(String(text || '').trim())).filter(Boolean).slice(0, 3);
+    }
+
+    function quizAutoItemUsable(item) {
+      if (!item || !item.question || !item.correct) return false;
+      if (item.type === 'FILL') return true;
+      return quizAutoWrongs(item).length > 0;
+    }
+
+    function quizAutoStoredItem(item) {
+      if (!item) return null;
+      const stored = {
+        question: repairQuestionText(String(item.question || '').trim()),
+        correct: repairQuestionText(String(item.correct || '').trim()),
+        wrongs: quizAutoWrongs(item)
+      };
+      if (item.type === 'FILL') stored.type = 'FILL';
+      const image = item.image ? String(item.image).trim() : '';
+      const explanation = item.explanation ? repairQuestionText(String(item.explanation).trim()) : '';
+      if (image) stored.image = image;
+      if (explanation) stored.explanation = explanation;
+      return quizAutoItemUsable(stored) ? stored : null;
+    }
+
+    function quizAutoClock(ms) {
+      const total = Math.max(0, Math.ceil(Number(ms) / 1000));
+      const minutes = String(Math.floor(total / 60)).padStart(2, '0');
+      const seconds = String(total % 60).padStart(2, '0');
+      return minutes + ':' + seconds;
+    }
+
+    function shuffleAutoOrder(length) {
+      const order = [];
+      for (let i = 0; i < length; i++) order.push(i);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const swap = order[i];
+        order[i] = order[j];
+        order[j] = swap;
+      }
+      return order;
+    }
+
+    function rememberAutoQuizBank(runId, bank) {
+      quizAutoBank = bank || [];
+      quizAutoBankRunId = String(runId || '');
+      try {
+        localStorage.setItem('quizAutoBank:' + quizAutoBankRunId, JSON.stringify(quizAutoBank));
+      } catch (err) {}
+    }
+
+    function localAutoQuizBank(run) {
+      if (!run || !run.id) return [];
+      if (quizAutoBankRunId === String(run.id) && quizAutoBank.length) return quizAutoBank;
+      try {
+        const saved = JSON.parse(localStorage.getItem('quizAutoBank:' + run.id) || 'null');
+        if (Array.isArray(saved) && saved.length) {
+          quizAutoBank = saved;
+          quizAutoBankRunId = String(run.id);
+          return quizAutoBank;
+        }
+      } catch (err) {}
+      return [];
+    }
+
+    function forgetAutoQuizBank(runId) {
+      if (runId && quizAutoBankRunId === String(runId)) {
+        quizAutoBank = [];
+        quizAutoBankRunId = '';
+      }
+      try { if (runId) localStorage.removeItem('quizAutoBank:' + runId); } catch (err) {}
+    }
+
+    function takeNextAutoQuestion(run) {
+      const bank = localAutoQuizBank(run);
+      if (!bank.length) return null;
+      let order = quizAutoList(run.order).map(index => Number(index)).filter(index => Number.isInteger(index) && index >= 0 && index < bank.length);
+      let cursor = Number(run.cursor) || 0;
+      const reshuffle = () => {
+        order = shuffleAutoOrder(bank.length);
+        cursor = 0;
+      };
+      if (!order.length || cursor >= order.length) reshuffle();
+      for (let guard = 0; guard < bank.length + 1; guard++) {
+        if (cursor >= order.length) reshuffle();
+        const item = bank[order[cursor]];
+        cursor += 1;
+        if (quizAutoItemUsable(item)) return { index: order[cursor - 1], order: order, cursor: cursor };
+      }
+      return null;
+    }
+
+    function buildLiveQuizFromBankItem(item, classTag, timeLimitSec, autoRunId) {
+      const stored = quizAutoStoredItem(item);
+      if (!stored) return null;
+      const fillQuiz = stored.type === 'FILL';
+      const rawOptions = [{ text: stored.correct, isCorrect: true }];
+      stored.wrongs.forEach(text => rawOptions.push({ text: text, isCorrect: false }));
+      for (let i = rawOptions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const swap = rawOptions[i];
+        rawOptions[i] = rawOptions[j];
+        rawOptions[j] = swap;
+      }
+      const quizData = {
+        active: true,
+        quizId: 'q' + syncedNow().toString(36) + Math.random().toString(36).slice(2, 8),
+        question: stored.question,
+        options: fillQuiz ? [] : rawOptions.map(option => option.text),
+        correctIndex: fillQuiz ? -1 : rawOptions.findIndex(option => option.isCorrect),
+        classTag: classTag,
+        timeLimit: timeLimitSec,
+        winners: {},
+        submissions: {},
+        timestamp: liveQuizServerStamp(),
+        autoRunId: autoRunId
+      };
+      if (fillQuiz) {
+        quizData.type = 'FILL';
+        quizData.answer = stored.correct;
+      }
+      if (stored.image) quizData.image = stored.image;
+      if (stored.explanation) quizData.explanation = stored.explanation;
+      return quizData;
+    }
+
+    function paintQuizAutoStatus() {
+      const status = document.getElementById('quizAutoStatus');
+      const stop = document.getElementById('quizAutoStopButton');
+      const launch = document.getElementById('teacherLaunchQuizButton');
+      const running = !!(quizAutoRun && quizAutoRun.active === true);
+      document.querySelectorAll('.quiz-auto-start').forEach(button => {
+        button.disabled = running;
+        button.classList.toggle('opacity-40', running);
+        button.classList.toggle('cursor-not-allowed', running);
+      });
+      if (launch) {
+        launch.disabled = running;
+        launch.classList.toggle('opacity-40', running);
+      }
+      if (stop) stop.classList.toggle('hidden', !running);
+      if (!status) return;
+      if (!quizAutoRun) {
+        status.textContent = '未開始 / Idle';
+        return;
+      }
+      if (!running) {
+        const reason = String(quizAutoRun.endedReason || '');
+        status.textContent = reason === 'time'
+          ? '時間到，已結束 / Time is up'
+          : (reason === 'stop' ? '已停止 / Stopped' : '已結束 / Ended');
+        return;
+      }
+      const left = Number(quizAutoRun.endsAt) - syncedNow();
+      let detail = '';
+      const quiz = activeQuizInstance;
+      const gap = Number(quizAutoRun.gapMs) > 0 ? Number(quizAutoRun.gapMs) : 8000;
+      if (quiz && quiz.active && String(quiz.autoRunId || '') === String(quizAutoRun.id) && quizClockReady(quiz)) {
+        const remain = quizRemainingMs(quiz);
+        if (remain > 0) detail = ' · 本題 ' + Math.ceil(remain / 1000) + ' 秒';
+        else detail = ' · 下一題 ' + Math.max(0, Math.ceil((gap + remain) / 1000)) + ' 秒';
+      }
+      status.textContent = '進行中 / Live · ' + quizAutoRun.classTag + ' · 剩餘 ' + quizAutoClock(left) + detail;
+    }
+
+    function ensureQuizAutoClock() {
+      if (quizAutoTimer) return;
+      quizAutoTimer = setInterval(tickQuizAutoRun, 1000);
+    }
+
+    function noteQuizAutoEnded(run) {
+      if (!run || !run.id || quizAutoEndedNotice === String(run.id)) return;
+      quizAutoEndedNotice = String(run.id);
+      paintQuizAutoStatus();
+      const reason = String(run.endedReason || '');
+      if (reason === 'time') showToast('Auto quiz ended', '時間到，搶答已結束。 / The time range ended.', 'info');
+      else if (reason === 'stop') showToast('Auto quiz stopped', '自動搶答已停止。 / Auto quiz stopped.', 'info');
+    }
+
+    function closeEndedAutoQuiz() {
+      const run = quizAutoRun;
+      if (!dbRootRef || !run || run.active === true || !run.id || quizAutoClosing) return;
+      const quiz = activeQuizInstance;
+      if (!quiz || quiz.active !== true || String(quiz.autoRunId || '') !== String(run.id)) return;
+      quizAutoClosing = true;
+      dbRootRef.child('activeQuiz/active').set(false).finally(() => { quizAutoClosing = false; });
+    }
+
+    function tickQuizAutoRun() {
+      paintQuizAutoStatus();
+      if (quizAutoTickBusy || !currentUser || currentUser.role !== 'teacher' || !dbRootRef) return;
+      if (syncedNow() < quizAutoRetryAt) return;
+      const run = quizAutoRun;
+      if (!run || run.active !== true || !run.id) return;
+      const now = syncedNow();
+      if (now + 3000 >= Number(run.endsAt)) {
+        quizAutoTickBusy = true;
+        finishQuizAutoRun('time', run.id).finally(() => { quizAutoTickBusy = false; });
+        return;
+      }
+      if (!localAutoQuizBank(run).length) return;
+      const liveId = String(run.liveQuizId || '');
+      if (liveId === 'publishing') {
+        if (Number(run.turnClaimedAt) > now - 8000) return;
+      } else if (liveId) {
+        const quiz = activeQuizInstance;
+        const mine = !!(quiz && String(quiz.autoRunId || '') === String(run.id) && String(quiz.quizId || '') === liveId);
+        if (!mine) return;
+        if (quiz.active) {
+          if (!quizClockReady(quiz)) return;
+          const gap = Number(run.gapMs) > 0 ? Number(run.gapMs) : 8000;
+          if (quizRemainingMs(quiz) > -gap) return;
+        }
+      }
+      const finishedId = liveId === 'publishing' ? '' : liveId;
+      quizAutoTickBusy = true;
+      publishClaimedAutoQuiz(finishedId).catch(err => {
+        quizAutoRetryAt = syncedNow() + 5000;
+        showToast('Auto quiz', '下一題沒有發布。 / The next question was not published. ' + (err && err.message ? err.message : ''), 'damage');
+      }).finally(() => { quizAutoTickBusy = false; });
+    }
+
+    async function finishQuizAutoRun(reason, runId) {
+      if (!dbRootRef || !runId) return;
+      await ensurePlaySession();
+      const result = await dbRootRef.child('systemSettings/quizAutoRun').transaction(run => {
+        if (!run || run.active !== true || String(run.id || '') !== String(runId)) return;
+        run.active = false;
+        run.endedReason = reason || 'stop';
+        run.liveQuizId = '';
+        run.claimToken = '';
+        run.turnClaimedBy = '';
+        run.turnClaimedAt = 0;
+        if (run.pendingIndex != null) delete run.pendingIndex;
+        if (run.pendingQuestion) delete run.pendingQuestion;
+        if (run.bank) delete run.bank;
+        return run;
+      });
+      if (!result.committed) {
+        closeEndedAutoQuiz();
+        paintQuizAutoStatus();
+        return;
+      }
+      const ended = result.snapshot.val();
+      if (ended) quizAutoRun = ended;
+      const endedReason = String((ended && ended.endedReason) || reason || 'stop');
+      addBattleLog('⚡ [AUTO QUIZ] ' + (endedReason === 'time' ? '時間到，自動搶答結束' : '老師停止自動搶答') + ' (' + ((ended && ended.classTag) || '') + ')。', 'normal', ended && ended.classTag);
+      noteQuizAutoEnded(ended || { id: runId, endedReason: endedReason });
+      forgetAutoQuizBank(runId);
+      closeEndedAutoQuiz();
+    }
+
+    async function publishClaimedAutoQuiz(finishedQuizId) {
+      if (!dbRootRef || !currentUser || currentUser.role !== 'teacher') return;
+      await ensurePlaySession();
+      const teacherId = String(currentUser.id);
+      const now = syncedNow();
+      const claimToken = teacherId + ':' + now + ':' + Math.random().toString(36).slice(2, 8);
+      const runRef = dbRootRef.child('systemSettings/quizAutoRun');
+      const claimed = await runRef.transaction(run => {
+        if (!run || run.active !== true) return;
+        if (String(run.claimToken || '') === claimToken && String(run.liveQuizId || '') === 'publishing' && run.pendingIndex != null) return run;
+        if (now + 3000 >= Number(run.endsAt)) {
+          run.active = false;
+          run.endedReason = 'time';
+          run.liveQuizId = '';
+          run.claimToken = '';
+          run.turnClaimedBy = '';
+          run.turnClaimedAt = 0;
+          if (run.pendingIndex != null) delete run.pendingIndex;
+          if (run.pendingQuestion) delete run.pendingQuestion;
+          if (run.bank) delete run.bank;
+          return run;
+        }
+        const liveId = String(run.liveQuizId || '');
+        const publishing = liveId === 'publishing';
+        const fresh = Number(run.turnClaimedAt) > now - 8000;
+        if (publishing && fresh && String(run.claimToken || '') !== claimToken) return;
+        if (!publishing && liveId && liveId !== String(finishedQuizId || '')) return;
+        const pick = takeNextAutoQuestion(run);
+        if (!pick || pick.index == null) {
+          run.active = false;
+          run.endedReason = 'empty';
+          run.liveQuizId = '';
+          return run;
+        }
+        run.order = pick.order;
+        run.cursor = pick.cursor;
+        run.pendingIndex = pick.index;
+        if (run.pendingQuestion) delete run.pendingQuestion;
+        if (run.bank) delete run.bank;
+        run.liveQuizId = 'publishing';
+        run.turnClaimedBy = teacherId;
+        run.turnClaimedAt = now;
+        run.claimToken = claimToken;
+        return run;
+      });
+      if (!claimed.committed) return;
+      const run = claimed.snapshot.val();
+      if (run) quizAutoRun = run;
+      if (!run || run.active !== true) {
+        if (run) {
+          addBattleLog('⚡ [AUTO QUIZ] ' + (run.endedReason === 'time' ? '時間到，自動搶答結束' : '自動搶答結束') + ' (' + (run.classTag || '') + ')。', 'normal', run.classTag);
+          noteQuizAutoEnded(run);
+          forgetAutoQuizBank(run.id);
+          closeEndedAutoQuiz();
+        }
+        return;
+      }
+      if (String(run.claimToken || '') !== claimToken || run.pendingIndex == null) return;
+      const claimedItem = localAutoQuizBank(run)[Number(run.pendingIndex)];
+      if (!claimedItem) return;
+      const held = await runRef.transaction(current => {
+        if (!current || current.active !== true || String(current.claimToken || '') !== claimToken) return;
+        if (syncedNow() >= Number(current.endsAt)) {
+          current.active = false;
+          current.endedReason = 'time';
+          current.liveQuizId = '';
+          current.claimToken = '';
+          current.turnClaimedBy = '';
+          current.turnClaimedAt = 0;
+          if (current.pendingIndex != null) delete current.pendingIndex;
+          if (current.pendingQuestion) delete current.pendingQuestion;
+          if (current.bank) delete current.bank;
+          return current;
+        }
+        current.turnClaimedAt = syncedNow();
+        return current;
+      });
+      if (!held.committed) return;
+      const ready = held.snapshot.val();
+      if (!ready || ready.active !== true) {
+        if (ready) {
+          quizAutoRun = ready;
+          noteQuizAutoEnded(ready);
+          forgetAutoQuizBank(ready.id);
+          closeEndedAutoQuiz();
+        }
+        return;
+      }
+      const quizData = buildLiveQuizFromBankItem(claimedItem, ready.classTag, Number(ready.questionSeconds), ready.id);
+      if (!quizData) throw new Error('the next question is missing an answer');
+      await dbRootRef.child('activeQuiz').set(quizData);
+      await runRef.update({ liveQuizId: quizData.quizId, claimToken: '', turnClaimedBy: '', turnClaimedAt: 0, pendingIndex: null, pendingQuestion: null, bank: null });
+      const live = await confirmSavedNode('activeQuiz', value => value && value.active && String(value.quizId) === String(quizData.quizId), 'the quiz was not saved');
+      activeQuizInstance = live;
+      addBattleLog('⚡ [AUTO QUIZ] 自動搶答 (' + ready.classTag + ', 限時 ' + quizData.timeLimit + ' 秒): "' + quizData.question + '"', 'evolution', ready.classTag);
+      renderTeacherQuizLiveDashboard();
+    }
+
+    function teacherStartQuizAutoCustom() {
+      const input = document.getElementById('quizAutoCustomMinutes');
+      teacherStartQuizAuto(input ? input.value : '');
+    }
+
+    async function teacherStartQuizAuto(rawMinutes) {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      const text = String(rawMinutes == null ? '' : rawMinutes).trim();
+      if (!/^\d+$/.test(text)) return alert('請選擇 1 到 180 分鐘。 / Choose 1 to 180 minutes.');
+      const mins = Number(text);
+      if (!Number.isInteger(mins) || mins < 1 || mins > 180) return alert('請選擇 1 到 180 分鐘。 / Choose 1 to 180 minutes.');
+      const classTag = selectedTeacherClass || 'ALL';
+      if (classTag === 'ALL') return alert('請先在上方選擇一個班別。 / Choose one class first.');
+      const timeInput = document.getElementById('teacherQuizTimeLimitInput');
+      const seconds = readQuizTimeLimitSeconds(timeInput ? timeInput.value : '');
+      if (seconds == null || seconds <= 0) return alert('自動搶答需要每題秒數，1 到 600。 / Auto quiz needs 1 to 600 seconds for each question.');
+      const bank = (importedQuizBank || []).map(quizAutoStoredItem).filter(Boolean);
+      if (!bank.length) return alert('請先匯入 Excel 題庫。 / Import the Excel question bank first.');
+      if (quizAutoRun && quizAutoRun.active === true && syncedNow() + 3000 < Number(quizAutoRun.endsAt)) {
+        return alert('自動搶答已經在進行。 / An auto quiz is already running.');
+      }
+      const label = mins === 60 ? '1 小時 / 1 hour' : (mins + ' 分鐘 / ' + mins + ' min');
+      if (!confirm('為 ' + classTag + ' 開始自動搶答 ' + label + '？每題 ' + seconds + ' 秒，時間到會結束。 / Start auto quiz for ' + classTag + ' (' + label + ')? Each question is ' + seconds + 's and it ends when the time is up.')) return;
+      if (!dbRootRef) return alert('資料庫尚未連線。 / The database is not connected.');
+      const now = syncedNow();
+      const run = {
+        active: true,
+        id: 'auto' + now.toString(36) + Math.random().toString(36).slice(2, 6),
+        classTag: classTag,
+        teacherId: String(currentUser.id),
+        startedAt: now,
+        endsAt: now + mins * 60000,
+        questionSeconds: seconds,
+        gapMs: 8000,
+        minutes: mins,
+        cursor: 0,
+        order: shuffleAutoOrder(bank.length),
+        liveQuizId: '',
+        claimToken: '',
+        turnClaimedBy: '',
+        turnClaimedAt: 0,
+        endedReason: ''
+      };
+      quizAutoTickBusy = true;
+      try {
+        await ensurePlaySession();
+        const placed = await dbRootRef.child('systemSettings/quizAutoRun').transaction(current => {
+          if (current && current.active === true && syncedNow() + 3000 < Number(current.endsAt)) return;
+          return run;
+        });
+        if (!placed.committed) return alert('自動搶答已經在進行。 / An auto quiz is already running.');
+        quizAutoRun = placed.snapshot.val() || run;
+        rememberAutoQuizBank(quizAutoRun.id, bank);
+        quizAutoEndedNotice = '';
+        paintQuizAutoStatus();
+        ensureQuizAutoClock();
+        addBattleLog('⚡ [AUTO QUIZ] 自動搶答開始 (' + classTag + ', ' + mins + ' 分鐘, 每題 ' + seconds + ' 秒)。', 'evolution', classTag);
+        showToast('Auto quiz started', classTag + ' 自動搶答已開始，' + label + '。 / Auto quiz started.', 'evolution');
+        await publishClaimedAutoQuiz('');
+      } catch (err) {
+        alert('自動搶答沒有開始：' + (err && err.message ? err.message : err));
+      } finally {
+        quizAutoTickBusy = false;
+      }
+    }
+
+    async function teacherStopQuizAuto() {
+      if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
+      if (!quizAutoRun || quizAutoRun.active !== true) return;
+      if (!confirm('停止自動搶答並結束目前題目？ / Stop the auto quiz and close the current question?')) return;
+      quizAutoTickBusy = true;
+      try {
+        await finishQuizAutoRun('stop', quizAutoRun.id);
+        renderTeacherQuizLiveDashboard();
+      } catch (err) {
+        alert('停止失敗: ' + (err && err.message ? err.message : err));
+      } finally {
+        quizAutoTickBusy = false;
+      }
+    }
+
     async function teacherLaunchQuiz() {
       if (!currentUser || currentUser.role !== 'teacher') return;
+      if (quizAutoRun && quizAutoRun.active === true) {
+        return alert('自動搶答進行中，請先停止。 / Stop the auto quiz before launching one question.');
+      }
 
       const q = repairQuestionText(document.getElementById('teacherQuizQuestionInput').value.trim());
       const correct = repairQuestionText(document.getElementById('teacherQuizOpt1').value.trim());
@@ -18317,10 +18900,20 @@ function teacherToggleClassSpy(studentId, event) {
 
     async function teacherCloseLiveQuiz() {
       if (!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin')) return;
-      if (!confirm("Are you sure you want to CLOSE the active Speed Quiz challenge?")) return;
+      const autoLive = !!(quizAutoRun && quizAutoRun.active === true);
+      if (!confirm(autoLive
+        ? '這會停止自動搶答，並結束目前題目。 / This stops the auto quiz and closes the current question.'
+        : 'Are you sure you want to CLOSE the active Speed Quiz challenge?')) return;
       if (!dbRootRef) return;
       try {
         await ensurePlaySession();
+        if (autoLive) {
+          quizAutoTickBusy = true;
+          try { await finishQuizAutoRun('stop', quizAutoRun.id); }
+          finally { quizAutoTickBusy = false; }
+          if (typeof renderTeacherQuizLiveDashboard === 'function') renderTeacherQuizLiveDashboard();
+          return;
+        }
         await dbRootRef.child('activeQuiz/active').set(false);
         const saved = await dbRootRef.child('activeQuiz/active').once('value');
         if (saved.val() !== false) throw new Error('the quiz was not closed');
@@ -18337,6 +18930,8 @@ function teacherToggleClassSpy(studentId, event) {
     }
 
     function renderTeacherQuizLiveDashboard() {
+      if (currentUser && currentUser.role === 'teacher') ensureQuizAutoClock();
+      paintQuizAutoStatus();
       const statusBadge = document.getElementById('quizStatusIndicator');
       const qSnippet = document.getElementById('quizActiveQuestionSnippet');
       const countdownBadge = document.getElementById('quizLiveCountdownBadge');
@@ -19992,7 +20587,7 @@ function startStudentExamTimer() {
         showToast("Action Locked / 行動受限", "Digimon is fainted or banned! / 數碼暴龍已倒下或已被老師鎖定！", "damage");
         return;
       }
-      if (!(await releaseStaleFaint(st))) return;
+      if (!(await releaseStaleFaint(st))) { attackNotSaved(); return; }
 
       const digi = DIGIMON_DB[st.currentDigiId] || DIGIMON_DB['digitama1'];
       const skill = (digi.skills && digi.skills[skillIdx]) ? digi.skills[skillIdx] : { name: "Attack", power: 20, type: "damage" };
@@ -20047,7 +20642,7 @@ function startStudentExamTimer() {
       await ensurePlaySession();
       const st = appData.students[currentUser.id];
       if (!st || !(Number(st.hp) > 0) || isStudentBanned(st)) return;
-      if (!(await releaseStaleFaint(st))) return;
+      if (!(await releaseStaleFaint(st))) { attackNotSaved(); return; }
       const tcId = studentTargetTeacherId || 'teacher1';
       const tc = appData.teachers[tcId] || Object.values(appData.teachers || {})[0];
       if (!tc) return alert("No active Teacher Boss! / 無可攻擊的老師首領！");
@@ -20096,7 +20691,7 @@ function startStudentExamTimer() {
       st.attackQuota = newQuota;
       st.exp = base.exp + bossExp;
       st.statPool = Math.floor(Number(st.statPool) || 0) + bossExp;
-      tc.hp = nextHp;
+      tc.hp = bossUpdates[`teachers/${tc.id}/hp`];
       playSound('attack');
       addBattleLog(`⚔️💥 [BOSS STRIKE / 首領戰] ${st.name} hit Teacher ${tc.name}'s [${tcDigi.name}] for ${dmg} DMG${bossHit.note ? ' · ' + bossHit.note : ''}! (+${bossExp} EXP)`, "battle", st.classId);
       showToast("Hit Boss / 命中首領", `Dealt ${dmg} DMG to ${tcDigi.name}! (+${bossExp} EXP) / 對首領造成 ${dmg} 點傷害！(+${bossExp} EXP)`, "damage");
@@ -20265,7 +20860,7 @@ function startStudentExamTimer() {
         showToast("Action Locked / 行動受限", "Digimon is fainted or banned! / 數碼暴龍已倒下或已被老師鎖定！", "damage");
         return;
       }
-      if (!(await releaseStaleFaint(me))) return;
+      if (!(await releaseStaleFaint(me))) { attackNotSaved(); return; }
       const base = await attackerServerBase(me);
       if (base.quota < 1) {
         me.attackQuota = 0;
@@ -20432,12 +21027,13 @@ function startStudentExamTimer() {
         [`students/${targetKey}/hp`]: nextHp
       });
       if (!saved) { attackNotSaved(); return; }
+      const landedHp = updates[`students/${targetKey}/hp`];
       me.attackQuota = newQuota;
       me.exp = base.exp + expGained;
       me.statPool = Math.floor(Number(me.statPool) || 0) + expGained;
       if (coinsGained > 0) me.coins = base.coins + coinsGained;
       if (updates[`students/${meKey}/gachaTickets`] != null) me.gachaTickets = updates[`students/${meKey}/gachaTickets`];
-      target.hp = nextHp;
+      target.hp = landedHp;
       target.isFainted = nextHp <= 0;
       let revived = false;
       if (canRevive) {
@@ -20483,7 +21079,7 @@ function startStudentExamTimer() {
       } else if (!revived) {
         playSound('attack');
         notifyTargetOfAttack(target.id, dmg, skill.name);
-        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG${pvpNote}! (Target HP: ${nextHp}/${tgtDigi.maxHp})`, "battle", targetClass);
+        addBattleLog(`⚔️ [PVP HIT / 命中同學] ${me.name} struck ${target.name} for ${dmg} DMG${pvpNote}! (Target HP: ${landedHp}/${tgtDigi.maxHp})`, "battle", targetClass);
         showToast("Hit Classmate / 命中同學", `Dealt ${dmg} DMG to ${target.name}! (+${expGained} EXP) / 對 ${target.name} 造成 ${dmg} 點傷害！(+${expGained} EXP)`, "damage");
       }
       updateStudentUI();
