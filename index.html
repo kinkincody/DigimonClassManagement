@@ -52,7 +52,7 @@
     .question-media-ink { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
     .question-media.is-draw .question-media-ink { pointer-events: auto; touch-action: none; cursor: crosshair; }
     #modalQuizOverlay, #modalExamStudent { padding: 0; }
-    #modalQuizOverlay > div, #modalExamStudent > div { width: 100%; max-width: none; height: 100dvh; max-height: 100dvh; border-radius: 0; overflow-y: auto; }
+    #modalQuizOverlay > div, #modalExamStudent > div { width: 100%; max-width: none; height: 100dvh; max-height: 100dvh; border-radius: 0; overflow-y: auto; overflow-anchor: none; }
     .territory-fill { transition: width 0.7s ease; }
     .territory-photo { height: 9.5rem; background: radial-gradient(circle at 30% 20%, #1e3a5f, #020617 72%); }
     .territory-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -1761,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.89";
+    const CURRENT_APP_VERSION = "2.7.90";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -6719,6 +6719,7 @@ const PASSWORD_KDF_ITERS = 40000;
           }
           if (territoryNodesReady && currentUser) scheduleTerritoryDailyRewards();
           scheduleRefreshCurrentView();
+          if (currentUser && currentUser.role === 'student') renderQuizModalForStudent();
         }, (err) => {
           console.error("Students read permission error:", err);
           updateSyncStatusUI(false, `❌ Permission Denied: ${err.message}`);
@@ -19213,7 +19214,11 @@ function teacherToggleClassSpy(studentId, event) {
         if (!quizClockReady(activeQuizInstance)) return;
         if (quizRemainingMs(activeQuizInstance) > -400) return;
         isQuizTimeoutSubmitting = true;
-        setTimeout(() => submitQuizAnswer(null, true), 0);
+        const timedQuizId = key;
+        setTimeout(() => {
+          if (!activeQuizInstance || quizSessionKey(activeQuizInstance) !== timedQuizId) return;
+          submitQuizAnswer(null, true);
+        }, 0);
       };
       tick();
       quizStudentCountdownTimer = setInterval(tick, 250);
@@ -19289,11 +19294,17 @@ function teacherToggleClassSpy(studentId, event) {
       paintQuestionWithPicture(document.getElementById('quizQuestionBox'), activeQuizInstance.image, activeQuizInstance.question);
 
       const sessionKey = quizSessionKey(activeQuizInstance);
+      let freshQuiz = false;
       if (!quizSeenAnchor || quizSeenAnchor.key !== sessionKey) {
+        freshQuiz = true;
         quizSeenAnchor = { key: sessionKey, timerKey: '' };
         isQuizTimeoutSubmitting = false;
         quizAnswerInFlight = false;
         quizOptionStamp = '';
+        grid.innerHTML = '';
+        feedbackText.textContent = '';
+        if (podiumBox) podiumBox.innerHTML = '';
+        feedbackBox.classList.add('hidden');
       }
 
       const mySub = activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id];
@@ -19342,6 +19353,11 @@ function teacherToggleClassSpy(studentId, event) {
       }
 
       modal.classList.remove('hidden');
+      if (freshQuiz) {
+        const panel = modal.firstElementChild;
+        if (panel) panel.scrollTop = 0;
+        modal.scrollTop = 0;
+      }
     }
 
     function submitQuizFill() {
@@ -19439,7 +19455,10 @@ function teacherToggleClassSpy(studentId, event) {
       }, (err, committed, snap) => {
         const finalQuiz = snap && snap.exists() ? snap.val() : null;
         const myFinalSub = finalQuiz && finalQuiz.submissions && finalQuiz.submissions[studentId];
+        const screenId = String((activeQuizInstance && activeQuizInstance.quizId) || '');
+        const stillThisQuiz = !answerQuizId || !screenId || screenId === answerQuizId;
         if (!committed || !myFinalSub) {
+          if (!stillThisQuiz) return;
           quizAnswerInFlight = false;
           isQuizTimeoutSubmitting = false;
           if (!isTimeout && activeQuizInstance && String(activeQuizInstance.quizId || '') === answerQuizId && !(activeQuizInstance.submissions && activeQuizInstance.submissions[studentId])) {
@@ -19449,11 +19468,13 @@ function teacherToggleClassSpy(studentId, event) {
           return;
         }
 
-        if (!activeQuizInstance || String(activeQuizInstance.quizId || '') === String(finalQuiz.quizId || '')) {
+        if (stillThisQuiz && (!activeQuizInstance || String(activeQuizInstance.quizId || '') === String(finalQuiz.quizId || ''))) {
           activeQuizInstance = finalQuiz;
         }
-        quizAnswerInFlight = false;
-        isQuizTimeoutSubmitting = false;
+        if (stillThisQuiz) {
+          quizAnswerInFlight = false;
+          isQuizTimeoutSubmitting = false;
+        }
 
         if (myFinalSub.isCorrect) {
           playSound('evolve');
@@ -19488,6 +19509,7 @@ function teacherToggleClassSpy(studentId, event) {
           showToast("回答錯誤", "下次再接再厲！", "damage");
         }
         updateStudentUI();
+        if (!stillThisQuiz) return;
         renderQuizModalForStudent();
       }, false);
     }
