@@ -1761,7 +1761,7 @@
     // ⚙️ 系統版本號管理與自動強制更新機制
     // 每當您修改或發布此 html 時，將 CURRENT_APP_VERSION 改大即可 (如 2.5.1, 2.6.0)
     // ==========================================
-    const CURRENT_APP_VERSION = "2.7.93";
+    const CURRENT_APP_VERSION = "2.7.94";
     let isForceUpdating = false;
     let forceUpdateTimer = null;
     let forceUpdateStamp = "";
@@ -4832,7 +4832,9 @@ let studentHasSubmittedCurrentExam = false; // 標記當前學生是否已交卷
     let quizAutoBusy = {};
     let quizAutoWake = {};
     let quizAdvanceNudges = {};
-    let quizAdvancePulls = {};
+    let quizLiveRefreshAt = {};
+    let quizLiveBounced = {};
+    let quizLiveWatch = {};
     let quizAutoClosingKeys = {};
     let quizAutoRetryAtByClass = {};
     let quizAutoEndedNotices = {};
@@ -6944,7 +6946,7 @@ const PASSWORD_KDF_ITERS = 40000;
         });
 
         dbRootRef.child('classQuizzes').on('value', (snap) => {
-          classQuizNodes = snap.val() || {};
+          classQuizNodes = mergeClassQuizSnapshot(classQuizNodes, snap.val() || {});
           if (currentUser && currentUser.role === 'student') renderQuizModalForStudent();
           if (currentUser && currentUser.role === 'teacher') {
             renderTeacherQuizLiveDashboard();
@@ -18706,18 +18708,80 @@ function teacherToggleClassSpy(studentId, event) {
       retireLegacySingleQuiz();
     }
 
+    function mergeClassQuizSnapshot(previous, incoming) {
+      const merged = incoming || {};
+      Object.keys(previous || {}).forEach(key => {
+        const prevLive = previous[key] && previous[key].live;
+        const nextLive = merged[key] && merged[key].live;
+        if (!prevLive || !prevLive.quizId) return;
+        if (!nextLive || !nextLive.quizId) {
+          if (prevLive.active === true) {
+            if (!merged[key]) merged[key] = {};
+            merged[key].live = prevLive;
+          }
+          return;
+        }
+        if (String(prevLive.quizId) === String(nextLive.quizId)) return;
+        const prevStamp = Number(prevLive.timestamp) || 0;
+        const nextStamp = Number(nextLive.timestamp) || 0;
+        if (prevStamp && nextStamp && prevStamp > nextStamp + 500) merged[key].live = prevLive;
+      });
+      return merged;
+    }
+
+    function adoptClassLive(classKey, live) {
+      if (!classKey || !live || !live.quizId) return false;
+      if (!classQuizNodes[classKey]) classQuizNodes[classKey] = {};
+      const previous = classQuizNodes[classKey].live || null;
+      const prevId = String((previous && previous.quizId) || '');
+      const nextId = String(live.quizId);
+      if (previous && prevId === nextId) {
+        classQuizNodes[classKey].live = Object.assign({}, previous, live);
+        return false;
+      }
+      const prevStamp = Number(previous && previous.timestamp) || 0;
+      const nextStamp = Number(live.timestamp) || 0;
+      if (previous && prevStamp && nextStamp && nextStamp + 500 < prevStamp) return false;
+      classQuizNodes[classKey].live = live;
+      return true;
+    }
+
+    function watchClassQuizLive(classKey) {
+      if (!dbRootRef || !classKey || quizLiveWatch[classKey]) return;
+      quizLiveWatch[classKey] = true;
+      dbRootRef.child('classQuizzes/' + classKey + '/live').on('value', snap => {
+        if (adoptClassLive(classKey, snap.val()) && currentUser && currentUser.role === 'student') renderQuizModalForStudent();
+      });
+    }
+
+    function refreshClassQuizLive(classKey) {
+      if (!classKey) return;
+      watchClassQuizLive(classKey);
+      const now = syncedNow();
+      if (quizLiveRefreshAt[classKey] && now < quizLiveRefreshAt[classKey]) return;
+      quizLiveRefreshAt[classKey] = now + 800;
+      const finish = (live) => {
+        if (adoptClassLive(classKey, live) && currentUser && currentUser.role === 'student') renderQuizModalForStudent();
+      };
+      readServerNode('classQuizzes/' + classKey + '/live').then(finish).catch(() => {
+        if (!dbRootRef) return;
+        dbRootRef.child('classQuizzes/' + classKey + '/live').once('value').then(snap => finish(snap.val())).catch(() => {});
+      });
+    }
+
+    function bounceQuizLive(quizId) {
+      const id = String(quizId || '');
+      if (!id || quizLiveBounced[id] || typeof firebase === 'undefined' || !firebase.database) return;
+      quizLiveBounced[id] = true;
+      try {
+        const db = firebase.database();
+        db.goOffline();
+        db.goOnline();
+      } catch (err) {}
+    }
+
     function pullClassQuiz(classKey) {
-      if (!dbRootRef || !classKey) return;
-      if (quizAdvancePulls[classKey] && syncedNow() < quizAdvancePulls[classKey]) return;
-      quizAdvancePulls[classKey] = syncedNow() + 700;
-      dbRootRef.child('classQuizzes/' + classKey + '/live').once('value').then(snap => {
-        const live = snap.val();
-        if (!live || !live.quizId) return;
-        if (!classQuizNodes[classKey]) classQuizNodes[classKey] = {};
-        const previous = String((classQuizNodes[classKey].live && classQuizNodes[classKey].live.quizId) || '');
-        classQuizNodes[classKey].live = live;
-        if (previous !== String(live.quizId) && currentUser && currentUser.role === 'student') renderQuizModalForStudent();
-      }).catch(() => {});
+      refreshClassQuizLive(classKey);
     }
 
     function nudgeQuizAdvance(quiz) {
@@ -19453,7 +19517,14 @@ function teacherToggleClassSpy(studentId, event) {
         if (!currentUser || currentUser.role !== 'student') return;
         const mine = activeQuizInstance.submissions && activeQuizInstance.submissions[currentUser.id];
         paintStudentQuizTimer(activeQuizInstance);
-        if (activeQuizInstance.autoRunId) nudgeQuizAdvance(activeQuizInstance);
+        if (activeQuizInstance.autoRunId) {
+          nudgeQuizAdvance(activeQuizInstance);
+          const nextMs = quizNextInMs(activeQuizInstance);
+          if (mine && nextMs != null && nextMs <= 1500) {
+            refreshClassQuizLive(classQuizKey(activeQuizInstance.classTag || 'ALL'));
+            if (nextMs <= -1000) bounceQuizLive(activeQuizInstance.quizId);
+          }
+        }
         if (mine || quizAnswerInFlight || isQuizTimeoutSubmitting) return;
         if (!quizClockReady(activeQuizInstance)) return;
         if (quizRemainingMs(activeQuizInstance) > -400) return;
@@ -19537,6 +19608,7 @@ function teacherToggleClassSpy(studentId, event) {
       if (!grid || !feedbackBox || !feedbackText) return;
 
       paintQuestionWithPicture(document.getElementById('quizQuestionBox'), activeQuizInstance.image, activeQuizInstance.question);
+      if (activeQuizInstance.autoRunId) watchClassQuizLive(classQuizKey(activeQuizInstance.classTag || 'ALL'));
 
       const sessionKey = quizSessionKey(activeQuizInstance);
       let freshQuiz = false;
